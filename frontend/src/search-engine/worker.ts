@@ -10,12 +10,12 @@ import type { WorkerRequest } from './worker-protocol'
 
 const cancelled = new Set<string>()
 
-self.onmessage = (event: MessageEvent<WorkerRequest>) => {
+self.onmessage = async (event: MessageEvent<WorkerRequest>) => {
   const request = event.data
   if (request.type === 'cancel') {
     cancelled.add(request.requestId)
     return
   }
-  handleSearchRequest(request, (message) => self.postMessage(message), cancelled)
+  await handleSearchRequest(request, (message) => self.postMessage(message), cancelled)
   cancelled.delete(request.requestId)
 }

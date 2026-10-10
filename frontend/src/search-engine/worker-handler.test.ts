@@ -14,7 +14,7 @@ function candidate(id: string, skills: Record<number, number>): Candidate {
 }
 
 describe('handleSearchRequest', () => {
-  it('posts a result message per yielded build, then a done message', () => {
+  it('posts a result message per yielded build, then a done message', async () => {
     // Neither candidate dominates the other (one's better at skill 1, the
     // other at skill 2), so both survive as separate results.
     const slots: SlotQuery[] = [
@@ -25,7 +25,7 @@ describe('handleSearchRequest', () => {
     ]
     const post = vi.fn<(message: WorkerResponse) => void>()
 
-    handleSearchRequest(
+    await handleSearchRequest(
       {
         type: 'search',
         requestId: 'req-1',
@@ -44,11 +44,11 @@ describe('handleSearchRequest', () => {
     expect(post.mock.calls.every(([message]) => message.requestId === 'req-1')).toBe(true)
   })
 
-  it('posts an error message when the search throws, instead of a done message', () => {
+  it('posts an error message when the search throws, instead of a done message', async () => {
     const post = vi.fn<(message: WorkerResponse) => void>()
     const slots = null as unknown as SlotQuery[] // forces search() to throw
 
-    handleSearchRequest(
+    await handleSearchRequest(
       { type: 'search', requestId: 'req-1', slots, requirements: [] },
       post,
       new Set(),
@@ -60,7 +60,7 @@ describe('handleSearchRequest', () => {
     expect(message.requestId).toBe('req-1')
   })
 
-  it('stops yielding results once the request is cancelled mid-stream', () => {
+  it('stops yielding results once the request is cancelled mid-stream', async () => {
     // A mutually non-dominated chain across two skills, so all three survive
     // pruning and stream out as separate results.
     const slots: SlotQuery[] = [
@@ -82,7 +82,7 @@ describe('handleSearchRequest', () => {
       }
     })
 
-    handleSearchRequest(
+    await handleSearchRequest(
       {
         type: 'search',
         requestId: 'req-1',
@@ -100,11 +100,11 @@ describe('handleSearchRequest', () => {
     expect(post.mock.calls.map(([m]) => m.type)).toEqual(['result'])
   })
 
-  it('never starts work for a request already cancelled before it began', () => {
+  it('never starts work for a request already cancelled before it began', async () => {
     const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Helm A', { 1: 5 })] }]
     const post = vi.fn<(message: WorkerResponse) => void>()
 
-    handleSearchRequest(
+    await handleSearchRequest(
       { type: 'search', requestId: 'req-1', slots, requirements: [{ skillId: 1, minPoints: 1 }] },
       post,
       new Set(['req-1']),
