@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { expandSlot } from './expand'
 import { computeFrontier } from './pareto'
-import type { Candidate, SlotQuery } from './types'
+import type { Candidate, SkillRequirement, SlotQuery } from './types'
 
 function candidate(id: string, skills: Record<number, number>): Candidate {
   return {
@@ -13,8 +13,8 @@ function candidate(id: string, skills: Record<number, number>): Candidate {
   }
 }
 
-function expand(slots: SlotQuery[]) {
-  return slots.map((s) => expandSlot(s, []))
+function expand(slots: SlotQuery[], requirements: readonly SkillRequirement[] = []) {
+  return slots.map((s) => expandSlot(s, [], requirements))
 }
 
 describe('computeFrontier', () => {

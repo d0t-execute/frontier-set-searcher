@@ -35,9 +35,9 @@ const REALISTIC_SCALE = {
   seed: 42,
 }
 
-function firstResults(requirements: SkillRequirement[], take: number) {
-  const slots = generateSlots(REALISTIC_SCALE)
-  const decorations = generateDecorations(REALISTIC_SCALE)
+function firstResults(requirements: SkillRequirement[], take: number, scale = REALISTIC_SCALE) {
+  const slots = generateSlots(scale)
+  const decorations = generateDecorations(scale)
 
   const start = performance.now()
   const generator = search(slots, requirements, decorations)
@@ -48,6 +48,24 @@ function firstResults(requirements: SkillRequirement[], take: number) {
     results.push(next.value)
   }
   return { results, elapsedMs: performance.now() - start }
+}
+
+// Scaled up toward the real dataset's shape (tens of thousands of candidates
+// per slot, hundreds of relevant decorations) rather than REALISTIC_SCALE's
+// much smaller stand-in. This specifically exercises two failure modes only
+// the real dataset ever triggered (see pareto.ts's and expand.ts's module
+// docstrings): a multi-dimensional Pareto frontier combinatorial explosion
+// across slots under several simultaneous skill requirements, and decoration-
+// filling recomputation that wasn't actually shared across slots. Kept small
+// enough to run quickly in CI while still being large enough that either
+// regression would make this test time out.
+const DECORATION_HEAVY_SCALE = {
+  slotCount: 5,
+  candidatesPerSlot: 1500,
+  skillCount: 6,
+  maxOpenSlots: 3,
+  decorationCount: 200,
+  seed: 7,
 }
 
 describe('search performance', () => {
@@ -77,6 +95,30 @@ describe('search performance', () => {
     expect(results.length).toBeGreaterThan(0)
     // Measured ~1.7s on a dev machine; generous budget for CI variance
     // while still enforcing the plan's actual target.
+    expect(elapsedMs).toBeLessThan(5000)
+
+    for (let i = 1; i < results.length; i++) {
+      expect(results[i - 1].surplus).toBeGreaterThanOrEqual(results[i].surplus)
+    }
+  })
+
+  it('stays within budget at a much larger, decoration-heavy scale with several simultaneous requirements', () => {
+    const { results, elapsedMs } = firstResults(
+      [
+        { skillId: 1, minPoints: 10 },
+        { skillId: 2, minPoints: 10 },
+        { skillId: 3, minPoints: 10 },
+      ],
+      5,
+      DECORATION_HEAVY_SCALE,
+    )
+
+    expect(results.length).toBeGreaterThan(0)
+    // This exact scenario (several thousand candidates per slot, hundreds of
+    // decorations, 3 simultaneous requirements) is what first exposed both
+    // the frontier-explosion and decoration-recomputation issues -- it never
+    // completed at all before those fixes, so the budget here is generous
+    // but still meaningfully enforces "seconds, not minutes."
     expect(elapsedMs).toBeLessThan(5000)
 
     for (let i = 1; i < results.length; i++) {
