@@ -1,64 +1,45 @@
 /**
- * The build search engine (see docs/PLAN.md §6). A best-first branch-and-
- * bound search that *streams* results in strictly descending-surplus order
- * (§6 step 5, "anytime/streaming output") -- it never materializes the full
- * combinatorial space, which matters a great deal in practice: even a
- * modest synthetic benchmark (7 slots, 20 candidates each) has hundreds of
- * thousands of valid combinations. Callers `for...of` (or manually pull
- * via `.next()`) and stop whenever they have enough -- the generator does
- * no work beyond what's needed to produce the results actually consumed.
+ * The build search engine (see docs/PLAN.md §6). Meet-in-the-middle: slots
+ * are split into two halves, each reduced to its Pareto-optimal frontier of
+ * achievable skill vectors (`pareto.ts`), then the two frontiers are merged
+ * via a best-first streaming join -- *not* a full cross-product. Results
+ * are yielded in strictly descending-surplus order (§6 step 5,
+ * "anytime/streaming output") without ever materializing the full
+ * combinatorial space.
  *
- * Each slot's options are precomputed, sorted, and expanded *lazily*: when
- * a node is popped off the priority queue, it pushes at most two new
- * entries (the next slot's best option, and this slot's next-best sibling
- * option) rather than fanning out every option at once. A slot can easily
- * have thousands of options after decoration expansion, so eagerly pushing
- * all of them per visited node would make the heap itself the bottleneck --
- * this bounds heap growth to O(entries popped), not
- * O(entries popped x branching factor).
+ * This replaces an earlier single-pass best-first branch-and-bound over all
+ * slots at once. That approach's pruning bound (every requested skill's
+ * best-available option at every remaining slot, summed independently per
+ * skill) is *sound* but becomes very loose once several skills must be
+ * satisfied simultaneously -- confirmed by instrumentation: a realistic
+ * 7-slot, 3-skill-requirement query explored 200,000 search-tree nodes
+ * without reaching a single complete, valid result. Splitting into two
+ * halves and computing each half's *exact* reachable frontier (not a loose
+ * per-skill bound) avoids that failure mode: the pairwise merge's priority
+ * is the pair's actual final surplus, not an estimate of it.
+ *
+ * Results are deliberately pruned to non-dominated builds only: a build
+ * that's no better than another on *every* requested skill is never worth
+ * seeing (confirmed project direction) -- something else is always at least
+ * as good. `pareto.ts` prunes this within each half; the main loop here
+ * additionally tracks already-yielded combined vectors to catch pairs that
+ * are each non-dominated *within their own half* but still dominated by a
+ * different pair once combined (two vectors can be mutually incomparable
+ * alone yet one may still lose to a different combination once paired).
+ * Ties -- two distinct builds reaching the exact same vector -- are always
+ * preserved, never collapsed.
  */
 
-import { fillSlots } from './decorations'
+import { expandSlot, filterRelevantDecorations } from './expand'
 import { MaxHeap } from './max-heap'
-import type {
-  BuildResult,
-  Candidate,
-  Decoration,
-  SkillContribution,
-  SkillId,
-  SkillRequirement,
-  SlotQuery,
-} from './types'
+import { computeFrontier, dominates, scalarScore } from './pareto'
+import type { FrontierEntry } from './pareto'
+import type { BuildResult, Decoration, SkillId, SkillRequirement, SlotQuery } from './types'
 
-/** One way to fill a slot: a candidate piece plus (possibly empty) a choice
- * of decorations for its open slots, with their contributions pre-merged. */
-interface ExpandedOption {
-  readonly candidate: Candidate
-  readonly skills: readonly SkillContribution[]
-  readonly decorationsUsed: readonly Decoration[]
-}
-
-interface SortedSlot {
-  readonly slotId: string
-  /** Descending by contribution to the requested skills only -- see
-   * `requestedScore`. This is what makes lazy sibling generation valid: for
-   * any fixed parent state, two sibling options' relative priority is
-   * determined entirely by this score, independent of the parent. */
-  readonly options: readonly ExpandedOption[]
-}
-
-/** One specific choice at `slotIndex`, plus enough context to lazily
- * generate its own next-best sibling when popped. */
-interface Entry {
-  readonly slotIndex: number
-  readonly optionIndex: number
-  readonly picks: ReadonlyMap<string, ExpandedOption>
-  readonly totals: ReadonlyMap<SkillId, number>
-  /** Admissible upper bound on the best final surplus reachable through
-   * this entry -- see `computeRemainingPotential`. */
+interface PairEntry {
+  readonly i: number
+  readonly j: number
   readonly priority: number
-  readonly parentPicks: ReadonlyMap<string, ExpandedOption>
-  readonly parentTotals: ReadonlyMap<SkillId, number>
 }
 
 export function* search(
@@ -66,226 +47,114 @@ export function* search(
   requirements: readonly SkillRequirement[],
   decorations: readonly Decoration[] = [],
 ): Generator<BuildResult> {
-  // A decoration that contributes to none of the requested skills can never
-  // change whether a requirement is met or how results are ranked -- only
-  // relevant decorations are worth expanding into options. This isn't just
-  // an optimization: without it, every candidate's open slots get filled
-  // with every combination of *all* decorations in the catalog (hundreds in
-  // the real dataset), which blows up the per-slot option count
-  // combinatorially before the search even starts and exhausts memory long
-  // before producing a single result.
-  const requestedSkillIds = new Set(requirements.map((r) => r.skillId))
-  const relevantDecorations = decorations.filter((d) =>
-    d.skills.some((s) => requestedSkillIds.has(s.skillId)),
-  )
-
+  const relevantDecorations = filterRelevantDecorations(decorations, requirements)
   const expandedSlots = slots.map((slot) => expandSlot(slot, relevantDecorations))
-  const remainingPotential = computeRemainingPotential(expandedSlots, requirements)
-  const sortedSlots: SortedSlot[] = expandedSlots.map((slot) => ({
-    slotId: slot.slotId,
-    options: [...slot.options].sort(
-      (a, b) => requestedScore(b, requirements) - requestedScore(a, requirements),
-    ),
-  }))
 
-  if (sortedSlots.length === 0) {
-    if (computeDeficit(new Map(), requirements) <= 0) {
-      yield buildResult(new Map(), new Map(), requirements)
-    }
-    return
+  const mid = Math.ceil(expandedSlots.length / 2)
+  const frontierA = sortedByScalarScore(computeFrontier(expandedSlots.slice(0, mid), requirements))
+  const frontierB = sortedByScalarScore(computeFrontier(expandedSlots.slice(mid), requirements))
+
+  // Both arrays are sorted descending by scalar score, so a pair's priority
+  // (the sum of its two sides' scores) is non-increasing as either index
+  // grows -- the same lazy "push (i+1,j) and (i,j+1), dedupe via `visited`"
+  // technique used for streaming the k largest pair-sums from two sorted
+  // arrays, generalized here to also gate each popped pair on whether it
+  // actually satisfies every individual requirement (a high combined scalar
+  // score doesn't guarantee that -- one side could overshoot one skill
+  // while the other undershoots a different one).
+  const heap = new MaxHeap<PairEntry>((entry) => entry.priority)
+  const visited = new Set<string>()
+
+  function tryPush(i: number, j: number): void {
+    if (i >= frontierA.length || j >= frontierB.length) return
+    const key = `${i},${j}`
+    if (visited.has(key)) return
+    visited.add(key)
+    heap.push({
+      i,
+      j,
+      priority: scalarScore(frontierA[i].vector) + scalarScore(frontierB[j].vector),
+    })
   }
 
-  const heap = new MaxHeap<Entry>((entry) => entry.priority)
+  tryPush(0, 0)
 
-  // Scans forward from `optionIndex` and pushes the first *feasible* option
-  // it finds, then stops -- it must not simply test `optionIndex` alone and
-  // give up. An infeasible option is never pushed, so it's never popped,
-  // so its sibling-generation step (triggered on pop, see the main loop)
-  // would never run -- without this scan, an infeasible best-sorted option
-  // would silently cut off every feasible option ranked below it.
-  function tryPush(
-    slotIndex: number,
-    optionIndex: number,
-    parentPicks: ReadonlyMap<string, ExpandedOption>,
-    parentTotals: ReadonlyMap<SkillId, number>,
-  ): void {
-    const options = sortedSlots[slotIndex].options
-    for (let i = optionIndex; i < options.length; i++) {
-      const option = options[i]
-      const totals = new Map(parentTotals)
-      applyContribution(totals, option.skills, 1)
-      if (computeDeficit(totals, requirements) > remainingPotential[slotIndex + 1]) continue
-
-      const picks = new Map(parentPicks)
-      picks.set(sortedSlots[slotIndex].slotId, option)
-
-      heap.push({
-        slotIndex,
-        optionIndex: i,
-        picks,
-        totals,
-        priority: completedSurplus(totals, requirements) + remainingPotential[slotIndex + 1],
-        parentPicks,
-        parentTotals,
-      })
-      return
-    }
-  }
-
-  tryPush(0, 0, new Map(), new Map())
+  // Pruning within each half (see `pareto.ts`) doesn't catch every globally
+  // dominated pair: two vectors can each be non-dominated *within their own
+  // half* yet still combine into a pair that's dominated by a *different*
+  // pair drawn from the other side of each half. Tracking already-yielded
+  // vectors here closes that gap cheaply, since results stream out in
+  // descending-priority order already -- a later pair only needs checking
+  // against what's already been accepted, not the whole space.
+  const yieldedVectors: number[][] = []
 
   while (heap.size > 0) {
-    const entry = heap.pop() as Entry
+    const { i, j } = heap.pop() as PairEntry
+    tryPush(i + 1, j)
+    tryPush(i, j + 1)
 
-    // This entry's next-best sibling at the same slot remains reachable
-    // regardless of whether we go on to expand `entry` into a child or
-    // yield it as a result -- both are independent of what happens at this
-    // same slot's other options.
-    tryPush(entry.slotIndex, entry.optionIndex + 1, entry.parentPicks, entry.parentTotals)
+    const a = frontierA[i]
+    const b = frontierB[j]
+    if (!meetsAllRequirements(a.vector, b.vector, requirements)) continue
 
-    if (entry.slotIndex === sortedSlots.length - 1) {
-      yield buildResult(entry.picks, entry.totals, requirements)
-    } else {
-      tryPush(entry.slotIndex + 1, 0, entry.picks, entry.totals)
-    }
+    const combined = a.vector.map((v, k) => v + b.vector[k])
+    if (yieldedVectors.some((v) => dominates(v, combined))) continue
+
+    yieldedVectors.push(combined)
+    yield buildResult(a, b, requirements)
   }
 }
 
-/** Sum of this option's contribution to only the requested skills -- the
- * score lazy sibling expansion sorts by (see `SortedSlot`). */
-function requestedScore(option: ExpandedOption, requirements: readonly SkillRequirement[]): number {
-  let score = 0
-  for (const req of requirements) {
-    score += option.skills.find((s) => s.skillId === req.skillId)?.points ?? 0
-  }
-  return score
+function sortedByScalarScore(frontier: FrontierEntry[]): FrontierEntry[] {
+  return [...frontier].sort((x, y) => scalarScore(y.vector) - scalarScore(x.vector))
 }
 
-/** Per-requirement shortfall (never negative) -- a node can only reach a
- * complete, valid assignment if this never exceeds what the remaining slots
- * could still contribute. Deliberately distinct from `completedSurplus`: a
- * requirement that's already overshot can't "lend" its excess to a
- * different, still-unmet requirement. */
-function computeDeficit(
-  totals: ReadonlyMap<SkillId, number>,
+function meetsAllRequirements(
+  a: readonly number[],
+  b: readonly number[],
   requirements: readonly SkillRequirement[],
-): number {
-  let deficit = 0
-  for (const req of requirements) {
-    deficit += Math.max(0, req.minPoints - (totals.get(req.skillId) ?? 0))
+): boolean {
+  for (let k = 0; k < requirements.length; k++) {
+    if (a[k] + b[k] < requirements[k].minPoints) return false
   }
-  return deficit
-}
-
-function completedSurplus(
-  totals: ReadonlyMap<SkillId, number>,
-  requirements: readonly SkillRequirement[],
-): number {
-  let surplus = 0
-  for (const req of requirements) {
-    surplus += (totals.get(req.skillId) ?? 0) - req.minPoints
-  }
-  return surplus
-}
-
-function expandSlot(
-  slot: SlotQuery,
-  decorations: readonly Decoration[],
-): { slotId: string; options: ExpandedOption[] } {
-  const options: ExpandedOption[] = []
-  for (const candidate of slot.candidates) {
-    const fillings = fillSlots(candidate.openSlots ?? [], decorations)
-    for (const filling of fillings) {
-      options.push({
-        candidate,
-        skills: mergeSkills(candidate.skills, filling.skills),
-        decorationsUsed: filling.placements.map((p) => p.decoration),
-      })
-    }
-  }
-  return { slotId: slot.slotId, options }
-}
-
-function mergeSkills(
-  a: readonly SkillContribution[],
-  b: readonly SkillContribution[],
-): SkillContribution[] {
-  const totals = new Map<SkillId, number>()
-  for (const { skillId, points } of [...a, ...b]) {
-    totals.set(skillId, (totals.get(skillId) ?? 0) + points)
-  }
-  return [...totals.entries()].map(([skillId, points]) => ({ skillId, points }))
-}
-
-function applyContribution(
-  totals: Map<SkillId, number>,
-  skills: readonly SkillContribution[],
-  sign: 1 | -1,
-): void {
-  for (const contribution of skills) {
-    const next = (totals.get(contribution.skillId) ?? 0) + sign * contribution.points
-    if (next === 0) {
-      totals.delete(contribution.skillId)
-    } else {
-      totals.set(contribution.skillId, next)
-    }
-  }
+  return true
 }
 
 function buildResult(
-  picks: ReadonlyMap<string, ExpandedOption>,
-  totals: ReadonlyMap<SkillId, number>,
+  a: FrontierEntry,
+  b: FrontierEntry,
   requirements: readonly SkillRequirement[],
 ): BuildResult {
-  const resultPicks = new Map<string, Candidate>()
+  const picks = new Map([...a.picks, ...b.picks])
+  const totals = mergeTotals(a.totals, b.totals)
+
   const resultDecorations = new Map<string, readonly Decoration[]>()
   for (const [slotId, option] of picks) {
-    resultPicks.set(slotId, option.candidate)
     if (option.decorationsUsed.length > 0) {
       resultDecorations.set(slotId, option.decorationsUsed)
     }
   }
 
+  let surplus = 0
+  for (const req of requirements) {
+    surplus += (totals.get(req.skillId) ?? 0) - req.minPoints
+  }
+
   return {
-    picks: resultPicks,
+    picks: new Map([...picks].map(([slotId, option]) => [slotId, option.candidate])),
     decorations: resultDecorations,
-    skillTotals: new Map(totals),
-    surplus: completedSurplus(totals, requirements),
+    skillTotals: totals,
+    surplus,
   }
 }
 
-/**
- * `remainingPotential[i]` is the maximum total deficit reduction -- or,
- * equivalently, the maximum additional surplus -- achievable from slots
- * `i..end`, assuming (conservatively) every requested skill's
- * best-available option at each remaining slot could be picked
- * simultaneously. This over-estimates what's actually achievable (since a
- * single option can't necessarily max out every skill at once), which is
- * exactly what a sound upper bound needs to be: safe to prune on, safe to
- * use as a best-first priority, never too tight (never claims less is
- * reachable than truly is).
- */
-function computeRemainingPotential(
-  slots: readonly { slotId: string; options: readonly ExpandedOption[] }[],
-  requirements: readonly SkillRequirement[],
-): number[] {
-  const perSlotBest = slots.map((slot) => {
-    let best = 0
-    for (const requirement of requirements) {
-      const bestForSkill = Math.max(
-        0,
-        ...slot.options.map(
-          (o) => o.skills.find((s) => s.skillId === requirement.skillId)?.points ?? 0,
-        ),
-      )
-      best += bestForSkill
-    }
-    return best
-  })
-
-  const suffixSums = new Array<number>(slots.length + 1).fill(0)
-  for (let i = slots.length - 1; i >= 0; i--) {
-    suffixSums[i] = suffixSums[i + 1] + perSlotBest[i]
+function mergeTotals(
+  a: ReadonlyMap<SkillId, number>,
+  b: ReadonlyMap<SkillId, number>,
+): Map<SkillId, number> {
+  const totals = new Map(a)
+  for (const [skillId, points] of b) {
+    totals.set(skillId, (totals.get(skillId) ?? 0) + points)
   }
-  return suffixSums
+  return totals
 }

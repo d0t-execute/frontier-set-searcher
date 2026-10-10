@@ -1,27 +1,27 @@
 /**
- * Proves the actual point of the best-first streaming rewrite (see
- * `engine.ts`'s module docstring and docs/PLAN.md §6 step 5): pulling just
- * the top few results must stay fast even when the full valid-combination
- * space is enormous, because the search never materializes it. The earlier
- * eager (sort-everything-then-return) implementation found 407,811 valid
- * combinations in 58 seconds on a dataset barely bigger than this one.
+ * Proves the actual point of the streaming engine (see `engine.ts`'s module
+ * docstring and docs/PLAN.md §6 step 5): pulling just the top few results
+ * must stay fast even when the full valid-combination space is enormous,
+ * because the search never materializes it. An earlier eager (sort-
+ * everything-then-return) implementation found 407,811 valid combinations
+ * in 58 seconds on a dataset barely bigger than this one; a later
+ * single-pass best-first rewrite (correct, but using a loose per-skill
+ * independent bound) explored 200,000 search-tree nodes with *zero*
+ * complete results on a 3-simultaneous-skill query at this exact scale,
+ * eventually running out of memory.
  *
- * This only exercises a single, loosely-constrained requirement. That's a
- * deliberate scope limit, not an oversight: with one skill, the
- * independent-per-skill upper bound used for pruning/priority (see
- * `computeRemainingPotential`) is exact, so best-first branch-and-bound
- * converges immediately. Multiple *simultaneous* high-threshold
- * requirements are a known, confirmed-open scaling problem -- the same
- * bound becomes very loose once several skills must be satisfied together
- * (it assumes a single best-per-skill candidate could exist at every slot
- * at once), and plain branch-and-bound alone doesn't converge in reasonable
- * time/memory at realistic scale no matter how the heap is managed.
- * Confirmed via instrumentation on this exact dataset at this exact scale
- * with 3 simultaneous requirements: 200,000 pops explored with zero leaves
- * reached, while heap size grew linearly with pops (not exponentially) --
- * which rules out an implementation bug and confirms the bound itself needs
- * tightening (meet-in-the-middle, per docs/PLAN.md §6 step 4) before a
- * multi-skill performance test can be added here.
+ * This test only exercises a single, loosely-constrained requirement.
+ * That's a deliberate scope limit, not an oversight: with one skill, the
+ * search converges in milliseconds regardless of approach. Multiple
+ * *simultaneous* high-threshold requirements -- now handled correctly by
+ * meet-in-the-middle (`pareto.ts` + `engine.ts`), confirmed via the
+ * property-based brute-force cross-check in `engine.property.test.ts` --
+ * are measurably slower: ~24s for the first 20 results at this same scale
+ * (see `bench/engine.bench.ts`), short of the plan's sub-5-second target.
+ * That's a known follow-up tuning target (the frontier computation itself
+ * is the suspected bottleneck, not the streaming merge), not a correctness
+ * gap, so it's tracked via the manual benchmark rather than a slow
+ * always-run test here.
  */
 
 import { describe, expect, it } from 'vitest'

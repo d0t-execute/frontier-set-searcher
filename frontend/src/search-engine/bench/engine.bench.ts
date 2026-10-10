@@ -2,7 +2,24 @@
  * Phase 3 performance benchmark (see docs/PLAN.md §6 performance target:
  * "sub-5-second first-results for a typical query against the full
  * dataset... on a single consumer machine"). Run with `npm run bench` in
- * /frontend. Not part of the regular test suite's pass/fail gate.
+ * /frontend. Not part of the regular test suite's pass/fail gate --
+ * meet-in-the-middle's Pareto-frontier computation is eager (it must fully
+ * resolve both halves before the streaming merge can start), so "first
+ * results" latency is dominated by frontier computation time, not by how
+ * many results are requested.
+ *
+ * Measured results at this scale (7 slots x 100 candidates, 6 skills, 15
+ * decorations, seed 42):
+ * - 1 loosely-constrained requirement: ~10ms for the first 20 results.
+ * - 3 simultaneous requirements at higher thresholds: ~24s for the first 20
+ *   results. This is the scenario that previously never terminated at all
+ *   (branch-and-bound alone: 200,000 search-tree nodes explored, zero
+ *   results, eventual out-of-memory) -- meet-in-the-middle fixed
+ *   termination and correctness, but 24s is still well short of the
+ *   sub-5-second target. Likely next step: `pareto.ts`'s frontier-insertion
+ *   is an O(frontier size) linear scan per candidate inserted, which is the
+ *   suspected dominant cost at this scale -- worth profiling before
+ *   assuming it's the bottleneck.
  */
 
 import { search } from '../engine'
@@ -33,26 +50,14 @@ function run(label: string, requirements: SkillRequirement[], take: number): voi
   console.log(`${label}: first ${results.length} results in ${elapsedMs.toFixed(0)}ms`)
 }
 
-// Easy case: one loosely-constrained skill -- the independent-per-skill
-// bound is exact when there's only one skill, so this should converge fast.
 run('1 requirement, low threshold', [{ skillId: 1, minPoints: 8 }], 20)
 
-// Harder case: 3 simultaneous skills at thresholds that require combining
-// several slots' worth of points for each -- this is the open problem (see
-// docs/weapon... no, docs/PLAN.md §6 step 4, meet-in-the-middle): the
-// per-skill-independent bound used for pruning/priority is sound but very
-// loose when multiple skills must be satisfied *together*, since it
-// assumes a single best-per-skill candidate could exist at every slot
-// simultaneously. Confirmed via instrumentation: 200,000 pops explored with
-// zero leaves reached, while heap size grew linearly with pops (not
-// exponentially) -- ruling out an implementation bug and confirming the
-// bound itself needs to be tightened, not the heap-growth strategy.
 run(
-  '3 requirements, higher thresholds (known slow without meet-in-the-middle)',
+  '3 requirements, higher thresholds',
   [
     { skillId: 1, minPoints: 15 },
     { skillId: 2, minPoints: 15 },
     { skillId: 3, minPoints: 10 },
   ],
-  5,
+  20,
 )

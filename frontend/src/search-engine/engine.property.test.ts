@@ -55,6 +55,29 @@ function bruteForceSearch(
   return results
 }
 
+/** search() only ever surfaces non-dominated builds (confirmed project
+ * direction, see engine.ts's module docstring) -- the brute-force oracle
+ * must be pruned the same way before comparing, independent of which exact
+ * picks produced each vector (ties on the same vector are preserved). */
+function pruneDominated(
+  results: readonly BuildResult[],
+  requirements: readonly SkillRequirement[],
+): BuildResult[] {
+  const vectors = results.map((r) => requirements.map((req) => r.skillTotals.get(req.skillId) ?? 0))
+  return results.filter(
+    (_, i) => !vectors.some((v, j) => j !== i && dominatesVector(v, vectors[i])),
+  )
+}
+
+function dominatesVector(a: readonly number[], b: readonly number[]): boolean {
+  let identical = true
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] < b[i]) return false
+    if (a[i] !== b[i]) identical = false
+  }
+  return !identical
+}
+
 function pickSignature(result: BuildResult, slots: readonly SlotQuery[]): string {
   return slots
     .map((s) => {
@@ -93,7 +116,7 @@ describe('search (property-based)', () => {
     fc.assert(
       fc.property(slotsArb, requirementsArb, (slots, requirements) => {
         const actual = [...search(slots, requirements)]
-        const expected = bruteForceSearch(slots, requirements)
+        const expected = pruneDominated(bruteForceSearch(slots, requirements), requirements)
 
         const actualSignatures = new Set(actual.map((r) => pickSignature(r, slots)))
         const expectedSignatures = new Set(expected.map((r) => pickSignature(r, slots)))
@@ -242,7 +265,10 @@ describe('search with decorations (property-based)', () => {
         decorationsArb,
         (slots, requirements, decorations) => {
           const actual = [...search(slots, requirements, decorations)]
-          const expected = bruteForceSearchWithDecorations(slots, requirements, decorations)
+          const expected = pruneDominated(
+            bruteForceSearchWithDecorations(slots, requirements, decorations),
+            requirements,
+          )
 
           const actualSignatures = new Set(actual.map((r) => pickSignature(r, slots)))
           const expectedSignatures = new Set(expected.map((r) => pickSignature(r, slots)))
