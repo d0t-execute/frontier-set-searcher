@@ -1,2 +1,5 @@
 # Generated data bundle (produced by /etl, not hand-edited -- see docs/PLAN.md §9)
 public/data/
+
+# Vendored third-party assets, not our source
+src/vendor/

@@ -6,7 +6,7 @@
  * responses, with no live network access (per docs/PLAN.md §3).
  */
 
-import type { Candidate, Decoration, SlotQuery } from './types'
+import type { Candidate, Decoration } from './types'
 
 /** The slice of the global `fetch` this module relies on. */
 export type FetchLike = (
@@ -26,9 +26,25 @@ interface SkillRecord {
   readonly category: string | null
 }
 
+/** A Candidate as exported (see etl/src/etl/export.py) also carries a
+ * display name -- the search engine itself never needs it (Candidate
+ * doesn't declare it), but the UI does. */
+export interface NamedCandidate extends Candidate {
+  readonly name: string
+}
+
+export interface NamedDecoration extends Decoration {
+  readonly name: string
+}
+
+export interface NamedSlotQuery {
+  readonly slotId: string
+  readonly candidates: readonly NamedCandidate[]
+}
+
 export interface DataBundle {
-  readonly slots: readonly SlotQuery[]
-  readonly decorations: readonly Decoration[]
+  readonly slots: readonly NamedSlotQuery[]
+  readonly decorations: readonly NamedDecoration[]
   readonly skillNames: ReadonlyMap<number, string>
 }
 
@@ -43,16 +59,16 @@ export async function loadBundle(baseUrl: string, fetchImpl: FetchLike): Promise
 
   const [skills, decorations, equipmentBySlotType] = await Promise.all([
     fetchJson<SkillRecord[]>(fetchImpl, `${baseUrl}/skills.json`),
-    fetchJson<Decoration[]>(fetchImpl, `${baseUrl}/decorations.json`),
+    fetchJson<NamedDecoration[]>(fetchImpl, `${baseUrl}/decorations.json`),
     Promise.all(
       manifest.slotTypes.map((slotType) =>
-        fetchJson<Candidate[]>(fetchImpl, `${baseUrl}/equipment/${slotType}.json`),
+        fetchJson<NamedCandidate[]>(fetchImpl, `${baseUrl}/equipment/${slotType}.json`),
       ),
     ),
   ])
 
   return {
-    slots: manifest.slotTypes.map((slotType, i): SlotQuery => ({
+    slots: manifest.slotTypes.map((slotType, i): NamedSlotQuery => ({
       slotId: slotType,
       candidates: equipmentBySlotType[i],
     })),
