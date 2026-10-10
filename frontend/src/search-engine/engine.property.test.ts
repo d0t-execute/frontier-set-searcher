@@ -92,7 +92,7 @@ describe('search (property-based)', () => {
   it('returns exactly the same set of valid combinations as an unpruned brute-force search', () => {
     fc.assert(
       fc.property(slotsArb, requirementsArb, (slots, requirements) => {
-        const actual = search(slots, requirements)
+        const actual = [...search(slots, requirements)]
         const expected = bruteForceSearch(slots, requirements)
 
         const actualSignatures = new Set(actual.map((r) => pickSignature(r, slots)))
@@ -107,7 +107,7 @@ describe('search (property-based)', () => {
   it('never returns a combination that fails a requirement', () => {
     fc.assert(
       fc.property(slotsArb, requirementsArb, (slots, requirements) => {
-        const results = search(slots, requirements)
+        const results = [...search(slots, requirements)]
 
         for (const result of results) {
           for (const req of requirements) {
@@ -121,7 +121,7 @@ describe('search (property-based)', () => {
   it('always returns results sorted by descending surplus', () => {
     fc.assert(
       fc.property(slotsArb, requirementsArb, (slots, requirements) => {
-        const results = search(slots, requirements)
+        const results = [...search(slots, requirements)]
 
         for (let i = 1; i < results.length; i++) {
           expect(results[i - 1].surplus).toBeGreaterThanOrEqual(results[i].surplus)
@@ -134,9 +134,18 @@ describe('search (property-based)', () => {
 function bruteForceSearchWithDecorations(
   slots: readonly SlotQuery[],
   requirements: readonly SkillRequirement[],
-  decorations: readonly Decoration[],
+  allDecorations: readonly Decoration[],
 ): BuildResult[] {
   const results: BuildResult[] = []
+
+  // Mirrors search()'s own relevance filtering (see its module docstring):
+  // a decoration touching none of the requested skills can't change which
+  // requirements are met or how results rank, so search() never expands it
+  // into a separate result variant, and this reference must agree.
+  const requestedSkillIds = new Set(requirements.map((r) => r.skillId))
+  const decorations = allDecorations.filter((d) =>
+    d.skills.some((s) => requestedSkillIds.has(s.skillId)),
+  )
 
   // Trusts fillSlots (already unit- and property-adjacent tested in
   // decorations.test.ts) to enumerate decoration choices; this reference
@@ -232,7 +241,7 @@ describe('search with decorations (property-based)', () => {
         requirementsArb,
         decorationsArb,
         (slots, requirements, decorations) => {
-          const actual = search(slots, requirements, decorations)
+          const actual = [...search(slots, requirements, decorations)]
           const expected = bruteForceSearchWithDecorations(slots, requirements, decorations)
 
           const actualSignatures = new Set(actual.map((r) => pickSignature(r, slots)))
@@ -252,7 +261,7 @@ describe('search with decorations (property-based)', () => {
         requirementsArb,
         decorationsArb,
         (slots, requirements, decorations) => {
-          const results = search(slots, requirements, decorations)
+          const results = [...search(slots, requirements, decorations)]
 
           for (const result of results) {
             for (const req of requirements) {
