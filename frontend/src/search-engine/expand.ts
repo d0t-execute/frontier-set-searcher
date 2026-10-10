@@ -6,6 +6,7 @@
  */
 
 import { fillSlots } from './decorations'
+import { dominates } from './dominance'
 import type {
   Candidate,
   Decoration,
@@ -46,11 +47,49 @@ export function filterRelevantDecorations(
   return decorations.filter((d) => d.skills.some((s) => requestedSkillIds.has(s.skillId)))
 }
 
-export function expandSlot(slot: SlotQuery, decorations: readonly Decoration[]): ExpandedSlot {
+interface DecorationFillingOption {
+  readonly skills: readonly SkillContribution[]
+  readonly decorationsUsed: readonly Decoration[]
+}
+
+/**
+ * Caches each capacity's decoration-filling frontier across every slot in a
+ * single search -- `fillSlots(capacity, decorations)` depends only on a
+ * candidate's openSlotCount and the shared decoration catalog, never on
+ * which slot or candidate it is. A handful of relevant decorations can still
+ * enumerate into hundreds of thousands of raw multisets per distinct
+ * capacity; computing that fresh for *every slot* (five real equipment
+ * types sharing the same few capacity values) rather than once for the
+ * whole search was itself costing several seconds per slot at real-dataset
+ * scale with multiple simultaneous skill requirements. One cache, created
+ * once per search and threaded through every `expandSlot` call, fixes that.
+ */
+export class DecorationFillingCache {
+  private readonly byCapacity = new Map<number, readonly DecorationFillingOption[]>()
+
+  get(
+    capacity: number,
+    decorations: readonly Decoration[],
+    requirements: readonly SkillRequirement[],
+  ): readonly DecorationFillingOption[] {
+    let frontier = this.byCapacity.get(capacity)
+    if (frontier === undefined) {
+      frontier = computeDecorationFillingFrontier(capacity, decorations, requirements)
+      this.byCapacity.set(capacity, frontier)
+    }
+    return frontier
+  }
+}
+
+export function expandSlot(
+  slot: SlotQuery,
+  decorations: readonly Decoration[],
+  requirements: readonly SkillRequirement[],
+  cache: DecorationFillingCache = new DecorationFillingCache(),
+): ExpandedSlot {
   const options: ExpandedOption[] = []
   for (const candidate of slot.candidates) {
-    const fillings = fillSlots(candidate.openSlotCount ?? 0, decorations)
-    for (const filling of fillings) {
+    for (const filling of cache.get(candidate.openSlotCount ?? 0, decorations, requirements)) {
       options.push({
         candidate,
         skills: mergeSkills(candidate.skills, filling.skills),
@@ -59,6 +98,35 @@ export function expandSlot(slot: SlotQuery, decorations: readonly Decoration[]):
     }
   }
   return { slotId: slot.slotId, options }
+}
+
+/** A single capacity's decoration fillings, Pareto-pruned over the requested
+ * skills in isolation (no candidate involved yet) -- same "reduce before
+ * combining" technique `pareto.ts` uses per slot, applied one level earlier. */
+function computeDecorationFillingFrontier(
+  capacity: number,
+  decorations: readonly Decoration[],
+  requirements: readonly SkillRequirement[],
+): DecorationFillingOption[] {
+  const frontier: { vector: readonly number[]; option: DecorationFillingOption }[] = []
+
+  for (const filling of fillSlots(capacity, decorations)) {
+    const totals = new Map<SkillId, number>()
+    applyContribution(totals, filling.skills, 1)
+    const vector = requirements.map((r) => totals.get(r.skillId) ?? 0)
+    const candidate = {
+      vector,
+      option: { skills: filling.skills, decorationsUsed: filling.decorationsUsed },
+    }
+
+    if (frontier.some((existing) => dominates(existing.vector, vector))) continue
+    for (let i = frontier.length - 1; i >= 0; i--) {
+      if (dominates(vector, frontier[i].vector)) frontier.splice(i, 1)
+    }
+    frontier.push(candidate)
+  }
+
+  return frontier.map((entry) => entry.option)
 }
 
 export function mergeSkills(

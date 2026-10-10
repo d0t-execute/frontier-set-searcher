@@ -14,11 +14,13 @@ docs/data-format-notes.md's taxonomy notes for what's deferred).
 
 from __future__ import annotations
 
+import argparse
 import json
 import sqlite3
 from pathlib import Path
 from typing import Any
 
+from etl.db.connection import connect
 from etl.db.models import EquipmentType
 from etl.db.repository import (
     get_decoration_skills,
@@ -86,3 +88,25 @@ def _skills_payload(skill_points: list[Any]) -> list[dict[str, int]]:
 
 def _write_json(path: Path, data: object) -> None:
     path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def main() -> None:  # pragma: no cover -- run manually only, see etl.pipeline.main
+    parser = argparse.ArgumentParser(
+        description="Export the ETL staging database to the static data bundle."
+    )
+    parser.add_argument("--db", type=Path, required=True, help="Path to the SQLite database file")
+    parser.add_argument(
+        "--out", type=Path, required=True, help="Directory to write the bundle into"
+    )
+    args = parser.parse_args()
+
+    conn = connect(args.db)
+    try:
+        export_bundle(conn, args.out)
+    finally:
+        conn.close()
+    print(f"Exported data bundle to {args.out}")
+
+
+if __name__ == "__main__":
+    main()

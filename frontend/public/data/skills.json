@@ -1,0 +1,972 @@
+[
+  {
+    "id": 1,
+    "name": "Gather",
+    "category": null
+  },
+  {
+    "id": 2,
+    "name": "Gathering Speed",
+    "category": null
+  },
+  {
+    "id": 3,
+    "name": "Cooking",
+    "category": null
+  },
+  {
+    "id": 4,
+    "name": "Attack",
+    "category": null
+  },
+  {
+    "id": 5,
+    "name": "Psychic",
+    "category": null
+  },
+  {
+    "id": 6,
+    "name": "Sleep",
+    "category": null
+  },
+  {
+    "id": 7,
+    "name": "Sharpening",
+    "category": null
+  },
+  {
+    "id": 8,
+    "name": "Map",
+    "category": null
+  },
+  {
+    "id": 9,
+    "name": "Paralysis",
+    "category": null
+  },
+  {
+    "id": 10,
+    "name": "Combining",
+    "category": null
+  },
+  {
+    "id": 11,
+    "name": "Fish",
+    "category": null
+  },
+  {
+    "id": 12,
+    "name": "Eating",
+    "category": null
+  },
+  {
+    "id": 13,
+    "name": "Anti-Theft",
+    "category": null
+  },
+  {
+    "id": 14,
+    "name": "Recovery",
+    "category": null
+  },
+  {
+    "id": 15,
+    "name": "Gluttony",
+    "category": null
+  },
+  {
+    "id": 16,
+    "name": "Stun",
+    "category": null
+  },
+  {
+    "id": 17,
+    "name": "Stamina",
+    "category": null
+  },
+  {
+    "id": 18,
+    "name": "Poison",
+    "category": null
+  },
+  {
+    "id": 19,
+    "name": "Wind Pressure",
+    "category": null
+  },
+  {
+    "id": 20,
+    "name": "Normal Shot Add",
+    "category": null
+  },
+  {
+    "id": 21,
+    "name": "Reload",
+    "category": null
+  },
+  {
+    "id": 22,
+    "name": "Hearing Protection",
+    "category": null
+  },
+  {
+    "id": 23,
+    "name": "Evasion",
+    "category": null
+  },
+  {
+    "id": 24,
+    "name": "Guard",
+    "category": null
+  },
+  {
+    "id": 25,
+    "name": "Defense",
+    "category": null
+  },
+  {
+    "id": 26,
+    "name": "Crag Shot Add",
+    "category": null
+  },
+  {
+    "id": 27,
+    "name": "Health",
+    "category": null
+  },
+  {
+    "id": 28,
+    "name": "Deoderant",
+    "category": null
+  },
+  {
+    "id": 29,
+    "name": "Heat Res",
+    "category": null
+  },
+  {
+    "id": 30,
+    "name": "Backpacking",
+    "category": null
+  },
+  {
+    "id": 31,
+    "name": "Cold Res",
+    "category": null
+  },
+  {
+    "id": 32,
+    "name": "Terrain",
+    "category": null
+  },
+  {
+    "id": 33,
+    "name": "Recovery Speed",
+    "category": null
+  },
+  {
+    "id": 34,
+    "name": "Stealth",
+    "category": null
+  },
+  {
+    "id": 35,
+    "name": "Ice Res",
+    "category": null
+  },
+  {
+    "id": 36,
+    "name": "Pierce Shot Add",
+    "category": null
+  },
+  {
+    "id": 37,
+    "name": "Alchemy",
+    "category": null
+  },
+  {
+    "id": 38,
+    "name": "Dragon Res",
+    "category": null
+  },
+  {
+    "id": 39,
+    "name": "Loading",
+    "category": null
+  },
+  {
+    "id": 40,
+    "name": "Wide-Area",
+    "category": null
+  },
+  {
+    "id": 41,
+    "name": "Expert",
+    "category": null
+  },
+  {
+    "id": 42,
+    "name": "Vocal Chords",
+    "category": null
+  },
+  {
+    "id": 43,
+    "name": "All Res Up",
+    "category": null
+  },
+  {
+    "id": 44,
+    "name": "Fire Res",
+    "category": null
+  },
+  {
+    "id": 45,
+    "name": "Fate",
+    "category": null
+  },
+  {
+    "id": 46,
+    "name": "Adrenaline",
+    "category": null
+  },
+  {
+    "id": 47,
+    "name": "Pierce Shot Up",
+    "category": null
+  },
+  {
+    "id": 48,
+    "name": "Everlasting",
+    "category": null
+  },
+  {
+    "id": 49,
+    "name": "Cluster Shot Add",
+    "category": null
+  },
+  {
+    "id": 50,
+    "name": "Carving",
+    "category": null
+  },
+  {
+    "id": 51,
+    "name": "Protection",
+    "category": null
+  },
+  {
+    "id": 52,
+    "name": "Bomb Boost",
+    "category": null
+  },
+  {
+    "id": 53,
+    "name": "Status Attack",
+    "category": null
+  },
+  {
+    "id": 54,
+    "name": "Monster",
+    "category": null
+  },
+  {
+    "id": 55,
+    "name": "Gunnery",
+    "category": null
+  },
+  {
+    "id": 56,
+    "name": "Water Res",
+    "category": null
+  },
+  {
+    "id": 57,
+    "name": "Thunder Res",
+    "category": null
+  },
+  {
+    "id": 58,
+    "name": "Precision",
+    "category": null
+  },
+  {
+    "id": 59,
+    "name": "Artisan",
+    "category": null
+  },
+  {
+    "id": 60,
+    "name": "Auto-Reload",
+    "category": null
+  },
+  {
+    "id": 61,
+    "name": "Hunger",
+    "category": null
+  },
+  {
+    "id": 62,
+    "name": "Sharpness",
+    "category": null
+  },
+  {
+    "id": 63,
+    "name": "Throwing",
+    "category": null
+  },
+  {
+    "id": 64,
+    "name": "Pellet Shot Up",
+    "category": null
+  },
+  {
+    "id": 65,
+    "name": "Snowball Res",
+    "category": null
+  },
+  {
+    "id": 66,
+    "name": "Pellet Shot Add",
+    "category": null
+  },
+  {
+    "id": 67,
+    "name": "Recoil",
+    "category": null
+  },
+  {
+    "id": 68,
+    "name": "Quake Res",
+    "category": null
+  },
+  {
+    "id": 69,
+    "name": "Normal Shot Up",
+    "category": null
+  },
+  {
+    "id": 70,
+    "name": "Ammo Combiner",
+    "category": null
+  },
+  {
+    "id": 71,
+    "name": "Passive",
+    "category": null
+  },
+  {
+    "id": 72,
+    "name": "Bond",
+    "category": null
+  },
+  {
+    "id": 73,
+    "name": "Flute Expert",
+    "category": null
+  },
+  {
+    "id": 74,
+    "name": "Whim",
+    "category": null
+  },
+  {
+    "id": 75,
+    "name": "Auto-Guard",
+    "category": null
+  },
+  {
+    "id": 76,
+    "name": "Pressure",
+    "category": null
+  },
+  {
+    "id": 77,
+    "name": "Capture Proficiency",
+    "category": null
+  },
+  {
+    "id": 78,
+    "name": "Inspiration",
+    "category": null
+  },
+  {
+    "id": 79,
+    "name": "Thunder Attack",
+    "category": null
+  },
+  {
+    "id": 80,
+    "name": "Fasting",
+    "category": null
+  },
+  {
+    "id": 81,
+    "name": "Poison Coating Add",
+    "category": null
+  },
+  {
+    "id": 82,
+    "name": "Water Attack",
+    "category": null
+  },
+  {
+    "id": 83,
+    "name": "Ice Attack",
+    "category": null
+  },
+  {
+    "id": 84,
+    "name": "Breakout",
+    "category": null
+  },
+  {
+    "id": 85,
+    "name": "Taijutsu",
+    "category": null
+  },
+  {
+    "id": 86,
+    "name": "Strong Arm",
+    "category": null
+  },
+  {
+    "id": 87,
+    "name": "Fire Attack",
+    "category": null
+  },
+  {
+    "id": 88,
+    "name": "Sleep Coating Add",
+    "category": null
+  },
+  {
+    "id": 89,
+    "name": "Fire Sword",
+    "category": null
+  },
+  {
+    "id": 90,
+    "name": "Poison Sword",
+    "category": null
+  },
+  {
+    "id": 91,
+    "name": "Ice Sword",
+    "category": null
+  },
+  {
+    "id": 92,
+    "name": "Water Sword",
+    "category": null
+  },
+  {
+    "id": 93,
+    "name": "Sleep Sword",
+    "category": null
+  },
+  {
+    "id": 94,
+    "name": "Bomb Sword",
+    "category": null
+  },
+  {
+    "id": 95,
+    "name": "Para Sword",
+    "category": null
+  },
+  {
+    "id": 96,
+    "name": "Para Coating Add",
+    "category": null
+  },
+  {
+    "id": 97,
+    "name": "Dragon Sword",
+    "category": null
+  },
+  {
+    "id": 98,
+    "name": "Dragon Attack",
+    "category": null
+  },
+  {
+    "id": 99,
+    "name": "Focus",
+    "category": null
+  },
+  {
+    "id": 100,
+    "name": "SnS Tech",
+    "category": null
+  },
+  {
+    "id": 101,
+    "name": "DS Tech",
+    "category": null
+  },
+  {
+    "id": 102,
+    "name": "GS Tech",
+    "category": null
+  },
+  {
+    "id": 103,
+    "name": "LS Tech",
+    "category": null
+  },
+  {
+    "id": 104,
+    "name": "Lance Tech",
+    "category": null
+  },
+  {
+    "id": 105,
+    "name": "GL Tech",
+    "category": null
+  },
+  {
+    "id": 106,
+    "name": "Hammer Tech",
+    "category": null
+  },
+  {
+    "id": 107,
+    "name": "HH Tech",
+    "category": null
+  },
+  {
+    "id": 108,
+    "name": "LBG Tech",
+    "category": null
+  },
+  {
+    "id": 109,
+    "name": "Bow Tech",
+    "category": null
+  },
+  {
+    "id": 110,
+    "name": "HBG Tech",
+    "category": null
+  },
+  {
+    "id": 111,
+    "name": "Issen",
+    "category": null
+  },
+  {
+    "id": 112,
+    "name": "Speed Setup",
+    "category": null
+  },
+  {
+    "id": 113,
+    "name": "Guts",
+    "category": null
+  },
+  {
+    "id": 114,
+    "name": "Elemental Attack",
+    "category": null
+  },
+  {
+    "id": 115,
+    "name": "Def Lock",
+    "category": null
+  },
+  {
+    "id": 116,
+    "name": "Knife Throwing",
+    "category": null
+  },
+  {
+    "id": 117,
+    "name": "Weapon Handling",
+    "category": null
+  },
+  {
+    "id": 118,
+    "name": "Stamina Recovery",
+    "category": null
+  },
+  {
+    "id": 119,
+    "name": "Caring",
+    "category": null
+  },
+  {
+    "id": 120,
+    "name": "Fencing",
+    "category": null
+  },
+  {
+    "id": 121,
+    "name": "Status Res",
+    "category": null
+  },
+  {
+    "id": 122,
+    "name": "Hunter",
+    "category": null
+  },
+  {
+    "id": 123,
+    "name": "Breeder",
+    "category": null
+  },
+  {
+    "id": 124,
+    "name": "Encourage",
+    "category": null
+  },
+  {
+    "id": 125,
+    "name": "Strong Attack",
+    "category": null
+  },
+  {
+    "id": 126,
+    "name": "Light Tread",
+    "category": null
+  },
+  {
+    "id": 127,
+    "name": "Vitality",
+    "category": null
+  },
+  {
+    "id": 128,
+    "name": "Exploit Weakness",
+    "category": null
+  },
+  {
+    "id": 129,
+    "name": "Combo Expert",
+    "category": null
+  },
+  {
+    "id": 130,
+    "name": "Reflect",
+    "category": null
+  },
+  {
+    "id": 131,
+    "name": "Rapid Fire",
+    "category": null
+  },
+  {
+    "id": 132,
+    "name": "Relief",
+    "category": null
+  },
+  {
+    "id": 133,
+    "name": "Survivor",
+    "category": null
+  },
+  {
+    "id": 134,
+    "name": "Lone Wolf",
+    "category": null
+  },
+  {
+    "id": 135,
+    "name": "Rage",
+    "category": null
+  },
+  {
+    "id": 136,
+    "name": "Iron Arm",
+    "category": null
+  },
+  {
+    "id": 137,
+    "name": "Sobriety",
+    "category": null
+  },
+  {
+    "id": 138,
+    "name": "Mounting",
+    "category": null
+  },
+  {
+    "id": 139,
+    "name": "Movement Speed",
+    "category": null
+  },
+  {
+    "id": 140,
+    "name": "Magnetic Res",
+    "category": null
+  },
+  {
+    "id": 141,
+    "name": "Three Worlds",
+    "category": null
+  },
+  {
+    "id": 142,
+    "name": "Charge Attack Up",
+    "category": null
+  },
+  {
+    "id": 143,
+    "name": "Bullet Saver",
+    "category": null
+  },
+  {
+    "id": 144,
+    "name": "Shiriagari",
+    "category": null
+  },
+  {
+    "id": 145,
+    "name": "Evade Distance",
+    "category": null
+  },
+  {
+    "id": 146,
+    "name": "Reinforcement",
+    "category": null
+  },
+  {
+    "id": 147,
+    "name": "Grace",
+    "category": null
+  },
+  {
+    "id": 148,
+    "name": "Steady Hand",
+    "category": null
+  },
+  {
+    "id": 149,
+    "name": "Crystal Res",
+    "category": null
+  },
+  {
+    "id": 150,
+    "name": "Edgemaster",
+    "category": null
+  },
+  {
+    "id": 151,
+    "name": "Critical Shot",
+    "category": null
+  },
+  {
+    "id": 152,
+    "name": "Compensation",
+    "category": null
+  },
+  {
+    "id": 153,
+    "name": "Herbal Science",
+    "category": null
+  },
+  {
+    "id": 154,
+    "name": "Vampirism",
+    "category": null
+  },
+  {
+    "id": 155,
+    "name": "Adaptation",
+    "category": null
+  },
+  {
+    "id": 156,
+    "name": "Dark Pulse",
+    "category": null
+  },
+  {
+    "id": 157,
+    "name": "Incitement",
+    "category": null
+  },
+  {
+    "id": 158,
+    "name": "Absolute Defense",
+    "category": null
+  },
+  {
+    "id": 159,
+    "name": "Drug Knowledge",
+    "category": null
+  },
+  {
+    "id": 160,
+    "name": "Tonfa Tech",
+    "category": null
+  },
+  {
+    "id": 161,
+    "name": "Mindfulness",
+    "category": null
+  },
+  {
+    "id": 162,
+    "name": "Assistance",
+    "category": null
+  },
+  {
+    "id": 163,
+    "name": "Stylish",
+    "category": null
+  },
+  {
+    "id": 164,
+    "name": "Sword God",
+    "category": null
+  },
+  {
+    "id": 165,
+    "name": "Status Assault",
+    "category": null
+  },
+  {
+    "id": 166,
+    "name": "Thunder Clad",
+    "category": null
+  },
+  {
+    "id": 167,
+    "name": "Gentle Shot",
+    "category": null
+  },
+  {
+    "id": 168,
+    "name": "Blazing Grace",
+    "category": null
+  },
+  {
+    "id": 169,
+    "name": "Dissolver",
+    "category": null
+  },
+  {
+    "id": 170,
+    "name": "Combat Supremacy",
+    "category": null
+  },
+  {
+    "id": 171,
+    "name": "Vigorous",
+    "category": null
+  },
+  {
+    "id": 172,
+    "name": "Drawing Arts",
+    "category": null
+  },
+  {
+    "id": 173,
+    "name": "Stylish Assault",
+    "category": null
+  },
+  {
+    "id": 174,
+    "name": "Crit Conversion",
+    "category": null
+  },
+  {
+    "id": 175,
+    "name": "Determination",
+    "category": null
+  },
+  {
+    "id": 176,
+    "name": "Blast Resistance",
+    "category": null
+  },
+  {
+    "id": 177,
+    "name": "Ice Age",
+    "category": null
+  },
+  {
+    "id": 178,
+    "name": "Switch Axe tech",
+    "category": null
+  },
+  {
+    "id": 179,
+    "name": "Lavish Attack",
+    "category": null
+  },
+  {
+    "id": 180,
+    "name": "Fortification",
+    "category": null
+  },
+  {
+    "id": 181,
+    "name": "Freeze Res",
+    "category": null
+  },
+  {
+    "id": 182,
+    "name": "Obscurity",
+    "category": null
+  },
+  {
+    "id": 183,
+    "name": "Sniper",
+    "category": null
+  },
+  {
+    "id": 184,
+    "name": "Evasion Boost",
+    "category": null
+  },
+  {
+    "id": 185,
+    "name": "Rush",
+    "category": null
+  },
+  {
+    "id": 186,
+    "name": "Ceaseless",
+    "category": null
+  },
+  {
+    "id": 187,
+    "name": "Skilled",
+    "category": null
+  },
+  {
+    "id": 188,
+    "name": "Point Breakthrough",
+    "category": null
+  },
+  {
+    "id": 189,
+    "name": "Abnormality",
+    "category": null
+  },
+  {
+    "id": 190,
+    "name": "Spacing",
+    "category": null
+  },
+  {
+    "id": 191,
+    "name": "Furious",
+    "category": null
+  },
+  {
+    "id": 192,
+    "name": "MS Tech",
+    "category": null
+  },
+  {
+    "id": 193,
+    "name": "Trained",
+    "category": null
+  },
+  {
+    "id": 194,
+    "name": "Thunder Sword",
+    "category": null
+  }
+]
