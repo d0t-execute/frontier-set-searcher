@@ -77,3 +77,30 @@ def test_decoration_skills_round_trip(conn: sqlite3.Connection) -> None:
     repo.add_decoration_skill(conn, decoration_id=decoration.id, skill_id=skill.id, points=3)
 
     assert repo.get_decoration_skills(conn, decoration.id) == [SkillPoints(skill=skill, points=3)]
+
+
+def test_insert_and_fetch_cuff_by_external_id(conn: sqlite3.Connection) -> None:
+    created = repo.insert_cuff(conn, external_id="3F20", name="SnS・Basic", slot_size=0)
+
+    fetched = repo.get_cuff_by_external_id(conn, "3F20")
+
+    assert fetched == created
+
+
+def test_get_cuff_by_external_id_returns_none_when_missing(conn: sqlite3.Connection) -> None:
+    assert repo.get_cuff_by_external_id(conn, "does-not-exist") is None
+
+
+def test_cuff_skills_round_trip(conn: sqlite3.Connection) -> None:
+    cuff = repo.insert_cuff(conn, external_id="C001", name="Sharpening PC1", slot_size=1)
+    skill = repo.insert_skill(conn, name="Sharpness")
+
+    repo.add_cuff_skill(conn, cuff_id=cuff.id, skill_id=skill.id, points=2)
+
+    assert repo.get_cuff_skills(conn, cuff.id) == [SkillPoints(skill=skill, points=2)]
+
+
+def test_cuff_with_no_skills_returns_empty_list(conn: sqlite3.Connection) -> None:
+    cuff = repo.insert_cuff(conn, external_id="C001", name="Empty Cuff", slot_size=1)
+
+    assert repo.get_cuff_skills(conn, cuff.id) == []

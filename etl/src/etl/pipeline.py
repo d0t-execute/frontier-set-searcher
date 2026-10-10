@@ -15,8 +15,10 @@ from pathlib import Path
 
 from etl.db.connection import connect
 from etl.db.repository import (
+    add_cuff_skill,
     add_decoration_skill,
     add_equipment_skill,
+    insert_cuff,
     insert_decoration,
     insert_equipment,
     insert_skill,
@@ -33,6 +35,7 @@ SKILLFORM_JS_URL = "https://xl3lackout.github.io/MHFZ-Ferias-English-Project/ski
 class LoadSummary:
     equipment_count: int
     decoration_count: int
+    cuff_count: int
     skill_count: int
 
 
@@ -82,10 +85,22 @@ def load_equipment(
                 conn, decoration_id=decoration.id, skill_id=resolve_skill(skill_id), points=points
             )
 
+    for cuff_row in parsed.cuffs:
+        cuff = insert_cuff(
+            conn,
+            external_id=cuff_row.external_id,
+            name=cuff_row.name,
+            slot_size=cuff_row.slot_size,
+            source_url=source_url,
+        )
+        for skill_id, points in cuff_row.skills:
+            add_cuff_skill(conn, cuff_id=cuff.id, skill_id=resolve_skill(skill_id), points=points)
+
     conn.commit()
     return LoadSummary(
         equipment_count=len(parsed.equipment),
         decoration_count=len(parsed.decorations),
+        cuff_count=len(parsed.cuffs),
         skill_count=len(resolved_skills),
     )
 
@@ -115,6 +130,7 @@ def main() -> None:  # pragma: no cover -- network-touching, run manually only
     print(
         f"Loaded {summary.equipment_count} equipment, "
         f"{summary.decoration_count} decorations, "
+        f"{summary.cuff_count} cuffs, "
         f"{summary.skill_count} distinct skills."
     )
 

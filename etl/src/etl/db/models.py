@@ -51,6 +51,19 @@ class Decoration:
 
 
 @dataclass(frozen=True, slots=True)
+class Cuff:
+    """A separate equipment category from Decoration (see docs/data-format-notes.md):
+    cuffs occupy their own "Poogie slot" pool, not armor decoration sockets.
+    """
+
+    id: int
+    external_id: str
+    name: str
+    slot_size: int
+    source_url: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
 class SkillPoints:
     skill: Skill
     points: int

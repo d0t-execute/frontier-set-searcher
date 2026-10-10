@@ -14,7 +14,15 @@ def _table_names(conn: sqlite3.Connection) -> set[str]:
 
 def test_schema_creates_expected_tables(conn: sqlite3.Connection) -> None:
     tables = _table_names(conn)
-    assert {"equipment", "skill", "equipment_skill", "decoration", "decoration_skill"} <= tables
+    assert {
+        "equipment",
+        "skill",
+        "equipment_skill",
+        "decoration",
+        "decoration_skill",
+        "cuff",
+        "cuff_skill",
+    } <= tables
 
 
 def test_foreign_keys_are_enforced(conn: sqlite3.Connection) -> None:
@@ -77,3 +85,39 @@ def test_equipment_external_id_is_unique(conn: sqlite3.Connection) -> None:
 def test_decoration_rejects_an_invalid_slot_size(conn: sqlite3.Connection) -> None:
     with pytest.raises(sqlite3.IntegrityError):
         repo.insert_decoration(conn, external_id="D001", name="Weird Jewel", slot_size=4)
+
+
+def test_decoration_rejects_slot_size_zero(conn: sqlite3.Connection) -> None:
+    # Unlike Cuff, Decoration has no 0-slot concept -- that's always a
+    # non-item row that should never have reached the repository layer.
+    with pytest.raises(sqlite3.IntegrityError):
+        repo.insert_decoration(conn, external_id="D001", name="Not Real", slot_size=0)
+
+
+def test_cuff_accepts_slot_size_zero(conn: sqlite3.Connection) -> None:
+    # Hiden Cuffs cost no Poogie-slot capacity -- 0 is valid and common.
+    cuff = repo.insert_cuff(conn, external_id="3F20", name="SnS・Basic", slot_size=0)
+    assert cuff.slot_size == 0
+
+
+def test_cuff_rejects_an_invalid_slot_size(conn: sqlite3.Connection) -> None:
+    with pytest.raises(sqlite3.IntegrityError):
+        repo.insert_cuff(conn, external_id="C001", name="Weird Cuff", slot_size=3)
+
+
+def test_cuff_skill_requires_an_existing_cuff(conn: sqlite3.Connection) -> None:
+    skill = repo.insert_skill(conn, name="Attack Up (Small)")
+    with pytest.raises(sqlite3.IntegrityError):
+        conn.execute(
+            "INSERT INTO cuff_skill (cuff_id, skill_id, points) VALUES (?, ?, ?)",
+            (999, skill.id, 3),
+        )
+
+
+def test_cuff_skill_requires_an_existing_skill(conn: sqlite3.Connection) -> None:
+    cuff = repo.insert_cuff(conn, external_id="C001", name="Sharpening PC1", slot_size=1)
+    with pytest.raises(sqlite3.IntegrityError):
+        conn.execute(
+            "INSERT INTO cuff_skill (cuff_id, skill_id, points) VALUES (?, ?, ?)",
+            (cuff.id, 999, 3),
+        )

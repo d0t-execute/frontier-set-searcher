@@ -1,9 +1,11 @@
 from pathlib import Path
 
 from etl.parse.equipment import (
+    ParsedCuffRow,
     ParsedDecorationRow,
     ParsedEquipmentRow,
     compute_defense_progression,
+    parse_cuff_bucket,
     parse_decoration_bucket,
     parse_equip_js,
     parse_equipment_bucket,
@@ -70,25 +72,56 @@ def test_skips_the_0000_placeholder_row_present_in_every_armor_bucket() -> None:
     assert [row.external_id for row in rows] == ["head:0001"]
 
 
-def test_skips_deco_rows_with_slot_size_zero() -> None:
-    # The "deco" bucket also holds weapon customization/technique slots (a
-    # different game mechanic that happens to share this bucket in the source
-    # data -- e.g. "SnS・Basic" grants skill 129, "One-Handed Sword
-    # Techniques") and a couple of blank-key UI placeholders. All of them
-    # have slot_size 0, while all real armor decorations are 1-3 -- confirmed
-    # against the full real dataset (5,897 rows at 1-3, exactly 143 at 0, none
-    # at any other value). slot_size 0 can't be stored anyway (the DB's CHECK
-    # constraint requires 1-3), but the point is these aren't decorations at
-    # all, not just rows with an out-of-range value.
+def test_decoration_bucket_only_keeps_dec_empty_rows() -> None:
+    # The "deco" JS bucket mixes three things under one key namespace: real
+    # armor decorations (DEC=""), Cuffs (DEC="1" -- a separate equipment
+    # category entirely, see parse_cuff_bucket), and a few blank-key UI
+    # placeholders (DEC="", slot_size=0). See docs/data-format-notes.md
+    # "What's actually in the deco bucket" -- confirmed against the full
+    # real dataset's DEC/CLASS/slot_size cross-tabulation, not assumed from
+    # slot_size alone (an earlier version of this parser wrongly used
+    # slot_size==0 as the "not a real item" signal, which happened to catch
+    # the placeholders but also silently discarded every Hiden Cuff).
     bucket_json = (
-        '{"1016":"Attack II PA1,0,0,5,,,,,,,21,5,67,2,,,,,,,,110C1,1,,1,0,,,2,,,,,4k,1,",'
-        '"3F20":"SnS・Basic,0,0,6,,,,,,,129,6,,,,,,,,,,'
-        '3FEB1 3FEC1 3FED1,3001,,1,0,,,0,,,,,1-,1,L"}'
+        '{"031F":"Paralysis 1 Deco,0,0,4,,,,,,,57,2,46,-2,,,,,,,,'
+        '031A1R 015F3,1,,1,400,,,1,,,,,1-,,",'
+        '"1016":"Attack II PA1,0,0,5,,,,,,,21,5,67,2,,,,,,,,110C1,1,,1,0,,,2,,,,,4k,1,",'
+        '"":",0,0,0,,,,,,,,,,,,,,,,,,なし,1,,1,0,,,0,,,,,,,,,,"}'
     )
 
     rows = parse_decoration_bucket(bucket_json)
 
-    assert [row.external_id for row in rows] == ["deco:1016"]
+    assert [row.external_id for row in rows] == ["deco:031F"]
+
+
+def test_cuff_bucket_only_keeps_dec_1_rows() -> None:
+    bucket_json = (
+        '{"031F":"Paralysis 1 Deco,0,0,4,,,,,,,57,2,46,-2,,,,,,,,'
+        '031A1R 015F3,1,,1,400,,,1,,,,,1-,,",'
+        '"1016":"Attack II PA1,0,0,5,,,,,,,21,5,67,2,,,,,,,,110C1,1,,1,0,,,2,,,,,4k,1,",'
+        '"":",0,0,0,,,,,,,,,,,,,,,,,,なし,1,,1,0,,,0,,,,,,,,,,"}'
+    )
+
+    rows = parse_cuff_bucket(bucket_json)
+
+    assert [row.external_id for row in rows] == ["cuff:1016"]
+
+
+def test_cuff_bucket_accepts_slot_size_zero_for_hiden_cuffs() -> None:
+    # Hiden Cuffs (CLASS="L") cost no Poogie-slot capacity -- see
+    # docs/data-format-notes.md "Cuffs". Confirmed real example: every
+    # weapon's "<Weapon>・Basic"/"<Weapon>・G"/named-technique tree is a
+    # family of Hiden Cuffs, all slot_size 0.
+    bucket_json = (
+        '{"3F20":"SnS・Basic,0,0,6,,,,,,,129,6,,,,,,,,,,'
+        '3FEB1 3FEC1 3FED1,3001,,1,0,,,0,,,,,1-,1,L"}'
+    )
+
+    rows = parse_cuff_bucket(bucket_json)
+
+    assert rows == [
+        ParsedCuffRow(external_id="cuff:3F20", name="SnS・Basic", slot_size=0, skills=((129, 6),))
+    ]
 
 
 # -- single-bucket parsing ---------------------------------------------------
@@ -141,13 +174,31 @@ def test_merges_duplicate_skill_ids_within_one_row_by_summing_points() -> None:
 
 
 def test_parses_a_decoration_row() -> None:
-    bucket_json = '{"1016":"Attack II PA1,0,0,5,,,,,,,21,5,67,2,,,,,,,,110C1,1,,1,0,,,2,,,,,4k,1,"}'
+    bucket_json = (
+        '{"031F":"Paralysis 1 Deco,0,0,4,,,,,,,57,2,46,-2,,,,,,,,'
+        '031A1R 015F3,1,,1,400,,,1,,,,,1-,,"}'
+    )
 
     rows = parse_decoration_bucket(bucket_json)
 
     assert rows == [
         ParsedDecorationRow(
-            external_id="deco:1016",
+            external_id="deco:031F",
+            name="Paralysis 1 Deco",
+            slot_size=1,
+            skills=((57, 2), (46, -2)),
+        )
+    ]
+
+
+def test_parses_a_regular_cuff_row() -> None:
+    bucket_json = '{"1016":"Attack II PA1,0,0,5,,,,,,,21,5,67,2,,,,,,,,110C1,1,,1,0,,,2,,,,,4k,1,"}'
+
+    rows = parse_cuff_bucket(bucket_json)
+
+    assert rows == [
+        ParsedCuffRow(
+            external_id="cuff:1016",
             name="Attack II PA1",
             slot_size=2,
             skills=((21, 5), (67, 2)),
@@ -197,11 +248,32 @@ def test_parse_equip_js_covers_decorations() -> None:
     by_id = {row.external_id: row for row in result.decorations}
 
     assert "deco:" not in by_id  # the blank-key UI placeholder
-    assert "deco:3F20" not in by_id  # a weapon-technique slot, not a decoration
-    assert by_id["deco:1016"].skills == ((21, 5), (67, 2))
-    assert by_id["deco:1017"] == ParsedDecorationRow(
-        external_id="deco:1017",
+    assert "deco:1016" not in by_id  # a Cuff, not a decoration
+    assert "deco:3F20" not in by_id  # also a Cuff (Hiden)
+    assert by_id["deco:031F"] == ParsedDecorationRow(
+        external_id="deco:031F",
+        name="Paralysis 1 Deco",
+        slot_size=1,
+        skills=((57, 2), (46, -2)),
+    )
+    assert by_id["deco:0321"].name == "Sleep 2 Deco"
+    assert by_id["deco:0321"].slot_size == 2
+
+
+def test_parse_equip_js_covers_cuffs() -> None:
+    result = parse_equip_js(_combined_source())
+
+    by_id = {row.external_id: row for row in result.cuffs}
+
+    assert "cuff:" not in by_id  # the blank-key UI placeholder
+    assert "cuff:031F" not in by_id  # a Decoration, not a Cuff
+    assert by_id["cuff:1016"].skills == ((21, 5), (67, 2))
+    assert by_id["cuff:1017"] == ParsedCuffRow(
+        external_id="cuff:1017",
         name="Attack II PA2",
         slot_size=2,
         skills=((21, 4), (45, 3)),
+    )
+    assert by_id["cuff:3F20"] == ParsedCuffRow(
+        external_id="cuff:3F20", name="SnS・Basic", slot_size=0, skills=((129, 6),)
     )

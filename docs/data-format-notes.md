@@ -59,7 +59,14 @@ length.
 | 29 | ZENYPTN | Cost-scaling pattern ref (out of scope) |
 | 30 | DEFPTN | Defense-scaling pattern ref — index into the `def` bucket |
 | 31 | SLOTPTN | Slot-scaling pattern ref (out of scope — SLOT1/SLOT7 already give us base/max) |
-| 32–39 | UPGCNT, CRE, DEC, CLASS, TrSLOT, Teni, DOC, IMG | Crafting/flavor/UI metadata (out of scope except DOC = flavor text) |
+| 32 | UPGCNT | Crafting metadata (out of scope) |
+| 33 | CRE | Crafting metadata (out of scope) |
+| 34 | **DEC** | **Deco-bucket item category** — see "What's actually in the `deco` bucket" below. `""` = armor decoration, `"1"` = Cuff, `"2"`/`"3"` = Tenkoku/Tenfuu (deferred, not modeled yet) |
+| 35 | CLASS | Rarity/origin tier marker (e.g. `I`=G-rank, `L`=G-Hiden, `N`=Tenrou/Zenith-tier, `P`=Tan'i-tier) — not modeled as a DB column yet, but is what distinguishes a Hiden Cuff (`CLASS="L"`) from a regular one |
+| 36 | TrSLOT | Out of scope |
+| 37 | **Teni** | A *fourth* item-category field, used only by one `DEC="3"` sub-group (see below) — out of scope along with the rest of that group |
+| 38 | DOC | Flavor text |
+| 39 | IMG | Image reference (out of scope) |
 
 **Important**: skill points (SP1–SP5) are fixed per piece — they do **not**
 scale with forge level. Only defense and slot count change across levels
@@ -118,13 +125,104 @@ it's the correct total and because the `equipment_skill`/`decoration_skill`
 tables' `(equipment_id, skill_id)` primary key can't hold two rows for it
 anyway.
 
-## Decorations
+## What's actually in the `deco` bucket
 
-Same 40-column row shape (the site's own code iterates `head`/`body`/`arm`/
-`wst`/`leg`/`deco` identically). For a decoration row, `LVUPPTN` is empty, and
-`SLOT7` holds the decoration's own **slot size** (1–3) rather than a max-slots
-value. Example: `"Attack II PA1,0,0,5,,,,,,,21,5,67,2,...,,2,,,,,4k,1,"` → a
-2-slot decoration granting skill 21 (+5 points) and skill 67 (+2 points).
+The `deco` bucket shares the same 40-column row shape as the armor buckets
+(`LVUPPTN` is empty for every row in it — none of these have forge levels),
+but it is **not** just "armor decorations". It's several distinct equipment
+categories that happen to share this one JS bucket and the same SN/SP
+skill-point plumbing. The `DEC` field (index 34) is what actually
+distinguishes them — initially I used `slot_size` (`SLOT7`) as a proxy for
+"is this real," which happened to isolate the junk rows but also silently
+discarded an entire real category (Cuffs) along with it. Cross-tabulating
+`DEC` × `CLASS` × `slot_size` against the real dataset gives a clean picture
+(confirmed against the full 6,040-row bucket):
+
+| `DEC` | Category | Count | `slot_size` range |
+|---|---|---|---|
+| `""` | **Armor decoration** | 2,458 | 1–3 |
+| `""`, `slot_size=0` | *(junk — see below, not a category)* | 3 | 0 |
+| `"1"` | **Cuff** | 3,306 | 0, 1, 2 |
+| `"2"` | Tenkoku ("Sigil") — deferred | 10 | 1–3 |
+| `"3"` | Tenfuu ("Sigil") — deferred | 63 | 1 |
+
+### Armor decorations (`DEC=""`)
+
+Socket into armor pieces' open slots, same as always assumed. `SLOT7` holds
+the decoration's own slot size (1–3). Example:
+`"Paralysis 1 Deco,0,0,4,,,,,,,57,2,46,-2,...,1-,,"` → a 1-slot decoration
+granting skill 57 (+2 points) and skill 46 (-2 points).
+
+(`"Attack II PA1"`/`"Attack II PA2"` were our very first example rows, back
+before the `DEC` field's meaning was known — they're actually Cuffs, not
+decorations; see below. Worth remembering that an example pulled before you
+understand a field's semantics can be silently wrong.)
+
+Three rows with `DEC=""` and `slot_size=0` (keys `""`, `"X"`→name `"●"`,
+`"O"`→name `"○"`, all with `RECIPE1="なし"`/none) are UI selector-widget
+placeholders (filled/empty circle icons), not items — the parser skips
+`DEC="" AND slot_size==0`.
+
+### Cuffs (`DEC="1"`)
+
+A **separate equipment category from armor decorations**, confirmed by the
+project owner against actual game knowledge: cuffs occupy a separate
+"Poogie slot" pool, not armor sockets, so they can't be mixed with armor
+decoration slots in the data model. The game allows **at most 2 cuffs
+equipped at once**, and each cuff's own `slot_size` (0, 1, or 2) counts
+against a combined Poogie-slot budget — this is a build-time constraint for
+the search engine (Phase 3+), not something that affects how a `Cuff` row
+itself is stored.
+
+Two sub-kinds, both real and both modeled identically (just `slot_size`
+differs):
+
+- **Hiden Cuffs** (`CLASS="L"`, i.e. "G秘伝"/G-Hiden, `slot_size=0`): 140
+  entries, one weapon-technique tree per weapon type (e.g. `SnS・Basic`,
+  `SnS・G`, then named variants like `SnS・Issen`, `SnS・Rush`, ...). Since
+  they cost 0 Poogie-slot capacity, these are effectively "always available"
+  free bonuses — one of these can be equipped without spending any of the 2
+  cuff budget's slot capacity (though it still counts toward the "max 2
+  cuffs" item-count limit).
+- **Regular Cuffs** (`CLASS=""` or `CLASS="P"`, `slot_size=1` or `2`): e.g.
+  `Sharpening PC1` (1-slot), `Artisan PA1` (2-slot), `Skill Slots Up SZ`
+  (2-slot, `CLASS="P"` = a higher "Tan'i" tier). These do spend Poogie-slot
+  capacity.
+
+### Deferred: Tenkoku/Tenfuu (`DEC="2"`/`"3"`)
+
+Confirmed (by the project owner, cross-referenced against
+[mertna.github.io/MHFZ-Skills](https://mertna.github.io/MHFZ-Skills/)) to be
+real, relevant systems — just not central to the initial armor/cuff set
+searcher, so **not modeled yet**. Noting what they are so a future phase
+doesn't have to re-derive this:
+
+- **Tenkoku** (`DEC="2"`, 10 rows): each is a unique passive effect
+  ("Sigil"), resolved via `SN1` through a *separate* lookup array
+  (`TENKOKUNAME` in `SkillForm.js`, not the normal `MST_Skill` table) —
+  Sharpness Up, Skill Up, Attack Power Up, Element/Status Up, Distance
+  Correction, Power Coating Up, Defense Up, Damage Reduction, Auto Health
+  Regen, G-Rank Armor.
+- **Tenfuu** (`DEC="3"`, 63 rows) is itself three different sub-mechanics,
+  all under the "Sigil" umbrella per the project owner, slotting into a
+  weapon's sigil slots (separate from, or hybrid with, its decoration
+  slots, depending on the weapon):
+  1. **Weapon enchants** (`CLASS="N"`, `SN1`→`TENFUNAME` indices 1–4): add
+     an element/status/crit/ammo-type property to a weapon that doesn't
+     normally have one.
+  2. **Named special techniques per weapon type** (`CLASS="N"`,
+     `SN1`→`TENFUNAME` indices 17–25), e.g. `[SnS] Beam Slash`,
+     `[Hammer] Charge Ⅰ/Ⅱ/Ⅲ`.
+  3. **Tiered "+N" buffs** (`CLASS="P"`, `SN1` empty — resolved instead via
+     a *fourth* field, `Teni` at index 37, through a *third* lookup array,
+     `TENINAME`): `Skill Slots Up+1`...`+7`, `Crit Conversion Up+1/+2`,
+     `Guard Up+1/+2`, etc. Per the project owner these are **"Zenith
+     skills"**, attachable to any of: an armor piece, the weapon, or a
+     Poogie cuff — a cross-cutting system, unlike Tenkoku/Sigils which are
+     weapon-only.
+
+The parser skips `DEC="2"`/`"3"` entirely for now (they land in neither
+Decoration nor Cuff).
 
 ## Skill names (`var MST_Skill = [...]` in `SkillForm.js`)
 
@@ -145,34 +243,23 @@ running match count is the skill ID.
 byte-order-mark character glued onto the string. Strip `﻿` (and
 whitespace) from every parsed name.
 
-## Non-item rows to filter out
+## The `"0000"` placeholder in armor buckets
 
-Found by actually running the pipeline against the live ~11MB dataset, not
-by inspection — both are silent in the sense that neither necessarily throws
-on its own, so they need explicit filtering rather than relying on a parse
-error to catch them:
-
-- **The `"0000"` placeholder** in every armor bucket (`head`/`body`/`arm`/
-  `wst`/`leg`): byte-for-byte identical across all 5 buckets, named 仮装備
-  ("dummy/temporary equipment"). It's the skill simulator's "nothing
-  selected" sentinel, not a real item — and its stats (`SLOT7=3`, `DEF=0`,
-  etc.) are all individually valid-looking, so it doesn't trip any CHECK
-  constraint on its own. The parser skips external ID `"0000"` in every
-  armor bucket.
-- **`deco` bucket entries with `slot_size` (SLOT7) = 0**: this bucket mixes
-  real armor decorations with weapon customization/technique slots — a
-  different game mechanic that happens to share this bucket in the source
-  data (e.g. `"SnS・Basic"` grants skill 129, "One-Handed Sword Techniques";
-  `"DS・G"` is a Dual Swords technique) — plus a couple of blank-key UI
-  placeholders. Confirmed against the full real dataset: of 6,040 `deco`
-  rows, 5,897 have `slot_size` 1–3 (real decorations, matching the DB's
-  CHECK constraint exactly) and exactly 143 have `slot_size` 0 (all of the
-  above junk), with no rows at any other value. The parser skips
-  `slot_size == 0` rows.
+Found by actually running the pipeline against the live ~11MB dataset — it's
+silent in the sense that it doesn't throw on its own, so it needs explicit
+filtering rather than relying on a parse error to catch it. Every armor
+bucket (`head`/`body`/`arm`/`wst`/`leg`) has an identical `"0000"` entry
+named 仮装備 ("dummy/temporary equipment"): the skill simulator's "nothing
+selected" sentinel, not a real item. Its stats (`SLOT7=3`, `DEF=0`, etc.) are
+all individually valid-looking, so it doesn't trip any CHECK constraint on
+its own — the parser skips external ID `"0000"` in every armor bucket.
 
 ## External IDs
 
 The hex keys (e.g. `"0001"`) are only unique **within** a bucket — the same
-key exists in `head`, `body`, etc. as unrelated items. Our `Equipment.external_id`
-(globally unique per Phase 1's schema) is therefore `f"{bucket}:{hex_id}"`,
-e.g. `"head:0001"`.
+key exists in `head`, `body`, etc. as unrelated items, and the `deco` bucket
+mixes Decorations and Cuffs in one key namespace too. External IDs are
+therefore always `f"{bucket}:{hex_id}"` for armor (e.g. `"head:0001"`),
+`f"deco:{hex_id}"` for decorations, and `f"cuff:{hex_id}"` for cuffs (not
+`"deco:{hex_id}"` for cuffs, even though they're read from the same JS
+bucket — the prefix reflects our own category, not the source's).

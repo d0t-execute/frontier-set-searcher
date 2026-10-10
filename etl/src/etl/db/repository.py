@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import sqlite3
 
-from etl.db.models import Decoration, Equipment, EquipmentType, Skill, SkillPoints
+from etl.db.models import Cuff, Decoration, Equipment, EquipmentType, Skill, SkillPoints
 
 
 def insert_skill(conn: sqlite3.Connection, *, name: str, category: str | None = None) -> Skill:
@@ -182,6 +182,64 @@ def get_decoration_skills(conn: sqlite3.Connection, decoration_id: int) -> list[
         (decoration_id,),
     ).fetchall()
     return [_skill_points_from_row(row) for row in rows]
+
+
+def insert_cuff(
+    conn: sqlite3.Connection,
+    *,
+    external_id: str,
+    name: str,
+    slot_size: int,
+    source_url: str | None = None,
+) -> Cuff:
+    cursor = conn.execute(
+        "INSERT INTO cuff (external_id, name, slot_size, source_url) VALUES (?, ?, ?, ?)",
+        (external_id, name, slot_size, source_url),
+    )
+    row_id = cursor.lastrowid
+    assert row_id is not None
+    return Cuff(
+        id=row_id, external_id=external_id, name=name, slot_size=slot_size, source_url=source_url
+    )
+
+
+def get_cuff_by_external_id(conn: sqlite3.Connection, external_id: str) -> Cuff | None:
+    row = conn.execute("SELECT * FROM cuff WHERE external_id = ?", (external_id,)).fetchone()
+    if row is None:
+        return None
+    return _cuff_from_row(row)
+
+
+def add_cuff_skill(conn: sqlite3.Connection, *, cuff_id: int, skill_id: int, points: int) -> None:
+    conn.execute(
+        "INSERT INTO cuff_skill (cuff_id, skill_id, points) VALUES (?, ?, ?)",
+        (cuff_id, skill_id, points),
+    )
+
+
+def get_cuff_skills(conn: sqlite3.Connection, cuff_id: int) -> list[SkillPoints]:
+    rows = conn.execute(
+        """
+        SELECT skill.id AS id, skill.name AS name, skill.category AS category,
+               cuff_skill.points AS points
+        FROM cuff_skill
+        JOIN skill ON skill.id = cuff_skill.skill_id
+        WHERE cuff_skill.cuff_id = ?
+        ORDER BY skill.name
+        """,
+        (cuff_id,),
+    ).fetchall()
+    return [_skill_points_from_row(row) for row in rows]
+
+
+def _cuff_from_row(row: sqlite3.Row) -> Cuff:
+    return Cuff(
+        id=row["id"],
+        external_id=row["external_id"],
+        name=row["name"],
+        slot_size=row["slot_size"],
+        source_url=row["source_url"],
+    )
 
 
 def _skill_from_row(row: sqlite3.Row) -> Skill:

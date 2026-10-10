@@ -32,9 +32,12 @@ def test_load_equipment_reports_accurate_counts(tmp_path: Path) -> None:
         source_url="https://example.test/equip.js",
     )
 
-    # 3 head + 2 each of body/arm/wst/leg from the fixture = 11; 2 decorations.
+    # 3 head + 2 each of body/arm/wst/leg from the fixture = 11; 2 real
+    # decorations (Paralysis 1 Deco, Sleep 2 Deco); 3 cuffs (Attack II PA1/
+    # PA2 are regular cuffs, SnS・Basic is a Hiden cuff).
     assert summary.equipment_count == 11
     assert summary.decoration_count == 2
+    assert summary.cuff_count == 3
 
 
 def test_load_equipment_resolves_real_skill_names_when_known(tmp_path: Path) -> None:
@@ -92,10 +95,22 @@ def test_load_equipment_persists_equipment_and_decoration_fields(tmp_path: Path)
     assert helm.source_url == "https://example.test/equip.js"
 
     decoration_row = conn.execute(
-        "SELECT name, slot_size FROM decoration WHERE external_id = ?", ("deco:1016",)
+        "SELECT name, slot_size FROM decoration WHERE external_id = ?", ("deco:031F",)
     ).fetchone()
-    assert decoration_row["name"] == "Attack II PA1"
-    assert decoration_row["slot_size"] == 2
+    assert decoration_row["name"] == "Paralysis 1 Deco"
+    assert decoration_row["slot_size"] == 1
+
+    cuff_row = conn.execute(
+        "SELECT name, slot_size FROM cuff WHERE external_id = ?", ("cuff:1016",)
+    ).fetchone()
+    assert cuff_row["name"] == "Attack II PA1"
+    assert cuff_row["slot_size"] == 2
+
+    hiden_cuff_row = conn.execute(
+        "SELECT name, slot_size FROM cuff WHERE external_id = ?", ("cuff:3F20",)
+    ).fetchone()
+    assert hiden_cuff_row["name"] == "SnS・Basic"
+    assert hiden_cuff_row["slot_size"] == 0
 
 
 def test_load_equipment_shares_one_skill_row_across_multiple_pieces(tmp_path: Path) -> None:

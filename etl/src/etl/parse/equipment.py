@@ -52,6 +52,7 @@ class Field(IntEnum):
     SLOT1 = 27
     SLOT7 = 28
     DEFPTN = 30
+    DEC = 34
 
 
 _SKILL_FIELD_PAIRS = (
@@ -86,9 +87,23 @@ class ParsedDecorationRow:
 
 
 @dataclass(frozen=True, slots=True)
+class ParsedCuffRow:
+    """A separate category from ParsedDecorationRow — see docs/data-format-notes.md
+    "Cuffs". Both are read from the "deco" JS bucket, distinguished by the
+    DEC field (empty = Decoration, "1" = Cuff).
+    """
+
+    external_id: str
+    name: str
+    slot_size: int
+    skills: tuple[tuple[int, int], ...]
+
+
+@dataclass(frozen=True, slots=True)
 class ParsedEquipData:
     equipment: list[ParsedEquipmentRow]
     decorations: list[ParsedDecorationRow]
+    cuffs: list[ParsedCuffRow]
 
 
 def compute_defense_progression(
@@ -189,25 +204,51 @@ def parse_equipment_bucket(
 
 
 def parse_decoration_bucket(bucket_json: str) -> list[ParsedDecorationRow]:
+    """Armor decorations: DEC == "" rows from the "deco" bucket.
+
+    The "deco" bucket also holds Cuffs (DEC == "1", see parse_cuff_bucket) and
+    a few blank-key UI placeholders (DEC == "", slot_size == 0) — see
+    docs/data-format-notes.md "What's actually in the deco bucket".
+    """
     rows: dict[str, str] = json.loads(bucket_json)
 
     parsed = []
     for hex_id, raw in rows.items():
         fields = raw.split(",")
+        if _field(fields, Field.DEC) != "":
+            continue
         slot_size = _int_or_none(_field(fields, Field.SLOT7)) or 0
         if slot_size == 0:
-            # The "deco" bucket also holds weapon customization/technique
-            # slots (a different game mechanic sharing this bucket in the
-            # source data) and a couple of blank-key UI placeholders. All of
-            # them have slot_size 0; every real decoration is 1-3 (confirmed
-            # against the full real dataset: 5,897 rows at 1-3, exactly 143
-            # at 0, none at any other value) — see docs/data-format-notes.md.
-            continue
+            continue  # UI placeholder, not a real decoration
         parsed.append(
             ParsedDecorationRow(
                 external_id=f"deco:{hex_id}",
                 name=_field(fields, Field.NAME),
                 slot_size=slot_size,
+                skills=_extract_skills(fields),
+            )
+        )
+    return parsed
+
+
+def parse_cuff_bucket(bucket_json: str) -> list[ParsedCuffRow]:
+    """Cuffs: DEC == "1" rows from the "deco" bucket (see docs/data-format-notes.md).
+
+    Unlike decorations, slot_size 0 is valid and common here (Hiden Cuffs,
+    which cost no Poogie-slot capacity), so there's no placeholder to filter.
+    """
+    rows: dict[str, str] = json.loads(bucket_json)
+
+    parsed = []
+    for hex_id, raw in rows.items():
+        fields = raw.split(",")
+        if _field(fields, Field.DEC) != "1":
+            continue
+        parsed.append(
+            ParsedCuffRow(
+                external_id=f"cuff:{hex_id}",
+                name=_field(fields, Field.NAME),
+                slot_size=_int_or_none(_field(fields, Field.SLOT7)) or 0,
                 skills=_extract_skills(fields),
             )
         )
@@ -227,6 +268,8 @@ def parse_equip_js(source: str) -> ParsedEquipData:
         bucket_json = _extract_bucket_json(source, bucket)
         equipment.extend(parse_equipment_bucket(bucket, bucket_json, def_patterns))
 
-    decorations = parse_decoration_bucket(_extract_bucket_json(source, "deco"))
+    deco_bucket_json = _extract_bucket_json(source, "deco")
+    decorations = parse_decoration_bucket(deco_bucket_json)
+    cuffs = parse_cuff_bucket(deco_bucket_json)
 
-    return ParsedEquipData(equipment=equipment, decorations=decorations)
+    return ParsedEquipData(equipment=equipment, decorations=decorations, cuffs=cuffs)

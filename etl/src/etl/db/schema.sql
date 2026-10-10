@@ -52,6 +52,27 @@ CREATE TABLE IF NOT EXISTS decoration_skill (
     PRIMARY KEY (decoration_id, skill_id)
 );
 
+-- A separate category from Decoration, not a variant of it: cuffs occupy
+-- their own "Poogie slot" pool (at most 2 equipped, slot costs summing to at
+-- most 2), entirely independent of armor decoration sockets. See
+-- docs/data-format-notes.md "Cuffs". slot_size 0 is valid and common (Hiden
+-- Cuffs, which cost no Poogie-slot capacity), unlike Decoration's 1-3.
+CREATE TABLE IF NOT EXISTS cuff (
+    id INTEGER PRIMARY KEY,
+    external_id TEXT NOT NULL UNIQUE,
+    name TEXT NOT NULL,
+    slot_size INTEGER NOT NULL CHECK (slot_size BETWEEN 0 AND 2),
+    source_url TEXT
+);
+
+CREATE TABLE IF NOT EXISTS cuff_skill (
+    cuff_id INTEGER NOT NULL REFERENCES cuff (id) ON DELETE CASCADE,
+    skill_id INTEGER NOT NULL REFERENCES skill (id) ON DELETE RESTRICT,
+    points INTEGER NOT NULL,
+    PRIMARY KEY (cuff_id, skill_id)
+);
+
 CREATE INDEX IF NOT EXISTS idx_equipment_slot_type ON equipment (slot_type);
 CREATE INDEX IF NOT EXISTS idx_equipment_skill_skill_id ON equipment_skill (skill_id);
 CREATE INDEX IF NOT EXISTS idx_decoration_skill_skill_id ON decoration_skill (skill_id);
+CREATE INDEX IF NOT EXISTS idx_cuff_skill_skill_id ON cuff_skill (skill_id);
