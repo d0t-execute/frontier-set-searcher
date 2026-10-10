@@ -30,3 +30,8 @@ npm-debug.log*
 # OS
 Thumbs.db
 .DS_Store
+
+# Secrets — never commit these
+github-access.txt
+*.pat
+*.token
