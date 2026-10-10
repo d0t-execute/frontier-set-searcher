@@ -1,0 +1,37 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+        args: ['--maxkb=2000']
+        exclude: ^frontend/public/data/
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.9
+    hooks:
+      - id: ruff
+        args: [--fix]
+        files: ^etl/
+      - id: ruff-format
+        files: ^etl/
+
+  # Frontend checks call the already-installed node_modules/.bin *.ps1 shims
+  # directly (rather than pre-commit's own node bootstrap, or `npx`/`*.cmd`,
+  # neither of which resolve reliably as a pre-commit "system" hook on
+  # Windows — CreateProcess can't launch .cmd directly, and cmd.exe's own
+  # quoting rules mangle unquoted forward-slash paths after `/c`).
+  - repo: local
+    hooks:
+      - id: prettier
+        name: prettier (frontend)
+        entry: powershell -NoProfile -ExecutionPolicy Bypass -File frontend/node_modules/.bin/prettier.ps1 --write
+        language: system
+        files: ^frontend/.*\.(ts|tsx|json|css|md)$
+      - id: oxlint
+        name: oxlint (frontend)
+        entry: powershell -NoProfile -ExecutionPolicy Bypass -File frontend/node_modules/.bin/oxlint.ps1
+        language: system
+        files: ^frontend/.*\.(ts|tsx)$
