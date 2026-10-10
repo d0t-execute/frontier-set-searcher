@@ -30,6 +30,11 @@ BUCKET_TO_SLOT_TYPE: dict[str, EquipmentType] = {
 # are all valid-looking zeros), so it must be filtered explicitly.
 _PLACEHOLDER_EXTERNAL_ID = "0000"
 
+# CLASS codes for the categories this module cares about -- see
+# docs/data-format-notes.md "Equipment taxonomy" for the full decode table.
+_TOWER_CLASS = "N"
+_ZENITH_CUFF_CLASS = "P"
+
 
 class Field(IntEnum):
     """Positional column indices, named after SkillForm.js's I_b* constants."""
@@ -53,6 +58,8 @@ class Field(IntEnum):
     SLOT7 = 28
     DEFPTN = 30
     DEC = 34
+    CLASS = 35
+    TENI = 37
 
 
 _SKILL_FIELD_PAIRS = (
@@ -76,6 +83,12 @@ class ParsedEquipmentRow:
     slot_count_base: int
     slot_count_max: int
     skills: tuple[tuple[int, int], ...]
+    # Tower armor (CLASS "N") can only take Tower Gems, and vice versa -- see
+    # docs/data-format-notes.md "Tower Armor".
+    is_tower: bool = False
+    # Zenith/Tan'i equipment (CLASS "P"/"Q") carries a Zenith skill (via the
+    # Teni field) in addition to its normal `skills` -- see "Zenith skills".
+    zenith_skill_id: int | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -84,19 +97,24 @@ class ParsedDecorationRow:
     name: str
     slot_size: int
     skills: tuple[tuple[int, int], ...]
+    # Tower Gem (CLASS "N") -- see the matching note on ParsedEquipmentRow.
+    is_tower: bool = False
 
 
 @dataclass(frozen=True, slots=True)
 class ParsedCuffRow:
     """A separate category from ParsedDecorationRow — see docs/data-format-notes.md
     "Cuffs". Both are read from the "deco" JS bucket, distinguished by the
-    DEC field (empty = Decoration, "1" = Cuff).
+    DEC field (empty = Decoration, "1" = Cuff, plus Zenith Cuffs at
+    DEC="3"+CLASS="P").
     """
 
     external_id: str
     name: str
     slot_size: int
     skills: tuple[tuple[int, int], ...]
+    # Zenith Cuffs carry only a Zenith skill, no normal skills at all.
+    zenith_skill_id: int | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -198,6 +216,8 @@ def parse_equipment_bucket(
                 slot_count_base=_int_or_none(_field(fields, Field.SLOT1)) or 0,
                 slot_count_max=_int_or_none(_field(fields, Field.SLOT7)) or 0,
                 skills=_extract_skills(fields),
+                is_tower=_field(fields, Field.CLASS) == _TOWER_CLASS,
+                zenith_skill_id=_int_or_none(_field(fields, Field.TENI)),
             )
         )
     return parsed
@@ -226,13 +246,25 @@ def parse_decoration_bucket(bucket_json: str) -> list[ParsedDecorationRow]:
                 name=_field(fields, Field.NAME),
                 slot_size=slot_size,
                 skills=_extract_skills(fields),
+                is_tower=_field(fields, Field.CLASS) == _TOWER_CLASS,
             )
         )
     return parsed
 
 
+def _is_cuff_row(fields: list[str]) -> bool:
+    dec = _field(fields, Field.DEC)
+    if dec == "1":
+        return True
+    # Zenith Cuffs share DEC="3" with Tower Weapon Sigils (CLASS="N") in the
+    # raw data but are mechanically Cuffs -- see docs/data-format-notes.md
+    # "Cuffs".
+    return dec == "3" and _field(fields, Field.CLASS) == _ZENITH_CUFF_CLASS
+
+
 def parse_cuff_bucket(bucket_json: str) -> list[ParsedCuffRow]:
-    """Cuffs: DEC == "1" rows from the "deco" bucket (see docs/data-format-notes.md).
+    """Cuffs: DEC == "1" rows, plus Zenith Cuffs (DEC == "3", CLASS == "P"),
+    from the "deco" bucket (see docs/data-format-notes.md "Cuffs").
 
     Unlike decorations, slot_size 0 is valid and common here (Hiden Cuffs,
     which cost no Poogie-slot capacity), so there's no placeholder to filter.
@@ -242,7 +274,7 @@ def parse_cuff_bucket(bucket_json: str) -> list[ParsedCuffRow]:
     parsed = []
     for hex_id, raw in rows.items():
         fields = raw.split(",")
-        if _field(fields, Field.DEC) != "1":
+        if not _is_cuff_row(fields):
             continue
         parsed.append(
             ParsedCuffRow(
@@ -250,6 +282,7 @@ def parse_cuff_bucket(bucket_json: str) -> list[ParsedCuffRow]:
                 name=_field(fields, Field.NAME),
                 slot_size=_int_or_none(_field(fields, Field.SLOT7)) or 0,
                 skills=_extract_skills(fields),
+                zenith_skill_id=_int_or_none(_field(fields, Field.TENI)),
             )
         )
     return parsed

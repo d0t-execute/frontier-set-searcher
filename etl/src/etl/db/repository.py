@@ -12,7 +12,15 @@ from __future__ import annotations
 
 import sqlite3
 
-from etl.db.models import Cuff, Decoration, Equipment, EquipmentType, Skill, SkillPoints
+from etl.db.models import (
+    Cuff,
+    Decoration,
+    Equipment,
+    EquipmentType,
+    Skill,
+    SkillPoints,
+    ZenithSkill,
+)
 
 
 def insert_skill(conn: sqlite3.Connection, *, name: str, category: str | None = None) -> Skill:
@@ -38,6 +46,29 @@ def get_skill_by_name(conn: sqlite3.Connection, name: str) -> Skill | None:
     return _skill_from_row(row)
 
 
+def insert_zenith_skill(conn: sqlite3.Connection, *, name: str) -> ZenithSkill:
+    """Get-or-create a Zenith skill by name (see docs/data-format-notes.md "Zenith skills").
+
+    Get-or-create for the same reason as `insert_skill`: the same Zenith
+    skill is granted by many equipment pieces and Zenith Cuffs.
+    """
+    existing = get_zenith_skill_by_name(conn, name)
+    if existing is not None:
+        return existing
+
+    cursor = conn.execute("INSERT INTO zenith_skill (name) VALUES (?)", (name,))
+    row_id = cursor.lastrowid
+    assert row_id is not None
+    return ZenithSkill(id=row_id, name=name)
+
+
+def get_zenith_skill_by_name(conn: sqlite3.Connection, name: str) -> ZenithSkill | None:
+    row = conn.execute("SELECT id, name FROM zenith_skill WHERE name = ?", (name,)).fetchone()
+    if row is None:
+        return None
+    return ZenithSkill(id=row["id"], name=row["name"])
+
+
 def insert_equipment(
     conn: sqlite3.Connection,
     *,
@@ -51,6 +82,8 @@ def insert_equipment(
     slot_count_max: int = 0,
     min_hr: int | None = None,
     min_gr: int | None = None,
+    is_tower: bool = False,
+    zenith_skill_id: int | None = None,
     source_url: str | None = None,
 ) -> Equipment:
     """Insert a new equipment row.
@@ -63,8 +96,9 @@ def insert_equipment(
         """
         INSERT INTO equipment (
             external_id, name, slot_type, rarity, defense_base, defense_max,
-            slot_count_base, slot_count_max, min_hr, min_gr, source_url
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            slot_count_base, slot_count_max, min_hr, min_gr, is_tower,
+            zenith_skill_id, source_url
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             external_id,
@@ -77,6 +111,8 @@ def insert_equipment(
             slot_count_max,
             min_hr,
             min_gr,
+            is_tower,
+            zenith_skill_id,
             source_url,
         ),
     )
@@ -94,6 +130,8 @@ def insert_equipment(
         slot_count_max=slot_count_max,
         min_hr=min_hr,
         min_gr=min_gr,
+        is_tower=is_tower,
+        zenith_skill_id=zenith_skill_id,
         source_url=source_url,
     )
 
@@ -147,16 +185,25 @@ def insert_decoration(
     external_id: str,
     name: str,
     slot_size: int,
+    is_tower: bool = False,
     source_url: str | None = None,
 ) -> Decoration:
     cursor = conn.execute(
-        "INSERT INTO decoration (external_id, name, slot_size, source_url) VALUES (?, ?, ?, ?)",
-        (external_id, name, slot_size, source_url),
+        """
+        INSERT INTO decoration (external_id, name, slot_size, is_tower, source_url)
+        VALUES (?, ?, ?, ?, ?)
+        """,
+        (external_id, name, slot_size, is_tower, source_url),
     )
     row_id = cursor.lastrowid
     assert row_id is not None
     return Decoration(
-        id=row_id, external_id=external_id, name=name, slot_size=slot_size, source_url=source_url
+        id=row_id,
+        external_id=external_id,
+        name=name,
+        slot_size=slot_size,
+        is_tower=is_tower,
+        source_url=source_url,
     )
 
 
@@ -190,16 +237,25 @@ def insert_cuff(
     external_id: str,
     name: str,
     slot_size: int,
+    zenith_skill_id: int | None = None,
     source_url: str | None = None,
 ) -> Cuff:
     cursor = conn.execute(
-        "INSERT INTO cuff (external_id, name, slot_size, source_url) VALUES (?, ?, ?, ?)",
-        (external_id, name, slot_size, source_url),
+        """
+        INSERT INTO cuff (external_id, name, slot_size, zenith_skill_id, source_url)
+        VALUES (?, ?, ?, ?, ?)
+        """,
+        (external_id, name, slot_size, zenith_skill_id, source_url),
     )
     row_id = cursor.lastrowid
     assert row_id is not None
     return Cuff(
-        id=row_id, external_id=external_id, name=name, slot_size=slot_size, source_url=source_url
+        id=row_id,
+        external_id=external_id,
+        name=name,
+        slot_size=slot_size,
+        zenith_skill_id=zenith_skill_id,
+        source_url=source_url,
     )
 
 
@@ -238,6 +294,7 @@ def _cuff_from_row(row: sqlite3.Row) -> Cuff:
         external_id=row["external_id"],
         name=row["name"],
         slot_size=row["slot_size"],
+        zenith_skill_id=row["zenith_skill_id"],
         source_url=row["source_url"],
     )
 
@@ -259,6 +316,8 @@ def _equipment_from_row(row: sqlite3.Row) -> Equipment:
         slot_count_max=row["slot_count_max"],
         min_hr=row["min_hr"],
         min_gr=row["min_gr"],
+        is_tower=bool(row["is_tower"]),
+        zenith_skill_id=row["zenith_skill_id"],
         source_url=row["source_url"],
     )
 

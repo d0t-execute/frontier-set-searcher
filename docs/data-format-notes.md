@@ -147,14 +147,14 @@ tier — not yet investigated further.
 
 | Category | Found via | Modeled? | Count |
 |---|---|---|---|
-| Armor (normal) | `head`/`body`/`arm`/`wst`/`leg` buckets, `CLASS` not in `{N,P,Q}` | ✅ `Equipment` | ~59,000 |
-| **Tower Armor** | same buckets, `CLASS="N"` | ⚠️ stored as plain `Equipment`, Tower-origin not flagged | 420 (84 × 5 slots) |
-| **Zenith Armor** | same buckets, `CLASS="P"` or `"Q"` | ⚠️ stored as plain `Equipment`, `Teni` (Zenith skill) not captured | 1,773 `CLASS="P"` (across 5 slots); `CLASS="Q"` not yet totaled (414 in `head` alone) |
-| Armor decoration | `deco` bucket, `DEC=""`, `slot_size` 1–3 | ✅ `Decoration` | 2,658 |
-| Tower Gem | `deco` bucket, `DEC=""`, `CLASS="N"` (subset of the above) | ⚠️ currently stored as an undifferentiated `Decoration` — exclusive-both-ways Tower compatibility not captured (confirmed) | 173 |
+| Armor (normal) | `head`/`body`/`arm`/`wst`/`leg` buckets, `CLASS` not in `{N,P,Q}` | ✅ `Equipment` | 57,621 (61,817 total − 420 Tower − 3,776 Zenith) |
+| **Tower Armor** | same buckets, `CLASS="N"` | ✅ `Equipment.is_tower` | 420 (84 × 5 slots) |
+| **Zenith Armor** | same buckets, `CLASS="P"` or `"Q"` | ✅ `Equipment.zenith_skill_id` | 3,776 (1,773 `P` + 2,003 `Q`, verified 100% have a non-empty `Teni`, 0 exceptions) |
+| Armor decoration | `deco` bucket, `DEC=""`, `slot_size` 1–3, `CLASS≠"N"` | ✅ `Decoration` | 2,485 |
+| Tower Gem | `deco` bucket, `DEC=""`, `CLASS="N"` (subset of decorations) | ✅ `Decoration.is_tower` — exclusive-both-ways Tower compatibility confirmed, not yet enforced (Phase 3+ search engine concern) | 173 |
 | UI placeholder junk | `deco` bucket, `DEC=""`, `slot_size=0` | ✅ filtered out | 3 |
-| Cuff (regular + Hiden) | `deco` bucket, `DEC="1"` | ✅ `Cuff` | 3,306 |
-| **Zenith Cuff** | `deco` bucket, `DEC="3"`, `CLASS="P"` | ❌ currently deferred along with Tower Weapon Sigil — needs to move into `Cuff` plus a `Teni`/Zenith-skill column | 26 |
+| Cuff (regular + Hiden) | `deco` bucket, `DEC="1"`, no `Teni` | ✅ `Cuff` | 3,030 |
+| **Zenith Cuff** ("SZ" + "Sigil" variants) | `deco` bucket, `DEC="1"` or `"3"`, `CLASS="P"`, non-empty `Teni` | ✅ `Cuff.zenith_skill_id` | 302 (276 "SZ" + 26 "Sigil") |
 | Tower Armor Sigil ("Tenkoku") | `deco` bucket, `DEC="2"` | ❌ deferred | 10 |
 | Tower Weapon Sigil ("Tenfuu") | `deco` bucket, `DEC="3"`, `CLASS="N"` | ❌ deferred | 37 |
 
@@ -204,27 +204,37 @@ against a combined Poogie-slot budget — this is a build-time constraint for
 the search engine (Phase 3+), not something that affects how a `Cuff` row
 itself is stored.
 
-Three sub-kinds, all real:
+Four sub-kinds, all real, all modeled in `Cuff` (`is_tower`/`zenith_skill_id`
+columns — see below):
 
-- **Hiden Cuffs** (`DEC="1"`, `CLASS="L"` i.e. "G秘伝"/G-Hiden,
-  `slot_size=0`): 140 entries, one weapon-technique tree per weapon type
-  (e.g. `SnS・Basic`, `SnS・G`, then named variants like `SnS・Issen`,
-  `SnS・Rush`, ...). Since they cost 0 Poogie-slot capacity, these are
-  effectively "always available" free bonuses (though still counting toward
-  the "max 2 cuffs" item-count limit).
-- **Regular Cuffs** (`DEC="1"`, `CLASS=""`, `slot_size=1` or `2`): e.g.
-  `Sharpening PC1` (1-slot), `Artisan PA1` (2-slot). Spend Poogie-slot
-  capacity.
-- **Zenith Cuffs** (`DEC="3"`, `CLASS="P"`, `slot_size=1`): e.g.
-  `Skill Slots Up Sigil`, `Crit Conv Up Sigil`. Confirmed by the project
-  owner to be Cuffs mechanically, despite sharing `DEC="3"` with Tower
-  Weapon Sigils in the raw data — distinguished from those by `CLASS="P"`
-  vs. `"N"`. All 26 have **empty `SN1–5`** and a populated `Teni` field —
-  they grant *only* a Zenith skill (via `Teni`→`TENINAME`, see below), no
-  normal skill at all. **Not yet moved out of the deferred bucket into
-  `Cuff`** — needs a `Teni`/Zenith-skill column added to `Cuff` first (see
-  "Zenith skills" below), since the existing `Cuff` schema has nowhere to
-  put it.
+| `DEC` | `CLASS` | `Teni`? | Count | Example |
+|---|---|---|---|---|
+| `"1"` | `""` | No | 2,890 | `Artisan PA1` (2-slot) |
+| `"1"` | `"L"` (G秘伝/G-Hiden) | No | 140 | `SnS・Basic` (0-slot, free) |
+| `"1"` | `"P"` (辿異/Tan'i) | **Yes** | 276 | `Skill Slots Up SZ` (2-slot) |
+| `"3"` | `"P"` | **Yes** | 26 | `Skill Slots Up Sigil` (1-slot) |
+
+- **Regular Cuffs** (`DEC="1"`, `CLASS=""`): e.g. `Sharpening PC1` (1-slot),
+  `Artisan PA1` (2-slot). Spend Poogie-slot capacity, no Zenith skill.
+- **Hiden Cuffs** (`DEC="1"`, `CLASS="L"`, `slot_size=0`): one
+  weapon-technique tree per weapon type (e.g. `SnS・Basic`, `SnS・G`, then
+  named variants like `SnS・Issen`, `SnS・Rush`, ...). Cost 0 Poogie-slot
+  capacity, so effectively "always available" free bonuses (still counting
+  toward the "max 2 cuffs" item-count limit).
+- **"SZ" Zenith Cuffs** (`DEC="1"`, `CLASS="P"`, `slot_size=2`): e.g.
+  `Skill Slots Up SZ`. **Not found until actually running the real pipeline
+  and sanity-checking the loaded counts** — a plain DEC/CLASS/slot_size
+  cross-tab of the `deco` bucket alone doesn't surface this, since these
+  rows look like ordinary regular Cuffs except for also having a non-empty
+  `Teni`. Empty `SN1–5`, same as the "Sigil" variant below — grants *only*
+  a Zenith skill, but at a higher Poogie-slot cost (2 vs. 1).
+- **"Sigil" Zenith Cuffs** (`DEC="3"`, `CLASS="P"`, `slot_size=1`): e.g.
+  `Skill Slots Up Sigil`. Shares `DEC="3"` with Tower Weapon Sigils in the
+  raw data — distinguished from those by `CLASS="P"` vs. `"N"`. Empty
+  `SN1–5`, populated `Teni`. A cheaper (1-slot) alternative to the "SZ"
+  variant above, apparently granting the *same* Zenith skill (e.g. both
+  `Skill Slots Up SZ` and `Skill Slots Up Sigil` have `Teni=1` = "Skill
+  Slots Up+1") at a different Poogie-slot cost.
 
 ### Zenith skills (`Teni` field, `CLASS="P"`/`"Q"` equipment)
 
@@ -255,12 +265,13 @@ Two carriers, confirmed by the project owner:
   crafting language like `CLASS="P"`'s Espinas/Rathalos/etc. lines, but
   still Zenith). Treat `CLASS="P"` and `CLASS="Q"` as one combined Zenith
   category for modeling purposes.
-- **Zenith Cuffs** (`DEC="3"`, `CLASS="P"`, see above): carry *only* a
-  Zenith skill via `Teni`, nothing via `SN1–5`.
+- **Zenith Cuffs** ("SZ" at `DEC="1"`+`CLASS="P"`, and "Sigil" at `DEC="3"`+
+  `CLASS="P"`, see "Cuffs" above): carry *only* a Zenith skill via `Teni`,
+  nothing via `SN1–5`.
 
-Not yet modeled: `Equipment` and `Cuff` both need a nullable Zenith-skill
-column (something like `zenith_skill_id`, resolved through a new
-`TENINAME`-backed lookup, parallel to but separate from the `skill` table).
+Modeled via a nullable `zenith_skill_id` column on both `Equipment` and
+`Cuff`, resolved through a dedicated `zenith_skill` table (populated from
+`TENINAME`, parallel to but separate from `skill`/`MST_Skill`).
 
 **Confirmed by the project owner: Zenith/Tan'i and Tower/Tenrou are entirely
 unrelated systems** — not tiers of one system, not the same activity. Treat

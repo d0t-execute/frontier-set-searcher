@@ -104,3 +104,84 @@ def test_cuff_with_no_skills_returns_empty_list(conn: sqlite3.Connection) -> Non
     cuff = repo.insert_cuff(conn, external_id="C001", name="Empty Cuff", slot_size=1)
 
     assert repo.get_cuff_skills(conn, cuff.id) == []
+
+
+def test_insert_zenith_skill_is_idempotent_by_name(conn: sqlite3.Connection) -> None:
+    first = repo.insert_zenith_skill(conn, name="Skill Slots Up+1")
+    second = repo.insert_zenith_skill(conn, name="Skill Slots Up+1")
+
+    assert first == second
+
+
+def test_get_zenith_skill_by_name_returns_none_when_missing(conn: sqlite3.Connection) -> None:
+    assert repo.get_zenith_skill_by_name(conn, "does-not-exist") is None
+
+
+def test_equipment_round_trips_is_tower_and_zenith_skill(conn: sqlite3.Connection) -> None:
+    zenith_skill = repo.insert_zenith_skill(conn, name="Skill Slots Up+1")
+
+    created = repo.insert_equipment(
+        conn,
+        external_id="2B8D",
+        name="Espinas Z Brain",
+        slot_type="head",
+        is_tower=False,
+        zenith_skill_id=zenith_skill.id,
+    )
+    fetched = repo.get_equipment_by_external_id(conn, "2B8D")
+
+    assert fetched == created
+    assert fetched is not None
+    assert fetched.zenith_skill_id == zenith_skill.id
+    assert fetched.is_tower is False
+
+
+def test_equipment_defaults_to_not_tower_and_no_zenith_skill(conn: sqlite3.Connection) -> None:
+    created = repo.insert_equipment(conn, external_id="0001", name="Leather Helm", slot_type="head")
+
+    assert created.is_tower is False
+    assert created.zenith_skill_id is None
+
+
+def test_tower_equipment_round_trips(conn: sqlite3.Connection) -> None:
+    created = repo.insert_equipment(
+        conn, external_id="2543", name="Ranvuo Helm", slot_type="head", is_tower=True
+    )
+    fetched = repo.get_equipment_by_external_id(conn, "2543")
+
+    assert fetched == created
+    assert fetched is not None
+    assert fetched.is_tower is True
+
+
+def test_tower_decoration_defaults_and_overrides(conn: sqlite3.Connection) -> None:
+    normal = repo.insert_decoration(conn, external_id="D001", name="Paralysis 1 Deco", slot_size=1)
+    tower_gem = repo.insert_decoration(
+        conn, external_id="D002", name="Status Res Gem Ⅲ", slot_size=1, is_tower=True
+    )
+
+    assert normal.is_tower is False
+    assert tower_gem.is_tower is True
+
+
+def test_cuff_round_trips_zenith_skill(conn: sqlite3.Connection) -> None:
+    zenith_skill = repo.insert_zenith_skill(conn, name="Skill Slots Up+1")
+
+    created = repo.insert_cuff(
+        conn,
+        external_id="3918",
+        name="Skill Slots Up Sigil",
+        slot_size=1,
+        zenith_skill_id=zenith_skill.id,
+    )
+    fetched = repo.get_cuff_by_external_id(conn, "3918")
+
+    assert fetched == created
+    assert fetched is not None
+    assert fetched.zenith_skill_id == zenith_skill.id
+
+
+def test_cuff_defaults_to_no_zenith_skill(conn: sqlite3.Connection) -> None:
+    created = repo.insert_cuff(conn, external_id="C001", name="Sharpening PC1", slot_size=1)
+
+    assert created.zenith_skill_id is None

@@ -22,10 +22,11 @@ from etl.db.repository import (
     insert_decoration,
     insert_equipment,
     insert_skill,
+    insert_zenith_skill,
 )
 from etl.fetch import CachingFetcher
 from etl.parse.equipment import parse_equip_js
-from etl.parse.skills import parse_skill_names
+from etl.parse.skills import parse_skill_names, parse_zenith_skill_names
 
 EQUIP_JS_URL = "https://xl3lackout.github.io/MHFZ-Ferias-English-Project/skill/equip.js"
 SKILLFORM_JS_URL = "https://xl3lackout.github.io/MHFZ-Ferias-English-Project/skill/SkillForm.js"
@@ -37,21 +38,31 @@ class LoadSummary:
     decoration_count: int
     cuff_count: int
     skill_count: int
+    zenith_skill_count: int
 
 
 def load_equipment(
     conn: sqlite3.Connection, *, skillform_source: str, equip_source: str, source_url: str
 ) -> LoadSummary:
     skill_names = parse_skill_names(skillform_source)
+    zenith_skill_names = parse_zenith_skill_names(skillform_source)
     parsed = parse_equip_js(equip_source)
 
     resolved_skills: dict[int, int] = {}
+    resolved_zenith_skills: dict[int, int] = {}
 
     def resolve_skill(skill_id: int) -> int:
         if skill_id not in resolved_skills:
             name = skill_names.get(skill_id, f"Unknown Skill {skill_id}")
             resolved_skills[skill_id] = insert_skill(conn, name=name).id
         return resolved_skills[skill_id]
+
+    def resolve_zenith_skill(zenith_skill_id: int) -> int:
+        if zenith_skill_id not in resolved_zenith_skills:
+            fallback = f"Unknown Zenith Skill {zenith_skill_id}"
+            name = zenith_skill_names.get(zenith_skill_id, fallback)
+            resolved_zenith_skills[zenith_skill_id] = insert_zenith_skill(conn, name=name).id
+        return resolved_zenith_skills[zenith_skill_id]
 
     for row in parsed.equipment:
         equipment = insert_equipment(
@@ -65,6 +76,12 @@ def load_equipment(
             slot_count_base=row.slot_count_base,
             slot_count_max=row.slot_count_max,
             min_hr=row.min_hr,
+            is_tower=row.is_tower,
+            zenith_skill_id=(
+                resolve_zenith_skill(row.zenith_skill_id)
+                if row.zenith_skill_id is not None
+                else None
+            ),
             source_url=source_url,
         )
         for skill_id, points in row.skills:
@@ -78,6 +95,7 @@ def load_equipment(
             external_id=deco_row.external_id,
             name=deco_row.name,
             slot_size=deco_row.slot_size,
+            is_tower=deco_row.is_tower,
             source_url=source_url,
         )
         for skill_id, points in deco_row.skills:
@@ -91,6 +109,11 @@ def load_equipment(
             external_id=cuff_row.external_id,
             name=cuff_row.name,
             slot_size=cuff_row.slot_size,
+            zenith_skill_id=(
+                resolve_zenith_skill(cuff_row.zenith_skill_id)
+                if cuff_row.zenith_skill_id is not None
+                else None
+            ),
             source_url=source_url,
         )
         for skill_id, points in cuff_row.skills:
@@ -102,6 +125,7 @@ def load_equipment(
         decoration_count=len(parsed.decorations),
         cuff_count=len(parsed.cuffs),
         skill_count=len(resolved_skills),
+        zenith_skill_count=len(resolved_zenith_skills),
     )
 
 
@@ -131,7 +155,8 @@ def main() -> None:  # pragma: no cover -- network-touching, run manually only
         f"Loaded {summary.equipment_count} equipment, "
         f"{summary.decoration_count} decorations, "
         f"{summary.cuff_count} cuffs, "
-        f"{summary.skill_count} distinct skills."
+        f"{summary.skill_count} distinct skills, "
+        f"{summary.zenith_skill_count} distinct Zenith skills."
     )
 
 

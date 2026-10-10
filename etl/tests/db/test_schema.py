@@ -22,6 +22,7 @@ def test_schema_creates_expected_tables(conn: sqlite3.Connection) -> None:
         "decoration_skill",
         "cuff",
         "cuff_skill",
+        "zenith_skill",
     } <= tables
 
 
@@ -121,3 +122,33 @@ def test_cuff_skill_requires_an_existing_skill(conn: sqlite3.Connection) -> None
             "INSERT INTO cuff_skill (cuff_id, skill_id, points) VALUES (?, ?, ?)",
             (cuff.id, 999, 3),
         )
+
+
+def test_equipment_zenith_skill_id_requires_an_existing_zenith_skill(
+    conn: sqlite3.Connection,
+) -> None:
+    with pytest.raises(sqlite3.IntegrityError):
+        repo.insert_equipment(
+            conn,
+            external_id="0001",
+            name="Espinas Z Brain",
+            slot_type="head",
+            zenith_skill_id=999,
+        )
+
+
+def test_cuff_zenith_skill_id_requires_an_existing_zenith_skill(conn: sqlite3.Connection) -> None:
+    with pytest.raises(sqlite3.IntegrityError):
+        repo.insert_cuff(
+            conn,
+            external_id="3918",
+            name="Skill Slots Up Sigil",
+            slot_size=1,
+            zenith_skill_id=999,
+        )
+
+
+def test_zenith_skill_name_is_unique(conn: sqlite3.Connection) -> None:
+    repo.insert_zenith_skill(conn, name="Skill Slots Up+1")
+    with pytest.raises(sqlite3.IntegrityError):
+        conn.execute("INSERT INTO zenith_skill (name) VALUES (?)", ("Skill Slots Up+1",))

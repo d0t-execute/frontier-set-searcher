@@ -8,6 +8,17 @@ CREATE TABLE IF NOT EXISTS skill (
     category TEXT
 );
 
+-- A skill system entirely separate from `skill` (resolved through TENINAME,
+-- not MST_Skill), carried by Zenith/Tan'i equipment (CLASS "P"/"Q") in
+-- addition to its normal skills. See docs/data-format-notes.md "Zenith
+-- skills". Kept as its own table rather than folded into `skill` because
+-- the two are populated from different lookup tables in the source and
+-- represent genuinely different game systems.
+CREATE TABLE IF NOT EXISTS zenith_skill (
+    id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE
+);
+
 CREATE TABLE IF NOT EXISTS equipment (
     id INTEGER PRIMARY KEY,
     external_id TEXT NOT NULL UNIQUE,
@@ -27,6 +38,12 @@ CREATE TABLE IF NOT EXISTS equipment (
     slot_count_max INTEGER NOT NULL DEFAULT 0,
     min_hr INTEGER,
     min_gr INTEGER,
+    -- Tower armor (CLASS "N") can only take Tower Gems in its slots, and
+    -- Tower Gems can only go into Tower armor -- an exclusive-both-ways
+    -- compatibility rule, confirmed by the project owner. See
+    -- docs/data-format-notes.md "Tower Armor".
+    is_tower INTEGER NOT NULL DEFAULT 0,
+    zenith_skill_id INTEGER REFERENCES zenith_skill (id) ON DELETE RESTRICT,
     source_url TEXT
 );
 
@@ -42,6 +59,8 @@ CREATE TABLE IF NOT EXISTS decoration (
     external_id TEXT NOT NULL UNIQUE,
     name TEXT NOT NULL,
     slot_size INTEGER NOT NULL CHECK (slot_size BETWEEN 1 AND 3),
+    -- Tower Gem (CLASS "N") -- see the matching note on `equipment.is_tower`.
+    is_tower INTEGER NOT NULL DEFAULT 0,
     source_url TEXT
 );
 
@@ -62,6 +81,9 @@ CREATE TABLE IF NOT EXISTS cuff (
     external_id TEXT NOT NULL UNIQUE,
     name TEXT NOT NULL,
     slot_size INTEGER NOT NULL CHECK (slot_size BETWEEN 0 AND 2),
+    -- Zenith Cuffs (DEC "3" + CLASS "P") carry only a Zenith skill, no
+    -- normal skills -- see docs/data-format-notes.md "Cuffs".
+    zenith_skill_id INTEGER REFERENCES zenith_skill (id) ON DELETE RESTRICT,
     source_url TEXT
 );
 
@@ -76,3 +98,5 @@ CREATE INDEX IF NOT EXISTS idx_equipment_slot_type ON equipment (slot_type);
 CREATE INDEX IF NOT EXISTS idx_equipment_skill_skill_id ON equipment_skill (skill_id);
 CREATE INDEX IF NOT EXISTS idx_decoration_skill_skill_id ON decoration_skill (skill_id);
 CREATE INDEX IF NOT EXISTS idx_cuff_skill_skill_id ON cuff_skill (skill_id);
+CREATE INDEX IF NOT EXISTS idx_equipment_zenith_skill_id ON equipment (zenith_skill_id);
+CREATE INDEX IF NOT EXISTS idx_cuff_zenith_skill_id ON cuff (zenith_skill_id);
