@@ -48,6 +48,49 @@ def test_defense_progression_applies_the_ptncd_05_exclusion_rule() -> None:
     assert progression[1] == 52  # not 53 — the naive else-branch result
 
 
+# -- filtering non-item placeholder rows -------------------------------------
+
+
+def test_skips_the_0000_placeholder_row_present_in_every_armor_bucket() -> None:
+    # Every armor bucket has an identical "0000" entry named "仮装備"
+    # ("dummy/temporary equipment") -- confirmed identical across all 5
+    # buckets in the real data. It's the UI's "nothing selected" sentinel, not
+    # a real item, and unlike the deco junk below it doesn't fail any CHECK
+    # constraint on its own, so it has to be filtered explicitly or it would
+    # silently end up in the equipment table as a fake 0-stat item.
+    bucket_json = (
+        '{"0000":"仮装備,0,0,0,,0,0,0,0,0,,,,,,,,,,,,'
+        'なし,0,,1,1,0,0,3,,,,,,,,,",'
+        '"0001":"Leather Helm,0,0,1,,0,0,0,0,0,22,3,63,3,80,3,,,,,,'
+        '01521R,1,0000,7,100,2,0,1,01,00,0B,0,1-,,,,,x,0"}'
+    )
+
+    rows = parse_equipment_bucket("head", bucket_json, def_patterns=["100,120,120,120,120,120,120"])
+
+    assert [row.external_id for row in rows] == ["head:0001"]
+
+
+def test_skips_deco_rows_with_slot_size_zero() -> None:
+    # The "deco" bucket also holds weapon customization/technique slots (a
+    # different game mechanic that happens to share this bucket in the source
+    # data -- e.g. "SnS・Basic" grants skill 129, "One-Handed Sword
+    # Techniques") and a couple of blank-key UI placeholders. All of them
+    # have slot_size 0, while all real armor decorations are 1-3 -- confirmed
+    # against the full real dataset (5,897 rows at 1-3, exactly 143 at 0, none
+    # at any other value). slot_size 0 can't be stored anyway (the DB's CHECK
+    # constraint requires 1-3), but the point is these aren't decorations at
+    # all, not just rows with an out-of-range value.
+    bucket_json = (
+        '{"1016":"Attack II PA1,0,0,5,,,,,,,21,5,67,2,,,,,,,,110C1,1,,1,0,,,2,,,,,4k,1,",'
+        '"3F20":"SnS・Basic,0,0,6,,,,,,,129,6,,,,,,,,,,'
+        '3FEB1 3FEC1 3FED1,3001,,1,0,,,0,,,,,1-,1,L"}'
+    )
+
+    rows = parse_decoration_bucket(bucket_json)
+
+    assert [row.external_id for row in rows] == ["deco:1016"]
+
+
 # -- single-bucket parsing ---------------------------------------------------
 
 
@@ -120,6 +163,7 @@ def test_parse_equip_js_covers_every_armor_bucket() -> None:
 
     by_id = {row.external_id: row for row in result.equipment}
 
+    assert "head:0000" not in by_id  # the "dummy equipment" placeholder
     assert by_id["head:0001"].defense_max == 10
     assert by_id["head:1000"] == ParsedEquipmentRow(
         external_id="head:1000",
@@ -152,6 +196,8 @@ def test_parse_equip_js_covers_decorations() -> None:
 
     by_id = {row.external_id: row for row in result.decorations}
 
+    assert "deco:" not in by_id  # the blank-key UI placeholder
+    assert "deco:3F20" not in by_id  # a weapon-technique slot, not a decoration
     assert by_id["deco:1016"].skills == ((21, 5), (67, 2))
     assert by_id["deco:1017"] == ParsedDecorationRow(
         external_id="deco:1017",

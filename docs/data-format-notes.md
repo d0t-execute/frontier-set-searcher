@@ -145,6 +145,31 @@ running match count is the skill ID.
 byte-order-mark character glued onto the string. Strip `﻿` (and
 whitespace) from every parsed name.
 
+## Non-item rows to filter out
+
+Found by actually running the pipeline against the live ~11MB dataset, not
+by inspection — both are silent in the sense that neither necessarily throws
+on its own, so they need explicit filtering rather than relying on a parse
+error to catch them:
+
+- **The `"0000"` placeholder** in every armor bucket (`head`/`body`/`arm`/
+  `wst`/`leg`): byte-for-byte identical across all 5 buckets, named 仮装備
+  ("dummy/temporary equipment"). It's the skill simulator's "nothing
+  selected" sentinel, not a real item — and its stats (`SLOT7=3`, `DEF=0`,
+  etc.) are all individually valid-looking, so it doesn't trip any CHECK
+  constraint on its own. The parser skips external ID `"0000"` in every
+  armor bucket.
+- **`deco` bucket entries with `slot_size` (SLOT7) = 0**: this bucket mixes
+  real armor decorations with weapon customization/technique slots — a
+  different game mechanic that happens to share this bucket in the source
+  data (e.g. `"SnS・Basic"` grants skill 129, "One-Handed Sword Techniques";
+  `"DS・G"` is a Dual Swords technique) — plus a couple of blank-key UI
+  placeholders. Confirmed against the full real dataset: of 6,040 `deco`
+  rows, 5,897 have `slot_size` 1–3 (real decorations, matching the DB's
+  CHECK constraint exactly) and exactly 143 have `slot_size` 0 (all of the
+  above junk), with no rows at any other value. The parser skips
+  `slot_size == 0` rows.
+
 ## External IDs
 
 The hex keys (e.g. `"0001"`) are only unique **within** a bucket — the same

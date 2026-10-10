@@ -23,6 +23,13 @@ BUCKET_TO_SLOT_TYPE: dict[str, EquipmentType] = {
     "leg": "legs",
 }
 
+# Every armor bucket has an identical "0000" entry named 仮装備 ("dummy/
+# temporary equipment") — confirmed byte-for-byte identical across all 5
+# buckets in the real data. It's the UI's "nothing selected" sentinel, not a
+# real item, and it doesn't fail any CHECK constraint on its own (its stats
+# are all valid-looking zeros), so it must be filtered explicitly.
+_PLACEHOLDER_EXTERNAL_ID = "0000"
+
 
 class Field(IntEnum):
     """Positional column indices, named after SkillForm.js's I_b* constants."""
@@ -149,6 +156,9 @@ def parse_equipment_bucket(
 
     parsed = []
     for hex_id, raw in rows.items():
+        if hex_id == _PLACEHOLDER_EXTERNAL_ID:
+            continue
+
         fields = raw.split(",")
         def_base = _int_or_none(_field(fields, Field.DEF))
         defptn = _field(fields, Field.DEFPTN)
@@ -184,11 +194,20 @@ def parse_decoration_bucket(bucket_json: str) -> list[ParsedDecorationRow]:
     parsed = []
     for hex_id, raw in rows.items():
         fields = raw.split(",")
+        slot_size = _int_or_none(_field(fields, Field.SLOT7)) or 0
+        if slot_size == 0:
+            # The "deco" bucket also holds weapon customization/technique
+            # slots (a different game mechanic sharing this bucket in the
+            # source data) and a couple of blank-key UI placeholders. All of
+            # them have slot_size 0; every real decoration is 1-3 (confirmed
+            # against the full real dataset: 5,897 rows at 1-3, exactly 143
+            # at 0, none at any other value) — see docs/data-format-notes.md.
+            continue
         parsed.append(
             ParsedDecorationRow(
                 external_id=f"deco:{hex_id}",
                 name=_field(fields, Field.NAME),
-                slot_size=_int_or_none(_field(fields, Field.SLOT7)) or 0,
+                slot_size=slot_size,
                 skills=_extract_skills(fields),
             )
         )
