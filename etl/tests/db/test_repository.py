@@ -232,6 +232,28 @@ def test_tower_weapon_round_trips(conn: sqlite3.Connection) -> None:
     assert fetched.is_tower is True
 
 
+def test_list_skills_returns_everything_inserted(conn: sqlite3.Connection) -> None:
+    repo.insert_skill(conn, name="Attack Up (Small)", category="offense")
+    repo.insert_skill(conn, name="Defense Up (Small)", category="defense")
+
+    assert {s.name for s in repo.list_skills(conn)} == {"Attack Up (Small)", "Defense Up (Small)"}
+
+
+def test_list_skills_on_empty_db_returns_empty_list(conn: sqlite3.Connection) -> None:
+    assert repo.list_skills(conn) == []
+
+
+def test_list_decorations_returns_everything_inserted(conn: sqlite3.Connection) -> None:
+    repo.insert_decoration(conn, external_id="D001", name="Attack Jewel", slot_size=1)
+    repo.insert_decoration(conn, external_id="D002", name="Defense Jewel", slot_size=2)
+
+    assert {d.external_id for d in repo.list_decorations(conn)} == {"D001", "D002"}
+
+
+def test_list_decorations_on_empty_db_returns_empty_list(conn: sqlite3.Connection) -> None:
+    assert repo.list_decorations(conn) == []
+
+
 def test_zenith_weapon_round_trips_zenith_skill(conn: sqlite3.Connection) -> None:
     zenith_skill = repo.insert_zenith_skill(conn, name="Drug Knowledge Up")
 

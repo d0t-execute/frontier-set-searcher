@@ -65,6 +65,11 @@ def insert_zenith_skill(conn: sqlite3.Connection, *, name: str) -> ZenithSkill:
     return ZenithSkill(id=row_id, name=name)
 
 
+def list_skills(conn: sqlite3.Connection) -> list[Skill]:
+    rows = conn.execute("SELECT id, name, category FROM skill ORDER BY id").fetchall()
+    return [_skill_from_row(row) for row in rows]
+
+
 def get_zenith_skill_by_name(conn: sqlite3.Connection, name: str) -> ZenithSkill | None:
     row = conn.execute("SELECT id, name FROM zenith_skill WHERE name = ?", (name,)).fetchone()
     if row is None:
@@ -208,6 +213,11 @@ def insert_decoration(
         is_tower=is_tower,
         source_url=source_url,
     )
+
+
+def list_decorations(conn: sqlite3.Connection) -> list[Decoration]:
+    rows = conn.execute("SELECT * FROM decoration ORDER BY id").fetchall()
+    return [_decoration_from_row(row) for row in rows]
 
 
 def add_decoration_skill(
@@ -361,6 +371,17 @@ def _weapon_from_row(row: sqlite3.Row) -> Weapon:
         rank_value=row["rank_value"],
         is_tower=bool(row["is_tower"]),
         zenith_skill_id=row["zenith_skill_id"],
+        source_url=row["source_url"],
+    )
+
+
+def _decoration_from_row(row: sqlite3.Row) -> Decoration:
+    return Decoration(
+        id=row["id"],
+        external_id=row["external_id"],
+        name=row["name"],
+        slot_size=row["slot_size"],
+        is_tower=bool(row["is_tower"]),
         source_url=row["source_url"],
     )
 
