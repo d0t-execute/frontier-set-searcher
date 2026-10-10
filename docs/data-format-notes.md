@@ -151,7 +151,7 @@ tier — not yet investigated further.
 | **Tower Armor** | same buckets, `CLASS="N"` | ⚠️ stored as plain `Equipment`, Tower-origin not flagged | 420 (84 × 5 slots) |
 | **Zenith Armor** | same buckets, `CLASS="P"` or `"Q"` | ⚠️ stored as plain `Equipment`, `Teni` (Zenith skill) not captured | 1,773 `CLASS="P"` (across 5 slots); `CLASS="Q"` not yet totaled (414 in `head` alone) |
 | Armor decoration | `deco` bucket, `DEC=""`, `slot_size` 1–3 | ✅ `Decoration` | 2,658 |
-| Tower Gem | `deco` bucket, `DEC=""`, `CLASS="N"` (subset of the above) | ⚠️ currently stored as an undifferentiated `Decoration` — compatibility restriction (Tower-only) not captured | 173 |
+| Tower Gem | `deco` bucket, `DEC=""`, `CLASS="N"` (subset of the above) | ⚠️ currently stored as an undifferentiated `Decoration` — exclusive-both-ways Tower compatibility not captured (confirmed) | 173 |
 | UI placeholder junk | `deco` bucket, `DEC=""`, `slot_size=0` | ✅ filtered out | 3 |
 | Cuff (regular + Hiden) | `deco` bucket, `DEC="1"` | ✅ `Cuff` | 3,306 |
 | **Zenith Cuff** | `deco` bucket, `DEC="3"`, `CLASS="P"` | ❌ currently deferred along with Tower Weapon Sigil — needs to move into `Cuff` plus a `Teni`/Zenith-skill column | 26 |
@@ -180,12 +180,18 @@ placeholders (filled/empty circle icons), not items — the parser skips
 
 **Tower Gems** are a `CLASS="N"` subset of this same `DEC=""` group (173 of
 the 2,658) — e.g. `Status Res Gem Ⅲ`, `RECIPE1="天廊宝箱報酬"` ("Tenrou
-treasure box reward"). Per the project owner, mechanically these use the
-*same* armor slot type as regular decorations, just restricted to socketing
-into Tower armor specifically (regular decorations presumably can't go into
-a Tower armor's slot, or Tower Gems can't go into normal armor's slot, or
-both — exact restriction direction still to confirm). Not yet given a
-separate DB identity from plain `Decoration`.
+treasure box reward"). Mechanically these use the *same* armor slot type as
+regular decorations (a 1–3 "open slot" count, same `Decoration`-shaped data),
+but compatibility is **exclusive both ways**, confirmed by the project
+owner: Tower armor **cannot** take regular decorations, and Tower Gems
+**cannot** go into non-Tower armor. So although the slot *mechanism* is
+shared, a Tower armor piece's slots and a normal armor piece's slots are
+functionally two non-interchangeable pools — the same relationship Cuffs
+have to armor decorations, just expressed as a compatibility rule on the
+same underlying field rather than a separate slot-count field. Not yet
+given a separate DB identity from plain `Decoration`; will need at least a
+`is_tower` (or similar) flag on `Decoration`, mirrored on `Equipment`, so
+the search engine can enforce the match.
 
 ### Cuffs (`DEC="1"`, plus Zenith Cuffs at `DEC="3"`+`CLASS="P"`)
 
@@ -238,9 +244,19 @@ Two carriers, confirmed by the project owner:
   Zenith skill `Teni=1` = "Skill Slots Up+1". Naming pattern is
   `<Monster> Z/ZF/ZY/ZX <PieceName>` (4 forge-independent tiers × usually 2
   piece-name variants per slot) spanning most of the monster roster —
-  1,773 `CLASS="P"` pieces alone across the 5 armor buckets, plus `CLASS="Q"`
-  (likely a higher-defense "Shugo" sibling tier, see CLASS table below;
-  not yet counted separately).
+  1,773 `CLASS="P"` pieces alone across the 5 armor buckets.
+
+  `CLASS="Q"` (辿異狩護/"Tan'i-Shugo") also carries `Teni` 100% of the time,
+  but its examples look like a genuinely different line, not just a
+  defensive/G-rank sibling of `CLASS="P"`: different tier-naming (`ZP`
+  rather than `Z/ZF/ZY/ZX`) and different flavor-text themes entirely —
+  e.g. `Dios ZP Head`: "異国にて伝わる「英雄の伝説」にまつわる頭防具。
+  ≪辿異狩護≫" ("armor tied to a hero's legend passed down in a foreign
+  land"), `Evol ZP Head`: "異国にて開発された、高級感の漂う頭防具。
+  ≪辿異狩護≫" ("armor developed in a foreign land, exuding luxury") — no
+  monster-material crafting language like the `CLASS="P"` Espinas/Rathalos/
+  etc. lines. Given to the project owner for independent verification;
+  don't assume `Q` = `P`'s sibling tier without confirming.
 - **Zenith Cuffs** (`DEC="3"`, `CLASS="P"`, see above): carry *only* a
   Zenith skill via `Teni`, nothing via `SN1–5`.
 
@@ -248,15 +264,13 @@ Not yet modeled: `Equipment` and `Cuff` both need a nullable Zenith-skill
 column (something like `zenith_skill_id`, resolved through a new
 `TENINAME`-backed lookup, parallel to but separate from the `skill` table).
 
-**Important distinction** (from the project owner, flavor-text-confirmed):
-Zenith/Tan'i (`CLASS="P"`/`"Q"`) and Tower/Tenrou (`CLASS="N"`) read as two
-*separate* systems, not tiers of one system. Tower armor's flavor text is
-generic lore about "ancient techniques discovered in the Tenrou"; Zenith
-armor's is monster-material crafting text (e.g. "armor decorated with sharp
-spines, made from Espinas materials") ending in `≪辿異防具≫` ("Tan'i
-Armor") — a different naming/crafting pattern with no tower-discovery
-language. Needs independent confirmation against actual game knowledge
-(in progress), but nothing in the data contradicts "separate systems."
+**Confirmed by the project owner: Zenith/Tan'i and Tower/Tenrou are entirely
+unrelated systems** — not tiers of one system, not the same activity. Treat
+`CLASS="N"` (Tower) and `CLASS="P"`/`"Q"` (Zenith) as fully independent
+origin categories with no shared lineage, consistent with their flavor text
+(Tower: generic "ancient techniques discovered in the Tenrou" lore; Zenith
+`P`: monster-material crafting; Zenith `Q`: unrelated foreign-land/hero-
+legend/luxury themes — see above).
 
 ### Tower Armor (`CLASS="N"` in the armor buckets)
 
@@ -276,19 +290,12 @@ with Tower Gems and Tower Armor Sigils.
 *separate* lookup array (`TENKOKUNAME` in `SkillForm.js`, not `MST_Skill`
 and not `TENINAME`) — Sharpness Up, Skill Up, Attack Power Up,
 Element/Status Up, Distance Correction, Power Coating Up, Defense Up,
-Damage Reduction, Auto Health Regen, G-Rank Armor. Per the site's own info
-page (`Sigil(Info)` tab): "up to three special effects can be attached to
-each sigil, and up to three can be put onto a G-rank weapon... to remove a
-sigil, a 'Sigil Catalyst' is required." (That info page's effect table —
-Attack/Attribute/Status/Affinity/Defense Adjustment — describes small numeric
-weapon-stat tweaks and might be a related-but-distinct general "Sigil"
-reforging mechanic rather than Tenkoku/Tenfuu specifically; not yet
-reconciled with the itemized Tenkoku/Tenfuu rows above — open question.)
+Damage Reduction, Auto Health Regen, G-Rank Armor.
 
 ### Deferred: Tower Weapon Sigil ("Tenfuu" minus Zenith Cuffs, `DEC="3"`, `CLASS="N"`)
 
 37 rows (63 total `DEC="3"` rows minus the 26 `CLASS="P"` Zenith Cuffs
-above), two sub-mechanics, both weapon-only per the project owner:
+above), two sub-mechanics:
 
 1. **Weapon enchants** (`SN1`→`TENFUNAME` indices 1–4): add an
    element/status/crit/ammo-type property to a weapon that doesn't normally
@@ -296,25 +303,27 @@ above), two sub-mechanics, both weapon-only per the project owner:
 2. **Named special techniques per weapon type** (`SN1`→`TENFUNAME` indices
    17–25), e.g. `[SnS] Beam Slash`, `[Hammer] Charge Ⅰ/Ⅱ/Ⅲ`.
 
+**Confirmed mechanism** (project owner): "Sigils" are one general weapon
+customization system — the site's `Sigil(Info)` page describes the slot
+mechanic itself (up to 3 sigils per weapon, up to 3 on a G-rank weapon,
+each adjusting Attack ±10–15 / Attribute ±10–15 / Status ×1.1 / Affinity
+±10 / Defense ±10–20; removing one needs a "Sigil Catalyst"). **Tower
+weapons can only equip Tower Weapon Sigils** (the 37 rows catalogued
+above); **every other weapon uses "regular" sigils** — a separate catalog
+we haven't located yet, since weapons aren't in `equip.js`'s scope at all
+(no `buki` bucket — see "How the data is embedded"). Finding regular
+sigils' data source is future work, for whenever weapons are tackled.
+
 ### Open questions (actively being researched)
 
-- Exact mechanical direction of the Tower Gem / Tower armor slot
-  restriction (can non-Tower decorations go into Tower armor slots? can
-  Tower Gems go into normal armor slots? project owner says "same slot
-  type, restricted compatibility" — need the precise rule before adding a
-  compatibility column).
-- Whether `CLASS="Q"` (辿異狩護/"Tan'i-Shugo") is simply the higher-defense
-  sibling tier of `CLASS="P"` within the same Zenith system (by analogy
-  with `J`="G狩護" being `F`="狩護"'s G-rank sibling) — looks likely from
-  the `CLASSTYPE` grouping helpers in `SkillForm.js` (`Shugo:"FJQ"` groups
-  F/J/Q together) but not independently confirmed.
-- Whether Zenith/Tan'i (`P`/`Q`) and Tower/Tenrou (`N`) are fully separate
-  activities/systems, or related tiers — project owner is verifying against
-  actual game knowledge.
-- The site's general "Sigil" info page (weapon stat adjustment: Attack
-  ±10–15, Attribute ±10–15, Status ×1.1, Affinity ±10, Defense ±10–20) vs.
-  the itemized Tenkoku/Tenfuu rows: same system described two ways, or two
-  different systems that happen to share the word "Sigil"?
+- Whether `CLASS="Q"` is really a sibling tier of `CLASS="P"` (as the
+  `CLASSTYPE` grouping helper `Shugo:"FJQ"` in `SkillForm.js` suggests by
+  analogy with `J` being `F`'s G-rank sibling), or a separate line entirely
+  — examples given to the project owner to verify, since the naming
+  (`ZP` tier vs. `Z/ZF/ZY/ZX`) and flavor-text themes look different enough
+  to doubt the sibling-tier assumption.
+- Where the "regular" (non-Tower) weapon Sigil catalog lives, once weapons
+  are in scope.
 - `CRE` field (see "Acquisition method" below) and the broader
   acquisition/origin tagging seen in the site's armor-tree legend (Hunting/
   Gathering/Quest/Gou/Hiden/G Rank/Exotic/Zenith/Road/Diva Battle/Prize/
