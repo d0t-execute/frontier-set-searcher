@@ -11,15 +11,22 @@
  * Measured results at this scale (7 slots x 100 candidates, 6 skills, 15
  * decorations, seed 42):
  * - 1 loosely-constrained requirement: ~10ms for the first 20 results.
- * - 3 simultaneous requirements at higher thresholds: ~24s for the first 20
- *   results. This is the scenario that previously never terminated at all
- *   (branch-and-bound alone: 200,000 search-tree nodes explored, zero
- *   results, eventual out-of-memory) -- meet-in-the-middle fixed
- *   termination and correctness, but 24s is still well short of the
- *   sub-5-second target. Likely next step: `pareto.ts`'s frontier-insertion
- *   is an O(frontier size) linear scan per candidate inserted, which is the
- *   suspected dominant cost at this scale -- worth profiling before
- *   assuming it's the bottleneck.
+ * - 3 simultaneous requirements at higher thresholds: ~1.7s for the first 20
+ *   results -- within the sub-5-second target. This is the scenario that
+ *   previously never terminated at all (branch-and-bound alone: 200,000
+ *   search-tree nodes explored, zero results, eventual out-of-memory), then
+ *   completed but slowly once meet-in-the-middle fixed correctness (~24s).
+ *   Profiling found the actual cost: each slot can have 1000+ options after
+ *   decoration expansion, and `computeFrontier` was combining the running
+ *   cross-slot frontier against that *raw* list every time -- at the 4th
+ *   slot of a 4-slot half, the frontier reached 12,058 entries and that one
+ *   step alone took 21.5s (confirmed via instrumented per-slot timing, not
+ *   guessed). Pre-reducing each slot's own options to its own Pareto
+ *   frontier before combining -- most of those 1000+ options are already
+ *   dominated by another option in the *same* slot, independent of
+ *   anything else -- cut that same step to 1.6s without changing the final
+ *   frontier at all (domination is transitive, so nothing that would have
+ *   survived was ever at risk of being pruned early).
  */
 
 import { search } from '../engine'

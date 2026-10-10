@@ -32,9 +32,9 @@
 
 import { expandSlot, filterRelevantDecorations } from './expand'
 import { MaxHeap } from './max-heap'
-import { computeFrontier, dominates, scalarScore } from './pareto'
+import { computeFrontier, dominates, mergeTotals, scalarScore } from './pareto'
 import type { FrontierEntry } from './pareto'
-import type { BuildResult, Decoration, SkillId, SkillRequirement, SlotQuery } from './types'
+import type { BuildResult, Decoration, SkillRequirement, SlotQuery } from './types'
 
 interface PairEntry {
   readonly i: number
@@ -146,15 +146,4 @@ function buildResult(
     skillTotals: totals,
     surplus,
   }
-}
-
-function mergeTotals(
-  a: ReadonlyMap<SkillId, number>,
-  b: ReadonlyMap<SkillId, number>,
-): Map<SkillId, number> {
-  const totals = new Map(a)
-  for (const [skillId, points] of b) {
-    totals.set(skillId, (totals.get(skillId) ?? 0) + points)
-  }
-  return totals
 }

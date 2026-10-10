@@ -69,13 +69,24 @@ export function computeFrontier(
   ]
 
   for (const slot of slots) {
+    // Reduce this slot's own options to its own frontier *before* combining
+    // with the running cross-slot frontier. A slot can easily have over a
+    // thousand options after decoration expansion, but only a handful of
+    // skills are ever tracked -- most of those options are already
+    // dominated by another option *within the same slot*, independent of
+    // anything else. Skipping this step doesn't change the final result
+    // (domination is transitive, so a same-slot-dominated option could
+    // never survive the full cross-slot computation anyway), but it was
+    // the dominant cost: combining against the raw, unreduced option list
+    // made both the number of insertions *and* the frontier they got
+    // inserted into far bigger than necessary at every subsequent slot.
+    const slotFrontier = reduceSlotOptions(slot, requirements)
+
     const next: FrontierEntry[] = []
     for (const entry of frontier) {
-      for (const option of slot.options) {
-        const totals = new Map(entry.totals)
-        applyContribution(totals, option.skills, 1)
-        const picks = new Map(entry.picks)
-        picks.set(slot.slotId, option)
+      for (const slotEntry of slotFrontier) {
+        const totals = mergeTotals(entry.totals, slotEntry.totals)
+        const picks = new Map([...entry.picks, ...slotEntry.picks])
         insert(next, { vector: vectorOf(totals, requirements), totals, picks })
       }
     }
@@ -83,6 +94,36 @@ export function computeFrontier(
   }
 
   return frontier
+}
+
+/** A single slot's own options, Pareto-pruned in isolation (no other slots
+ * involved yet) -- see the "reduce before combining" note above. */
+function reduceSlotOptions(
+  slot: ExpandedSlot,
+  requirements: readonly SkillRequirement[],
+): FrontierEntry[] {
+  const reduced: FrontierEntry[] = []
+  for (const option of slot.options) {
+    const totals = new Map<SkillId, number>()
+    applyContribution(totals, option.skills, 1)
+    insert(reduced, {
+      vector: vectorOf(totals, requirements),
+      totals,
+      picks: new Map([[slot.slotId, option]]),
+    })
+  }
+  return reduced
+}
+
+export function mergeTotals(
+  a: ReadonlyMap<SkillId, number>,
+  b: ReadonlyMap<SkillId, number>,
+): Map<SkillId, number> {
+  const totals = new Map(a)
+  for (const [skillId, points] of b) {
+    totals.set(skillId, (totals.get(skillId) ?? 0) + points)
+  }
+  return totals
 }
 
 /** Sum of a frontier entry's requested-skill vector -- used to rank/merge
