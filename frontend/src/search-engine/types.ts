@@ -24,13 +24,19 @@ export interface SkillContribution {
 export interface Candidate {
   readonly id: string
   readonly skills: readonly SkillContribution[]
-  /** Sizes of this candidate's open decoration slots, e.g. `[3, 1]`. Omitted
-   * or empty means no open slots. */
-  readonly openSlots?: readonly number[]
+  /** Total count of open decoration slots on this piece. Slots are plain,
+   * interchangeable units (confirmed by the project owner) -- a piece's slot
+   * count is not a list of individually-sized slots. Omitted or 0 means no
+   * open slots. */
+  readonly openSlotCount?: number
 }
 
 export interface Decoration {
   readonly id: string
+  /** Number of a piece's open slot units this decoration consumes (1-3),
+   * confirmed by the project owner. A decoration fits a piece as long as the
+   * summed slotSize of everything placed in it doesn't exceed the piece's
+   * openSlotCount. */
   readonly slotSize: number
   readonly skills: readonly SkillContribution[]
 }
@@ -44,8 +50,8 @@ export interface BuildResult {
   /** One chosen candidate per slot, keyed by `slotId`. */
   readonly picks: ReadonlyMap<string, Candidate>
   /** Decorations placed into each pick's open slots, keyed by `slotId`.
-   * Only present for slots whose candidate has `openSlots` and at least one
-   * decoration was placed. */
+   * Only present for slots whose candidate has `openSlotCount` and at least
+   * one decoration was placed. */
   readonly decorations: ReadonlyMap<string, readonly Decoration[]>
   /** Summed skill points across all picks and placed decorations, keyed by
    * `skillId`. */

@@ -198,13 +198,13 @@ function bruteForceSearchWithDecorations(
 
     const slot = slots[slotIndex]
     for (const candidate of slot.candidates) {
-      for (const filling of fillSlots(candidate.openSlots ?? [], decorations)) {
+      for (const filling of fillSlots(candidate.openSlotCount ?? 0, decorations)) {
         const added = [...candidate.skills, ...filling.skills]
         for (const { skillId, points } of added) {
           totals.set(skillId, (totals.get(skillId) ?? 0) + points)
         }
         picks.set(slot.slotId, candidate)
-        const usedDecorations = filling.placements.map((p) => p.decoration)
+        const usedDecorations = filling.decorationsUsed
         if (usedDecorations.length > 0) chosenDecorations.set(slot.slotId, usedDecorations)
 
         recurse(slotIndex + 1, picks, chosenDecorations, totals)
@@ -224,7 +224,7 @@ function bruteForceSearchWithDecorations(
   return results
 }
 
-const openSlotsArb = fc.array(fc.integer({ min: 1, max: 3 }), { maxLength: 2 })
+const openSlotCountArb = fc.integer({ min: 0, max: 4 })
 
 const candidateWithSlotsArb = fc.record({
   id: fc.uuid(),
@@ -232,7 +232,7 @@ const candidateWithSlotsArb = fc.record({
     fc.record({ skillId: skillIdArb, points: fc.integer({ min: 0, max: 10 }) }),
     { selector: (s) => s.skillId, maxLength: 4 },
   ),
-  openSlots: openSlotsArb,
+  openSlotCount: openSlotCountArb,
 })
 
 const slotsWithOpenSlotsArb = fc

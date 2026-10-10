@@ -2,18 +2,14 @@ import { describe, expect, it } from 'vitest'
 import { search } from './engine'
 import type { Candidate, Decoration, SlotQuery } from './types'
 
-function candidate(
-  id: string,
-  skills: Record<number, number>,
-  openSlots: readonly number[] = [],
-): Candidate {
+function candidate(id: string, skills: Record<number, number>, openSlotCount = 0): Candidate {
   return {
     id,
     skills: Object.entries(skills).map(([skillId, points]) => ({
       skillId: Number(skillId),
       points,
     })),
-    openSlots,
+    openSlotCount,
   }
 }
 
@@ -190,7 +186,7 @@ describe('search', () => {
 
 describe('search with decorations', () => {
   it('uses a decoration placed in an open slot to meet the requirement', () => {
-    const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Bare Helm', {}, [2])] }]
+    const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Bare Helm', {}, 2)] }]
     const jewel = deco('Attack Jewel', 2, { 1: 5 })
 
     const results = [...search(slots, [{ skillId: 1, minPoints: 3 }], [jewel])]
@@ -201,7 +197,7 @@ describe('search with decorations', () => {
   })
 
   it('still returns the undecorated result when no decoration is needed or supplied', () => {
-    const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Helm', { 1: 5 }, [2])] }]
+    const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Helm', { 1: 5 }, 2)] }]
 
     const resultsWithoutDecorations = [...search(slots, [{ skillId: 1, minPoints: 3 }])]
     expect(resultsWithoutDecorations).toHaveLength(1)
@@ -225,7 +221,7 @@ describe('search with decorations', () => {
   it('prunes a decoration choice that is strictly dominated by a better one', () => {
     // Small Jewel's contribution (1) is strictly worse than Big Jewel's (5)
     // on the only requested skill -- same pruning rule as for candidates.
-    const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Bare Helm', {}, [2])] }]
+    const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Bare Helm', {}, 2)] }]
     const bigJewel = deco('Big Jewel', 2, { 1: 5 })
     const smallJewel = deco('Small Jewel', 2, { 1: 1 })
 
@@ -236,7 +232,7 @@ describe('search with decorations', () => {
   })
 
   it('ranks non-dominated decoration choices by the surplus they produce', () => {
-    const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Bare Helm', {}, [2])] }]
+    const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Bare Helm', {}, 2)] }]
     const attackJewel = deco('Attack Jewel', 2, { 1: 5, 2: 1 })
     const defenseJewel = deco('Defense Jewel', 2, { 1: 1, 2: 4 })
 

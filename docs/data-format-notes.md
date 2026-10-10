@@ -163,10 +163,17 @@ tier — not yet investigated further.
 
 ### Armor decorations (`DEC=""`, `slot_size` 1–3)
 
-Socket into armor pieces' open slots, same as always assumed. `SLOT7` holds
-the decoration's own slot size (1–3). Example:
-`"Paralysis 1 Deco,0,0,4,,,,,,,57,2,46,-2,...,1-,,"` → a 1-slot decoration
-granting skill 57 (+2 points) and skill 46 (-2 points).
+Socket into armor pieces' open slots. **Confirmed by the project owner**: an
+armor piece's `slot_count` (`SLOT1`/`SLOT7`) is a plain count of
+interchangeable, unsized open slot units -- not a list of individually-sized
+slots. A decoration's own `slot_size` (`SLOT7` on a decoration row, 1–3) is
+how many of those unit slots it consumes, and a decoration fits a piece as
+long as the summed `slot_size` of everything socketed into it doesn't exceed
+the piece's `slot_count`. (An earlier pass through this project briefly
+modeled decorations as costing exactly one slot flat, ignoring `slot_size`
+entirely -- also wrong, corrected back to this budget model.) Example:
+`"Paralysis 1 Deco,0,0,4,,,,,,,57,2,46,-2,...,1-,,"` → a 1-slot-unit
+decoration granting skill 57 (+2 points) and skill 46 (-2 points).
 
 (`"Attack II PA1"`/`"Attack II PA2"` were our very first example rows, back
 before the `DEC` field's meaning was known — they're actually Cuffs, not

@@ -49,12 +49,12 @@ export function filterRelevantDecorations(
 export function expandSlot(slot: SlotQuery, decorations: readonly Decoration[]): ExpandedSlot {
   const options: ExpandedOption[] = []
   for (const candidate of slot.candidates) {
-    const fillings = fillSlots(candidate.openSlots ?? [], decorations)
+    const fillings = fillSlots(candidate.openSlotCount ?? 0, decorations)
     for (const filling of fillings) {
       options.push({
         candidate,
         skills: mergeSkills(candidate.skills, filling.skills),
-        decorationsUsed: filling.placements.map((p) => p.decoration),
+        decorationsUsed: filling.decorationsUsed,
       })
     }
   }

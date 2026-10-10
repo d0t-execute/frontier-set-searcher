@@ -50,12 +50,10 @@ export function generateSlots(options: GeneratorOptions): SlotQuery[] {
   for (let s = 0; s < options.slotCount; s++) {
     const candidates: Candidate[] = []
     for (let c = 0; c < options.candidatesPerSlot; c++) {
-      const openSlotCount = Math.floor(rng() * (options.maxOpenSlots + 1))
-      const openSlots = Array.from({ length: openSlotCount }, () => 1 + Math.floor(rng() * 3))
       candidates.push({
         id: `slot${s}-item${c}`,
         skills: randomSkills(rng, options.skillCount, 3, 6),
-        openSlots,
+        openSlotCount: Math.floor(rng() * (options.maxOpenSlots + 1)),
       })
     }
     slots.push({ slotId: `slot-${s}`, candidates })
