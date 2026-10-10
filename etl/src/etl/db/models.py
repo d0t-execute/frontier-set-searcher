@@ -32,8 +32,10 @@ class Equipment:
     name: str
     slot_type: EquipmentType
     rarity: int | None = None
-    defense: int | None = None
-    slot_count: int = 0
+    defense_base: int | None = None
+    defense_max: int | None = None
+    slot_count_base: int = 0
+    slot_count_max: int = 0
     min_hr: int | None = None
     min_gr: int | None = None
     source_url: str | None = None

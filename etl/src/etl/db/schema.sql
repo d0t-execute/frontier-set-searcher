@@ -16,8 +16,15 @@ CREATE TABLE IF NOT EXISTS equipment (
         slot_type IN ('head', 'chest', 'arms', 'waist', 'legs', 'weapon', 'charm')
     ),
     rarity INTEGER,
-    defense INTEGER,
-    slot_count INTEGER NOT NULL DEFAULT 0,
+    -- Defense and slot count both scale across a piece's forge levels (see
+    -- docs/data-format-notes.md); skill points do not, which is why Skill
+    -- stays a single fixed value below. We store base (unforged) and max
+    -- (fully forged) rather than the full per-level table, since search
+    -- queries care about what's achievable, not every intermediate step.
+    defense_base INTEGER,
+    defense_max INTEGER,
+    slot_count_base INTEGER NOT NULL DEFAULT 0,
+    slot_count_max INTEGER NOT NULL DEFAULT 0,
     min_hr INTEGER,
     min_gr INTEGER,
     source_url TEXT

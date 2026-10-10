@@ -11,8 +11,10 @@ def test_insert_and_fetch_equipment_by_external_id(conn: sqlite3.Connection) -> 
         name="Leather Helm",
         slot_type="head",
         rarity=1,
-        defense=3,
-        slot_count=0,
+        defense_base=2,
+        defense_max=10,
+        slot_count_base=0,
+        slot_count_max=1,
     )
 
     fetched = repo.get_equipment_by_external_id(conn, "0001")

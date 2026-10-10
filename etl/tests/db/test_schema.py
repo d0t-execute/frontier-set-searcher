@@ -28,6 +28,7 @@ def test_connect_is_idempotent_against_an_existing_database(tmp_path: Path) -> N
     db_path = tmp_path / "existing.sqlite3"
     first = connect(db_path)
     repo.insert_skill(first, name="Attack Up (Small)")
+    first.commit()
     first.close()
 
     second = connect(db_path)

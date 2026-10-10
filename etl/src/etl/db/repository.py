@@ -1,4 +1,12 @@
-"""Query/repository layer over the ETL staging database (see docs/PLAN.md §7)."""
+"""Query/repository layer over the ETL staging database (see docs/PLAN.md §7).
+
+Writes here do not commit — a real load is tens of thousands of rows, and
+committing per row (as an earlier version of this module did) turned a
+sub-second load into one that didn't finish in 5 minutes. Callers control the
+transaction boundary and commit when they're ready (once, at the end of a
+bulk load; per-test, only if they need the data visible from a second
+connection — reads on the same connection see your own uncommitted writes).
+"""
 
 from __future__ import annotations
 
@@ -18,7 +26,6 @@ def insert_skill(conn: sqlite3.Connection, *, name: str, category: str | None = 
         return existing
 
     cursor = conn.execute("INSERT INTO skill (name, category) VALUES (?, ?)", (name, category))
-    conn.commit()
     row_id = cursor.lastrowid
     assert row_id is not None
     return Skill(id=row_id, name=name, category=category)
@@ -38,8 +45,10 @@ def insert_equipment(
     name: str,
     slot_type: EquipmentType,
     rarity: int | None = None,
-    defense: int | None = None,
-    slot_count: int = 0,
+    defense_base: int | None = None,
+    defense_max: int | None = None,
+    slot_count_base: int = 0,
+    slot_count_max: int = 0,
     min_hr: int | None = None,
     min_gr: int | None = None,
     source_url: str | None = None,
@@ -53,12 +62,24 @@ def insert_equipment(
     cursor = conn.execute(
         """
         INSERT INTO equipment (
-            external_id, name, slot_type, rarity, defense, slot_count, min_hr, min_gr, source_url
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            external_id, name, slot_type, rarity, defense_base, defense_max,
+            slot_count_base, slot_count_max, min_hr, min_gr, source_url
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
-        (external_id, name, slot_type, rarity, defense, slot_count, min_hr, min_gr, source_url),
+        (
+            external_id,
+            name,
+            slot_type,
+            rarity,
+            defense_base,
+            defense_max,
+            slot_count_base,
+            slot_count_max,
+            min_hr,
+            min_gr,
+            source_url,
+        ),
     )
-    conn.commit()
     row_id = cursor.lastrowid
     assert row_id is not None
     return Equipment(
@@ -67,8 +88,10 @@ def insert_equipment(
         name=name,
         slot_type=slot_type,
         rarity=rarity,
-        defense=defense,
-        slot_count=slot_count,
+        defense_base=defense_base,
+        defense_max=defense_max,
+        slot_count_base=slot_count_base,
+        slot_count_max=slot_count_max,
         min_hr=min_hr,
         min_gr=min_gr,
         source_url=source_url,
@@ -101,7 +124,6 @@ def add_equipment_skill(
         "INSERT INTO equipment_skill (equipment_id, skill_id, points) VALUES (?, ?, ?)",
         (equipment_id, skill_id, points),
     )
-    conn.commit()
 
 
 def get_equipment_skills(conn: sqlite3.Connection, equipment_id: int) -> list[SkillPoints]:
@@ -131,7 +153,6 @@ def insert_decoration(
         "INSERT INTO decoration (external_id, name, slot_size, source_url) VALUES (?, ?, ?, ?)",
         (external_id, name, slot_size, source_url),
     )
-    conn.commit()
     row_id = cursor.lastrowid
     assert row_id is not None
     return Decoration(
@@ -146,7 +167,6 @@ def add_decoration_skill(
         "INSERT INTO decoration_skill (decoration_id, skill_id, points) VALUES (?, ?, ?)",
         (decoration_id, skill_id, points),
     )
-    conn.commit()
 
 
 def get_decoration_skills(conn: sqlite3.Connection, decoration_id: int) -> list[SkillPoints]:
@@ -175,8 +195,10 @@ def _equipment_from_row(row: sqlite3.Row) -> Equipment:
         name=row["name"],
         slot_type=row["slot_type"],
         rarity=row["rarity"],
-        defense=row["defense"],
-        slot_count=row["slot_count"],
+        defense_base=row["defense_base"],
+        defense_max=row["defense_max"],
+        slot_count_base=row["slot_count_base"],
+        slot_count_max=row["slot_count_max"],
         min_hr=row["min_hr"],
         min_gr=row["min_gr"],
         source_url=row["source_url"],
