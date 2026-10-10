@@ -1,0 +1,10972 @@
+[
+  {
+    "name": "Common Bones",
+    "effects": [
+      {
+        "effect": "Defense",
+        "range": "1～5"
+      }
+    ],
+    "chances": [
+      "30%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Cracked Bone",
+        "qty": "15P"
+      },
+      {
+        "item": "Chipped Bone",
+        "qty": "14P"
+      },
+      {
+        "item": "Broken Bone",
+        "qty": "14P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Common Claws",
+    "effects": [
+      {
+        "effect": "Affinity",
+        "range": "1～5"
+      }
+    ],
+    "chances": [
+      "25%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Cracked Claw",
+        "qty": "15P"
+      },
+      {
+        "item": "Chipped Claw",
+        "qty": "14P"
+      },
+      {
+        "item": "Broken Claw",
+        "qty": "14P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Common Fangs",
+    "effects": [
+      {
+        "effect": "Attack",
+        "range": "1～5"
+      }
+    ],
+    "chances": [
+      "25%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Cracked Fang",
+        "qty": "15P"
+      },
+      {
+        "item": "Chipped Fang",
+        "qty": "14P"
+      },
+      {
+        "item": "Broken Fang",
+        "qty": "14P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "GR1 Gem",
+    "effects": "Unknown",
+    "chances": [],
+    "grade": "GR1",
+    "price": "400",
+    "creation_mats": [
+      {
+        "item": "GR1 Gem",
+        "qty": "22P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Blk Seven Fruit",
+        "qty": "30P"
+      },
+      {
+        "item": "Cassiterite",
+        "qty": "12P"
+      },
+      {
+        "item": "Taro Bug",
+        "qty": "12P"
+      }
+    ]
+  },
+  {
+    "name": "Velocidrome A",
+    "effects": [
+      {
+        "effect": "Tech Boost[HH]",
+        "range": "Musical"
+      },
+      {
+        "effect": "Tech Boost[HH]",
+        "range": "Beatdown"
+      },
+      {
+        "effect": "Attack",
+        "range": "1～8"
+      }
+    ],
+    "chances": [
+      "3%",
+      "3%",
+      "18%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Velocidrome Scale",
+        "qty": "25P"
+      },
+      {
+        "item": "Velocidrome Fang",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Velocidrome B",
+    "effects": [
+      {
+        "effect": "Elemental",
+        "range": "1～7"
+      },
+      {
+        "effect": "Defense",
+        "range": "-5～5"
+      }
+    ],
+    "chances": [
+      "18%",
+      "18%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Velocidrome Crest",
+        "qty": "67P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "GR1 Gem",
+        "qty": "33P"
+      }
+    ]
+  },
+  {
+    "name": "Velocidrome ★",
+    "effects": [
+      {
+        "effect": "Elemental",
+        "range": "3～10"
+      }
+    ],
+    "chances": [
+      "30%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Velocidrome Bone",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Gendrome A",
+    "effects": [
+      {
+        "effect": "Tech Boost[DS]",
+        "range": "Front Flip"
+      },
+      {
+        "effect": "Tech Boost[DS]",
+        "range": "Rush Slash"
+      },
+      {
+        "effect": "Attack",
+        "range": "1～8"
+      }
+    ],
+    "chances": [
+      "3%",
+      "3%",
+      "18%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Gendrome Scale",
+        "qty": "25P"
+      },
+      {
+        "item": "Gendrome Fang",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Gendrome B",
+    "effects": [
+      {
+        "effect": "Stun Value",
+        "range": "Defense"
+      },
+      {
+        "effect": "-5～5",
+        "range": null
+      }
+    ],
+    "chances": [
+      "8%",
+      "18%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Gendrome Crest",
+        "qty": "67P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Immobilizing Sac",
+        "qty": "40P"
+      }
+    ]
+  },
+  {
+    "name": "Gendrome ★",
+    "effects": [
+      {
+        "effect": "Stun Value",
+        "range": null
+      }
+    ],
+    "chances": [
+      "30%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Gendrome Claw",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Iodrome A",
+    "effects": [
+      {
+        "effect": "Tech Boost[LS]",
+        "range": "Piercing"
+      },
+      {
+        "effect": "Tech Boost[LS]",
+        "range": "Upswing"
+      },
+      {
+        "effect": "Attack",
+        "range": "1～8"
+      }
+    ],
+    "chances": [
+      "3%",
+      "3%",
+      "18%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Iodrome Scale",
+        "qty": "25P"
+      },
+      {
+        "item": "Iodrome Bone",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Iodrome B",
+    "effects": [
+      {
+        "effect": "Status Attack",
+        "range": "Defense"
+      },
+      {
+        "effect": "-5～5",
+        "range": null
+      }
+    ],
+    "chances": [
+      "8%",
+      "18%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Iodrome Crest",
+        "qty": "67P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Miasma Sac",
+        "qty": "40P"
+      }
+    ]
+  },
+  {
+    "name": "Iodrome ★",
+    "effects": [
+      {
+        "effect": "Status Attack",
+        "range": null
+      }
+    ],
+    "chances": [
+      "30%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Iodrome Fang",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Bulldrome A",
+    "effects": [
+      {
+        "effect": "Minion",
+        "range": "1～10"
+      },
+      {
+        "effect": "Defense",
+        "range": "1～5"
+      }
+    ],
+    "chances": [
+      "12%",
+      "12%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Bulldrome Finepelt",
+        "qty": "25P"
+      },
+      {
+        "item": "Bulldrome Long Fur",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Bulldrome B",
+    "effects": [
+      {
+        "effect": "Minion",
+        "range": "5～10"
+      },
+      {
+        "effect": "Attack",
+        "range": "1～8"
+      }
+    ],
+    "chances": [
+      "18%",
+      "18%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Bulldrome Head",
+        "qty": "67P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Bulldrome ★",
+    "effects": [
+      {
+        "effect": "Affinity",
+        "range": "3～6"
+      }
+    ],
+    "chances": [
+      "30%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Bulldrome Hardbone",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Kut-Ku A",
+    "effects": [
+      {
+        "effect": "Carapaceon",
+        "range": "1～10"
+      },
+      {
+        "effect": "Monday",
+        "range": "1～10"
+      }
+    ],
+    "chances": [
+      "18%",
+      "12%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Kut-Ku Bone",
+        "qty": "25P"
+      },
+      {
+        "item": "Kut-Ku Fine Scale",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Kut-Ku B",
+    "effects": [
+      {
+        "effect": "Carapaceon",
+        "range": "3～10"
+      },
+      {
+        "effect": "Monday",
+        "range": "3～10"
+      }
+    ],
+    "chances": [
+      "18%",
+      "12%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Kut-Ku Hollow Beak",
+        "qty": "67P"
+      },
+      {
+        "item": "GR1 Gem",
+        "qty": "33P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Scorch Sac",
+        "qty": "40P"
+      }
+    ]
+  },
+  {
+    "name": "Kut-Ku ★",
+    "effects": [
+      {
+        "effect": "Carapaceon",
+        "range": "3～15"
+      }
+    ],
+    "chances": [
+      "30%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "K.Ku Bewitchng Ear",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Daimyo A",
+    "effects": [
+      {
+        "effect": "Leviathan",
+        "range": "1～10"
+      },
+      {
+        "effect": "Thursday",
+        "range": "1～10"
+      }
+    ],
+    "chances": [
+      "18%",
+      "12%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Hrm.Shield Claw",
+        "qty": "25P"
+      },
+      {
+        "item": "Hermitaur Scissor",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Daimyo B",
+    "effects": [
+      {
+        "effect": "Leviathan",
+        "range": "3～10"
+      },
+      {
+        "effect": "Thursday",
+        "range": "3～10"
+      }
+    ],
+    "chances": [
+      "18%",
+      "12%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Hrm.Eternal Claw",
+        "qty": "67P"
+      },
+      {
+        "item": "GR1 Gem",
+        "qty": "33P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Tsunami Sac",
+        "qty": "40P"
+      }
+    ]
+  },
+  {
+    "name": "Daimyo ★",
+    "effects": [
+      {
+        "effect": "Leviathan",
+        "range": "3～15"
+      }
+    ],
+    "chances": [
+      "30%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Hermitaur Feeler",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Hypnoc A",
+    "effects": [
+      {
+        "effect": "Bird Wyvern",
+        "range": "1～10"
+      },
+      {
+        "effect": "Attack",
+        "range": "1～10"
+      }
+    ],
+    "chances": [
+      "18%",
+      "18%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Hypnoc Finehide",
+        "qty": "25P"
+      },
+      {
+        "item": "Hypnoc Hardclaw",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Hypnoc B",
+    "effects": [
+      {
+        "effect": "Tech Boost[Hammer]",
+        "range": "Baseball"
+      },
+      {
+        "effect": "Tech Boost[Hammer]",
+        "range": "Swing Up"
+      },
+      {
+        "effect": "Tech Boost[Hammer]",
+        "range": "C Move"
+      },
+      {
+        "effect": "Stun Value",
+        "range": null
+      }
+    ],
+    "chances": [
+      "3%",
+      "3%",
+      "3%",
+      "8%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Hypnoc Brave Beak",
+        "qty": "67P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "GR1 Gem",
+        "qty": "33P"
+      },
+      {
+        "item": "Deep Coma Sac",
+        "qty": "40P"
+      }
+    ]
+  },
+  {
+    "name": "Hypnoc ★",
+    "effects": [
+      {
+        "effect": "Tech Boost[Hammer]",
+        "range": "Baseball"
+      },
+      {
+        "effect": "Tech Boost[Hammer]",
+        "range": "Swing Up"
+      },
+      {
+        "effect": "Tech Boost[Hammer]",
+        "range": "C Move"
+      },
+      {
+        "effect": "Stun Value",
+        "range": null
+      }
+    ],
+    "chances": [
+      "8%",
+      "8%",
+      "8%",
+      "20%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Hypnoc Mega Bezoar",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Pokaradon A",
+    "effects": [
+      {
+        "effect": "Fanged Beast",
+        "range": "1～10"
+      },
+      {
+        "effect": "Defense",
+        "range": "1～15"
+      },
+      {
+        "effect": "Dowsing",
+        "range": "1～10"
+      }
+    ],
+    "chances": [
+      "18%",
+      "12%",
+      "3%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Pokaradon Bone",
+        "qty": "25P"
+      },
+      {
+        "item": "Pokaradon Claw",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Pokaradon B",
+    "effects": [
+      {
+        "effect": "Fanged Beast",
+        "range": "3～10"
+      },
+      {
+        "effect": "Defense",
+        "range": "3～15"
+      },
+      {
+        "effect": "Dowsing",
+        "range": "1～10"
+      }
+    ],
+    "chances": [
+      "18%",
+      "12%",
+      "3%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Pokaradon Tusk",
+        "qty": "67P"
+      },
+      {
+        "item": "Pokaradon Tail",
+        "qty": "33P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "GR1 Gem",
+        "qty": "17P"
+      }
+    ]
+  },
+  {
+    "name": "Pokaradon ★",
+    "effects": [
+      {
+        "effect": "Fanged Beast",
+        "range": "3～15"
+      }
+    ],
+    "chances": [
+      "30%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Pokaradon Ice Tear",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Bright Hypnoc A",
+    "effects": [
+      {
+        "effect": "Note Change 1",
+        "range": "2～7"
+      },
+      {
+        "effect": "Leviathan",
+        "range": "1～10"
+      }
+    ],
+    "chances": [
+      "8%",
+      "18%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "B.Hypnoc Long Fur",
+        "qty": "25P"
+      },
+      {
+        "item": "B.Hypnoc Supr Clw",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Bright Hypnoc B",
+    "effects": [
+      {
+        "effect": "Note Change 1",
+        "range": "2～7"
+      },
+      {
+        "effect": "Tech Boost[HH]",
+        "range": "Beatdown"
+      }
+    ],
+    "chances": [
+      "10%",
+      "5%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "B.Hypnoc BraveBeak",
+        "qty": "67P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "GR1 Gem",
+        "qty": "33P"
+      },
+      {
+        "item": "Deep Coma Sac",
+        "qty": "40P"
+      }
+    ]
+  },
+  {
+    "name": "Bright Hypnoc ★",
+    "effects": [
+      {
+        "effect": "Note Change 1",
+        "range": "2～7"
+      },
+      {
+        "effect": "Tech Boost[HH]",
+        "range": "Beatdown"
+      },
+      {
+        "effect": "Elemental",
+        "range": "3～10"
+      }
+    ],
+    "chances": [
+      "21%",
+      "10%",
+      "10%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "B.Hypnoc S.Bezoar",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Mystery Sigil",
+    "effects": "Unknown",
+    "chances": [],
+    "grade": "GR1",
+    "price": "432",
+    "creation_mats": [
+      {
+        "item": "Shining Mystery",
+        "qty": "65P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Dazzling Shard",
+        "qty": "12P"
+      }
+    ]
+  },
+  {
+    "name": "G Promo Sigil",
+    "effects": [
+      {
+        "effect": "Affinity",
+        "range": "4～6"
+      },
+      {
+        "effect": "Defense",
+        "range": "8～10"
+      },
+      {
+        "effect": "Attack",
+        "range": "4～6"
+      },
+      {
+        "effect": "Saturday",
+        "range": "7～10"
+      },
+      {
+        "effect": "Sunday",
+        "range": "7～10"
+      },
+      {
+        "effect": "Bird Wyvern",
+        "range": "7～10"
+      }
+    ],
+    "chances": [
+      "13%",
+      "15%",
+      "16%",
+      "15%",
+      "17%",
+      "14%"
+    ],
+    "grade": "HR1",
+    "price": "0\nEvent",
+    "creation_mats": [
+      {
+        "item": "Basic Sigil Mat",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "GR2 Gem",
+    "effects": "Unknown",
+    "chances": [],
+    "grade": "GR1",
+    "price": "400",
+    "creation_mats": [
+      {
+        "item": "GR2 Gem",
+        "qty": "22P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Sunny Dragonfly",
+        "qty": "30P"
+      },
+      {
+        "item": "Coro Fruit",
+        "qty": "12P"
+      },
+      {
+        "item": "Galena",
+        "qty": "12P"
+      }
+    ]
+  },
+  {
+    "name": "Congalala A",
+    "effects": [
+      {
+        "effect": "Bird Wyvern",
+        "range": "1～10"
+      },
+      {
+        "effect": "Friday",
+        "range": "1～10"
+      }
+    ],
+    "chances": [
+      "18%",
+      "12%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Conga. Everpelt",
+        "qty": "25P"
+      },
+      {
+        "item": "Congalala Shredder",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Congalala B",
+    "effects": [
+      {
+        "effect": "Bird Wyvern",
+        "range": "3～10"
+      },
+      {
+        "effect": "Friday",
+        "range": "3～10"
+      }
+    ],
+    "chances": [
+      "18%",
+      "12%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Lovely Pelt",
+        "qty": "67P"
+      },
+      {
+        "item": "GR2 Gem",
+        "qty": "33P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Congalala ★",
+    "effects": [
+      {
+        "effect": "Bird Wyvern",
+        "range": "3～15"
+      }
+    ],
+    "chances": [
+      "30%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Conga.Sharp Claws",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Gypceros A",
+    "effects": [
+      {
+        "effect": "Status Attack",
+        "range": "Wednesday"
+      },
+      {
+        "effect": "1～10",
+        "range": null
+      }
+    ],
+    "chances": [
+      "5%",
+      "26%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Rubbery Everhide",
+        "qty": "25P"
+      },
+      {
+        "item": "Gypceros Hard Claw",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Gypceros B",
+    "effects": [
+      {
+        "effect": "Status Attack",
+        "range": "Wednesday"
+      },
+      {
+        "effect": "3～10",
+        "range": null
+      }
+    ],
+    "chances": [
+      "8%",
+      "22%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Inexhaustive Fluid",
+        "qty": "67P"
+      },
+      {
+        "item": "GR2 Gem",
+        "qty": "33P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Miasma Sac",
+        "qty": "40P"
+      }
+    ]
+  },
+  {
+    "name": "Gypceros ★",
+    "effects": [
+      {
+        "effect": "Status Attack",
+        "range": null
+      }
+    ],
+    "chances": [
+      "30%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Gyp.Radiant Stone",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Cephadrome A",
+    "effects": [
+      {
+        "effect": "Tech Boost[Hammer]",
+        "range": "Baseball"
+      },
+      {
+        "effect": "Tech Boost[Hammer]",
+        "range": "Swing Up"
+      },
+      {
+        "effect": "Attack",
+        "range": "1～8"
+      }
+    ],
+    "chances": [
+      "3%",
+      "3%",
+      "18%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "C.Drome Elder Fang",
+        "qty": "25P"
+      },
+      {
+        "item": "C.Drome Elder Fin",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Cephadrome B",
+    "effects": [
+      {
+        "effect": "Dowsing",
+        "range": "1～10"
+      },
+      {
+        "effect": "Omnivore",
+        "range": "Tuesday"
+      },
+      {
+        "effect": "3～10",
+        "range": null
+      }
+    ],
+    "chances": [
+      "8%",
+      "8%",
+      "12%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Cephadrome G.Fin",
+        "qty": "67P"
+      },
+      {
+        "item": "GR2 Gem",
+        "qty": "33P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Cephadrome ★",
+    "effects": [
+      {
+        "effect": "Dowsing",
+        "range": "3～12"
+      }
+    ],
+    "chances": [
+      "30%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "C.Drome Shiny Scl",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Farunokku A",
+    "effects": [
+      {
+        "effect": "Stun Value",
+        "range": "Saturday"
+      },
+      {
+        "effect": "1～10",
+        "range": "Night"
+      },
+      {
+        "effect": "1～10",
+        "range": null
+      }
+    ],
+    "chances": [
+      "5%",
+      "15%",
+      "10%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Farunokku Claw",
+        "qty": "25P"
+      },
+      {
+        "item": "Farunokku Hide",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Farunokku B",
+    "effects": [
+      {
+        "effect": "Stun Value",
+        "range": "Saturday"
+      },
+      {
+        "effect": "3～10",
+        "range": "Night"
+      },
+      {
+        "effect": "3～10",
+        "range": null
+      }
+    ],
+    "chances": [
+      "8%",
+      "20%",
+      "12%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Far.Rainbow Tail",
+        "qty": "67P"
+      },
+      {
+        "item": "Farunokku Tail",
+        "qty": "33P"
+      },
+      {
+        "item": "Farunokku Beak",
+        "qty": "58P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Typhoon Sac",
+        "qty": "18P"
+      },
+      {
+        "item": "GR2 Gem",
+        "qty": "14P"
+      }
+    ]
+  },
+  {
+    "name": "Farunokku ★",
+    "effects": [
+      {
+        "effect": "Stun Value",
+        "range": null
+      }
+    ],
+    "chances": [
+      "30%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Far.Thunder Hide",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Monoblos A",
+    "effects": [
+      {
+        "effect": "Defense",
+        "range": "4～20"
+      },
+      {
+        "effect": "Flying Wyvern",
+        "range": "5～12"
+      }
+    ],
+    "chances": [
+      "15%",
+      "15%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Monoblos Carapace",
+        "qty": "25P"
+      },
+      {
+        "item": "Monoblos Cortex",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Wyvern Tail",
+        "qty": "28P"
+      }
+    ]
+  },
+  {
+    "name": "Monoblos B",
+    "effects": [
+      {
+        "effect": "Super R Fire",
+        "range": "Crag LV1"
+      },
+      {
+        "effect": "Affinity",
+        "range": "1～4"
+      },
+      {
+        "effect": "Attack",
+        "range": "3～8"
+      }
+    ],
+    "chances": [
+      "5%",
+      "12%",
+      "18%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Crimson Horn",
+        "qty": "67P"
+      },
+      {
+        "item": "Monoblos Hardfang",
+        "qty": "33P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "GR2 Gem",
+        "qty": "33P"
+      }
+    ]
+  },
+  {
+    "name": "Monoblos ★",
+    "effects": [
+      {
+        "effect": "Super R Fire",
+        "range": "Norm LV2"
+      },
+      {
+        "effect": "Super R Fire",
+        "range": "Crag LV1"
+      }
+    ],
+    "chances": [
+      "18%",
+      "18%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Brave Crimson Horn",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "White Monoblos A",
+    "effects": [
+      {
+        "effect": "Cat Breeder",
+        "range": "Gook's Friend"
+      },
+      {
+        "effect": "1～10",
+        "range": "Halk's Friend"
+      }
+    ],
+    "chances": [
+      "10%",
+      "10%",
+      "10%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "W.Monoblos Grt Shl",
+        "qty": "25P"
+      },
+      {
+        "item": "W.Monoblos Grt Crpc",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Wyvern Tail",
+        "qty": "28P"
+      }
+    ]
+  },
+  {
+    "name": "White Monoblos B",
+    "effects": [
+      {
+        "effect": "Soul Collection",
+        "range": "Hunter Soul"
+      },
+      {
+        "effect": "Exp Expert",
+        "range": "1～5"
+      },
+      {
+        "effect": "Money Expert",
+        "range": "1～5"
+      }
+    ],
+    "chances": [
+      "5%",
+      "5%",
+      "5%",
+      "8%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Pure Grayhorn",
+        "qty": "67P"
+      },
+      {
+        "item": "W.Monoblos Hard Fng",
+        "qty": "33P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "GR2 Gem",
+        "qty": "33P"
+      }
+    ]
+  },
+  {
+    "name": "White Monoblos ★",
+    "effects": [
+      {
+        "effect": "Tech Boost[SnS]",
+        "range": "Inf Slash"
+      },
+      {
+        "effect": "Attack",
+        "range": "5～10"
+      }
+    ],
+    "chances": [
+      "15%",
+      "8%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "True Pure Grayhorn",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Blue Kut-Ku A",
+    "effects": [
+      {
+        "effect": "Tech Boost[Tonfa]",
+        "range": "EX Gauge"
+      },
+      {
+        "effect": "Fanged Wyvern",
+        "range": "1～10"
+      }
+    ],
+    "chances": [
+      "2%",
+      "18%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "B.Kut-Ku Ancnt Scl",
+        "qty": "25P"
+      },
+      {
+        "item": "B.Kut-Ku Ancnt Shl",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Blue Kut-Ku B",
+    "effects": [
+      {
+        "effect": "Tech Boost[Tonfa]",
+        "range": "EX Gauge"
+      },
+      {
+        "effect": "Elemental",
+        "range": "1～7"
+      }
+    ],
+    "chances": [
+      "3%",
+      "12%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Daming Beak",
+        "qty": "67P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "GR2 Gem",
+        "qty": "33P"
+      },
+      {
+        "item": "Scorch Sac",
+        "qty": "40P"
+      }
+    ]
+  },
+  {
+    "name": "Blue Kut-Ku ★",
+    "effects": [
+      {
+        "effect": "Tech Boost[Tonfa]",
+        "range": "EX Gauge"
+      },
+      {
+        "effect": "Affinity",
+        "range": "3～6"
+      }
+    ],
+    "chances": [
+      "8%",
+      "10%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "B.Kut-Ku Devil Ear",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "GR3 Gem",
+    "effects": "Unknown",
+    "chances": [],
+    "grade": "GR1",
+    "price": "400",
+    "creation_mats": [
+      {
+        "item": "GR3 Gem",
+        "qty": "22P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Twinkling Crystal",
+        "qty": "30P"
+      },
+      {
+        "item": "Red Tea Seeds",
+        "qty": "12P"
+      },
+      {
+        "item": "Twin Firefly",
+        "qty": "12P"
+      }
+    ]
+  },
+  {
+    "name": "Basarios A",
+    "effects": [
+      {
+        "effect": "Flying Wyvern",
+        "range": "1～10"
+      },
+      {
+        "effect": "Tuesday",
+        "range": "1～10"
+      }
+    ],
+    "chances": [
+      "18%",
+      "12%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Bas.Glitter Shell",
+        "qty": "25P"
+      },
+      {
+        "item": "Basarios Teardrop",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Wyvern Tail",
+        "qty": "28P"
+      }
+    ]
+  },
+  {
+    "name": "Basarios B",
+    "effects": [
+      {
+        "effect": "Flying Wyvern",
+        "range": "3～10"
+      },
+      {
+        "effect": "Tuesday",
+        "range": "3～10"
+      }
+    ],
+    "chances": [
+      "18%",
+      "12%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Basarios Direwing",
+        "qty": "67P"
+      },
+      {
+        "item": "GR3 Gem",
+        "qty": "33P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Deep Coma Sac",
+        "qty": "30P"
+      }
+    ]
+  },
+  {
+    "name": "Basarios ★",
+    "effects": [
+      {
+        "effect": "Flying Wyvern",
+        "range": "3～15"
+      }
+    ],
+    "chances": [
+      "30%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Basarios Head",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Rathian A",
+    "effects": [
+      {
+        "effect": "Carapaceon",
+        "range": "1～10"
+      },
+      {
+        "effect": "Morning",
+        "range": "1～10"
+      }
+    ],
+    "chances": [
+      "18%",
+      "12%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Rath.Glitter Scale",
+        "qty": "25P"
+      },
+      {
+        "item": "Rathian Shineshell",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Wyvern Tail",
+        "qty": "28P"
+      }
+    ]
+  },
+  {
+    "name": "Rathian B",
+    "effects": [
+      {
+        "effect": "Carapaceon",
+        "range": "3～10"
+      },
+      {
+        "effect": "Morning",
+        "range": "3～10"
+      }
+    ],
+    "chances": [
+      "18%",
+      "12%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Rathian Toxi Spike",
+        "qty": "67P"
+      },
+      {
+        "item": "GR3 Gem",
+        "qty": "33P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Scorch Sac",
+        "qty": "20P"
+      }
+    ]
+  },
+  {
+    "name": "Rathian ★",
+    "effects": [
+      {
+        "effect": "Carapaceon",
+        "range": "3～15"
+      }
+    ],
+    "chances": [
+      "30%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Rath.Wicked Plate",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Ceanataur A",
+    "effects": [
+      {
+        "effect": "Piscine",
+        "range": "1～10"
+      },
+      {
+        "effect": "Hot",
+        "range": "1～10"
+      }
+    ],
+    "chances": [
+      "18%",
+      "12%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Cean.Glisten Shell",
+        "qty": "25P"
+      },
+      {
+        "item": "Shogun Great Leg",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Ceanataur B",
+    "effects": [
+      {
+        "effect": "Piscine",
+        "range": "3～10"
+      },
+      {
+        "effect": "Hot",
+        "range": "3～10"
+      }
+    ],
+    "chances": [
+      "18%",
+      "12%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Cean.Scissor Claw",
+        "qty": "67P"
+      },
+      {
+        "item": "GR3 Gem",
+        "qty": "33P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Tsunami Sac",
+        "qty": "20P"
+      }
+    ]
+  },
+  {
+    "name": "Ceanataur ★",
+    "effects": [
+      {
+        "effect": "Piscine",
+        "range": "3～15"
+      }
+    ],
+    "chances": [
+      "30%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Cean.Honed Blade",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Hyujikiki A",
+    "effects": [
+      {
+        "effect": "Status Attack",
+        "range": "Fanged Beast"
+      },
+      {
+        "effect": "1～10",
+        "range": "Attack"
+      },
+      {
+        "effect": "-3～8",
+        "range": null
+      }
+    ],
+    "chances": [
+      "5%",
+      "15%",
+      "10%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Hyuji Bristle Pelt",
+        "qty": "25P"
+      },
+      {
+        "item": "Hyuji Fang",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Hyujikiki B",
+    "effects": [
+      {
+        "effect": "Status Attack",
+        "range": "Fanged Beast"
+      },
+      {
+        "effect": "3～10",
+        "range": "Attack"
+      },
+      {
+        "effect": "-1～8",
+        "range": null
+      }
+    ],
+    "chances": [
+      "8%",
+      "20%",
+      "12%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Hyuji Thorn Spike",
+        "qty": "67P"
+      },
+      {
+        "item": "Hyuji Tail",
+        "qty": "33P"
+      },
+      {
+        "item": "Hyuji Horn",
+        "qty": "58P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Miasma Sac",
+        "qty": "15P"
+      },
+      {
+        "item": "GR3 Gem",
+        "qty": "14P"
+      }
+    ]
+  },
+  {
+    "name": "Hyujikiki ★",
+    "effects": [
+      {
+        "effect": "Status Attack",
+        "range": null
+      }
+    ],
+    "chances": [
+      "30%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Hyuji Red Needle",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Nono Orugaron A",
+    "effects": [
+      {
+        "effect": "Tech Boost[LS]",
+        "range": "Retreating Atk"
+      },
+      {
+        "effect": "Attack",
+        "range": "1～8"
+      }
+    ],
+    "chances": [
+      "3%",
+      "18%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Nono Fine Fang",
+        "qty": "25P"
+      },
+      {
+        "item": "Nono Fine Pelt",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Nono Orugaron B",
+    "effects": [
+      {
+        "effect": "Cold",
+        "range": "1～10"
+      },
+      {
+        "effect": "Hot",
+        "range": "1～10"
+      },
+      {
+        "effect": "Affinity",
+        "range": "1～5"
+      }
+    ],
+    "chances": [
+      "12%",
+      "12%",
+      "5%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Nono Frost Spike",
+        "qty": "67P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Permafrost Sac",
+        "qty": "33P"
+      },
+      {
+        "item": "GR3 Gem",
+        "qty": "14P"
+      }
+    ]
+  },
+  {
+    "name": "Nono Orugaron C",
+    "effects": [
+      {
+        "effect": "Cold",
+        "range": "5～15"
+      },
+      {
+        "effect": "Hot",
+        "range": "5～15"
+      },
+      {
+        "effect": "Affinity",
+        "range": "3～6"
+      }
+    ],
+    "chances": [
+      "15%",
+      "15%",
+      "10%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Nono Frost Gem",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Purple Gypceros A",
+    "effects": [
+      {
+        "effect": "Status Attack",
+        "range": "Attack"
+      },
+      {
+        "effect": "1～8",
+        "range": "Affinity"
+      },
+      {
+        "effect": "1～5",
+        "range": null
+      }
+    ],
+    "chances": [
+      "5%",
+      "18%",
+      "8%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "P.Gyp Shineclaw",
+        "qty": "25P"
+      },
+      {
+        "item": "P.Gyp Shinehide",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Purple Gypceros B",
+    "effects": [
+      {
+        "effect": "Super R Fire",
+        "range": "Water S"
+      },
+      {
+        "effect": "Affinity",
+        "range": "1～4"
+      },
+      {
+        "effect": "Attack",
+        "range": "3～8"
+      }
+    ],
+    "chances": [
+      "5%",
+      "12%",
+      "18%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Super Dash Extract",
+        "qty": "67P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "GR3 Gem",
+        "qty": "33P"
+      },
+      {
+        "item": "Miasma Sac",
+        "qty": "40P"
+      }
+    ]
+  },
+  {
+    "name": "Purple Gypceros ★",
+    "effects": [
+      {
+        "effect": "Super R Fire",
+        "range": "Norm LV2"
+      },
+      {
+        "effect": "Super R Fire",
+        "range": "Water S"
+      }
+    ],
+    "chances": [
+      "18%",
+      "18%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "P.Gyp Lightcrystal",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Gogomoa A",
+    "effects": [
+      {
+        "effect": "Length UP",
+        "range": "LS"
+      },
+      {
+        "effect": "Leviathan",
+        "range": "3～12"
+      }
+    ],
+    "chances": [
+      "5%",
+      "20%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Gogo Eminent Fur",
+        "qty": "25P"
+      },
+      {
+        "item": "Gogo Eminent Clw",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Gogomoa B",
+    "effects": [
+      {
+        "effect": "Length UP",
+        "range": "LS"
+      },
+      {
+        "effect": "Status Attack",
+        "range": "Leviathan"
+      },
+      {
+        "effect": "5～15",
+        "range": null
+      }
+    ],
+    "chances": [
+      "7%",
+      "20%",
+      "10%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Gogo Combat Fang",
+        "qty": "67P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Koko Quality Fur",
+        "qty": "40P"
+      },
+      {
+        "item": "Gogo Silk Tail",
+        "qty": "33P"
+      },
+      {
+        "item": "GR3 Gem",
+        "qty": "14P"
+      }
+    ]
+  },
+  {
+    "name": "Gogomoa ★",
+    "effects": [
+      {
+        "effect": "Length UP",
+        "range": "LS"
+      },
+      {
+        "effect": "Status Attack",
+        "range": "Attack"
+      },
+      {
+        "effect": "-5～5",
+        "range": null
+      }
+    ],
+    "chances": [
+      "10%",
+      "25%",
+      "10%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Gogo Extreme Horn",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "GR4 Gem",
+    "effects": "Unknown",
+    "chances": [],
+    "grade": "GR1",
+    "price": "400",
+    "creation_mats": [
+      {
+        "item": "GR4 Gem",
+        "qty": "22P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Plantblight Bug",
+        "qty": "30P"
+      },
+      {
+        "item": "Fragile Seed",
+        "qty": "12P"
+      },
+      {
+        "item": "Triedge Ore",
+        "qty": "12P"
+      }
+    ]
+  },
+  {
+    "name": "Blangonga A",
+    "effects": [
+      {
+        "effect": "Flying Wyvern",
+        "range": "1～10"
+      },
+      {
+        "effect": "Cold",
+        "range": "1～10"
+      }
+    ],
+    "chances": [
+      "18%",
+      "12%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Blng.Glacial Hide",
+        "qty": "25P"
+      },
+      {
+        "item": "Blango Prime Fang",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Blangonga B",
+    "effects": [
+      {
+        "effect": "Flying Wyvern",
+        "range": "3～10"
+      },
+      {
+        "effect": "Cold",
+        "range": "3～10"
+      }
+    ],
+    "chances": [
+      "18%",
+      "12%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Blng.Thick Tail",
+        "qty": "67P"
+      },
+      {
+        "item": "GR4 Gem",
+        "qty": "33P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Permafrost Sac",
+        "qty": "20P"
+      }
+    ]
+  },
+  {
+    "name": "Blangonga ★",
+    "effects": [
+      {
+        "effect": "Flying Wyvern",
+        "range": "3～15"
+      }
+    ],
+    "chances": [
+      "30%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Blng.Aged Beard",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Plesioth A",
+    "effects": [
+      {
+        "effect": "Sunday",
+        "range": "1～5"
+      },
+      {
+        "effect": "Saturday",
+        "range": "1～5"
+      },
+      {
+        "effect": "Tech Change[Lance]",
+        "range": "Drill Rush"
+      }
+    ],
+    "chances": [
+      "15%",
+      "15%",
+      "5%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Plesioth Elder Fng",
+        "qty": "25P"
+      },
+      {
+        "item": "Plesi.Ancient Fin",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Plesioth B",
+    "effects": [
+      {
+        "effect": "Sunday",
+        "range": "1～10"
+      },
+      {
+        "effect": "Saturday",
+        "range": "1～10"
+      },
+      {
+        "effect": "Tech Change[Lance]",
+        "range": "Drill Rush"
+      }
+    ],
+    "chances": [
+      "15%",
+      "15%",
+      "8%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Massive LobsterShl",
+        "qty": "67P"
+      },
+      {
+        "item": "GR4 Gem",
+        "qty": "33P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Tsunami Sac",
+        "qty": "20P"
+      },
+      {
+        "item": "Deep Coma Sac",
+        "qty": "20P"
+      }
+    ]
+  },
+  {
+    "name": "Plesioth ★",
+    "effects": [
+      {
+        "effect": "Tech Change[Lance]",
+        "range": "Drill Rush"
+      }
+    ],
+    "chances": [
+      "35%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Plesioth T.Webbing",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Khezu A",
+    "effects": [
+      {
+        "effect": "Brute Wyvern",
+        "range": "1～10"
+      },
+      {
+        "effect": "Warm Season",
+        "range": "1～10"
+      }
+    ],
+    "chances": [
+      "18%",
+      "12%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Khezu Aged Hide",
+        "qty": "25P"
+      },
+      {
+        "item": "Khezu Membrane",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Khezu B",
+    "effects": [
+      {
+        "effect": "Brute Wyvern",
+        "range": "3～10"
+      },
+      {
+        "effect": "Warm Season",
+        "range": "3～10"
+      }
+    ],
+    "chances": [
+      "18%",
+      "12%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Khezu Soul Extract",
+        "qty": "67P"
+      },
+      {
+        "item": "GR4 Gem",
+        "qty": "33P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Typhoon Sac",
+        "qty": "20P"
+      }
+    ]
+  },
+  {
+    "name": "Khezu ★",
+    "effects": [
+      {
+        "effect": "Brute Wyvern",
+        "range": "3～15"
+      }
+    ],
+    "chances": [
+      "30%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Khezu Azure Hide",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Diablos A",
+    "effects": [
+      {
+        "effect": "Tech Boost[Lance]",
+        "range": "Shield"
+      },
+      {
+        "effect": "Tech Boost[Lance]",
+        "range": "Guard Charge"
+      },
+      {
+        "effect": "Attack",
+        "range": "1～8"
+      }
+    ],
+    "chances": [
+      "3%",
+      "3%",
+      "18%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Diablos Old Shell",
+        "qty": "25P"
+      },
+      {
+        "item": "Blos Tempered Fng",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Wyvern Tail",
+        "qty": "28P"
+      }
+    ]
+  },
+  {
+    "name": "Diablos B",
+    "effects": [
+      {
+        "effect": "Money Expert",
+        "range": "1～3"
+      },
+      {
+        "effect": "Morning",
+        "range": "1～10"
+      }
+    ],
+    "chances": [
+      "18%",
+      "12%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Diablos Temp.Horn",
+        "qty": "67P"
+      },
+      {
+        "item": "GR4 Gem",
+        "qty": "33P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Diablos ★",
+    "effects": [
+      {
+        "effect": "Money Expert",
+        "range": "2～4"
+      }
+    ],
+    "chances": [
+      "30%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Blos Symmetry Horn",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Rathalos A",
+    "effects": [
+      {
+        "effect": "Fanged Beast",
+        "range": "1～10"
+      },
+      {
+        "effect": "Sunday",
+        "range": "1～10"
+      }
+    ],
+    "chances": [
+      "18%",
+      "12%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Los.Wthrd Scale",
+        "qty": "25P"
+      },
+      {
+        "item": "Los Great Shell",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Wyvern Tail",
+        "qty": "28P"
+      }
+    ]
+  },
+  {
+    "name": "Rathalos B",
+    "effects": [
+      {
+        "effect": "Fanged Beast",
+        "range": "3～10"
+      },
+      {
+        "effect": "Sunday",
+        "range": "3～10"
+      }
+    ],
+    "chances": [
+      "18%",
+      "12%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Los.Deep Marrow",
+        "qty": "67P"
+      },
+      {
+        "item": "GR4 Gem",
+        "qty": "33P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Scorch Sac",
+        "qty": "20P"
+      }
+    ]
+  },
+  {
+    "name": "Rathalos ★",
+    "effects": [
+      {
+        "effect": "Fanged Beast",
+        "range": "3～15"
+      }
+    ],
+    "chances": [
+      "30%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Los.Prisma Blood",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Midogaron A",
+    "effects": [
+      {
+        "effect": "Elder Dragon",
+        "range": "1～10"
+      },
+      {
+        "effect": "Affinity",
+        "range": "-3～6"
+      },
+      {
+        "effect": "Defense",
+        "range": "1～15"
+      }
+    ],
+    "chances": [
+      "18%",
+      "12%",
+      "5%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Mido.Heat Pelt",
+        "qty": "25P"
+      },
+      {
+        "item": "Midogaron Fang",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Midogaron B",
+    "effects": [
+      {
+        "effect": "Elder Dragon",
+        "range": "3～10"
+      },
+      {
+        "effect": "Affinity",
+        "range": "-1～6"
+      },
+      {
+        "effect": "Defense",
+        "range": "3～15"
+      }
+    ],
+    "chances": [
+      "18%",
+      "12%",
+      "10%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Mido.Fire Tendon",
+        "qty": "67P"
+      },
+      {
+        "item": "Midogaron Mane",
+        "qty": "48P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Scorch Sac",
+        "qty": "18P"
+      },
+      {
+        "item": "GR4 Gem",
+        "qty": "14P"
+      }
+    ]
+  },
+  {
+    "name": "Midogaron ★",
+    "effects": [
+      {
+        "effect": "Elder Dragon",
+        "range": "3～15"
+      }
+    ],
+    "chances": [
+      "30%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Mido.Lava Claw",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Red Khezu A",
+    "effects": [
+      {
+        "effect": "Affinity",
+        "range": "1～7"
+      },
+      {
+        "effect": "Stun Value",
+        "range": null
+      }
+    ],
+    "chances": [
+      "12%",
+      "5%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Red Khezu Membrane",
+        "qty": "25P"
+      },
+      {
+        "item": "Red Khezu Piel",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Red Khezu B",
+    "effects": [
+      {
+        "effect": "Super R Fire",
+        "range": "Thund S"
+      },
+      {
+        "effect": "Affinity",
+        "range": "1～4"
+      },
+      {
+        "effect": "Flying Wyvern",
+        "range": "7～15"
+      }
+    ],
+    "chances": [
+      "5%",
+      "12%",
+      "18%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Albino Extract",
+        "qty": "67P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "GR4 Gem",
+        "qty": "33P"
+      },
+      {
+        "item": "Typhoon Sac",
+        "qty": "20P"
+      }
+    ]
+  },
+  {
+    "name": "Red Khezu ★",
+    "effects": [
+      {
+        "effect": "Super R Fire",
+        "range": "Norm LV2"
+      },
+      {
+        "effect": "Super R Fire",
+        "range": "Thund S"
+      }
+    ],
+    "chances": [
+      "18%",
+      "18%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Red Alluring Hide",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Pink Rathian A",
+    "effects": [
+      {
+        "effect": "Stun Value",
+        "range": "Fanged Beast"
+      },
+      {
+        "effect": "3～12",
+        "range": null
+      }
+    ],
+    "chances": [
+      "5%",
+      "20%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "P. Rath Olden Shl",
+        "qty": "25P"
+      },
+      {
+        "item": "P. Rath Olden Scle",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Wyvern Tail",
+        "qty": "28P"
+      }
+    ]
+  },
+  {
+    "name": "Pink Rathian B",
+    "effects": [
+      {
+        "effect": "Stun Value",
+        "range": "Affinity"
+      },
+      {
+        "effect": "1～8",
+        "range": null
+      }
+    ],
+    "chances": [
+      "10%",
+      "25%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "P. Rath Great Spike",
+        "qty": "67P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "GR4 Gem",
+        "qty": "33P"
+      },
+      {
+        "item": "Scorch Sac",
+        "qty": "20P"
+      }
+    ]
+  },
+  {
+    "name": "Pink Rathian ★",
+    "effects": [
+      {
+        "effect": "Stun Value",
+        "range": "Affinity"
+      },
+      {
+        "effect": "5～10",
+        "range": "Fanged Beast"
+      },
+      {
+        "effect": "5～15",
+        "range": null
+      }
+    ],
+    "chances": [
+      "30%",
+      "10%",
+      "10%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "P. Rath Glow Plate",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Green Plesioth A",
+    "effects": [
+      {
+        "effect": "Tech Boost[SnS]",
+        "range": "Inf Slash"
+      },
+      {
+        "effect": "Fanged Beast",
+        "range": "1～6"
+      }
+    ],
+    "chances": [
+      "5%",
+      "10%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "G.Plesi Brave Fng",
+        "qty": "25P"
+      },
+      {
+        "item": "G.Plesi Brave Fin",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Green Plesioth B",
+    "effects": [
+      {
+        "effect": "Tech Boost[SnS]",
+        "range": "Inf Slash"
+      },
+      {
+        "effect": "Affinity",
+        "range": "1～8"
+      },
+      {
+        "effect": "Fanged Beast",
+        "range": "3～8"
+      }
+    ],
+    "chances": [
+      "6%",
+      "15%",
+      "10%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Curved Shrimp Claw",
+        "qty": "67P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "GR4 Gem",
+        "qty": "33P"
+      },
+      {
+        "item": "Tsunami Sac",
+        "qty": "20P"
+      },
+      {
+        "item": "Deep Coma Sac",
+        "qty": "20P"
+      }
+    ]
+  },
+  {
+    "name": "Green Plesioth ★",
+    "effects": [
+      {
+        "effect": "Tech Boost[SnS]",
+        "range": "Inf Slash"
+      },
+      {
+        "effect": "Elemental",
+        "range": "3～10"
+      },
+      {
+        "effect": "Fanged Beast",
+        "range": "5～10"
+      }
+    ],
+    "chances": [
+      "15%",
+      "15%",
+      "10%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "G.Plesi Webbing",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Blk Diablos A",
+    "effects": [
+      {
+        "effect": "Shot Change",
+        "range": "Norm"
+      },
+      {
+        "effect": "Shot Change",
+        "range": "Spread"
+      },
+      {
+        "effect": "Shot Change",
+        "range": "Long"
+      }
+    ],
+    "chances": [
+      "5%",
+      "5%",
+      "5%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "B.Diablos Worn Shl",
+        "qty": "25P"
+      },
+      {
+        "item": "B.Diablos Worn Fng",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Wyvern Tail",
+        "qty": "28P"
+      }
+    ]
+  },
+  {
+    "name": "Blk Diablos B",
+    "effects": [
+      {
+        "effect": "Tech Boost[GL]",
+        "range": "Rush Thrust"
+      },
+      {
+        "effect": "Shot Change",
+        "range": "Norm"
+      },
+      {
+        "effect": "Shot Change",
+        "range": "Spread"
+      },
+      {
+        "effect": "Shot Change",
+        "range": "Long"
+      }
+    ],
+    "chances": [
+      "4%",
+      "5%",
+      "5%",
+      "5%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Blk Twisted Horn",
+        "qty": "67P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "GR4 Gem",
+        "qty": "33P"
+      }
+    ]
+  },
+  {
+    "name": "Blk Diablos ★",
+    "effects": [
+      {
+        "effect": "Tech Boost[GL]",
+        "range": "Rush Thrust"
+      },
+      {
+        "effect": "Shot Change",
+        "range": "Norm"
+      },
+      {
+        "effect": "Shot Change",
+        "range": "Spread"
+      },
+      {
+        "effect": "Shot Change",
+        "range": "Long"
+      },
+      {
+        "effect": "Shelling Change",
+        "range": null
+      }
+    ],
+    "chances": [
+      "7%",
+      "5%",
+      "5%",
+      "5%",
+      "35%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Blk Twisted Bihorn",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "GR5 Gem",
+    "effects": "Unknown",
+    "chances": [],
+    "grade": "GR1",
+    "price": "400",
+    "creation_mats": [
+      {
+        "item": "GR5 Gem",
+        "qty": "22P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Glittering Ore",
+        "qty": "30P"
+      },
+      {
+        "item": "Shellnut Ant",
+        "qty": "12P"
+      },
+      {
+        "item": "Defiant Nut",
+        "qty": "12P"
+      }
+    ]
+  },
+  {
+    "name": "Gougarf A",
+    "effects": [
+      {
+        "effect": "Elder Dragon",
+        "range": "3～10"
+      },
+      {
+        "effect": "Ballista Saver",
+        "range": "Disable Rapid"
+      },
+      {
+        "effect": "1～9",
+        "range": null
+      }
+    ],
+    "chances": [
+      "18%",
+      "10%",
+      "30%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "White Lolo Pelt",
+        "qty": "25P"
+      },
+      {
+        "item": "Black Ray Pelt",
+        "qty": "25P"
+      },
+      {
+        "item": "Gougarf Piel",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Gougarf B",
+    "effects": [
+      {
+        "effect": "Elder Dragon",
+        "range": "3～10"
+      },
+      {
+        "effect": "Rapid Fire Add",
+        "range": "1～9"
+      },
+      {
+        "effect": "Attack",
+        "range": "-5～5"
+      }
+    ],
+    "chances": [
+      "18%",
+      "8%",
+      "30%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Gougarf Hematite",
+        "qty": "67P"
+      },
+      {
+        "item": "Gougarf Jaw",
+        "qty": "48P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Gougarf Lash",
+        "qty": "33P"
+      },
+      {
+        "item": "GR5 Gem",
+        "qty": "14P"
+      }
+    ]
+  },
+  {
+    "name": "Gougarf ★",
+    "effects": [
+      {
+        "effect": "Raw SnS Boost",
+        "range": "Raw Bow Boost"
+      },
+      {
+        "effect": "Sonic Bomb Range",
+        "range": null
+      }
+    ],
+    "chances": [
+      "15%",
+      "15%",
+      "10%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Gougarf Heart",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Giaorugu A",
+    "effects": [
+      {
+        "effect": "Fanged Beast",
+        "range": "3～10"
+      },
+      {
+        "effect": "Ballista Saver",
+        "range": "Disable Rapid"
+      },
+      {
+        "effect": "1～9",
+        "range": null
+      }
+    ],
+    "chances": [
+      "18%",
+      "10%",
+      "30%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Giaorugu Scale",
+        "qty": "25P"
+      },
+      {
+        "item": "Giaorugu Hide",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Giaorugu B",
+    "effects": [
+      {
+        "effect": "Fanged Beast",
+        "range": "3～10"
+      },
+      {
+        "effect": "Rapid Fire Add",
+        "range": "1～9"
+      },
+      {
+        "effect": "Attack",
+        "range": "-5～5"
+      }
+    ],
+    "chances": [
+      "18%",
+      "8%",
+      "30%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Giaorugu Horn",
+        "qty": "67P"
+      },
+      {
+        "item": "Giaorugu Fang",
+        "qty": "48P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Permafrost Sac",
+        "qty": "20P"
+      },
+      {
+        "item": "GR5 Gem",
+        "qty": "14P"
+      }
+    ]
+  },
+  {
+    "name": "Giaorugu ★",
+    "effects": [
+      {
+        "effect": "Raw SnS Boost",
+        "range": "Raw Bow Boost"
+      },
+      {
+        "effect": "Sonic Bomb Range",
+        "range": null
+      }
+    ],
+    "chances": [
+      "15%",
+      "15%",
+      "10%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Giaorugu Blood",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Gravios A",
+    "effects": [
+      {
+        "effect": "Flying Wyvern",
+        "range": "3～10"
+      },
+      {
+        "effect": "Ballista Saver",
+        "range": "Disable Rapid"
+      },
+      {
+        "effect": "1～9",
+        "range": null
+      }
+    ],
+    "chances": [
+      "18%",
+      "10%",
+      "30%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Gravios Lord Bone",
+        "qty": "25P"
+      },
+      {
+        "item": "Gravios Mega Shell",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Wyvern Tail+",
+        "qty": "28P"
+      }
+    ]
+  },
+  {
+    "name": "Gravios B",
+    "effects": [
+      {
+        "effect": "Flying Wyvern",
+        "range": "3～10"
+      },
+      {
+        "effect": "Rapid Fire Add",
+        "range": "1～9"
+      },
+      {
+        "effect": "Attack",
+        "range": "-5～5"
+      }
+    ],
+    "chances": [
+      "18%",
+      "8%",
+      "30%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Gravios Liver",
+        "qty": "67P"
+      },
+      {
+        "item": "GR5 Gem",
+        "qty": "33P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Deep Coma Sac",
+        "qty": "20P"
+      }
+    ]
+  },
+  {
+    "name": "Gravios ★",
+    "effects": [
+      {
+        "effect": "Raw SnS Boost",
+        "range": "Raw Bow Boost"
+      },
+      {
+        "effect": "Sonic Bomb Range",
+        "range": null
+      }
+    ],
+    "chances": [
+      "15%",
+      "15%",
+      "10%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Gravios Bulwark",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Tigrex A",
+    "effects": [
+      {
+        "effect": "Brute Wyvern",
+        "range": "3～10"
+      },
+      {
+        "effect": "Ballista Saver",
+        "range": "Disable Rapid"
+      },
+      {
+        "effect": "1～9",
+        "range": null
+      }
+    ],
+    "chances": [
+      "18%",
+      "10%",
+      "30%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Tgrx.Supreme Scale",
+        "qty": "25P"
+      },
+      {
+        "item": "Tigrex Mega Claw",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Wyvern Tail+",
+        "qty": "28P"
+      }
+    ]
+  },
+  {
+    "name": "Tigrex B",
+    "effects": [
+      {
+        "effect": "Brute Wyvern",
+        "range": "3～10"
+      },
+      {
+        "effect": "Rapid Fire Add",
+        "range": "1～9"
+      },
+      {
+        "effect": "Attack",
+        "range": "-5～5"
+      }
+    ],
+    "chances": [
+      "18%",
+      "8%",
+      "30%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Tgrx.FierceWebbing",
+        "qty": "67P"
+      },
+      {
+        "item": "GR5 Gem",
+        "qty": "33P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Tigrex ★",
+    "effects": [
+      {
+        "effect": "Raw SnS Boost",
+        "range": "Raw Bow Boost"
+      },
+      {
+        "effect": "Sonic Bomb Range",
+        "range": null
+      }
+    ],
+    "chances": [
+      "15%",
+      "15%",
+      "10%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Tigrex Great Fang",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Pariapuria A",
+    "effects": [
+      {
+        "effect": "Piscine",
+        "range": "3～10"
+      },
+      {
+        "effect": "Ballista Saver",
+        "range": "Disable Rapid"
+      },
+      {
+        "effect": "1～9",
+        "range": null
+      }
+    ],
+    "chances": [
+      "18%",
+      "10%",
+      "30%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Paria Supreme Hide",
+        "qty": "25P"
+      },
+      {
+        "item": "Paria Supreme Fang",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Wyvern Tail+",
+        "qty": "28P"
+      }
+    ]
+  },
+  {
+    "name": "Pariapuria B",
+    "effects": [
+      {
+        "effect": "Piscine",
+        "range": "3～10"
+      },
+      {
+        "effect": "Rapid Fire Add",
+        "range": "1～9"
+      },
+      {
+        "effect": "Attack",
+        "range": "-5～5"
+      }
+    ],
+    "chances": [
+      "18%",
+      "8%",
+      "30%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Paria Durable Bone",
+        "qty": "67P"
+      },
+      {
+        "item": "GR5 Gem",
+        "qty": "33P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Tsunami Sac",
+        "qty": "20P"
+      }
+    ]
+  },
+  {
+    "name": "Pariapuria ★",
+    "effects": [
+      {
+        "effect": "Raw SnS Boost",
+        "range": "Raw Bow Boost"
+      },
+      {
+        "effect": "Sonic Bomb Range",
+        "range": null
+      }
+    ],
+    "chances": [
+      "15%",
+      "15%",
+      "10%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Par.Thick Mucus",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Berukyurosu A",
+    "effects": [
+      {
+        "effect": "Sunday",
+        "range": "1～5"
+      },
+      {
+        "effect": "Saturday",
+        "range": "1～5"
+      },
+      {
+        "effect": "Tech Change[SnS]",
+        "range": "Roundslash"
+      }
+    ],
+    "chances": [
+      "15%",
+      "15%",
+      "5%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Beru. Supreme Shl",
+        "qty": "25P"
+      },
+      {
+        "item": "Beru. Supreme Scl",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Wyvern Wing+",
+        "qty": "28P"
+      },
+      {
+        "item": "Wyvern Tail+",
+        "qty": "28P"
+      }
+    ]
+  },
+  {
+    "name": "Berukyurosu B",
+    "effects": [
+      {
+        "effect": "Sunday",
+        "range": "1～10"
+      },
+      {
+        "effect": "Saturday",
+        "range": "1～10"
+      },
+      {
+        "effect": "Tech Change[SnS]",
+        "range": "Roundslash"
+      }
+    ],
+    "chances": [
+      "15%",
+      "15%",
+      "8%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Beru. Medulla",
+        "qty": "67P"
+      },
+      {
+        "item": "GR5 Gem",
+        "qty": "33P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Typhoon Sac",
+        "qty": "40P"
+      }
+    ]
+  },
+  {
+    "name": "Berukyurosu ★",
+    "effects": [
+      {
+        "effect": "Raw SnS Boost",
+        "range": "Tech Change[SnS]"
+      },
+      {
+        "effect": "Roundslash",
+        "range": null
+      }
+    ],
+    "chances": [
+      "5%",
+      "30%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Beru Flawless Horn",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Azure Rathalos A",
+    "effects": [
+      {
+        "effect": "Stun Value",
+        "range": "Carapaceon"
+      },
+      {
+        "effect": "3～12",
+        "range": null
+      }
+    ],
+    "chances": [
+      "5%",
+      "20%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "A. Rath Supreme Shl",
+        "qty": "25P"
+      },
+      {
+        "item": "A. Rath Supr Scle",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Wyvern Wing+",
+        "qty": "28P"
+      },
+      {
+        "item": "Wyvern Tail+",
+        "qty": "28P"
+      }
+    ]
+  },
+  {
+    "name": "Azure Rathalos B",
+    "effects": [
+      {
+        "effect": "Stun Value",
+        "range": "Attack"
+      },
+      {
+        "effect": "1～8",
+        "range": null
+      }
+    ],
+    "chances": [
+      "10%",
+      "25%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "A. Rath Deep Marrow",
+        "qty": "67P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "GR5 Gem",
+        "qty": "33P"
+      },
+      {
+        "item": "Scorch Sac",
+        "qty": "20P"
+      }
+    ]
+  },
+  {
+    "name": "Azure Rathalos ★",
+    "effects": [
+      {
+        "effect": "Stun Value",
+        "range": "Attack"
+      },
+      {
+        "effect": "5～10",
+        "range": "Carapaceon"
+      },
+      {
+        "effect": "5～15",
+        "range": null
+      }
+    ],
+    "chances": [
+      "30%",
+      "10%",
+      "10%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "S. Rath Bloodgem",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Abiorugu A",
+    "effects": [
+      {
+        "effect": "Clust",
+        "range": "Spread"
+      },
+      {
+        "effect": "Rapid Fire Add",
+        "range": "1～9"
+      }
+    ],
+    "chances": [
+      "3%",
+      "8%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Abio.Supreme Scl",
+        "qty": "25P"
+      },
+      {
+        "item": "Abiorugu Suprm Hide",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Abiorugu B",
+    "effects": [
+      {
+        "effect": "Clust",
+        "range": "Spread"
+      },
+      {
+        "effect": "Attack",
+        "range": "1～10"
+      }
+    ],
+    "chances": [
+      "6%",
+      "15%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Abiorugu Cruel Hrn",
+        "qty": "67P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "GR5 Gem",
+        "qty": "33P"
+      }
+    ]
+  },
+  {
+    "name": "Abiorugu ★",
+    "effects": [
+      {
+        "effect": "Length UP",
+        "range": "DS"
+      },
+      {
+        "effect": "Attack",
+        "range": "5～10"
+      }
+    ],
+    "chances": [
+      "10%",
+      "15%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Abio.Starved Blood",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Silver Hypnoc A",
+    "effects": [
+      {
+        "effect": "Tech Boost[GS]",
+        "range": "Guard Slash"
+      },
+      {
+        "effect": "Affinity",
+        "range": "1～5"
+      }
+    ],
+    "chances": [
+      "5%",
+      "10%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "W.Hypnoc Suprm Fur",
+        "qty": "25P"
+      },
+      {
+        "item": "W.Hypnoc Suprm Claw",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Silver Hypnoc B",
+    "effects": [
+      {
+        "effect": "Tech Boost[GS]",
+        "range": "Guard Slash"
+      },
+      {
+        "effect": "Attack",
+        "range": "3～7"
+      }
+    ],
+    "chances": [
+      "7%",
+      "10%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "W.Hypnoc V.Beak",
+        "qty": "67P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "GR5 Gem",
+        "qty": "33P"
+      },
+      {
+        "item": "Deep Coma Sac",
+        "qty": "20P"
+      }
+    ]
+  },
+  {
+    "name": "Silver Hypnoc ★",
+    "effects": [
+      {
+        "effect": "Tech Boost[GS]",
+        "range": "Guard Slash"
+      },
+      {
+        "effect": "Attack",
+        "range": "5～10"
+      },
+      {
+        "effect": "Affinity",
+        "range": "5～10"
+      }
+    ],
+    "chances": [
+      "15%",
+      "10%",
+      "10%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "W.Hypnoc Tru Bezoar",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Shantien A",
+    "effects": [
+      {
+        "effect": "Flying Wyvern",
+        "range": "3～10"
+      },
+      {
+        "effect": "Raw SnS Boost",
+        "range": "Ballista Saver"
+      }
+    ],
+    "chances": [
+      "18%",
+      "12%",
+      "10%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Shanthien Shard",
+        "qty": "25P"
+      },
+      {
+        "item": "Shanthien Cortex",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Shantien B",
+    "effects": [
+      {
+        "effect": "Flying Wyvern",
+        "range": "3～10"
+      },
+      {
+        "effect": "Raw Bow Boost",
+        "range": "Sonic Bomb Range"
+      }
+    ],
+    "chances": [
+      "18%",
+      "8%",
+      "10%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Shanthien Piel",
+        "qty": "67P"
+      },
+      {
+        "item": "Shanthien Hardhorn",
+        "qty": "48P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Shanthien Ripper",
+        "qty": "33P"
+      },
+      {
+        "item": "GR7 Gem",
+        "qty": "14P"
+      }
+    ]
+  },
+  {
+    "name": "Shantien ★",
+    "effects": [
+      {
+        "effect": "Flying Wyvern",
+        "range": "3～10"
+      },
+      {
+        "effect": "Rapid Fire Add",
+        "range": "1～4"
+      },
+      {
+        "effect": "Attack",
+        "range": "-5～5"
+      }
+    ],
+    "chances": [
+      "18%",
+      "10%",
+      "15%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Shanthien Crystal",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "GR6 Gem",
+    "effects": "Unknown",
+    "chances": [],
+    "grade": "GR1",
+    "price": "400",
+    "creation_mats": [
+      {
+        "item": "GR6 Gem",
+        "qty": "22P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Smiela Aphid",
+        "qty": "30P"
+      },
+      {
+        "item": "Versatile Crystal",
+        "qty": "12P"
+      },
+      {
+        "item": "Shiny Charm Fruit",
+        "qty": "12P"
+      }
+    ]
+  },
+  {
+    "name": "Anorupatisu A",
+    "effects": [
+      {
+        "effect": "Piscine",
+        "range": "5～10"
+      },
+      {
+        "effect": "Cold",
+        "range": "5～10"
+      },
+      {
+        "effect": "Heat Cannon Add",
+        "range": null
+      }
+    ],
+    "chances": [
+      "18%",
+      "10%",
+      "5%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Anoru Fang",
+        "qty": "25P"
+      },
+      {
+        "item": "Anour Shell",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Anorupatisu B",
+    "effects": [
+      {
+        "effect": "Piscine",
+        "range": "5～10"
+      },
+      {
+        "effect": "Cold",
+        "range": "5～10"
+      },
+      {
+        "effect": "Heat Cannon Add",
+        "range": null
+      }
+    ],
+    "chances": [
+      "18%",
+      "10%",
+      "8%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Anoru Horn",
+        "qty": "67P"
+      },
+      {
+        "item": "Anoru Webbing",
+        "qty": "48P"
+      },
+      {
+        "item": "Anoru Tail",
+        "qty": "33P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Tsunami Sac",
+        "qty": "15P"
+      },
+      {
+        "item": "GR6 Gem",
+        "qty": "14P"
+      }
+    ]
+  },
+  {
+    "name": "Anorupatisu ★",
+    "effects": [
+      {
+        "effect": "Piscine",
+        "range": "5～15"
+      },
+      {
+        "effect": "Exp Expert",
+        "range": "1～2"
+      },
+      {
+        "effect": "Heat Cannon Add",
+        "range": null
+      }
+    ],
+    "chances": [
+      "24%",
+      "5%",
+      "21%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Anoru Glare",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Volganos A",
+    "effects": [
+      {
+        "effect": "Flying Wyvern",
+        "range": "5～10"
+      },
+      {
+        "effect": "Hot",
+        "range": "5～10"
+      },
+      {
+        "effect": "Heat Cannon Add",
+        "range": null
+      }
+    ],
+    "chances": [
+      "18%",
+      "10%",
+      "5%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Volg.Scoria Scale",
+        "qty": "25P"
+      },
+      {
+        "item": "Volga Divine Fin",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Volganos B",
+    "effects": [
+      {
+        "effect": "Flying Wyvern",
+        "range": "5～10"
+      },
+      {
+        "effect": "Hot",
+        "range": "5～10"
+      },
+      {
+        "effect": "Heat Cannon Add",
+        "range": null
+      }
+    ],
+    "chances": [
+      "18%",
+      "10%",
+      "8%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Volg.Solid Fang",
+        "qty": "67P"
+      },
+      {
+        "item": "GR6 Gem",
+        "qty": "33P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Scorch Sac",
+        "qty": "20P"
+      }
+    ]
+  },
+  {
+    "name": "Volganos ★",
+    "effects": [
+      {
+        "effect": "Flying Wyvern",
+        "range": "5～15"
+      },
+      {
+        "effect": "Elemental",
+        "range": "1～10"
+      },
+      {
+        "effect": "Heat Cannon Add",
+        "range": null
+      }
+    ],
+    "chances": [
+      "24%",
+      "8%",
+      "21%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Volg.Magma Fin",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Espinas A",
+    "effects": [
+      {
+        "effect": "Fanged Beast",
+        "range": "5～10"
+      },
+      {
+        "effect": "Minion",
+        "range": "5～10"
+      },
+      {
+        "effect": "Heat Cannon Add",
+        "range": null
+      }
+    ],
+    "chances": [
+      "18%",
+      "10%",
+      "5%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Espi.Eternal Thorn",
+        "qty": "25P"
+      },
+      {
+        "item": "Espi Eternal Scale",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Wyvern Tail+",
+        "qty": "28P"
+      }
+    ]
+  },
+  {
+    "name": "Espinas B",
+    "effects": [
+      {
+        "effect": "Fanged Beast",
+        "range": "5～10"
+      },
+      {
+        "effect": "Minion",
+        "range": "5～10"
+      },
+      {
+        "effect": "Heat Cannon Add",
+        "range": null
+      }
+    ],
+    "chances": [
+      "18%",
+      "10%",
+      "8%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Espinas Thorn",
+        "qty": "67P"
+      },
+      {
+        "item": "GR6 Gem",
+        "qty": "33P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Miasma Sac",
+        "qty": "20P"
+      }
+    ]
+  },
+  {
+    "name": "Espinas ★",
+    "effects": [
+      {
+        "effect": "Fanged Beast",
+        "range": "5～15"
+      },
+      {
+        "effect": "Dowsing",
+        "range": "5～12"
+      },
+      {
+        "effect": "Heat Cannon Add",
+        "range": null
+      }
+    ],
+    "chances": [
+      "24%",
+      "5%",
+      "21%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Espinas Dark Shell",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Rajang A",
+    "effects": [
+      {
+        "effect": "Elder Dragon",
+        "range": "5～10"
+      },
+      {
+        "effect": "Night",
+        "range": "5～10"
+      },
+      {
+        "effect": "Heat Cannon Add",
+        "range": null
+      }
+    ],
+    "chances": [
+      "18%",
+      "8%",
+      "5%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Rajang Mystic Fang",
+        "qty": "25P"
+      },
+      {
+        "item": "Rajang Everhide",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Rajang B",
+    "effects": [
+      {
+        "effect": "Elder Dragon",
+        "range": "5～10"
+      },
+      {
+        "effect": "Night",
+        "range": "5～10"
+      },
+      {
+        "effect": "Heat Cannon Add",
+        "range": null
+      }
+    ],
+    "chances": [
+      "18%",
+      "8%",
+      "8%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Pure Gold Pelt",
+        "qty": "67P"
+      },
+      {
+        "item": "GR6 Gem",
+        "qty": "33P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Typhoon Sac",
+        "qty": "20P"
+      }
+    ]
+  },
+  {
+    "name": "Rajang ★",
+    "effects": [
+      {
+        "effect": "Elder Dragon",
+        "range": "5～15"
+      },
+      {
+        "effect": "Stun Value",
+        "range": "Heat Cannon Add"
+      }
+    ],
+    "chances": [
+      "24%",
+      "18%",
+      "21%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Rajang Blood",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Blk Gravios A",
+    "effects": [
+      {
+        "effect": "Tech Boost[GL]",
+        "range": "Rush Thrust"
+      },
+      {
+        "effect": "Tech Boost[GL]",
+        "range": "Horizontal"
+      },
+      {
+        "effect": "Attack",
+        "range": "1～8"
+      }
+    ],
+    "chances": [
+      "3%",
+      "3%",
+      "18%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "B.Gravi Evershell",
+        "qty": "25P"
+      },
+      {
+        "item": "B.Gravi Everbone",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Wyvern Tail+",
+        "qty": "28P"
+      }
+    ]
+  },
+  {
+    "name": "Blk Gravios B",
+    "effects": [
+      {
+        "effect": "Morning",
+        "range": "5～10"
+      },
+      {
+        "effect": "Defense",
+        "range": "1～15"
+      },
+      {
+        "effect": "Heat Cannon Add",
+        "range": null
+      }
+    ],
+    "chances": [
+      "18%",
+      "8%",
+      "8%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "B.Gravios Bulwark",
+        "qty": "67P"
+      },
+      {
+        "item": "GR6 Gem",
+        "qty": "33P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Deep Coma Sac",
+        "qty": "20P"
+      },
+      {
+        "item": "Glittering Ore",
+        "qty": "67P"
+      }
+    ]
+  },
+  {
+    "name": "Blk Gravios ★",
+    "effects": [
+      {
+        "effect": "Morning",
+        "range": "8～10"
+      },
+      {
+        "effect": "Defense",
+        "range": "5～20"
+      },
+      {
+        "effect": "Heat Cannon Add",
+        "range": null
+      }
+    ],
+    "chances": [
+      "24%",
+      "8%",
+      "21%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "B.Gravios Wing",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Kamu Orugaron A",
+    "effects": [
+      {
+        "effect": "Cold",
+        "range": "5～10"
+      },
+      {
+        "effect": "Attack",
+        "range": "-5～5"
+      },
+      {
+        "effect": "Note Change 3",
+        "range": "2～7"
+      }
+    ],
+    "chances": [
+      "18%",
+      "10%",
+      "8%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Kamu Hardfang",
+        "qty": "25P"
+      },
+      {
+        "item": "Kamu Finepelt",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Kamu Orugaron B",
+    "effects": [
+      {
+        "effect": "Cold",
+        "range": "5～15"
+      },
+      {
+        "effect": "Attack",
+        "range": "-3～8"
+      },
+      {
+        "effect": "Note Change 3",
+        "range": "2～7"
+      }
+    ],
+    "chances": [
+      "18%",
+      "10%",
+      "10%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Kamu Frost Spike",
+        "qty": "67P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Permafrost Sac",
+        "qty": "33P"
+      },
+      {
+        "item": "GR6 Gem",
+        "qty": "14P"
+      }
+    ]
+  },
+  {
+    "name": "Kamu Orugaron ★",
+    "effects": [
+      {
+        "effect": "Stun Value",
+        "range": "Sonic Bomb Range"
+      },
+      {
+        "effect": "Note Change 3",
+        "range": "2～7"
+      }
+    ],
+    "chances": [
+      "15%",
+      "15%",
+      "21%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Kamu Frost Gem",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Kuarusepusu A",
+    "effects": [
+      {
+        "effect": "Length UP",
+        "range": "GS"
+      },
+      {
+        "effect": "Length UP",
+        "range": "LS"
+      },
+      {
+        "effect": "Attack",
+        "range": "3～8"
+      },
+      {
+        "effect": "Elemental",
+        "range": "1～5"
+      }
+    ],
+    "chances": [
+      "3%",
+      "3%",
+      "15%",
+      "15%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Kuaru. Ever Scale",
+        "qty": "25P"
+      },
+      {
+        "item": "Kuaru. Ever Hide",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Kuarusepusu B",
+    "effects": [
+      {
+        "effect": "Length UP",
+        "range": "GS"
+      },
+      {
+        "effect": "Length UP",
+        "range": "LS"
+      },
+      {
+        "effect": "Attack",
+        "range": "3～8"
+      },
+      {
+        "effect": "Affinity",
+        "range": "1～8"
+      }
+    ],
+    "chances": [
+      "5%",
+      "5%",
+      "15%",
+      "15%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Kuaru. Essence Gem",
+        "qty": "67P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "GR6 Gem",
+        "qty": "33P"
+      }
+    ]
+  },
+  {
+    "name": "Kuarusepusu ★",
+    "effects": [
+      {
+        "effect": "Length UP",
+        "range": "GS"
+      },
+      {
+        "effect": "Length UP",
+        "range": "LS"
+      },
+      {
+        "effect": "Affinity",
+        "range": "3～10"
+      },
+      {
+        "effect": "Elemental",
+        "range": "3～10"
+      }
+    ],
+    "chances": [
+      "8%",
+      "8%",
+      "15%",
+      "15%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Kuaru. UV Crystal",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Red VolganosA",
+    "effects": [
+      {
+        "effect": "Unsheath",
+        "range": "LS"
+      },
+      {
+        "effect": "Fanged Wyvern",
+        "range": "5～10"
+      }
+    ],
+    "chances": [
+      "5%",
+      "15%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "R. Volga Ageless Fin",
+        "qty": "25P"
+      },
+      {
+        "item": "R. Volga Ageless Scale",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Red Volganos B",
+    "effects": [
+      {
+        "effect": "Unsheath",
+        "range": "LS"
+      },
+      {
+        "effect": "Elemental",
+        "range": "3～7"
+      },
+      {
+        "effect": "Fanged Wyvern",
+        "range": "8～15"
+      }
+    ],
+    "chances": [
+      "7%",
+      "15%",
+      "15%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "R. Volga Magma Fang",
+        "qty": "67P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "GR6 Gem",
+        "qty": "33P"
+      },
+      {
+        "item": "Scorch Sac",
+        "qty": "20P"
+      }
+    ]
+  },
+  {
+    "name": "Red Volganos ★",
+    "effects": [
+      {
+        "effect": "Unsheath",
+        "range": "LS"
+      },
+      {
+        "effect": "Elemental",
+        "range": "5～10"
+      },
+      {
+        "effect": "Affinity",
+        "range": "3～10"
+      }
+    ],
+    "chances": [
+      "15%",
+      "15%",
+      "15%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "R. Volga Slag Shell",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Doragyurosu A",
+    "effects": [
+      {
+        "effect": "Elemental",
+        "range": "-5～10"
+      },
+      {
+        "effect": "Defense",
+        "range": "1～10"
+      }
+    ],
+    "chances": [
+      "12%",
+      "10%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Dora Immortal Shl",
+        "qty": "25P"
+      },
+      {
+        "item": "Dora Immortal Scale",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Doragyurosu B",
+    "effects": [
+      {
+        "effect": "Elemental",
+        "range": "3～7"
+      },
+      {
+        "effect": "Defense",
+        "range": "1～15"
+      }
+    ],
+    "chances": [
+      "15%",
+      "10%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Dora Twilight Gem",
+        "qty": "67P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "GR6 Gem",
+        "qty": "33P"
+      }
+    ]
+  },
+  {
+    "name": "Doragyurosu ★",
+    "effects": [
+      {
+        "effect": "Elemental",
+        "range": "5～10"
+      },
+      {
+        "effect": "Affinity",
+        "range": "5"
+      },
+      {
+        "effect": "Status Attack",
+        "range": null
+      }
+    ],
+    "chances": [
+      "15%",
+      "5%",
+      "10%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Dora Blk Blood",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "GR7 Gem",
+    "effects": "Unknown",
+    "chances": [],
+    "grade": "GR1",
+    "price": "400",
+    "creation_mats": [
+      {
+        "item": "GR7 Gem",
+        "qty": "22P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Saint Ore",
+        "qty": "30P"
+      },
+      {
+        "item": "Wire Worm",
+        "qty": "12P"
+      },
+      {
+        "item": "Delicate Blossom",
+        "qty": "12P"
+      }
+    ]
+  },
+  {
+    "name": "Rebidiora A",
+    "effects": [
+      {
+        "effect": "Bird Wyvern",
+        "range": "5～10"
+      },
+      {
+        "effect": "Defense",
+        "range": "1～15"
+      },
+      {
+        "effect": "Heat Cannon Add",
+        "range": null
+      }
+    ],
+    "chances": [
+      "18%",
+      "15%",
+      "5%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Rebidiora Shard",
+        "qty": "25P"
+      },
+      {
+        "item": "Rebidiora Cortex",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Rebidiora B",
+    "effects": [
+      {
+        "effect": "Bird Wyvern",
+        "range": "5～10"
+      },
+      {
+        "effect": "Defense",
+        "range": "5～20"
+      },
+      {
+        "effect": "Heat Cannon Add",
+        "range": null
+      }
+    ],
+    "chances": [
+      "18%",
+      "10%",
+      "8%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Rebidiora Weave",
+        "qty": "67P"
+      },
+      {
+        "item": "Rebidiora Lash",
+        "qty": "33P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "GR7 Gem",
+        "qty": "17P"
+      }
+    ]
+  },
+  {
+    "name": "Rebidiora C",
+    "effects": [
+      {
+        "effect": "Bird Wyvern",
+        "range": "5～15"
+      },
+      {
+        "effect": "Exp Expert",
+        "range": "1～3"
+      },
+      {
+        "effect": "Super R Fire",
+        "range": "Norm LV2"
+      }
+    ],
+    "chances": [
+      "24%",
+      "5%",
+      "21%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Magnetic Stone",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Garuga A",
+    "effects": [
+      {
+        "effect": "Carapaceon",
+        "range": "5～10"
+      },
+      {
+        "effect": "Saturday",
+        "range": "3～10"
+      },
+      {
+        "effect": "Heat Cannon Add",
+        "range": null
+      }
+    ],
+    "chances": [
+      "18%",
+      "10%",
+      "5%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Garuga Crazy Shell",
+        "qty": "25P"
+      },
+      {
+        "item": "Garuga Powerscale",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Garuga B",
+    "effects": [
+      {
+        "effect": "Carapaceon",
+        "range": "5～10"
+      },
+      {
+        "effect": "Saturday",
+        "range": "3～10"
+      },
+      {
+        "effect": "Heat Cannon Add",
+        "range": null
+      }
+    ],
+    "chances": [
+      "18%",
+      "10%",
+      "8%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Garuga Dark Weave",
+        "qty": "67P"
+      },
+      {
+        "item": "GR7 Gem",
+        "qty": "33P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Miasma Sac",
+        "qty": "20P"
+      }
+    ]
+  },
+  {
+    "name": "Garuga ★",
+    "effects": [
+      {
+        "effect": "Carapaceon",
+        "range": "5～15"
+      },
+      {
+        "effect": "Hunter Soul",
+        "range": "Super R Fire"
+      },
+      {
+        "effect": "Norm LV2",
+        "range": null
+      }
+    ],
+    "chances": [
+      "24%",
+      "10%",
+      "21%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Garuga Rend Claw",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Vashimu A",
+    "effects": [
+      {
+        "effect": "Flying Wyvern",
+        "range": "5～10"
+      },
+      {
+        "effect": "Friday",
+        "range": "3～10"
+      },
+      {
+        "effect": "Heat Cannon Add",
+        "range": null
+      }
+    ],
+    "chances": [
+      "18%",
+      "10%",
+      "5%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Vashimu Rare Fluid",
+        "qty": "25P"
+      },
+      {
+        "item": "Vashimu Mega Shell",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Vashimu B",
+    "effects": [
+      {
+        "effect": "Flying Wyvern",
+        "range": "5～10"
+      },
+      {
+        "effect": "Friday",
+        "range": "3～10"
+      },
+      {
+        "effect": "Heat Cannon Add",
+        "range": null
+      }
+    ],
+    "chances": [
+      "18%",
+      "10%",
+      "8%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Vash. Demise Claw",
+        "qty": "67P"
+      },
+      {
+        "item": "GR7 Gem",
+        "qty": "33P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Immobilizing Sac",
+        "qty": "20P"
+      }
+    ]
+  },
+  {
+    "name": "Vashimu ★",
+    "effects": [
+      {
+        "effect": "Flying Wyvern",
+        "range": "5～15"
+      },
+      {
+        "effect": "Status Attack",
+        "range": "Super R Fire"
+      },
+      {
+        "effect": "Norm LV2",
+        "range": null
+      }
+    ],
+    "chances": [
+      "24%",
+      "5%",
+      "21%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Vash. Apex Crystal",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Jebia A",
+    "effects": [
+      {
+        "effect": "Tech Boost[Hammer]",
+        "range": "C Move"
+      },
+      {
+        "effect": "Attack",
+        "range": "1～8"
+      }
+    ],
+    "chances": [
+      "3%",
+      "18%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Jebia Cortex",
+        "qty": "25P"
+      },
+      {
+        "item": "Jebia Extract",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Jebia B",
+    "effects": [
+      {
+        "effect": "Breeding Season",
+        "range": "3～10"
+      },
+      {
+        "effect": "Cold Season",
+        "range": "3～10"
+      },
+      {
+        "effect": "Warm Season",
+        "range": "3～10"
+      }
+    ],
+    "chances": [
+      "12%",
+      "12%",
+      "12%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Jebia Hardclaw",
+        "qty": "67P"
+      },
+      {
+        "item": "Jebia Strong Tail",
+        "qty": "48P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Jebia Blood Stone",
+        "qty": "33P"
+      },
+      {
+        "item": "Immobilizing Sac",
+        "qty": "33P"
+      },
+      {
+        "item": "GR7 Gem",
+        "qty": "14P"
+      }
+    ]
+  },
+  {
+    "name": "Jebia ★",
+    "effects": [
+      {
+        "effect": "Breeding Season",
+        "range": "5～15"
+      },
+      {
+        "effect": "Cold Season",
+        "range": "5～15"
+      },
+      {
+        "effect": "Warm Season",
+        "range": "5～15"
+      }
+    ],
+    "chances": [
+      "15%",
+      "15%",
+      "15%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Volatile Crystal",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Guren A",
+    "effects": [
+      {
+        "effect": "Piscine",
+        "range": "5～10"
+      },
+      {
+        "effect": "Sunday",
+        "range": "3～10"
+      },
+      {
+        "effect": "Heat Cannon Add",
+        "range": null
+      }
+    ],
+    "chances": [
+      "18%",
+      "10%",
+      "5%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Guren Wrath Shell",
+        "qty": "25P"
+      },
+      {
+        "item": "Guren Death Scale",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Guren B",
+    "effects": [
+      {
+        "effect": "Piscine",
+        "range": "5～10"
+      },
+      {
+        "effect": "Sunday",
+        "range": "3～10"
+      },
+      {
+        "effect": "Heat Cannon Add",
+        "range": null
+      }
+    ],
+    "chances": [
+      "18%",
+      "10%",
+      "8%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Guren Rage Horn",
+        "qty": "67P"
+      },
+      {
+        "item": "GR7 Gem",
+        "qty": "33P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Tsunami Sac",
+        "qty": "20P"
+      }
+    ]
+  },
+  {
+    "name": "Guren ★",
+    "effects": [
+      {
+        "effect": "Piscine",
+        "range": "5～15"
+      },
+      {
+        "effect": "Affinity",
+        "range": "5"
+      },
+      {
+        "effect": "Super R Fire",
+        "range": "Norm LV2"
+      }
+    ],
+    "chances": [
+      "24%",
+      "5%",
+      "21%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Guren Brute Spike",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Dyura A",
+    "effects": [
+      {
+        "effect": "Elder Dragon",
+        "range": "5～10"
+      },
+      {
+        "effect": "Wednesday",
+        "range": "5～10"
+      },
+      {
+        "effect": "Heat Cannon Add",
+        "range": null
+      }
+    ],
+    "chances": [
+      "18%",
+      "10%",
+      "5%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Dyura Frozen Shard",
+        "qty": "25P"
+      },
+      {
+        "item": "Dyura Powerclaw",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Dyura B",
+    "effects": [
+      {
+        "effect": "Elder Dragon",
+        "range": "5～10"
+      },
+      {
+        "effect": "Wednesday",
+        "range": "5～10"
+      },
+      {
+        "effect": "Heat Cannon Add",
+        "range": null
+      }
+    ],
+    "chances": [
+      "18%",
+      "10%",
+      "8%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Dyura Frost Cortex",
+        "qty": "67P"
+      },
+      {
+        "item": "GR7 Gem",
+        "qty": "33P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Deep Coma Sac",
+        "qty": "20P"
+      }
+    ]
+  },
+  {
+    "name": "Dyura ★",
+    "effects": [
+      {
+        "effect": "Elder Dragon",
+        "range": "5～15"
+      },
+      {
+        "effect": "Attack",
+        "range": "3～5"
+      },
+      {
+        "effect": "Super R Fire",
+        "range": "Norm LV2"
+      }
+    ],
+    "chances": [
+      "24%",
+      "15%",
+      "21%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Dyura Chill Spike",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Baruragaru A",
+    "effects": [
+      {
+        "effect": "Tech Boost[GS]",
+        "range": "Upswing"
+      },
+      {
+        "effect": "Tech Boost[GS]",
+        "range": "Rotation"
+      },
+      {
+        "effect": "Tech Boost[GS]",
+        "range": "Guard Slash"
+      },
+      {
+        "effect": "Attack",
+        "range": "1～8"
+      }
+    ],
+    "chances": [
+      "2%",
+      "2%",
+      "2%",
+      "18%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Baru White Hide",
+        "qty": "25P"
+      },
+      {
+        "item": "Baru Purple Scale",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Baruragaru B",
+    "effects": [
+      {
+        "effect": "Night",
+        "range": "5～10"
+      },
+      {
+        "effect": "Omnivore",
+        "range": "Status Attack"
+      }
+    ],
+    "chances": [
+      "18%",
+      "10%",
+      "5%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Baru Dense Fluid",
+        "qty": "67P"
+      },
+      {
+        "item": "Baru Thin Tongue",
+        "qty": "48P"
+      },
+      {
+        "item": "GR7 Gem",
+        "qty": "33P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Tsunami Sac",
+        "qty": "20P"
+      }
+    ]
+  },
+  {
+    "name": "Baruragaru ★",
+    "effects": [
+      {
+        "effect": "Night",
+        "range": "5～15"
+      },
+      {
+        "effect": "Omnivore",
+        "range": "Status Attack"
+      }
+    ],
+    "chances": [
+      "24%",
+      "15%",
+      "21%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Baru Blood Vessel",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Forokururu A",
+    "effects": [
+      {
+        "effect": "Elemental",
+        "range": "-5～10"
+      },
+      {
+        "effect": "Minion",
+        "range": "1～10"
+      },
+      {
+        "effect": "Note Change 1",
+        "range": "3～7"
+      }
+    ],
+    "chances": [
+      "12%",
+      "10%",
+      "8%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Foro Hardclaw",
+        "qty": "25P"
+      },
+      {
+        "item": "Foro Fine Pelt",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Forokururu B",
+    "effects": [
+      {
+        "effect": "Elemental",
+        "range": "-5～10"
+      },
+      {
+        "effect": "Minion",
+        "range": "5～15"
+      },
+      {
+        "effect": "Note Change 1",
+        "range": "3～7"
+      }
+    ],
+    "chances": [
+      "12%",
+      "10%",
+      "10%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Foro Extract",
+        "qty": "67P"
+      },
+      {
+        "item": "Foro Wing",
+        "qty": "48P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Foro Tail",
+        "qty": "33P"
+      },
+      {
+        "item": "Dignified Longbeak",
+        "qty": "33P"
+      },
+      {
+        "item": "GR7 Gem",
+        "qty": "14P"
+      }
+    ]
+  },
+  {
+    "name": "Forokururu ★",
+    "effects": [
+      {
+        "effect": "Elemental",
+        "range": "1～8"
+      },
+      {
+        "effect": "Status Attack",
+        "range": "Note Change 1"
+      },
+      {
+        "effect": "3～7",
+        "range": null
+      }
+    ],
+    "chances": [
+      "18%",
+      "12%",
+      "21%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Foro Red Pelt",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Gold Rathian A",
+    "effects": [
+      {
+        "effect": "Sunday",
+        "range": "1～5"
+      },
+      {
+        "effect": "Saturday",
+        "range": "1～5"
+      },
+      {
+        "effect": "Tech Change[Bow]",
+        "range": "Multi Pierce"
+      }
+    ],
+    "chances": [
+      "15%",
+      "15%",
+      "5%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "G.Rath Cortex",
+        "qty": "25P"
+      },
+      {
+        "item": "G.Rath Shard",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Wyvern Tail",
+        "qty": "28P"
+      },
+      {
+        "item": "Wyvern Wing",
+        "qty": "28P"
+      }
+    ]
+  },
+  {
+    "name": "Gold Rathian B",
+    "effects": [
+      {
+        "effect": "Sunday",
+        "range": "1～10"
+      },
+      {
+        "effect": "Saturday",
+        "range": "1～10"
+      },
+      {
+        "effect": "Tech Change[Bow]",
+        "range": "Multi Pierce"
+      }
+    ],
+    "chances": [
+      "15%",
+      "15%",
+      "8%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "G.Rath Direspike",
+        "qty": "67P"
+      },
+      {
+        "item": "GR7 Gem",
+        "qty": "33P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Scorch Sac",
+        "qty": "40P"
+      }
+    ]
+  },
+  {
+    "name": "Gold Rathian ★",
+    "effects": [
+      {
+        "effect": "Raw Bow Boost",
+        "range": "Tech Change[Bow]"
+      },
+      {
+        "effect": "Multi Pierce",
+        "range": null
+      }
+    ],
+    "chances": [
+      "5%",
+      "30%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "G.Rath Mantle",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Silver Rathalos A",
+    "effects": [
+      {
+        "effect": "Tech Boost[DS]",
+        "range": "Blade Strike"
+      },
+      {
+        "effect": "Attack",
+        "range": "1～8"
+      }
+    ],
+    "chances": [
+      "3%",
+      "18%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "S.Rath Cortex",
+        "qty": "25P"
+      },
+      {
+        "item": "S.Rath Shard",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Wyvern Tail+",
+        "qty": "28P"
+      },
+      {
+        "item": "Wyvern Wing+",
+        "qty": "28P"
+      }
+    ]
+  },
+  {
+    "name": "Silver Rathalos B",
+    "effects": [
+      {
+        "effect": "Attack",
+        "range": "1～7"
+      },
+      {
+        "effect": "Flying Wyvern",
+        "range": "1～10"
+      },
+      {
+        "effect": "Elder Dragon",
+        "range": "1～10"
+      }
+    ],
+    "chances": [
+      "12%",
+      "12%",
+      "12%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "S.Rath Darkmarrow",
+        "qty": "67P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "GR7 Gem",
+        "qty": "33P"
+      },
+      {
+        "item": "Scorch Sac",
+        "qty": "40P"
+      }
+    ]
+  },
+  {
+    "name": "Silver Rathalos ★",
+    "effects": [
+      {
+        "effect": "Attack",
+        "range": "1～10"
+      },
+      {
+        "effect": "Flying Wyvern",
+        "range": "5～15"
+      },
+      {
+        "effect": "Elder Dragon",
+        "range": "5～15"
+      }
+    ],
+    "chances": [
+      "15%",
+      "15%",
+      "15%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "S.Rath Bloodstone",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Orugaron Duo",
+    "effects": [
+      {
+        "effect": "Attack",
+        "range": "-5～5"
+      },
+      {
+        "effect": "Arc",
+        "range": "Wide"
+      },
+      {
+        "effect": "Arc",
+        "range": "Narrow"
+      }
+    ],
+    "chances": [
+      "18%",
+      "5%",
+      "5%"
+    ],
+    "grade": "GSR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Orugaron Iceblood",
+        "qty": "50P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Kamu Frost Spike",
+        "qty": "50P"
+      },
+      {
+        "item": "Nono Frost Spike",
+        "qty": "50P"
+      }
+    ]
+  },
+  {
+    "name": "Gold Silver Rath Duo",
+    "effects": [
+      {
+        "effect": "Attack",
+        "range": "-5～5"
+      },
+      {
+        "effect": "Arc",
+        "range": "Bomb"
+      },
+      {
+        "effect": "Arc",
+        "range": "Slicing"
+      }
+    ],
+    "chances": [
+      "18%",
+      "5%",
+      "5%"
+    ],
+    "grade": "GSR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Rath Trove Scale",
+        "qty": "50P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "S.Rath Darkmarrow",
+        "qty": "50P"
+      },
+      {
+        "item": "G.Rath Direspike",
+        "qty": "50P"
+      }
+    ]
+  },
+  {
+    "name": "Inagami A",
+    "effects": [
+      {
+        "effect": "Defense",
+        "range": "5～15"
+      },
+      {
+        "effect": "Affinity",
+        "range": "1～7"
+      }
+    ],
+    "chances": [
+      "15%",
+      "12%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Inagami Piel",
+        "qty": "25P"
+      },
+      {
+        "item": "Inagami Glosshair",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Inagami B",
+    "effects": [
+      {
+        "effect": "Shelling Change",
+        "range": "Defense"
+      },
+      {
+        "effect": "5～20",
+        "range": "Affinity"
+      },
+      {
+        "effect": "2～8",
+        "range": null
+      }
+    ],
+    "chances": [
+      "10%",
+      "12%",
+      "12%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Inagami Shard",
+        "qty": "48P"
+      },
+      {
+        "item": "Inagami Muscle",
+        "qty": "48P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Inagami Lash",
+        "qty": "52P"
+      }
+    ]
+  },
+  {
+    "name": "Inagami ★",
+    "effects": [
+      {
+        "effect": "Shelling Change",
+        "range": "Shot Change"
+      },
+      {
+        "effect": "Norm",
+        "range": "Shot Change"
+      },
+      {
+        "effect": "Spread",
+        "range": "Shot Change"
+      },
+      {
+        "effect": "Long",
+        "range": null
+      }
+    ],
+    "chances": [
+      "35%",
+      "3%",
+      "3%",
+      "3%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Inagami Darkmarrow",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "White Espinas A",
+    "effects": [
+      {
+        "effect": "Status Attack",
+        "range": "Elemental"
+      },
+      {
+        "effect": "1～7",
+        "range": null
+      }
+    ],
+    "chances": [
+      "5%",
+      "12%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "W.Espi Direshard",
+        "qty": "25P"
+      },
+      {
+        "item": "W.Espi Direcortex",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Wyvern Tail+",
+        "qty": "28P"
+      },
+      {
+        "item": "Wyvern Wing+",
+        "qty": "28P"
+      }
+    ]
+  },
+  {
+    "name": "White Espinas B",
+    "effects": [
+      {
+        "effect": "Super R Fire",
+        "range": "Pelet LV1"
+      },
+      {
+        "effect": "Affinity",
+        "range": "1～4"
+      },
+      {
+        "effect": "Elemental",
+        "range": "3～7"
+      }
+    ],
+    "chances": [
+      "5%",
+      "12%",
+      "18%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "W.Espi Swordspike",
+        "qty": "67P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "GR7 Gem",
+        "qty": "33P"
+      },
+      {
+        "item": "Miasma Sac",
+        "qty": "20P"
+      }
+    ]
+  },
+  {
+    "name": "White Espinas ★",
+    "effects": [
+      {
+        "effect": "Super R Fire",
+        "range": "Pelet LV1"
+      },
+      {
+        "effect": "Super R Fire",
+        "range": "Fire S"
+      }
+    ],
+    "chances": [
+      "18%",
+      "18%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "W.Espi Dense Shell",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Lunastra A",
+    "effects": [
+      {
+        "effect": "Shelling Change",
+        "range": "Attack"
+      },
+      {
+        "effect": "2～8",
+        "range": null
+      }
+    ],
+    "chances": [
+      "8%",
+      "15%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Lunastra Pwr.Scl",
+        "qty": "25P"
+      },
+      {
+        "item": "Lunastra Pwr.Shl",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Lunastra B",
+    "effects": [
+      {
+        "effect": "Shelling Change",
+        "range": "Elder Dragon"
+      },
+      {
+        "effect": "5～12",
+        "range": "Elemental"
+      },
+      {
+        "effect": "3～8",
+        "range": null
+      }
+    ],
+    "chances": [
+      "10%",
+      "12%",
+      "18%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Luna. Noble Wing",
+        "qty": "67P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "GR7 Gem",
+        "qty": "33P"
+      }
+    ]
+  },
+  {
+    "name": "Lunastra ★",
+    "effects": [
+      {
+        "effect": "Shelling Change",
+        "range": "Elemental"
+      },
+      {
+        "effect": "3～10",
+        "range": "Attack"
+      },
+      {
+        "effect": "3～10",
+        "range": null
+      }
+    ],
+    "chances": [
+      "35%",
+      "15%",
+      "8%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Lunastra Crown Mane",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Poborubarumu A",
+    "effects": [
+      {
+        "effect": "Tech Boost[Bow]",
+        "range": "Shoryuken"
+      },
+      {
+        "effect": "Flying Wyvern",
+        "range": "5～12"
+      },
+      {
+        "effect": "Affinity",
+        "range": "2～5"
+      }
+    ],
+    "chances": [
+      "5%",
+      "15%",
+      "10%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Poborubarumu Piel",
+        "qty": "25P"
+      },
+      {
+        "item": "Poboru. Emulsion",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Poborubarumu B",
+    "effects": [
+      {
+        "effect": "Tech Boost[Bow]",
+        "range": "Shoryuken"
+      },
+      {
+        "effect": "Flying Wyvern",
+        "range": "5～12"
+      },
+      {
+        "effect": "Elemental",
+        "range": "2～5"
+      }
+    ],
+    "chances": [
+      "6%",
+      "15%",
+      "18%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Poboru.Deep Marrow",
+        "qty": "67P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "GR7 Gem",
+        "qty": "33P"
+      }
+    ]
+  },
+  {
+    "name": "Poborubarumu ★",
+    "effects": [
+      {
+        "effect": "Tech Boost[Bow]",
+        "range": "Shoryuken"
+      },
+      {
+        "effect": "Elemental",
+        "range": "3～10"
+      },
+      {
+        "effect": "Affinity",
+        "range": "2～8"
+      }
+    ],
+    "chances": [
+      "15%",
+      "15%",
+      "12%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Poborubarumu Throat",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Akantor A",
+    "effects": [
+      {
+        "effect": "Tech Boost[GS]",
+        "range": "Rotation"
+      },
+      {
+        "effect": "Affinity",
+        "range": "-5～4"
+      },
+      {
+        "effect": "Defense",
+        "range": "1～15"
+      }
+    ],
+    "chances": [
+      "3%",
+      "10%",
+      "10%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Akantor Power Scl",
+        "qty": "25P"
+      },
+      {
+        "item": "Akantor Power Shl",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Akantor B",
+    "effects": [
+      {
+        "effect": "Tech Boost[GS]",
+        "range": "Rotation"
+      },
+      {
+        "effect": "Affinity",
+        "range": "-5～6"
+      },
+      {
+        "effect": "Defense",
+        "range": "5～20"
+      }
+    ],
+    "chances": [
+      "4%",
+      "7%",
+      "15%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Akantor Myeloid",
+        "qty": "67P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "GR7 Gem",
+        "qty": "33P"
+      }
+    ]
+  },
+  {
+    "name": "Akantor ★",
+    "effects": [
+      {
+        "effect": "Tech Boost[GS]",
+        "range": "Rotation"
+      },
+      {
+        "effect": "Affinity",
+        "range": "-5～8"
+      },
+      {
+        "effect": "Attack",
+        "range": "1～10"
+      }
+    ],
+    "chances": [
+      "7%",
+      "5%",
+      "10%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Akantor Ripclaw",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Harudomerugu A",
+    "effects": [
+      {
+        "effect": "Length UP",
+        "range": "DS"
+      },
+      {
+        "effect": "Piscine",
+        "range": "5～12"
+      }
+    ],
+    "chances": [
+      "5%",
+      "15%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Harudo.Sharp Scale",
+        "qty": "25P"
+      },
+      {
+        "item": "Harudo.Sharp Shl",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Harudomerugu B",
+    "effects": [
+      {
+        "effect": "Length UP",
+        "range": "DS"
+      },
+      {
+        "effect": "Affinity",
+        "range": "1～5"
+      },
+      {
+        "effect": "Piscine",
+        "range": "7～15"
+      }
+    ],
+    "chances": [
+      "7%",
+      "10%",
+      "15%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Harudo.Sharp Claw",
+        "qty": "67P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "GR7 Gem",
+        "qty": "33P"
+      }
+    ]
+  },
+  {
+    "name": "Harudomerugu ★",
+    "effects": [
+      {
+        "effect": "Length UP",
+        "range": "DS"
+      },
+      {
+        "effect": "Affinity",
+        "range": "3～7"
+      },
+      {
+        "effect": "Elemental",
+        "range": "5～10"
+      }
+    ],
+    "chances": [
+      "10%",
+      "15%",
+      "15%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Harudo Torrent Gem",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Gasurabazura A",
+    "effects": [
+      {
+        "effect": "Tech Change[LBG]",
+        "range": "Just Gauge"
+      },
+      {
+        "effect": "Disable Rapid",
+        "range": "4～5"
+      }
+    ],
+    "chances": [
+      "3%",
+      "20%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Gasura.Thick Hide",
+        "qty": "25P"
+      },
+      {
+        "item": "Gasura.Thick Scale",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Gasurabazura B",
+    "effects": [
+      {
+        "effect": "Tech Change[LBG]",
+        "range": "Just Gauge"
+      },
+      {
+        "effect": "Disable Rapid",
+        "range": "6～9"
+      },
+      {
+        "effect": "Affinity",
+        "range": "2～7"
+      }
+    ],
+    "chances": [
+      "5%",
+      "20%",
+      "5%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Gasura.Speed Fin",
+        "qty": "67P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "GR7 Gem",
+        "qty": "33P"
+      }
+    ]
+  },
+  {
+    "name": "Gasurabazura ★",
+    "effects": [
+      {
+        "effect": "Tech Change[LBG]",
+        "range": "Just Gauge"
+      },
+      {
+        "effect": "Disable Rapid",
+        "range": "1～3"
+      },
+      {
+        "effect": "Attack",
+        "range": "1～10"
+      }
+    ],
+    "chances": [
+      "7%",
+      "20%",
+      "8%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Gasura.Scald Blood",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Brown Espinas A",
+    "effects": [
+      {
+        "effect": "Tech Boost[LS]",
+        "range": "Piercing"
+      },
+      {
+        "effect": "Elemental",
+        "range": "3～7"
+      },
+      {
+        "effect": "Bird Wyvern",
+        "range": "5～10"
+      }
+    ],
+    "chances": [
+      "5%",
+      "15%",
+      "15%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "O. Espi Absolute Scl",
+        "qty": "25P"
+      },
+      {
+        "item": "O. Espi Absolute Shl",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Wyvern Tail+",
+        "qty": "28P"
+      },
+      {
+        "item": "Wyvern Wing+",
+        "qty": "28P"
+      }
+    ]
+  },
+  {
+    "name": "Brown Espinas B",
+    "effects": [
+      {
+        "effect": "Tech Boost[LS]",
+        "range": "Piercing"
+      },
+      {
+        "effect": "Elemental",
+        "range": "5～10"
+      },
+      {
+        "effect": "Bird Wyvern",
+        "range": "8～12"
+      }
+    ],
+    "chances": [
+      "7%",
+      "15%",
+      "15%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "O. Espi Blade Spike",
+        "qty": "67P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "GR7 Gem",
+        "qty": "33P"
+      },
+      {
+        "item": "Miasma Sac",
+        "qty": "20P"
+      }
+    ]
+  },
+  {
+    "name": "Brown Espinas ★",
+    "effects": [
+      {
+        "effect": "Tech Boost[LS]",
+        "range": "Piercing"
+      },
+      {
+        "effect": "Length UP",
+        "range": "LS"
+      },
+      {
+        "effect": "Elemental",
+        "range": "5～10"
+      }
+    ],
+    "chances": [
+      "15%",
+      "10%",
+      "10%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "O. Espi Brown Shl",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Toridcless A",
+    "effects": [
+      {
+        "effect": "Tech Boost[Tonfa]",
+        "range": "EX Gauge"
+      },
+      {
+        "effect": "Fanged Wyvern",
+        "range": "5～10"
+      }
+    ],
+    "chances": [
+      "5%",
+      "15%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Torid Shl+",
+        "qty": "25P"
+      },
+      {
+        "item": "Torid Fur+",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Toridcless B",
+    "effects": [
+      {
+        "effect": "Tech Boost[Tonfa]",
+        "range": "EX Gauge"
+      },
+      {
+        "effect": "Affinity",
+        "range": "3～7"
+      },
+      {
+        "effect": "Fanged Wyvern",
+        "range": "8～15"
+      }
+    ],
+    "chances": [
+      "7%",
+      "10%",
+      "15%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Torid Claw+",
+        "qty": "67P"
+      },
+      {
+        "item": "Torid Featherhorn",
+        "qty": "48P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Torid Hard Wing Shl",
+        "qty": "33P"
+      },
+      {
+        "item": "Torid Tail",
+        "qty": "33P"
+      }
+    ]
+  },
+  {
+    "name": "Toridcless ★",
+    "effects": [
+      {
+        "effect": "Tech Boost[Tonfa]",
+        "range": "EX Gauge"
+      },
+      {
+        "effect": "Affinity",
+        "range": "5～10"
+      },
+      {
+        "effect": "Attack",
+        "range": "5～10"
+      }
+    ],
+    "chances": [
+      "15%",
+      "10%",
+      "10%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Torid Pure Gem",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Odibatorasu A",
+    "effects": [
+      {
+        "effect": "Affinity",
+        "range": "1～7"
+      },
+      {
+        "effect": "Elemental",
+        "range": "2～5"
+      }
+    ],
+    "chances": [
+      "12%",
+      "10%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Odi Absolute Shl",
+        "qty": "25P"
+      },
+      {
+        "item": "Odi Absolute Scale",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Odibatorasu B",
+    "effects": [
+      {
+        "effect": "Affinity",
+        "range": "2～8"
+      },
+      {
+        "effect": "Stun Value",
+        "range": null
+      }
+    ],
+    "chances": [
+      "12%",
+      "8%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Odi Mandible",
+        "qty": "67P"
+      },
+      {
+        "item": "Odi Anger Horn",
+        "qty": "48P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Odi Slaughter Claw",
+        "qty": "33P"
+      }
+    ]
+  },
+  {
+    "name": "Odibatorasu ★",
+    "effects": [
+      {
+        "effect": "Affinity",
+        "range": "5～10"
+      },
+      {
+        "effect": "Attack",
+        "range": "5～10"
+      },
+      {
+        "effect": "Length UP",
+        "range": "GS"
+      }
+    ],
+    "chances": [
+      "15%",
+      "10%",
+      "10%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Odi Hardspike",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Kushala A",
+    "effects": [
+      {
+        "effect": "Unsheath",
+        "range": "LS"
+      },
+      {
+        "effect": "Elemental",
+        "range": "3～7"
+      }
+    ],
+    "chances": [
+      "5%",
+      "15%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Kushala Dragon Scl",
+        "qty": "25P"
+      },
+      {
+        "item": "Kushala Cortex",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Kushala B",
+    "effects": [
+      {
+        "effect": "Unsheath",
+        "range": "LS"
+      },
+      {
+        "effect": "Length UP",
+        "range": "LS"
+      }
+    ],
+    "chances": [
+      "7%",
+      "7%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Kushala Riptalon",
+        "qty": "67P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Kushala Hardhorn",
+        "qty": "33P"
+      },
+      {
+        "item": "Kushala Fellwing",
+        "qty": "33P"
+      },
+      {
+        "item": "Kushala Strong Tail",
+        "qty": "33P"
+      }
+    ]
+  },
+  {
+    "name": "Kushala ★",
+    "effects": [
+      {
+        "effect": "Unsheath",
+        "range": "LS"
+      },
+      {
+        "effect": "Tech Boost[LS]",
+        "range": "Piercing"
+      },
+      {
+        "effect": "Affinity",
+        "range": "5～10"
+      }
+    ],
+    "chances": [
+      "15%",
+      "15%",
+      "15%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Large Kushala Gem",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Chameleos A",
+    "effects": [
+      {
+        "effect": "Unsheath",
+        "range": "Lance"
+      },
+      {
+        "effect": "Affinity",
+        "range": "1～7"
+      }
+    ],
+    "chances": [
+      "3%",
+      "12%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Chameleos Rare Hde",
+        "qty": "25P"
+      },
+      {
+        "item": "Chameleos Fellwing",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Chameleos B",
+    "effects": [
+      {
+        "effect": "Unsheath",
+        "range": "Lance"
+      },
+      {
+        "effect": "Affinity",
+        "range": "2～8"
+      }
+    ],
+    "chances": [
+      "5%",
+      "12%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Chameleos Riptalon",
+        "qty": "67P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Chameleos Hardhorn",
+        "qty": "33P"
+      },
+      {
+        "item": "Chameleos Hardtail",
+        "qty": "33P"
+      }
+    ]
+  },
+  {
+    "name": "Chameleos ★",
+    "effects": [
+      {
+        "effect": "Unsheath",
+        "range": "Lance"
+      },
+      {
+        "effect": "Length UP",
+        "range": "Lance"
+      },
+      {
+        "effect": "Attack",
+        "range": "5～10"
+      }
+    ],
+    "chances": [
+      "10%",
+      "10%",
+      "10%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Lg Chameleos Gem",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Teostra A",
+    "effects": [
+      {
+        "effect": "Tech Boost[SAF]",
+        "range": "Attack"
+      },
+      {
+        "effect": "3～6",
+        "range": null
+      }
+    ],
+    "chances": [
+      "5%",
+      "15%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Teostra Cortex",
+        "qty": "25P"
+      },
+      {
+        "item": "Teostra Dragon Scl",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Teostra B",
+    "effects": [
+      {
+        "effect": "Tech Boost[SAF]",
+        "range": "Affinity"
+      },
+      {
+        "effect": "1～4",
+        "range": null
+      }
+    ],
+    "chances": [
+      "7%",
+      "12%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Teostra Riptalon",
+        "qty": "67P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Teostra Hardhorn",
+        "qty": "33P"
+      },
+      {
+        "item": "Teostra Hardtail",
+        "qty": "33P"
+      }
+    ]
+  },
+  {
+    "name": "Teostra ★",
+    "effects": [
+      {
+        "effect": "Tech Boost[SAF]",
+        "range": "Stun Value"
+      },
+      {
+        "effect": "Elemental",
+        "range": "5～10"
+      }
+    ],
+    "chances": [
+      "15%",
+      "15%",
+      "10%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Large Teostra Gem",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Guanzorumu A",
+    "effects": [
+      {
+        "effect": "Unsheath",
+        "range": "Elemental"
+      },
+      {
+        "effect": "2～5",
+        "range": null
+      }
+    ],
+    "chances": [
+      "5%",
+      "10%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Guanzorumu Scale",
+        "qty": "25P"
+      },
+      {
+        "item": "Guanzorumu Pelt",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Guanzorumu B",
+    "effects": [
+      {
+        "effect": "Unsheath",
+        "range": "Affinity"
+      },
+      {
+        "effect": "2～8",
+        "range": null
+      }
+    ],
+    "chances": [
+      "7%",
+      "12%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Guanzorumu Blood",
+        "qty": "67P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Guanzorumu Claw",
+        "qty": "33P"
+      },
+      {
+        "item": "Guanzorumu Wing",
+        "qty": "33P"
+      },
+      {
+        "item": "Guanzorumu Tail",
+        "qty": "33P"
+      }
+    ]
+  },
+  {
+    "name": "Guanzorumu ★",
+    "effects": [
+      {
+        "effect": "Unsheath",
+        "range": "Attack"
+      },
+      {
+        "effect": "5～10",
+        "range": "Elemental"
+      },
+      {
+        "effect": "5～10",
+        "range": null
+      }
+    ],
+    "chances": [
+      "15%",
+      "10%",
+      "10%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Guanzorumu Ruby",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Kirin A",
+    "effects": [
+      {
+        "effect": "Unsheath",
+        "range": "Elder Dragon"
+      },
+      {
+        "effect": "5～12",
+        "range": null
+      }
+    ],
+    "chances": [
+      "5%",
+      "15%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Kirin Storm Hide",
+        "qty": "25P"
+      },
+      {
+        "item": "Kirin Storm Tail",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Kirin B",
+    "effects": [
+      {
+        "effect": "Unsheath",
+        "range": "Affinity"
+      },
+      {
+        "effect": "1～5",
+        "range": "Elder Dragon"
+      },
+      {
+        "effect": "7～15",
+        "range": null
+      }
+    ],
+    "chances": [
+      "7%",
+      "10%",
+      "15%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Kirin Sinew",
+        "qty": "67P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Kirin ★",
+    "effects": [
+      {
+        "effect": "Unsheath",
+        "range": "Affinity"
+      },
+      {
+        "effect": "3～7",
+        "range": "Status Attack"
+      }
+    ],
+    "chances": [
+      "10%",
+      "10%",
+      "7%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Kirin Silver Mane",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Rukodiora A",
+    "effects": [
+      {
+        "effect": "Tech Boost[Tonfa]",
+        "range": "C Gauge"
+      },
+      {
+        "effect": "Attack",
+        "range": "3～6"
+      }
+    ],
+    "chances": [
+      "5%",
+      "15%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Ruko.Pureshard",
+        "qty": "25P"
+      },
+      {
+        "item": "Ruko.Purecortex",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Rukodiora B",
+    "effects": [
+      {
+        "effect": "Tech Boost[Tonfa]",
+        "range": "C Gauge"
+      },
+      {
+        "effect": "Affinity",
+        "range": "1～4"
+      }
+    ],
+    "chances": [
+      "7%",
+      "12%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Ruko.Shocklash",
+        "qty": "67P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Ruko.Dynamo Horn",
+        "qty": "33P"
+      },
+      {
+        "item": "Ruko.Magnetic Wve",
+        "qty": "33P"
+      }
+    ]
+  },
+  {
+    "name": "Rukodiora ★",
+    "effects": [
+      {
+        "effect": "Tech Boost[Tonfa]",
+        "range": "C Gauge"
+      },
+      {
+        "effect": "Stun Value",
+        "range": "Affinity"
+      },
+      {
+        "effect": "5～10",
+        "range": null
+      }
+    ],
+    "chances": [
+      "10%",
+      "10%",
+      "7%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Dark Spectrum Gem",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Zenaserisu A",
+    "effects": [
+      {
+        "effect": "Tech Boost[SAF]",
+        "range": "Attack"
+      },
+      {
+        "effect": "3～6",
+        "range": null
+      }
+    ],
+    "chances": [
+      "5%",
+      "15%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Zena Scale",
+        "qty": "25P"
+      },
+      {
+        "item": "Zena Shell",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Zenaserisu B",
+    "effects": [
+      {
+        "effect": "Tech Boost[SAF]",
+        "range": "Affinity"
+      },
+      {
+        "effect": "1～4",
+        "range": null
+      }
+    ],
+    "chances": [
+      "7%",
+      "12%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Zena Marrow",
+        "qty": "67P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Zena Blade",
+        "qty": "33P"
+      },
+      {
+        "item": "Zena Tail",
+        "qty": "33P"
+      }
+    ]
+  },
+  {
+    "name": "Zenaserisu ★",
+    "effects": [
+      {
+        "effect": "Tech Boost[SAF]",
+        "range": "Stun Value"
+      },
+      {
+        "effect": "Attack",
+        "range": "5～10"
+      }
+    ],
+    "chances": [
+      "10%",
+      "10%",
+      "7%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Zena Black Gem",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Disufiroa A",
+    "effects": [
+      {
+        "effect": "Flying Wyvern",
+        "range": "8～10"
+      },
+      {
+        "effect": "Elemental",
+        "range": "1～10"
+      },
+      {
+        "effect": "Super R Fire",
+        "range": "Norm LV2"
+      }
+    ],
+    "chances": [
+      "18%",
+      "18%",
+      "5%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Disu.Fire Plate",
+        "qty": "25P"
+      },
+      {
+        "item": "Disu.Ice Plate",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Disufiroa B",
+    "effects": [
+      {
+        "effect": "Flying Wyvern",
+        "range": "8～10"
+      },
+      {
+        "effect": "Elemental",
+        "range": "5～10"
+      },
+      {
+        "effect": "Super R Fire",
+        "range": "Norm LV2"
+      }
+    ],
+    "chances": [
+      "18%",
+      "18%",
+      "8%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Disufiroa Talon",
+        "qty": "55P"
+      },
+      {
+        "item": "Skyslasher",
+        "qty": "55P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Disufiroa Fellwing",
+        "qty": "55P"
+      },
+      {
+        "item": "GR7 Gem",
+        "qty": "14P"
+      }
+    ]
+  },
+  {
+    "name": "Disufiroa ★",
+    "effects": [
+      {
+        "effect": "Flying Wyvern",
+        "range": "8～15"
+      },
+      {
+        "effect": "Money Expert",
+        "range": "1～3"
+      },
+      {
+        "effect": "Super R Fire",
+        "range": "Norm LV2"
+      }
+    ],
+    "chances": [
+      "18%",
+      "5%",
+      "21%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Ivory Dgnsphire",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Mi Ru A",
+    "effects": [
+      {
+        "effect": "Elder Dragon",
+        "range": "5～10"
+      },
+      {
+        "effect": "Attack",
+        "range": "1～8"
+      }
+    ],
+    "chances": [
+      "18%",
+      "12%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Mi-Ru Enigma Scale",
+        "qty": "25P"
+      },
+      {
+        "item": "Mi-Ru Onyx Shell",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Mi Ru B",
+    "effects": [
+      {
+        "effect": "Elder Dragon",
+        "range": "5～10"
+      },
+      {
+        "effect": "Attack",
+        "range": "4～8"
+      }
+    ],
+    "chances": [
+      "18%",
+      "12%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Mi-Ru Spike",
+        "qty": "67P"
+      },
+      {
+        "item": "Mi-Ru Obscure Horn",
+        "qty": "48P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "GR7 Gem",
+        "qty": "14P"
+      }
+    ]
+  },
+  {
+    "name": "Mi Ru ★",
+    "effects": [
+      {
+        "effect": "Elder Dragon",
+        "range": "5～15"
+      },
+      {
+        "effect": "Affinity",
+        "range": "4～5"
+      }
+    ],
+    "chances": [
+      "24%",
+      "10%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Mi-Ru Blood",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Zerureusu A",
+    "effects": [
+      {
+        "effect": "Length UP",
+        "range": "SnS"
+      },
+      {
+        "effect": "Length UP",
+        "range": "Lance"
+      },
+      {
+        "effect": "Attack",
+        "range": "3～8"
+      },
+      {
+        "effect": "Elemental",
+        "range": "1～10"
+      }
+    ],
+    "chances": [
+      "3%",
+      "3%",
+      "15%",
+      "15%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Zeru Shard",
+        "qty": "25P"
+      },
+      {
+        "item": "Zeru Cortex",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Zerureusu B",
+    "effects": [
+      {
+        "effect": "Length UP",
+        "range": "SnS"
+      },
+      {
+        "effect": "Length UP",
+        "range": "Lance"
+      },
+      {
+        "effect": "Attack",
+        "range": "3～8"
+      },
+      {
+        "effect": "Affinity",
+        "range": "1～5"
+      }
+    ],
+    "chances": [
+      "4%",
+      "4%",
+      "15%",
+      "15%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Zeru Marrow",
+        "qty": "67P"
+      },
+      {
+        "item": "Zeru Light Wing",
+        "qty": "48P"
+      },
+      {
+        "item": "Zeru Shineclaw",
+        "qty": "48P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Zeru Lash",
+        "qty": "33P"
+      },
+      {
+        "item": "Zeru Blunt Horn",
+        "qty": "33P"
+      }
+    ]
+  },
+  {
+    "name": "Zerureusu ★",
+    "effects": [
+      {
+        "effect": "Attack",
+        "range": "5～8"
+      },
+      {
+        "effect": "Affinity",
+        "range": "-5～10"
+      },
+      {
+        "effect": "Elemental",
+        "range": "5～10"
+      },
+      {
+        "effect": "Elder Dragon",
+        "range": "5～15"
+      }
+    ],
+    "chances": [
+      "15%",
+      "15%",
+      "15%",
+      "15%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Zeru Sapphire",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Fatalis A",
+    "effects": [
+      {
+        "effect": "Tech Boost[SnS]",
+        "range": "Slide"
+      },
+      {
+        "effect": "Tech Boost[SnS]",
+        "range": "Shield"
+      },
+      {
+        "effect": "Attack",
+        "range": "1～8"
+      }
+    ],
+    "chances": [
+      "3%",
+      "3%",
+      "18%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Fatalis Cortex",
+        "qty": "25P"
+      },
+      {
+        "item": "Fatalis Fellwing",
+        "qty": "25P"
+      },
+      {
+        "item": "Fatalis Hardhorn",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Fatalis B",
+    "effects": [
+      {
+        "effect": "Flying Wyvern",
+        "range": "5～15"
+      },
+      {
+        "effect": "Carapaceon",
+        "range": "5～15"
+      },
+      {
+        "effect": "Fanged Beast",
+        "range": "5～15"
+      },
+      {
+        "effect": "Leviathan",
+        "range": "1～15"
+      },
+      {
+        "effect": "Bird Wyvern",
+        "range": "1～15"
+      },
+      {
+        "effect": "Piscine",
+        "range": "1～15"
+      },
+      {
+        "effect": "Brute Wyvern",
+        "range": "1～15"
+      },
+      {
+        "effect": "Elder Dragon",
+        "range": "1～15"
+      }
+    ],
+    "chances": [
+      "8%",
+      "8%",
+      "8%",
+      "8%",
+      "8%",
+      "8%",
+      "8%",
+      "8%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Fatalis Gem",
+        "qty": "67P"
+      },
+      {
+        "item": "Fatalis Devil Eye",
+        "qty": "33P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Fatalis ★",
+    "effects": [
+      {
+        "effect": "Attack",
+        "range": "5～10"
+      },
+      {
+        "effect": "Affinity",
+        "range": "3～7"
+      },
+      {
+        "effect": "Defense",
+        "range": "-15～15"
+      }
+    ],
+    "chances": [
+      "20%",
+      "15%",
+      "15%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Black Drgnsphire",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Crimson Fatalis A",
+    "effects": [
+      {
+        "effect": "Attack",
+        "range": "1～10"
+      },
+      {
+        "effect": "Tuesday",
+        "range": "5～15"
+      },
+      {
+        "effect": "Shot Change",
+        "range": "Norm"
+      },
+      {
+        "effect": "Shot Change",
+        "range": "Spread"
+      },
+      {
+        "effect": "Shot Change",
+        "range": "Long"
+      }
+    ],
+    "chances": [
+      "18%",
+      "12%",
+      "3%",
+      "3%",
+      "3%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Fatalis Flame Scl",
+        "qty": "25P"
+      },
+      {
+        "item": "Fatalis Flame Horn",
+        "qty": "25P"
+      },
+      {
+        "item": "Fatalis Flame Wing",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Crimson Fatalis B",
+    "effects": [
+      {
+        "effect": "Friday",
+        "range": "1～12"
+      },
+      {
+        "effect": "Saturday",
+        "range": "1～12"
+      },
+      {
+        "effect": "Sunday",
+        "range": "1～12"
+      }
+    ],
+    "chances": [
+      "13%",
+      "13%",
+      "13%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Fatalis Plate",
+        "qty": "67P"
+      },
+      {
+        "item": "Fatalis Flame Eye",
+        "qty": "48P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Crimson Fatalis ★",
+    "effects": [
+      {
+        "effect": "Elemental",
+        "range": "-5～10"
+      },
+      {
+        "effect": "Status Attack",
+        "range": "Stun Value"
+      },
+      {
+        "effect": "Affinity",
+        "range": "-5～10"
+      }
+    ],
+    "chances": [
+      "15%",
+      "15%",
+      "15%",
+      "15%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Fatalis Ruby",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Meraginasu A",
+    "effects": [
+      {
+        "effect": "Night",
+        "range": "5～10"
+      },
+      {
+        "effect": "Sonic Bomb Range",
+        "range": "Unity"
+      }
+    ],
+    "chances": [
+      "18%",
+      "5%",
+      "10%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Mera Shard",
+        "qty": "25P"
+      },
+      {
+        "item": "Meraginasu Fine Shl",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Meraginasu B",
+    "effects": [
+      {
+        "effect": "Night",
+        "range": "5～10"
+      },
+      {
+        "effect": "Decoy",
+        "range": "Super R Fire"
+      },
+      {
+        "effect": "Prc LV1",
+        "range": null
+      }
+    ],
+    "chances": [
+      "18%",
+      "12%",
+      "5%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Mera Surespike",
+        "qty": "67P"
+      },
+      {
+        "item": "Mera Blood",
+        "qty": "48P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Mera Tail",
+        "qty": "33P"
+      },
+      {
+        "item": "Mera Bladehorn",
+        "qty": "33P"
+      }
+    ]
+  },
+  {
+    "name": "Meraginasu ★",
+    "effects": [
+      {
+        "effect": "Night",
+        "range": "5～15"
+      },
+      {
+        "effect": "Affinity",
+        "range": "1～10"
+      },
+      {
+        "effect": "Super R Fire",
+        "range": "Prc LV1"
+      }
+    ],
+    "chances": [
+      "10%",
+      "15%",
+      "24%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Mera Onyx Stone",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Diorekkusu A",
+    "effects": [
+      {
+        "effect": "Defense",
+        "range": "-5～15"
+      },
+      {
+        "effect": "Attack",
+        "range": "1～10"
+      },
+      {
+        "effect": "Note Change 2",
+        "range": "2～7"
+      }
+    ],
+    "chances": [
+      "12%",
+      "10%",
+      "10%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Diorex Shard",
+        "qty": "25P"
+      },
+      {
+        "item": "Diorex Cortex",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Diorekkusu B",
+    "effects": [
+      {
+        "effect": "Defense",
+        "range": "-5～20"
+      },
+      {
+        "effect": "Attack",
+        "range": "3～10"
+      },
+      {
+        "effect": "Note Change 2",
+        "range": "2～7"
+      }
+    ],
+    "chances": [
+      "12%",
+      "10%",
+      "15%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Diorex Medulla",
+        "qty": "67P"
+      },
+      {
+        "item": "Diorex Arm",
+        "qty": "48P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Diorex Hardfang",
+        "qty": "48P"
+      },
+      {
+        "item": "Diorex Tail",
+        "qty": "33P"
+      }
+    ]
+  },
+  {
+    "name": "Diorekkusu ★",
+    "effects": [
+      {
+        "effect": "Defense",
+        "range": "5～20"
+      },
+      {
+        "effect": "Attack",
+        "range": "5～10"
+      },
+      {
+        "effect": "Stun Value",
+        "range": "Affinity"
+      },
+      {
+        "effect": "-5～10",
+        "range": null
+      }
+    ],
+    "chances": [
+      "15%",
+      "15%",
+      "15%",
+      "15%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Diorex Shockstone",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Garuba Daora A",
+    "effects": [
+      {
+        "effect": "Elder Dragon",
+        "range": "5～15"
+      },
+      {
+        "effect": "Attack",
+        "range": "3～6"
+      }
+    ],
+    "chances": [
+      "15%",
+      "15%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Garuba Shard",
+        "qty": "25P"
+      },
+      {
+        "item": "Garuba Cortex",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Garuba Daora B",
+    "effects": [
+      {
+        "effect": "Super R Fire",
+        "range": "Ice S"
+      },
+      {
+        "effect": "Affinity",
+        "range": "1～4"
+      },
+      {
+        "effect": "Elder Dragon",
+        "range": "7～15"
+      }
+    ],
+    "chances": [
+      "5%",
+      "12%",
+      "18%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Garuba Glassclaw",
+        "qty": "67P"
+      },
+      {
+        "item": "Garuba Goldenwing",
+        "qty": "48P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Garuba Chrome Horn",
+        "qty": "48P"
+      },
+      {
+        "item": "Garuba Crystaltail",
+        "qty": "33P"
+      }
+    ]
+  },
+  {
+    "name": "Garuba Daora ★",
+    "effects": [
+      {
+        "effect": "Super R Fire",
+        "range": "Prc LV1"
+      },
+      {
+        "effect": "Super R Fire",
+        "range": "Ice S"
+      }
+    ],
+    "chances": [
+      "18%",
+      "18%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Garuba Sunstone",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Varusaburosu A",
+    "effects": [
+      {
+        "effect": "Length UP",
+        "range": "GS"
+      },
+      {
+        "effect": "Hot",
+        "range": "5～10"
+      }
+    ],
+    "chances": [
+      "5%",
+      "20%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Varusa Fine Shell",
+        "qty": "25P"
+      },
+      {
+        "item": "Varusa Fine Hide",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Varusaburosu B",
+    "effects": [
+      {
+        "effect": "Length UP",
+        "range": "GS"
+      },
+      {
+        "effect": "Hot",
+        "range": "7～12"
+      },
+      {
+        "effect": "Defense",
+        "range": "5～10"
+      }
+    ],
+    "chances": [
+      "7%",
+      "20%",
+      "15%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Varusa Brightblood",
+        "qty": "67P"
+      },
+      {
+        "item": "Varusa Twinhorns",
+        "qty": "48P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Varusa Flametail",
+        "qty": "33P"
+      }
+    ]
+  },
+  {
+    "name": "Varusaburosu ★",
+    "effects": [
+      {
+        "effect": "Length UP",
+        "range": "GS"
+      },
+      {
+        "effect": "Hot",
+        "range": "10～15"
+      },
+      {
+        "effect": "Attack",
+        "range": "5～10"
+      }
+    ],
+    "chances": [
+      "10%",
+      "20%",
+      "15%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Varusa Crimson Gem",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Gureadomosu A",
+    "effects": [
+      {
+        "effect": "Length UP",
+        "range": "Hammer"
+      },
+      {
+        "effect": "Elder Dragon",
+        "range": "3～10"
+      }
+    ],
+    "chances": [
+      "5%",
+      "18%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Gurea.Origin Shell",
+        "qty": "25P"
+      },
+      {
+        "item": "Gurea.Origin Hide",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Gureadomosu B",
+    "effects": [
+      {
+        "effect": "Length UP",
+        "range": "Hammer"
+      },
+      {
+        "effect": "Attack",
+        "range": "3～8"
+      },
+      {
+        "effect": "Elder Dragon",
+        "range": "5～15"
+      }
+    ],
+    "chances": [
+      "7%",
+      "10%",
+      "15%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Gurea.Rare Moss",
+        "qty": "67P"
+      },
+      {
+        "item": "Gurea.Slick Wing",
+        "qty": "48P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Gurea.Mossy Tail",
+        "qty": "33P"
+      }
+    ]
+  },
+  {
+    "name": "Gureadomosu ★",
+    "effects": [
+      {
+        "effect": "Length UP",
+        "range": "Hammer"
+      },
+      {
+        "effect": "Attack",
+        "range": "5～10"
+      },
+      {
+        "effect": "Elemental",
+        "range": "3～10"
+      }
+    ],
+    "chances": [
+      "10%",
+      "15%",
+      "15%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Gurea.Hydro Filter",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Yama Kurai A",
+    "effects": [
+      {
+        "effect": "Unsheath",
+        "range": "Lance"
+      },
+      {
+        "effect": "Brute Wyvern",
+        "range": "3～10"
+      }
+    ],
+    "chances": [
+      "3%",
+      "18%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Y.Kurai Origin Hide",
+        "qty": "25P"
+      },
+      {
+        "item": "Y.Kurai Origin Fur",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Yama Kurai B",
+    "effects": [
+      {
+        "effect": "Unsheath",
+        "range": "Lance"
+      },
+      {
+        "effect": "Attack",
+        "range": "3～8"
+      },
+      {
+        "effect": "Brute Wyvern",
+        "range": "5～15"
+      }
+    ],
+    "chances": [
+      "5%",
+      "10%",
+      "15%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Shining Gold Tooth",
+        "qty": "67P"
+      },
+      {
+        "item": "Dragon God Vine",
+        "qty": "48P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Dragon God Seed",
+        "qty": "33P"
+      }
+    ]
+  },
+  {
+    "name": "Yama Kurai ★",
+    "effects": [
+      {
+        "effect": "Unsheath",
+        "range": "Lance"
+      },
+      {
+        "effect": "Attack",
+        "range": "5～10"
+      },
+      {
+        "effect": "Elemental",
+        "range": "3～10"
+      },
+      {
+        "effect": "Status Attack",
+        "range": null
+      }
+    ],
+    "chances": [
+      "10%",
+      "15%",
+      "15%",
+      "15%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Yama Kurai Maw",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Toa Tesukatora A",
+    "effects": [
+      {
+        "effect": "Clust",
+        "range": "Pelet"
+      },
+      {
+        "effect": "Elemental",
+        "range": "1～7"
+      },
+      {
+        "effect": "Affinity",
+        "range": "1～7"
+      }
+    ],
+    "chances": [
+      "5%",
+      "12%",
+      "12%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Toa Origin Ice Scl",
+        "qty": "25P"
+      },
+      {
+        "item": "Toa Origin Shl",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Toa Tesukatora B",
+    "effects": [
+      {
+        "effect": "Clust",
+        "range": "Pelet"
+      },
+      {
+        "effect": "Attack",
+        "range": "3～8"
+      },
+      {
+        "effect": "Affinity",
+        "range": "2～8"
+      }
+    ],
+    "chances": [
+      "7%",
+      "10%",
+      "12%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Toa Wht Ice Fur",
+        "qty": "67P"
+      },
+      {
+        "item": "Toa Pale Sharphorn",
+        "qty": "48P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Toa Fellwing",
+        "qty": "33P"
+      },
+      {
+        "item": "Toa Strong Tail",
+        "qty": "33P"
+      }
+    ]
+  },
+  {
+    "name": "Toa Tesukatora ★",
+    "effects": [
+      {
+        "effect": "Clust",
+        "range": "Pelet"
+      },
+      {
+        "effect": "Stun Value",
+        "range": "Attack"
+      },
+      {
+        "effect": "5～10",
+        "range": null
+      }
+    ],
+    "chances": [
+      "15%",
+      "15%",
+      "15%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Toa Ruby",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Voljang A",
+    "effects": [
+      {
+        "effect": "Tech Boost[SAF]",
+        "range": "Elemental"
+      },
+      {
+        "effect": "2～5",
+        "range": null
+      }
+    ],
+    "chances": [
+      "5%",
+      "10%"
+    ],
+    "grade": "GR1",
+    "price": "300",
+    "creation_mats": [
+      {
+        "item": "Voljang Origin Shl",
+        "qty": "25P"
+      },
+      {
+        "item": "Voljang Origin Fng",
+        "qty": "25P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Voljang B",
+    "effects": [
+      {
+        "effect": "Tech Boost[SAF]",
+        "range": "Affinity"
+      },
+      {
+        "effect": "2～8",
+        "range": null
+      }
+    ],
+    "chances": [
+      "7%",
+      "12%"
+    ],
+    "grade": "GR1",
+    "price": "500",
+    "creation_mats": [
+      {
+        "item": "Voljang Heat Piel",
+        "qty": "67P"
+      },
+      {
+        "item": "Voljang Heavy Horn",
+        "qty": "33P"
+      }
+    ],
+    "intrinsic_mats": [
+      {
+        "item": "Solid Flintstone",
+        "qty": "33P"
+      },
+      {
+        "item": "Voljang Lash",
+        "qty": "33P"
+      }
+    ]
+  },
+  {
+    "name": "Voljang ★",
+    "effects": [
+      {
+        "effect": "Tech Boost[SAF]",
+        "range": "Attack"
+      },
+      {
+        "effect": "5～10",
+        "range": "Elemental"
+      },
+      {
+        "effect": "5～10",
+        "range": null
+      }
+    ],
+    "chances": [
+      "10%",
+      "7%",
+      "7%"
+    ],
+    "grade": "GR1",
+    "price": "700",
+    "creation_mats": [
+      {
+        "item": "Voljang Dark Blood",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Shiten [High]",
+    "effects": [
+      {
+        "effect": "Attack",
+        "range": "3～9"
+      },
+      {
+        "effect": "Attack",
+        "range": "8～12"
+      },
+      {
+        "effect": "Attack",
+        "range": "13～15"
+      },
+      {
+        "effect": "Elemental",
+        "range": "3～9"
+      },
+      {
+        "effect": "Elemental",
+        "range": "8～15"
+      },
+      {
+        "effect": "Affinity",
+        "range": "3～9"
+      },
+      {
+        "effect": "Affinity",
+        "range": "8～12"
+      },
+      {
+        "effect": "Affinity",
+        "range": "13～15"
+      }
+    ],
+    "chances": [
+      "31%",
+      "2%",
+      "1%",
+      "30%",
+      "2%",
+      "31%",
+      "2%",
+      "1%"
+    ],
+    "grade": "GR1",
+    "price": "0",
+    "creation_mats": [
+      {
+        "item": "Shiten Key",
+        "qty": "100P"
+      },
+      {
+        "item": "Shiten Seal",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Shiten [Top]",
+    "effects": [
+      {
+        "effect": "Attack",
+        "range": "3～10"
+      },
+      {
+        "effect": "Attack",
+        "range": "8～12"
+      },
+      {
+        "effect": "Attack",
+        "range": "13～15"
+      },
+      {
+        "effect": "Elemental",
+        "range": "3～10"
+      },
+      {
+        "effect": "Elemental",
+        "range": "8～15"
+      },
+      {
+        "effect": "Affinity",
+        "range": "3～10"
+      },
+      {
+        "effect": "Affinity",
+        "range": "8～12"
+      },
+      {
+        "effect": "Affinity",
+        "range": "13～15"
+      }
+    ],
+    "chances": [
+      "28%",
+      "4%",
+      "1%",
+      "30%",
+      "3%",
+      "29%",
+      "4%",
+      "1%"
+    ],
+    "grade": "GR1",
+    "price": "0",
+    "creation_mats": [
+      {
+        "item": "Shiten Lock",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Shiten [SnS]",
+    "effects": [
+      {
+        "effect": "Tech Change[SnS]",
+        "range": "Roundslash"
+      },
+      {
+        "effect": "Length UP",
+        "range": "SnS"
+      },
+      {
+        "effect": "Status Attack",
+        "range": "Attack"
+      },
+      {
+        "effect": "3～9",
+        "range": "Attack"
+      },
+      {
+        "effect": "10～12",
+        "range": "Elemental"
+      },
+      {
+        "effect": "3～9",
+        "range": "Elemental"
+      },
+      {
+        "effect": "10～12",
+        "range": "Affinity"
+      },
+      {
+        "effect": "3～9",
+        "range": null
+      }
+    ],
+    "chances": [
+      "100%",
+      "16%",
+      "6%",
+      "25%",
+      "2%",
+      "25%",
+      "2%",
+      "24%"
+    ],
+    "grade": "GR1",
+    "price": "0",
+    "creation_mats": [
+      {
+        "item": "Shiten Key",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Shiten [DS]",
+    "effects": [
+      {
+        "effect": "Tech Boost[DS]",
+        "range": "Blade Strike"
+      },
+      {
+        "effect": "Attack",
+        "range": "3～9"
+      },
+      {
+        "effect": "Attack",
+        "range": "10～12"
+      },
+      {
+        "effect": "Elemental",
+        "range": "3～9"
+      },
+      {
+        "effect": "Elemental",
+        "range": "10～12"
+      },
+      {
+        "effect": "Affinity",
+        "range": "3～9"
+      }
+    ],
+    "chances": [
+      "100%",
+      "32%",
+      "2%",
+      "32%",
+      "2%",
+      "32%"
+    ],
+    "grade": "GR1",
+    "price": "0",
+    "creation_mats": [
+      {
+        "item": "Shiten Seal",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Shiten [GS]",
+    "effects": [
+      {
+        "effect": "Tech Boost[GS]",
+        "range": "Rotation"
+      },
+      {
+        "effect": "Attack",
+        "range": "3～9"
+      },
+      {
+        "effect": "Attack",
+        "range": "10～12"
+      },
+      {
+        "effect": "Elemental",
+        "range": "3～9"
+      },
+      {
+        "effect": "Affinity",
+        "range": "3～9"
+      },
+      {
+        "effect": "Affinity",
+        "range": "10～12"
+      }
+    ],
+    "chances": [
+      "100%",
+      "32%",
+      "2%",
+      "32%",
+      "32%",
+      "2%"
+    ],
+    "grade": "GR1",
+    "price": "0",
+    "creation_mats": [
+      {
+        "item": "Shiten Seal",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Shiten [LS]",
+    "effects": [
+      {
+        "effect": "Tech Boost[LS]",
+        "range": "Upswing"
+      },
+      {
+        "effect": "Tech Boost[LS]",
+        "range": "Piercing"
+      },
+      {
+        "effect": "Status Attack",
+        "range": "Attack"
+      },
+      {
+        "effect": "5～9",
+        "range": "Attack"
+      },
+      {
+        "effect": "10～12",
+        "range": "Elemental"
+      },
+      {
+        "effect": "5～9",
+        "range": "Elemental"
+      },
+      {
+        "effect": "10～12",
+        "range": "Affinity"
+      },
+      {
+        "effect": "5～9",
+        "range": null
+      }
+    ],
+    "chances": [
+      "35%",
+      "15%",
+      "5%",
+      "13%",
+      "2%",
+      "14%",
+      "2%",
+      "14%"
+    ],
+    "grade": "GR1",
+    "price": "0",
+    "creation_mats": [
+      {
+        "item": "Shiten Seal",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Shiten [Hammer]",
+    "effects": [
+      {
+        "effect": "Tech Boost[Hammer]",
+        "range": "C Move"
+      },
+      {
+        "effect": "Stun Value",
+        "range": "Attack"
+      },
+      {
+        "effect": "3～9",
+        "range": "Attack"
+      },
+      {
+        "effect": "10～12",
+        "range": "Elemental"
+      },
+      {
+        "effect": "3～9",
+        "range": "Affinity"
+      },
+      {
+        "effect": "3～9",
+        "range": "Affinity"
+      },
+      {
+        "effect": "10～12",
+        "range": null
+      }
+    ],
+    "chances": [
+      "100%",
+      "13%",
+      "29%",
+      "2%",
+      "25%",
+      "29%",
+      "2%"
+    ],
+    "grade": "GR1",
+    "price": "0",
+    "creation_mats": [
+      {
+        "item": "Shiten Key",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Shiten [HH]",
+    "effects": [
+      {
+        "effect": "Note Change 3",
+        "range": "Red"
+      },
+      {
+        "effect": "Sonic Bomb Range",
+        "range": "Status Attack"
+      },
+      {
+        "effect": "Attack",
+        "range": "3～9"
+      },
+      {
+        "effect": "Attack",
+        "range": "10～12"
+      },
+      {
+        "effect": "Elemental",
+        "range": "3～9"
+      },
+      {
+        "effect": "Elemental",
+        "range": "10～12"
+      },
+      {
+        "effect": "Affinity",
+        "range": "3～9"
+      }
+    ],
+    "chances": [
+      "10%",
+      "15%",
+      "5%",
+      "22%",
+      "2%",
+      "22%",
+      "2%",
+      "22%"
+    ],
+    "grade": "GR1",
+    "price": "0",
+    "creation_mats": [
+      {
+        "item": "Shiten Seal",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Shiten [Lance]",
+    "effects": [
+      {
+        "effect": "Length UP",
+        "range": "Lance"
+      },
+      {
+        "effect": "Tech Boost[Lance]",
+        "range": "Shield"
+      },
+      {
+        "effect": "Attack",
+        "range": "3～9"
+      },
+      {
+        "effect": "Elemental",
+        "range": "3～9"
+      },
+      {
+        "effect": "Elemental",
+        "range": "10～12"
+      },
+      {
+        "effect": "Affinity",
+        "range": "3～9"
+      },
+      {
+        "effect": "Affinity",
+        "range": "10～12"
+      }
+    ],
+    "chances": [
+      "100%",
+      "5%",
+      "30%",
+      "30%",
+      "2%",
+      "31%",
+      "2%"
+    ],
+    "grade": "GR1",
+    "price": "0",
+    "creation_mats": [
+      {
+        "item": "Shiten Seal",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Shiten [GL]",
+    "effects": [
+      {
+        "effect": "Tech Boost[GL]",
+        "range": "Rush Thrust"
+      },
+      {
+        "effect": "Shelling Change",
+        "range": "Attack"
+      },
+      {
+        "effect": "3～9",
+        "range": "Attack"
+      },
+      {
+        "effect": "10～12",
+        "range": "Elemental"
+      },
+      {
+        "effect": "3～9",
+        "range": "Elemental"
+      },
+      {
+        "effect": "10～12",
+        "range": "Affinity"
+      },
+      {
+        "effect": "3～9",
+        "range": null
+      }
+    ],
+    "chances": [
+      "25%",
+      "20%",
+      "18%",
+      "2%",
+      "17%",
+      "2%",
+      "16%"
+    ],
+    "grade": "GR1",
+    "price": "0",
+    "creation_mats": [
+      {
+        "item": "Shiten Key",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Shiten [SAF]",
+    "effects": [
+      {
+        "effect": "Tech Boost[SAF]",
+        "range": "Attack"
+      },
+      {
+        "effect": "3～9",
+        "range": "Attack"
+      },
+      {
+        "effect": "10～12",
+        "range": "Elemental"
+      },
+      {
+        "effect": "3～9",
+        "range": "Elemental"
+      },
+      {
+        "effect": "10～12",
+        "range": "Affinity"
+      },
+      {
+        "effect": "3～9",
+        "range": null
+      }
+    ],
+    "chances": [
+      "35%",
+      "28%",
+      "2%",
+      "17%",
+      "2%",
+      "16%"
+    ],
+    "grade": "GR1",
+    "price": "0",
+    "creation_mats": [
+      {
+        "item": "Shiten Seal",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Shiten [Tonfa]",
+    "effects": [
+      {
+        "effect": "Tech Boost[Tonfa]",
+        "range": "C Gauge"
+      },
+      {
+        "effect": "Attack",
+        "range": "3～9"
+      },
+      {
+        "effect": "Attack",
+        "range": "10～12"
+      },
+      {
+        "effect": "Elemental",
+        "range": "3～9"
+      },
+      {
+        "effect": "Elemental",
+        "range": "10～12"
+      },
+      {
+        "effect": "Affinity",
+        "range": "3～9"
+      }
+    ],
+    "chances": [
+      "35%",
+      "28%",
+      "2%",
+      "17%",
+      "2%",
+      "16%"
+    ],
+    "grade": "GR1",
+    "price": "0",
+    "creation_mats": [
+      {
+        "item": "Shiten Key",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Shiten [LBG]",
+    "effects": [
+      {
+        "effect": "Super R Fire",
+        "range": "Prc LV1"
+      },
+      {
+        "effect": "Super R Fire",
+        "range": "Pelet LV1"
+      },
+      {
+        "effect": "Super R Fire",
+        "range": "Crag LV1"
+      },
+      {
+        "effect": "Attack",
+        "range": "3～9"
+      },
+      {
+        "effect": "Attack",
+        "range": "10～12"
+      },
+      {
+        "effect": "Affinity",
+        "range": "3～9"
+      },
+      {
+        "effect": "Affinity",
+        "range": "10～12"
+      }
+    ],
+    "chances": [
+      "15%",
+      "15%",
+      "15%",
+      "23%",
+      "3%",
+      "26%",
+      "3%"
+    ],
+    "grade": "GR1",
+    "price": "0",
+    "creation_mats": [
+      {
+        "item": "Shiten Seal",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Shiten [HBG]",
+    "effects": [
+      {
+        "effect": "Heat Cannon Add",
+        "range": "Attack"
+      },
+      {
+        "effect": "3～9",
+        "range": "Attack"
+      },
+      {
+        "effect": "10～12",
+        "range": "Affinity"
+      },
+      {
+        "effect": "3～9",
+        "range": "Affinity"
+      },
+      {
+        "effect": "10～12",
+        "range": null
+      }
+    ],
+    "chances": [
+      "100%",
+      "47%",
+      "3%",
+      "47%",
+      "3%"
+    ],
+    "grade": "GR1",
+    "price": "0",
+    "creation_mats": [
+      {
+        "item": "Shiten Key",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Shiten [Bow]",
+    "effects": [
+      {
+        "effect": "Tech Change[Bow]",
+        "range": "Multi Pierce"
+      },
+      {
+        "effect": "Attack",
+        "range": "3～9"
+      },
+      {
+        "effect": "Attack",
+        "range": "10～12"
+      },
+      {
+        "effect": "Elemental",
+        "range": "3～9"
+      },
+      {
+        "effect": "Elemental",
+        "range": "10～12"
+      },
+      {
+        "effect": "Affinity",
+        "range": "3～9"
+      },
+      {
+        "effect": "Affinity",
+        "range": "10～12"
+      }
+    ],
+    "chances": [
+      "100%",
+      "30%",
+      "3%",
+      "31%",
+      "3%",
+      "30%",
+      "3%"
+    ],
+    "grade": "GR1",
+    "price": "0",
+    "creation_mats": [
+      {
+        "item": "Shiten Key",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Rarity 1 Sigil",
+    "effects": [
+      {
+        "effect": "Rarity Change",
+        "range": "1"
+      }
+    ],
+    "chances": [
+      "100%"
+    ],
+    "grade": "GR1",
+    "price": "100",
+    "creation_mats": [
+      {
+        "item": "Cracked Bone",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Rarity 2 Sigil",
+    "effects": [
+      {
+        "effect": "Rarity Change",
+        "range": "2"
+      }
+    ],
+    "chances": [
+      "100%"
+    ],
+    "grade": "GR1",
+    "price": "100",
+    "creation_mats": [
+      {
+        "item": "Cracked Bone",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Rarity 3 Sigil",
+    "effects": [
+      {
+        "effect": "Rarity Change",
+        "range": "3"
+      }
+    ],
+    "chances": [
+      "100%"
+    ],
+    "grade": "GR1",
+    "price": "100",
+    "creation_mats": [
+      {
+        "item": "Cracked Bone",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Rarity 4 Sigil",
+    "effects": [
+      {
+        "effect": "Rarity Change",
+        "range": "4"
+      }
+    ],
+    "chances": [
+      "100%"
+    ],
+    "grade": "GR1",
+    "price": "100",
+    "creation_mats": [
+      {
+        "item": "Cracked Bone",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Rarity 5 Sigil",
+    "effects": [
+      {
+        "effect": "Rarity Change",
+        "range": "5"
+      }
+    ],
+    "chances": [
+      "100%"
+    ],
+    "grade": "GR1",
+    "price": "100",
+    "creation_mats": [
+      {
+        "item": "Cracked Bone",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Rarity 6 Sigil",
+    "effects": [
+      {
+        "effect": "Rarity Change",
+        "range": "6"
+      }
+    ],
+    "chances": [
+      "100%"
+    ],
+    "grade": "GR1",
+    "price": "100",
+    "creation_mats": [
+      {
+        "item": "Cracked Bone",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Rarity 7 Sigil",
+    "effects": [
+      {
+        "effect": "Rarity Change",
+        "range": "7"
+      }
+    ],
+    "chances": [
+      "100%"
+    ],
+    "grade": "GR1",
+    "price": "100",
+    "creation_mats": [
+      {
+        "item": "Cracked Bone",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Rarity 8 Sigil",
+    "effects": [
+      {
+        "effect": "Rarity Change",
+        "range": "8"
+      }
+    ],
+    "chances": [
+      "100%"
+    ],
+    "grade": "GR1",
+    "price": "100",
+    "creation_mats": [
+      {
+        "item": "Cracked Bone",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Rarity 9 Sigil",
+    "effects": [
+      {
+        "effect": "Rarity Change",
+        "range": "9"
+      }
+    ],
+    "chances": [
+      "100%"
+    ],
+    "grade": "GR1",
+    "price": "100",
+    "creation_mats": [
+      {
+        "item": "Cracked Bone",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Rarity 10 Sigil",
+    "effects": [
+      {
+        "effect": "Rarity Change",
+        "range": "10"
+      }
+    ],
+    "chances": [
+      "100%"
+    ],
+    "grade": "GR1",
+    "price": "100",
+    "creation_mats": [
+      {
+        "item": "Cracked Bone",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Rarity 11 Sigil",
+    "effects": [
+      {
+        "effect": "Rarity Change",
+        "range": "11"
+      }
+    ],
+    "chances": [
+      "100%"
+    ],
+    "grade": "GR1",
+    "price": "100",
+    "creation_mats": [
+      {
+        "item": "Cracked Bone",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Rarity 12 Sigil",
+    "effects": [
+      {
+        "effect": "Rarity Change",
+        "range": "12"
+      }
+    ],
+    "chances": [
+      "100%"
+    ],
+    "grade": "GR1",
+    "price": "100",
+    "creation_mats": [
+      {
+        "item": "Cracked Bone",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Frontier Point Sigil",
+    "effects": [
+      {
+        "effect": "Attack",
+        "range": "5～9"
+      },
+      {
+        "effect": "Attack",
+        "range": "10～11"
+      },
+      {
+        "effect": "Elemental",
+        "range": "5～9"
+      },
+      {
+        "effect": "Elemental",
+        "range": "10～11"
+      },
+      {
+        "effect": "Affinity",
+        "range": "5～9"
+      },
+      {
+        "effect": "Affinity",
+        "range": "10～11"
+      }
+    ],
+    "chances": [
+      "23%",
+      "2%",
+      "23%",
+      "2%",
+      "23%",
+      "2%"
+    ],
+    "grade": "HR1",
+    "price": "0\nGacha",
+    "creation_mats": [
+      {
+        "item": "F.Pink Sigil Tkt",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Premium Sigil 1",
+    "effects": [
+      {
+        "effect": "Attack",
+        "range": "3～4"
+      },
+      {
+        "effect": "Attack",
+        "range": "5～8"
+      },
+      {
+        "effect": "Attack",
+        "range": "9～10"
+      }
+    ],
+    "chances": [
+      "50%",
+      "35%",
+      "15%"
+    ],
+    "grade": "GR1",
+    "price": "0\nPremium",
+    "creation_mats": [
+      {
+        "item": "Premium Sigil Tkt",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Premium Sigil 2",
+    "effects": [
+      {
+        "effect": "Elemental",
+        "range": "4～5"
+      },
+      {
+        "effect": "Elemental",
+        "range": "6～8"
+      },
+      {
+        "effect": "Elemental",
+        "range": "9～10"
+      }
+    ],
+    "chances": [
+      "40%",
+      "40%",
+      "20%"
+    ],
+    "grade": "GR1",
+    "price": "0\nPremium",
+    "creation_mats": [
+      {
+        "item": "Premium Sigil Tkt",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Premium Sigil 3",
+    "effects": [
+      {
+        "effect": "Affinity",
+        "range": "2～3"
+      },
+      {
+        "effect": "Affinity",
+        "range": "4～5"
+      },
+      {
+        "effect": "Affinity",
+        "range": "6～9"
+      },
+      {
+        "effect": "Affinity",
+        "range": "10"
+      }
+    ],
+    "chances": [
+      "50%",
+      "30%",
+      "15%",
+      "5%"
+    ],
+    "grade": "GR1",
+    "price": "0\nPremium",
+    "creation_mats": [
+      {
+        "item": "Premium Sigil Tkt",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Premium Sigil 4",
+    "effects": [
+      {
+        "effect": "Elder Dragon",
+        "range": "4～7"
+      },
+      {
+        "effect": "Elder Dragon",
+        "range": "8～12"
+      },
+      {
+        "effect": "Elder Dragon",
+        "range": "13～15"
+      }
+    ],
+    "chances": [
+      "45%",
+      "40%",
+      "15%"
+    ],
+    "grade": "GR1",
+    "price": "0\nPremium",
+    "creation_mats": [
+      {
+        "item": "Premium Sigil Tkt",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Premium Sigil 5",
+    "effects": [
+      {
+        "effect": "Dowsing",
+        "range": "5～6"
+      },
+      {
+        "effect": "Dowsing",
+        "range": "7～10"
+      },
+      {
+        "effect": "Dowsing",
+        "range": "11～15"
+      }
+    ],
+    "chances": [
+      "35%",
+      "35%",
+      "30%"
+    ],
+    "grade": "GR1",
+    "price": "0\nPremium",
+    "creation_mats": [
+      {
+        "item": "Premium Sigil Tkt",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  },
+  {
+    "name": "Premium Sigil 6",
+    "effects": [
+      {
+        "effect": "Money Expert",
+        "range": "2～3"
+      },
+      {
+        "effect": "Money Expert",
+        "range": "4"
+      },
+      {
+        "effect": "Money Expert",
+        "range": "5"
+      }
+    ],
+    "chances": [
+      "70%",
+      "20%",
+      "10%"
+    ],
+    "grade": "GR1",
+    "price": "0\nPremium",
+    "creation_mats": [
+      {
+        "item": "Premium Sigil Tkt",
+        "qty": "100P"
+      }
+    ],
+    "intrinsic_mats": []
+  }
+]

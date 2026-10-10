@@ -246,17 +246,15 @@ Two carriers, confirmed by the project owner:
   piece-name variants per slot) spanning most of the monster roster —
   1,773 `CLASS="P"` pieces alone across the 5 armor buckets.
 
-  `CLASS="Q"` (辿異狩護/"Tan'i-Shugo") also carries `Teni` 100% of the time,
-  but its examples look like a genuinely different line, not just a
-  defensive/G-rank sibling of `CLASS="P"`: different tier-naming (`ZP`
-  rather than `Z/ZF/ZY/ZX`) and different flavor-text themes entirely —
-  e.g. `Dios ZP Head`: "異国にて伝わる「英雄の伝説」にまつわる頭防具。
-  ≪辿異狩護≫" ("armor tied to a hero's legend passed down in a foreign
-  land"), `Evol ZP Head`: "異国にて開発された、高級感の漂う頭防具。
-  ≪辿異狩護≫" ("armor developed in a foreign land, exuding luxury") — no
-  monster-material crafting language like the `CLASS="P"` Espinas/Rathalos/
-  etc. lines. Given to the project owner for independent verification;
-  don't assume `Q` = `P`'s sibling tier without confirming.
+  `CLASS="Q"` (辿異狩護/"Tan'i-Shugo") also carries `Teni` 100% of the time;
+  **confirmed by the project owner to be another tier of Zenith armor**,
+  despite its different tier-naming (`ZP` rather than `Z/ZF/ZY/ZX`) and
+  different flavor-text themes (e.g. `Dios ZP Head`: "armor tied to a
+  hero's legend passed down in a foreign land"; `Evol ZP Head`: "armor
+  developed in a foreign land, exuding luxury" — no monster-material
+  crafting language like `CLASS="P"`'s Espinas/Rathalos/etc. lines, but
+  still Zenith). Treat `CLASS="P"` and `CLASS="Q"` as one combined Zenith
+  category for modeling purposes.
 - **Zenith Cuffs** (`DEC="3"`, `CLASS="P"`, see above): carry *only* a
   Zenith skill via `Teni`, nothing via `SN1–5`.
 
@@ -305,25 +303,40 @@ above), two sub-mechanics:
 
 **Confirmed mechanism** (project owner): "Sigils" are one general weapon
 customization system — the site's `Sigil(Info)` page describes the slot
-mechanic itself (up to 3 sigils per weapon, up to 3 on a G-rank weapon,
-each adjusting Attack ±10–15 / Attribute ±10–15 / Status ×1.1 / Affinity
-±10 / Defense ±10–20; removing one needs a "Sigil Catalyst"). **Tower
-weapons can only equip Tower Weapon Sigils** (the 37 rows catalogued
-above); **every other weapon uses "regular" sigils** — a separate catalog
-we haven't located yet, since weapons aren't in `equip.js`'s scope at all
-(no `buki` bucket — see "How the data is embedded"). Finding regular
-sigils' data source is future work, for whenever weapons are tackled.
+mechanic itself (up to 3 sigils per weapon, up to 3 on a G-rank weapon;
+removing one needs a "Sigil Catalyst"). **Tower weapons can only equip
+Tower Weapon Sigils** (the 37 rows catalogued above); **every other weapon
+uses "regular" sigils** (see below).
+
+### Deferred: regular (non-Tower) weapon Sigils — `bougu/sigil.htm`
+
+**Located.** Unlike everything else in this document, these are **not** in
+`equip.js` at all — they live as a plain HTML `<table>` on
+`bougu/sigil.htm` (324 rows, no JSON bucket, no `SkillForm.setEquip` call).
+Extracted in full to
+[`docs/reference/regular-sigils.json`](reference/regular-sigils.json) for
+whenever weapons are tackled (each entry: `name`, `effects` — a list of
+`{effect, range}` pairs, or the literal string `"Unknown"` for the 8
+mystery-crate rows — `chances` (one success % per effect, same order),
+`grade` (rank requirement), `price`, `creation_mats`/`intrinsic_mats`
+(crafting materials, `{item, qty}` pairs)).
+
+**Structurally different from everything else in this document**: Equipment/
+Decoration/Cuff are all deterministic (a given item always has the same
+fixed stats). Regular Sigils are **crafting recipes with a per-effect
+success chance and a value range**, not fixed-stat items — e.g. `Hypnoc ★`
+has 4 possible outcomes (3 different `Tech Boost[Hammer]` variants + `Stun
+Value`), each independently at 8–20% success; `G Promo Sigil` has 6 possible
+outcomes mixing stat adjustments (Affinity/Defense/Attack) with conditional
+bonuses (Saturday/Sunday/Bird Wyvern); `GR1 Gem`/`GR2 Gem`/`Mystery Sigil`
+have effect `"Unknown"` entirely (pure random-outcome crates). Whenever
+weapons are modeled, this probabilistic shape will need its own schema
+treatment — it doesn't fit the `(name, fixed skills)` pattern used
+everywhere else in this project. Deferred until then; not referenced by the
+ETL pipeline or ETL tests.
 
 ### Open questions (actively being researched)
 
-- Whether `CLASS="Q"` is really a sibling tier of `CLASS="P"` (as the
-  `CLASSTYPE` grouping helper `Shugo:"FJQ"` in `SkillForm.js` suggests by
-  analogy with `J` being `F`'s G-rank sibling), or a separate line entirely
-  — examples given to the project owner to verify, since the naming
-  (`ZP` tier vs. `Z/ZF/ZY/ZX`) and flavor-text themes look different enough
-  to doubt the sibling-tier assumption.
-- Where the "regular" (non-Tower) weapon Sigil catalog lives, once weapons
-  are in scope.
 - `CRE` field (see "Acquisition method" below) and the broader
   acquisition/origin tagging seen in the site's armor-tree legend (Hunting/
   Gathering/Quest/Gou/Hiden/G Rank/Exotic/Zenith/Road/Diva Battle/Prize/
@@ -354,7 +367,7 @@ sigils' data source is future work, for whenever weapons are tackled.
 | `N` | 天廊 (Tenrou) | **Tower** |
 | `O` | 遷悠 (Sen'yuu) | |
 | `P` | 辿異 (Tan'i) | **Zenith** |
-| `Q` | 辿異狩護 (Tan'i-Shugo) | Grouped with `F`/`J` as `Shugo:"FJQ"` — likely Zenith's G-rank/Shugo sibling, unconfirmed |
+| `Q` | 辿異狩護 (Tan'i-Shugo) | **Zenith** — confirmed another tier of `P`, despite different naming/flavor-text conventions |
 
 ### Acquisition method (`CRE` field, `MAKENAME` in `SkillForm.js`)
 
