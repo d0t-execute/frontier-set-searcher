@@ -17,8 +17,11 @@ from etl.db.models import (
     Decoration,
     Equipment,
     EquipmentType,
+    RankType,
     Skill,
     SkillPoints,
+    Weapon,
+    WeaponType,
     ZenithSkill,
 )
 
@@ -286,6 +289,80 @@ def get_cuff_skills(conn: sqlite3.Connection, cuff_id: int) -> list[SkillPoints]
         (cuff_id,),
     ).fetchall()
     return [_skill_points_from_row(row) for row in rows]
+
+
+def insert_weapon(
+    conn: sqlite3.Connection,
+    *,
+    external_id: str,
+    name: str,
+    weapon_type: WeaponType,
+    rarity: int | None = None,
+    slot_count: int = 0,
+    rank_type: RankType | None = None,
+    rank_value: int | None = None,
+    is_tower: bool = False,
+    zenith_skill_id: int | None = None,
+    source_url: str | None = None,
+) -> Weapon:
+    cursor = conn.execute(
+        """
+        INSERT INTO weapon (
+            external_id, name, weapon_type, rarity, slot_count,
+            rank_type, rank_value, is_tower, zenith_skill_id, source_url
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            external_id,
+            name,
+            weapon_type,
+            rarity,
+            slot_count,
+            rank_type,
+            rank_value,
+            is_tower,
+            zenith_skill_id,
+            source_url,
+        ),
+    )
+    row_id = cursor.lastrowid
+    assert row_id is not None
+    return Weapon(
+        id=row_id,
+        external_id=external_id,
+        name=name,
+        weapon_type=weapon_type,
+        rarity=rarity,
+        slot_count=slot_count,
+        rank_type=rank_type,
+        rank_value=rank_value,
+        is_tower=is_tower,
+        zenith_skill_id=zenith_skill_id,
+        source_url=source_url,
+    )
+
+
+def get_weapon_by_external_id(conn: sqlite3.Connection, external_id: str) -> Weapon | None:
+    row = conn.execute("SELECT * FROM weapon WHERE external_id = ?", (external_id,)).fetchone()
+    if row is None:
+        return None
+    return _weapon_from_row(row)
+
+
+def _weapon_from_row(row: sqlite3.Row) -> Weapon:
+    return Weapon(
+        id=row["id"],
+        external_id=row["external_id"],
+        name=row["name"],
+        weapon_type=row["weapon_type"],
+        rarity=row["rarity"],
+        slot_count=row["slot_count"],
+        rank_type=row["rank_type"],
+        rank_value=row["rank_value"],
+        is_tower=bool(row["is_tower"]),
+        zenith_skill_id=row["zenith_skill_id"],
+        source_url=row["source_url"],
+    )
 
 
 def _cuff_from_row(row: sqlite3.Row) -> Cuff:

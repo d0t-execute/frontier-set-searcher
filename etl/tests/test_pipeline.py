@@ -3,7 +3,7 @@ from pathlib import Path
 
 from etl.db import repository as repo
 from etl.db.connection import connect
-from etl.pipeline import load_equipment
+from etl.pipeline import load_equipment, load_weapons
 
 FIXTURES_DIR = Path(__file__).resolve().parent / "fixtures"
 
@@ -175,3 +175,84 @@ def test_load_equipment_shares_one_skill_row_across_multiple_pieces(tmp_path: Pa
         "SELECT COUNT(*) FROM skill WHERE name = 'Unknown Skill 102'"
     ).fetchone()
     assert skill_row_count == 1
+
+
+def _weapon_sample_html() -> str:
+    return (FIXTURES_DIR / "weapon_sample.htm").read_text(encoding="utf-8")
+
+
+def test_load_weapons_reports_accurate_counts(tmp_path: Path) -> None:
+    conn = _conn(tmp_path)
+
+    summary = load_weapons(conn, page_sources={"taiken": _weapon_sample_html()})
+
+    assert summary.weapon_count == 3
+    assert summary.zenith_skill_count == 1
+
+
+def test_load_weapons_persists_fields_and_source_url(tmp_path: Path) -> None:
+    conn = _conn(tmp_path)
+
+    load_weapons(conn, page_sources={"taiken": _weapon_sample_html()})
+
+    buster_sword = repo.get_weapon_by_external_id(conn, "taiken:0003")
+    assert buster_sword is not None
+    assert buster_sword.name == "Buster Sword"
+    assert buster_sword.weapon_type == "great_sword"
+    assert buster_sword.rarity == 1
+    assert buster_sword.slot_count == 0
+    assert buster_sword.rank_type == "HR"
+    assert buster_sword.rank_value == 1
+    assert buster_sword.is_tower is False
+    assert buster_sword.zenith_skill_id is None
+    assert (
+        buster_sword.source_url
+        == "https://xl3lackout.github.io/MHFZ-Ferias-English-Project/buki/taiken.htm"
+    )
+
+
+def test_load_weapons_marks_tower_weapons(tmp_path: Path) -> None:
+    conn = _conn(tmp_path)
+
+    load_weapons(conn, page_sources={"taiken": _weapon_sample_html()})
+
+    hate_bleeder = repo.get_weapon_by_external_id(conn, "taiken:318F")
+    assert hate_bleeder is not None
+    assert hate_bleeder.is_tower is True
+    assert hate_bleeder.zenith_skill_id is None
+
+
+def test_load_weapons_resolves_zenith_skill_by_name(tmp_path: Path) -> None:
+    conn = _conn(tmp_path)
+
+    load_weapons(conn, page_sources={"taiken": _weapon_sample_html()})
+
+    feather_sleeper = repo.get_weapon_by_external_id(conn, "taiken:3B13")
+    assert feather_sleeper is not None
+    assert feather_sleeper.zenith_skill_id is not None
+
+    zenith_skill = repo.get_zenith_skill_by_name(conn, "Drug Knowledge Up")
+    assert zenith_skill is not None
+    assert feather_sleeper.zenith_skill_id == zenith_skill.id
+
+
+def test_load_weapons_shares_one_zenith_skill_row_across_multiple_weapons(
+    tmp_path: Path,
+) -> None:
+    # Two independent, minimal rows granting the same Zenith skill text --
+    # confirms get-or-create sharing, mirroring
+    # test_load_equipment_shares_one_skill_row_across_multiple_pieces.
+    html = """
+    <table><tbody>
+    <tr><td id="l0001">Weapon A</td><td>1</td><td></td>
+        <td><q>Zenith Skill：Drug Knowledge Up+</q></td><td>0</td><td>HR<br>1</td></tr>
+    <tr><td id="l0002">Weapon B</td><td>1</td><td></td>
+        <td><q>Zenith Skill：Drug Knowledge Up+</q></td><td>0</td><td>HR<br>1</td></tr>
+    </tbody></table>
+    """
+    conn = _conn(tmp_path)
+
+    load_weapons(conn, page_sources={"taiken": html})
+
+    (zenith_skill_row_count,) = conn.execute("SELECT COUNT(*) FROM zenith_skill").fetchone()
+    assert zenith_skill_row_count == 1

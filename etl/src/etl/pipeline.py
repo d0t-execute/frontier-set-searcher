@@ -22,14 +22,17 @@ from etl.db.repository import (
     insert_decoration,
     insert_equipment,
     insert_skill,
+    insert_weapon,
     insert_zenith_skill,
 )
 from etl.fetch import CachingFetcher
 from etl.parse.equipment import parse_equip_js
 from etl.parse.skills import parse_skill_names, parse_zenith_skill_names
+from etl.parse.weapon import WEAPON_PAGE_TO_TYPE, parse_weapon_page
 
 EQUIP_JS_URL = "https://xl3lackout.github.io/MHFZ-Ferias-English-Project/skill/equip.js"
 SKILLFORM_JS_URL = "https://xl3lackout.github.io/MHFZ-Ferias-English-Project/skill/SkillForm.js"
+WEAPON_BASE_URL = "https://xl3lackout.github.io/MHFZ-Ferias-English-Project/buki/"
 
 
 @dataclass(frozen=True, slots=True)
@@ -129,6 +132,56 @@ def load_equipment(
     )
 
 
+@dataclass(frozen=True, slots=True)
+class WeaponLoadSummary:
+    weapon_count: int
+    zenith_skill_count: int
+
+
+def load_weapons(conn: sqlite3.Connection, *, page_sources: dict[str, str]) -> WeaponLoadSummary:
+    """Load the base-tier weapon catalog (see docs/weapon-data-format-notes.md).
+
+    Only the base tier is in scope -- the `_g`/`_s`/`_n` variant pages are
+    different probabilistic/leveled crafting systems, deferred like the
+    regular weapon Sigil catalog. `page_sources` maps a page key (e.g.
+    "taiken") to its already-fetched HTML.
+    """
+    resolved_zenith_skills: dict[str, int] = {}
+
+    def resolve_zenith_skill(name: str) -> int:
+        if name not in resolved_zenith_skills:
+            resolved_zenith_skills[name] = insert_zenith_skill(conn, name=name).id
+        return resolved_zenith_skills[name]
+
+    weapon_count = 0
+    for page, html in page_sources.items():
+        source_url = f"{WEAPON_BASE_URL}{page}.htm"
+        for row in parse_weapon_page(page, html):
+            insert_weapon(
+                conn,
+                external_id=row.external_id,
+                name=row.name,
+                weapon_type=row.weapon_type,
+                rarity=row.rarity,
+                slot_count=row.slot_count,
+                rank_type=row.rank_type,
+                rank_value=row.rank_value,
+                is_tower=row.is_tower,
+                zenith_skill_id=(
+                    resolve_zenith_skill(row.zenith_skill_name)
+                    if row.zenith_skill_name is not None
+                    else None
+                ),
+                source_url=source_url,
+            )
+            weapon_count += 1
+
+    conn.commit()
+    return WeaponLoadSummary(
+        weapon_count=weapon_count, zenith_skill_count=len(resolved_zenith_skills)
+    )
+
+
 def main() -> None:  # pragma: no cover -- network-touching, run manually only
     parser = argparse.ArgumentParser(description="Fetch and load the Frontier equipment dataset.")
     parser.add_argument("--db", type=Path, required=True, help="Path to the SQLite database file")
@@ -142,12 +195,19 @@ def main() -> None:  # pragma: no cover -- network-touching, run manually only
         with CachingFetcher(args.cache_dir) as fetcher:
             skillform_source = fetcher.fetch(SKILLFORM_JS_URL, cache_key="SkillForm").content
             equip_source = fetcher.fetch(EQUIP_JS_URL, cache_key="equip").content
+            weapon_page_sources = {
+                page: fetcher.fetch(
+                    f"{WEAPON_BASE_URL}{page}.htm", cache_key=f"buki_{page}"
+                ).content
+                for page in WEAPON_PAGE_TO_TYPE
+            }
         summary = load_equipment(
             conn,
             skillform_source=skillform_source,
             equip_source=equip_source,
             source_url=EQUIP_JS_URL,
         )
+        weapon_summary = load_weapons(conn, page_sources=weapon_page_sources)
     finally:
         conn.close()
 
@@ -156,7 +216,8 @@ def main() -> None:  # pragma: no cover -- network-touching, run manually only
         f"{summary.decoration_count} decorations, "
         f"{summary.cuff_count} cuffs, "
         f"{summary.skill_count} distinct skills, "
-        f"{summary.zenith_skill_count} distinct Zenith skills."
+        f"{summary.zenith_skill_count} distinct Zenith skills, "
+        f"{weapon_summary.weapon_count} weapons."
     )
 
 

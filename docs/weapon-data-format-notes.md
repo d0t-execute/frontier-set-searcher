@@ -120,10 +120,34 @@ column, but different headers altogether:
   — `Ammo` is a dense nested list of every ammo/coating type and its level
   cap per tier (`Norm：6/6/9`, `Pierc：2/2/2`, `Psn：-/-`, `Flame：-`,
   `Tranq：2`, ...). Substantially more complex to parse than anything seen
-  so far in this project. HBG is presumably the same shape (not yet
-  checked); Gunlance/Switch Axe F/Tonfa/Magnet Spike are melee-shaped
-  (confirmed for Gunlance and Switch Axe F) despite being "Gunner"-adjacent
-  in some classification systems.
+  so far in this project. **HBG confirmed identical to LBG** (same 11-cell
+  header, same cell indices). Gunlance/Switch Axe F/Tonfa/Magnet Spike are
+  all confirmed melee-shaped (10 cells) despite Tonfa/Switch Axe F/Magnet
+  Spike being "Gunner"-adjacent in some classification systems.
+
+### Cell-index impact on parsing (resolved via live-data cross-check)
+
+Both extra ranged-only columns (`Coatings` for Bow, `Ammo` for LBG/HBG) are
+inserted *before* `Slots`, so `Slots`/`Rank` shift from indices 4/5 (melee)
+to 5/6 (all three ranged types) — a plain "always use index 4/5" parser
+silently reads a non-numeric cell as 0 slots and fails to recognize any rank
+for every ranged-weapon row. The Zenith Skill `<q>` tag's cell differs
+between the two ranged shapes, though:
+
+- **Bow**: stays at index 3 (the `Charge Stage` cell) — same index as
+  melee's Sharpness cell.
+- **LBG/HBG**: index 4 (the `Ammo` cell) — one further out than Bow.
+
+Verified by parsing all 14 base-tier pages against the live site and
+cross-checking the parsed Tower/Zenith counts against independent raw counts
+of the `天廊武器`/`辿異武器` `<p>`-tag occurrences and `<q>Zenith Skill`
+occurrences in each page's HTML (each category tag appears twice per row —
+once in the Name cell's `<p>`, once struck through in the Description — so
+raw count ÷ 2 is the expected row count). All 14 pages matched exactly after
+switching to per-weapon-type cell indices; Bow and LBG/HBG were off (Bow's
+Slots/Rank were silently wrong; LBG/HBG's Zenith Skill was silently never
+detected, reading 0 instead of 92/103) before the fix. Total parsed rows:
+**15,594**, matching the census below exactly.
 
 ## Category tags (mirrors armor's `CLASS` almost exactly, but as readable text)
 
@@ -165,18 +189,40 @@ not yet confirmed whether `_s` rows also get a `<p>` tag or only this
 description-text marker). The `_n` (RNGCat) variant tags with
 `RNG Cat Weapon` the same way.
 
+## Scope: only slot_count and Zenith skill matter
+
+Per the project owner: weapons generally don't matter to the set searcher
+except that slot_count feeds decos/sigils, and an optional Zenith skill
+feeds the same build-skill search as armor. Unlike armor, weapons have no
+normal-skill mechanic at all. Level/rank (HR/SR/GR/GSR) gating matters the
+same way it does for armor. This is why the ETL parser
+(`etl/src/etl/parse/weapon.py`) only extracts `name`, `weapon_type`,
+`rarity`, `slot_count`, `rank_type`/`rank_value`, `is_tower`, and
+`zenith_skill_name` — Attack/Sharpness/Element/Price/materials/Description
+are read from the source but intentionally never modeled.
+
+Implemented and validated end-to-end against the live site (base tier only,
+all 14 weapon types, 15,594 rows — see "Cell-index impact on parsing"
+above): `etl/src/etl/db/schema.sql` (`weapon` table, no `weapon_skill` join
+table), `etl/src/etl/db/models.py` (`Weapon`, `WeaponType`, `RankType`),
+`etl/src/etl/db/repository.py` (`insert_weapon`/`get_weapon_by_external_id`),
+`etl/src/etl/pipeline.py` (`load_weapons`, resolving Zenith skill by name via
+the same `zenith_skill` table armor uses — confirmed shared/get-or-create,
+same as armor's Zenith skills).
+
 ## Open questions / not yet done
 
 - Sharpness bar hex `title` attribute: what it encodes, whether decoding it
   is actually necessary given the `<li>` list is already usable directly.
-- HBG's column layout (presumed same as LBG, not checked).
-- Tonfa/Magnet Spike's exact layout (presumed melee-shaped like Switch Axe
-  F, not checked in detail).
-- The 3 unmapped category tags (準G級武器/親方印/祈歌武器).
+  Moot for now since Attack/Sharpness aren't modeled at all (see above).
+- The 3 unmapped category tags (準G級武器/親方印/祈歌武器) — not relevant to
+  modeling, since only the Tower/Zenith tags affect `is_tower`/
+  `zenith_skill_name`; every other tag is simply absent from the schema.
 - Whether `_g`/`_s` rows carry Tower/Zenith tags too, or if those are
-  base-tier-only concepts.
-- No decision yet on scope: the base tier (15,594 rows, fixed-stat, same
-  shape problem as armor) is the tractable, high-value target; `_g`
-  (48,350) and `_s` (75,400) are both probabilistic/leveled crafting
-  systems — structurally closer to the already-deferred regular Sigil
-  system than to anything currently modeled.
+  base-tier-only concepts — moot unless `_g`/`_s` scope is revisited (see
+  below).
+- Deferred, not pursued: the base tier (15,594 rows, fixed-stat, now fully
+  modeled) was the tractable, high-value target; `_g` (48,350) and `_s`
+  (75,400) are both probabilistic/leveled crafting systems — structurally
+  closer to the already-deferred regular Sigil system than to anything
+  currently modeled, and out of scope per the project owner.

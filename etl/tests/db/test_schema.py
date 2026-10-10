@@ -23,6 +23,7 @@ def test_schema_creates_expected_tables(conn: sqlite3.Connection) -> None:
         "cuff",
         "cuff_skill",
         "zenith_skill",
+        "weapon",
     } <= tables
 
 
@@ -152,3 +153,47 @@ def test_zenith_skill_name_is_unique(conn: sqlite3.Connection) -> None:
     repo.insert_zenith_skill(conn, name="Skill Slots Up+1")
     with pytest.raises(sqlite3.IntegrityError):
         conn.execute("INSERT INTO zenith_skill (name) VALUES (?)", ("Skill Slots Up+1",))
+
+
+def test_weapon_rejects_an_unknown_weapon_type(conn: sqlite3.Connection) -> None:
+    with pytest.raises(sqlite3.IntegrityError):
+        repo.insert_weapon(
+            conn,
+            external_id="taiken:0001",
+            name="Mystery Blade",
+            weapon_type="rapier",  # type: ignore[arg-type]
+        )
+
+
+def test_weapon_rejects_an_unknown_rank_type(conn: sqlite3.Connection) -> None:
+    with pytest.raises(sqlite3.IntegrityError):
+        repo.insert_weapon(
+            conn,
+            external_id="taiken:0001",
+            name="Mystery Blade",
+            weapon_type="great_sword",
+            rank_type="LR",  # type: ignore[arg-type]
+        )
+
+
+def test_weapon_external_id_is_unique(conn: sqlite3.Connection) -> None:
+    repo.insert_weapon(
+        conn, external_id="taiken:0003", name="Buster Sword", weapon_type="great_sword"
+    )
+    with pytest.raises(sqlite3.IntegrityError):
+        repo.insert_weapon(
+            conn, external_id="taiken:0003", name="Duplicate", weapon_type="great_sword"
+        )
+
+
+def test_weapon_zenith_skill_id_requires_an_existing_zenith_skill(
+    conn: sqlite3.Connection,
+) -> None:
+    with pytest.raises(sqlite3.IntegrityError):
+        repo.insert_weapon(
+            conn,
+            external_id="taiken:3B13",
+            name="Feather Sleeper",
+            weapon_type="great_sword",
+            zenith_skill_id=999,
+        )

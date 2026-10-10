@@ -94,9 +94,42 @@ CREATE TABLE IF NOT EXISTS cuff_skill (
     PRIMARY KEY (cuff_id, skill_id)
 );
 
+-- Weapons generally don't matter to the set searcher except for slot_count
+-- (decos/sigils) and an optional Zenith skill -- confirmed by the project
+-- owner. Unlike Equipment, there's no normal-skill join table: weapons never
+-- carry normal skills, only an optional Zenith skill. See
+-- docs/weapon-data-format-notes.md.
+CREATE TABLE IF NOT EXISTS weapon (
+    id INTEGER PRIMARY KEY,
+    external_id TEXT NOT NULL UNIQUE,
+    name TEXT NOT NULL,
+    weapon_type TEXT NOT NULL CHECK (
+        weapon_type IN (
+            'great_sword', 'long_sword', 'sword_and_shield', 'dual_swords',
+            'hammer', 'hunting_horn', 'lance', 'gunlance', 'tonfa',
+            'switch_axe_f', 'magnet_spike', 'light_bowgun', 'heavy_bowgun', 'bow'
+        )
+    ),
+    rarity INTEGER,
+    slot_count INTEGER NOT NULL DEFAULT 0,
+    -- The source gives rank as readable type+number text (e.g. "HR1",
+    -- "GR200") rather than armor's single HR1 field, and weapons span four
+    -- rank types (HR/SR/GR/GSR) vs. armor's two -- so this is stored as a
+    -- type+value pair instead of reusing Equipment's min_hr/min_gr shape.
+    rank_type TEXT CHECK (rank_type IN ('HR', 'SR', 'GR', 'GSR')),
+    rank_value INTEGER,
+    -- Tower weapon (category tag 天廊武器) -- see the matching note on
+    -- `equipment.is_tower`.
+    is_tower INTEGER NOT NULL DEFAULT 0,
+    zenith_skill_id INTEGER REFERENCES zenith_skill (id) ON DELETE RESTRICT,
+    source_url TEXT
+);
+
 CREATE INDEX IF NOT EXISTS idx_equipment_slot_type ON equipment (slot_type);
 CREATE INDEX IF NOT EXISTS idx_equipment_skill_skill_id ON equipment_skill (skill_id);
 CREATE INDEX IF NOT EXISTS idx_decoration_skill_skill_id ON decoration_skill (skill_id);
 CREATE INDEX IF NOT EXISTS idx_cuff_skill_skill_id ON cuff_skill (skill_id);
 CREATE INDEX IF NOT EXISTS idx_equipment_zenith_skill_id ON equipment (zenith_skill_id);
 CREATE INDEX IF NOT EXISTS idx_cuff_zenith_skill_id ON cuff (zenith_skill_id);
+CREATE INDEX IF NOT EXISTS idx_weapon_weapon_type ON weapon (weapon_type);
+CREATE INDEX IF NOT EXISTS idx_weapon_zenith_skill_id ON weapon (zenith_skill_id);

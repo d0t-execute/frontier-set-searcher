@@ -17,6 +17,42 @@ EQUIPMENT_TYPES: tuple[EquipmentType, ...] = (
     "charm",
 )
 
+WeaponType = Literal[
+    "great_sword",
+    "long_sword",
+    "sword_and_shield",
+    "dual_swords",
+    "hammer",
+    "hunting_horn",
+    "lance",
+    "gunlance",
+    "tonfa",
+    "switch_axe_f",
+    "magnet_spike",
+    "light_bowgun",
+    "heavy_bowgun",
+    "bow",
+]
+
+WEAPON_TYPES: tuple[WeaponType, ...] = (
+    "great_sword",
+    "long_sword",
+    "sword_and_shield",
+    "dual_swords",
+    "hammer",
+    "hunting_horn",
+    "lance",
+    "gunlance",
+    "tonfa",
+    "switch_axe_f",
+    "magnet_spike",
+    "light_bowgun",
+    "heavy_bowgun",
+    "bow",
+)
+
+RankType = Literal["HR", "SR", "GR", "GSR"]
+
 
 @dataclass(frozen=True, slots=True)
 class Skill:
@@ -79,6 +115,28 @@ class Cuff:
     name: str
     slot_size: int
     # Zenith Cuffs carry only a Zenith skill, no normal skills.
+    zenith_skill_id: int | None = None
+    source_url: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class Weapon:
+    """Weapons generally don't matter to the set searcher except for
+    slot_count (decos/sigils) and an optional Zenith skill -- confirmed by the
+    project owner. There is no normal-skill relation: weapons never carry
+    normal skills. See docs/weapon-data-format-notes.md.
+    """
+
+    id: int
+    external_id: str
+    name: str
+    weapon_type: WeaponType
+    rarity: int | None = None
+    slot_count: int = 0
+    rank_type: RankType | None = None
+    rank_value: int | None = None
+    # Tower weapon -- see the matching note on Equipment.is_tower.
+    is_tower: bool = False
     zenith_skill_id: int | None = None
     source_url: str | None = None
 

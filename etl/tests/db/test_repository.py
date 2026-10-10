@@ -185,3 +185,67 @@ def test_cuff_defaults_to_no_zenith_skill(conn: sqlite3.Connection) -> None:
     created = repo.insert_cuff(conn, external_id="C001", name="Sharpening PC1", slot_size=1)
 
     assert created.zenith_skill_id is None
+
+
+def test_insert_and_fetch_weapon_by_external_id(conn: sqlite3.Connection) -> None:
+    created = repo.insert_weapon(
+        conn,
+        external_id="taiken:0003",
+        name="Buster Sword",
+        weapon_type="great_sword",
+        rarity=1,
+        slot_count=0,
+        rank_type="HR",
+        rank_value=1,
+    )
+
+    fetched = repo.get_weapon_by_external_id(conn, "taiken:0003")
+
+    assert fetched == created
+
+
+def test_get_weapon_by_external_id_returns_none_when_missing(conn: sqlite3.Connection) -> None:
+    assert repo.get_weapon_by_external_id(conn, "does-not-exist") is None
+
+
+def test_weapon_defaults_to_not_tower_and_no_zenith_skill(conn: sqlite3.Connection) -> None:
+    created = repo.insert_weapon(
+        conn, external_id="taiken:0003", name="Buster Sword", weapon_type="great_sword"
+    )
+
+    assert created.is_tower is False
+    assert created.zenith_skill_id is None
+
+
+def test_tower_weapon_round_trips(conn: sqlite3.Connection) -> None:
+    created = repo.insert_weapon(
+        conn,
+        external_id="taiken:318F",
+        name="Hate Bleeder",
+        weapon_type="great_sword",
+        is_tower=True,
+    )
+    fetched = repo.get_weapon_by_external_id(conn, "taiken:318F")
+
+    assert fetched == created
+    assert fetched is not None
+    assert fetched.is_tower is True
+
+
+def test_zenith_weapon_round_trips_zenith_skill(conn: sqlite3.Connection) -> None:
+    zenith_skill = repo.insert_zenith_skill(conn, name="Drug Knowledge Up")
+
+    created = repo.insert_weapon(
+        conn,
+        external_id="taiken:3B13",
+        name="Feather Sleeper",
+        weapon_type="great_sword",
+        rank_type="GR",
+        rank_value=200,
+        zenith_skill_id=zenith_skill.id,
+    )
+    fetched = repo.get_weapon_by_external_id(conn, "taiken:3B13")
+
+    assert fetched == created
+    assert fetched is not None
+    assert fetched.zenith_skill_id == zenith_skill.id
