@@ -79,7 +79,7 @@ export function parseArgs(argv: readonly string[]): CliOptions {
 }
 
 export function formatResult(result: BuildResult, index: number): string {
-  const lines = [`#${index} (surplus: ${result.surplus})`]
+  const lines = [`#${index}`]
   for (const [slotId, candidate] of result.picks) {
     const decorations = result.decorations.get(slotId)
     const suffix = decorations ? ` [+ ${decorations.map((d) => d.id).join(', ')}]` : ''

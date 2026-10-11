@@ -4,8 +4,10 @@
  * group of slots is reduced to its Pareto-optimal frontier of achievable
  * skill vectors through a balanced binary tree of best-first merges, never
  * materializing more of any intermediate frontier than the final results
- * actually pulled require. Results are yielded in strictly
- * descending-surplus order (§6 step 5, "anytime/streaming output").
+ * actually pulled require. Results stream out in approximately best-first
+ * order (§6 step 5, "anytime/streaming output") -- see `pareto.ts`'s
+ * `mergeFrontierEntries` docstring for why that's "approximately," not
+ * strictly, guaranteed.
  *
  * This replaces an earlier single-pass best-first branch-and-bound over all
  * slots at once. That approach's pruning bound (every requested skill's
@@ -27,9 +29,11 @@
  * Results are deliberately pruned to non-dominated builds only: a build
  * that's no better than another on *every* requested skill is never worth
  * seeing (confirmed project direction) -- something else is always at least
- * as good. `pareto.ts` enforces this at every merge in the tree. Ties -- two
- * distinct builds reaching the exact same vector -- are always preserved,
- * never collapsed.
+ * as good. `pareto.ts` enforces this at every merge in the tree, using
+ * vectors capped per requirement (`cappedVector` in dominance.ts) so that
+ * overshooting a requirement is never "better," only ever equal to just
+ * meeting it. Ties -- two distinct builds reaching the exact same vector --
+ * are always preserved, never collapsed.
  */
 
 import { DecorationFillingCache, expandSlot, filterRelevantDecorations } from './expand'
@@ -54,7 +58,7 @@ export function* search(
     if (entry === undefined) return
 
     if (!meetsAllRequirements(entry.vector, requirements)) continue
-    yield buildResult(entry, requirements)
+    yield buildResult(entry)
   }
 }
 
@@ -68,7 +72,7 @@ function meetsAllRequirements(
   return true
 }
 
-function buildResult(entry: FrontierEntry, requirements: readonly SkillRequirement[]): BuildResult {
+function buildResult(entry: FrontierEntry): BuildResult {
   const resultDecorations = new Map<string, readonly Decoration[]>()
   for (const [slotId, option] of entry.picks) {
     if (option.decorationsUsed.length > 0) {
@@ -76,15 +80,9 @@ function buildResult(entry: FrontierEntry, requirements: readonly SkillRequireme
     }
   }
 
-  let surplus = 0
-  for (const req of requirements) {
-    surplus += (entry.totals.get(req.skillId) ?? 0) - req.minPoints
-  }
-
   return {
     picks: new Map([...entry.picks].map(([slotId, option]) => [slotId, option.candidate])),
     decorations: resultDecorations,
     skillTotals: entry.totals,
-    surplus,
   }
 }

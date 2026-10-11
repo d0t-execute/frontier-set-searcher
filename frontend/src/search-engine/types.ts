@@ -56,11 +56,4 @@ export interface BuildResult {
   /** Summed skill points across all picks and placed decorations, keyed by
    * `skillId`. */
   readonly skillTotals: ReadonlyMap<SkillId, number>
-  /**
-   * Sum, over every requested skill, of (achieved points - required
-   * points). Always >= 0 for a result that satisfies every requirement.
-   * Higher surplus is ranked first (see docs/PLAN.md §6 step 5) -- it
-   * reflects "most room to spare," not any particular skill's priority.
-   */
-  readonly surplus: number
 }

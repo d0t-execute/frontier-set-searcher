@@ -5,7 +5,7 @@
  * final pairwise merge (`engine.ts`).
  */
 
-import { ParetoFrontier } from './dominance'
+import { cappedVector, ParetoFrontier } from './dominance'
 import type {
   Candidate,
   Decoration,
@@ -83,12 +83,18 @@ export class DecorationFillingCache {
 /** A slot's requested-skill vector for a single option: the same "only the
  * dimensions dominance and ranking ever look at" restriction `pareto.ts`
  * applies, computed here so `expandSlot` can prune as it generates instead
- * of after (see its docstring). */
+ * of after (see its docstring). Capped per dimension at its own requirement
+ * (see `cappedVector`) so that piling far more than what was asked for into
+ * one skill is never treated as strictly better than just meeting it -- if
+ * this weren't capped here, the "just meets it" option would already be
+ * discarded as dominated before `pareto.ts` ever got a chance to rank them
+ * as equally good. */
 function requestedVector(
   skills: readonly SkillContribution[],
   requirements: readonly SkillRequirement[],
 ): number[] {
-  return requirements.map((r) => skills.find((s) => s.skillId === r.skillId)?.points ?? 0)
+  const raw = requirements.map((r) => skills.find((s) => s.skillId === r.skillId)?.points ?? 0)
+  return cappedVector(raw, requirements)
 }
 
 /**
@@ -159,21 +165,32 @@ export function expandSlot(
  * thousands. Grouping keeps the DP's own work proportional to how many
  * distinct vectors exist at each capacity, not how many tied ways reach
  * them (see dominance.ts's module docstring).
+ *
+ * The running vector is also re-capped per requirement after every
+ * decoration folded in (`cappedVector`) -- otherwise "use 3 copies of the
+ * strongest decoration" would always dominate "use 1," even once 1 already
+ * meets the requirement, burying the simpler option before it ever had a
+ * chance to be ranked as equally good.
  */
 function computeDecorationFillingFrontier(
   capacity: number,
   decorations: readonly Decoration[],
   requirements: readonly SkillRequirement[],
 ): DecorationFillingOption[] {
+  // Seeded only at capacity 0 -- the capacity-carry-forward pass below is
+  // what propagates "place nothing" (and everything else) up through every
+  // higher capacity exactly once. Seeding every level independently here
+  // too would double-count it there: an "empty filling" object seeded fresh
+  // at level 1 and a structurally-identical one carried forward from level 0
+  // are the exact same real-world origin (place nothing), but two different
+  // object instances, so `ParetoFrontier` can't tell they're not a genuine
+  // second tie.
   const zeroVector = new Array<number>(requirements.length).fill(0)
   const frontierByCapacity: ParetoFrontier<DecorationFillingOption>[] = Array.from(
     { length: capacity + 1 },
-    () => {
-      const frontier = new ParetoFrontier<DecorationFillingOption>()
-      frontier.insert(zeroVector, { skills: [], decorationsUsed: [] })
-      return frontier
-    },
+    () => new ParetoFrontier<DecorationFillingOption>(),
   )
+  frontierByCapacity[0].insert(zeroVector, { skills: [], decorationsUsed: [] })
 
   for (const decoration of decorations) {
     if (decoration.slotSize <= 0 || decoration.slotSize > capacity) continue
@@ -190,13 +207,36 @@ function computeDecorationFillingFrontier(
       const source = frontierByCapacity[c - decoration.slotSize]
       const target = frontierByCapacity[c]
       for (const { vector, origins } of source.entries()) {
-        const newVector = vector.map((v, k) => v + contribution[k])
+        const newVector = cappedVector(
+          vector.map((v, k) => v + contribution[k]),
+          requirements,
+        )
         for (const origin of origins) {
           target.insert(newVector, {
             skills: mergeSkills(origin.skills, decoration.skills),
             decorationsUsed: [...origin.decorationsUsed, decoration],
           })
         }
+      }
+    }
+  }
+
+  // Capacity is always usable up to, not required to be filled exactly --
+  // anything reachable with c-1 capacity is trivially also reachable with c
+  // (just leave the extra unit unused), so it belongs in frontierByCapacity[c]
+  // too. Without this, a vector only ever reaches a higher capacity bucket by
+  // some transition adding *another* decoration on top, which can silently
+  // lose a tie: once capping (`cappedVector`) makes "use 1 of a decoration"
+  // and "use 2 of the same decoration" reach the identical capped vector,
+  // placing the 2nd copy no longer dominates placing just the 1st -- they
+  // tie -- but the 1-copy origin, sitting only in frontierByCapacity[1], was
+  // never otherwise copied into frontierByCapacity[2] to tie with it there.
+  // Carrying forward in ascending order means each step already reflects
+  // every lower capacity transitively.
+  for (let c = 1; c <= capacity; c++) {
+    for (const { vector, origins } of frontierByCapacity[c - 1].entries()) {
+      for (const origin of origins) {
+        frontierByCapacity[c].insert(vector, origin)
       }
     }
   }

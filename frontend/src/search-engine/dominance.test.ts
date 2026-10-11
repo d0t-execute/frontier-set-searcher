@@ -18,7 +18,8 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { dominates, ParetoFrontier } from './dominance'
+import { cappedVector, dominates, MAX_TIED_ORIGINS, ParetoFrontier } from './dominance'
+import type { SkillRequirement } from './types'
 
 describe('dominates', () => {
   it('is true when a is at least as good on every dimension and strictly better on one', () => {
@@ -91,7 +92,10 @@ describe('ParetoFrontier', () => {
     // identical vector, combinatorially inflated by a capacity limit. A
     // linear-scan frontier re-scans everything already kept on every one of
     // these -- here, that would be ~50,000 re-scans of an ever-growing
-    // array. Grouping makes each one an O(1) append instead.
+    // array. Grouping makes each one an O(1) append instead -- and
+    // `MAX_TIED_ORIGINS` (see its own docstring) keeps the group itself from
+    // growing unboundedly once capping (see `cappedVector`) makes huge tied
+    // groups commonplace at real-dataset scale.
     const frontier = new ParetoFrontier<number>()
     const start = performance.now()
     for (let i = 0; i < 50_000; i++) {
@@ -100,8 +104,20 @@ describe('ParetoFrontier', () => {
     const elapsedMs = performance.now() - start
 
     expect(frontier.entries()).toHaveLength(1)
-    expect(frontier.toArray()).toHaveLength(50_000)
+    expect(frontier.toArray()).toHaveLength(MAX_TIED_ORIGINS)
     expect(elapsedMs).toBeLessThan(500)
+  })
+
+  it('keeps only the first MAX_TIED_ORIGINS alternatives once a tied group grows past it', () => {
+    const frontier = new ParetoFrontier<string>()
+    frontier.insert([5], 'a')
+    frontier.insert([5], 'b')
+    frontier.insert([5], 'c')
+    frontier.insert([5], 'd')
+    frontier.insert([5], 'e')
+    frontier.insert([5], 'f') // past the cap -- dropped, not appended
+
+    expect(frontier.toArray()).toEqual(['a', 'b', 'c', 'd', 'e'])
   })
 
   it('stays fast with many distinct, mostly-dominated candidates', () => {
@@ -114,5 +130,36 @@ describe('ParetoFrontier', () => {
 
     expect(frontier.toArray()).toEqual([49_999])
     expect(elapsedMs).toBeLessThan(500)
+  })
+})
+
+describe('cappedVector', () => {
+  const requirements: SkillRequirement[] = [
+    { skillId: 1, minPoints: 15 },
+    { skillId: 2, minPoints: 10 },
+  ]
+
+  it('passes a value through unchanged when it has not reached its requirement', () => {
+    expect(cappedVector([5, 3], requirements)).toEqual([5, 3])
+  })
+
+  it('caps a value at its own requirement once it meets or exceeds it', () => {
+    expect(cappedVector([15, 10], requirements)).toEqual([15, 10])
+    expect(cappedVector([1146, 50], requirements)).toEqual([15, 10])
+  })
+
+  it('caps each dimension independently', () => {
+    expect(cappedVector([1146, 3], requirements)).toEqual([15, 3])
+  })
+
+  it('composes correctly across repeated additions (re-capping a running total)', () => {
+    // Two partial contributions of 10 each (neither alone over the 15 cap)
+    // must still cap their *sum* to 15, matching capping the true raw total
+    // once -- not 10 + 10 = 20 escaping the cap.
+    const left = cappedVector([10], [{ skillId: 1, minPoints: 15 }])
+    const right = cappedVector([10], [{ skillId: 1, minPoints: 15 }])
+    const combined = cappedVector([left[0] + right[0]], [{ skillId: 1, minPoints: 15 }])
+
+    expect(combined).toEqual([15])
   })
 })

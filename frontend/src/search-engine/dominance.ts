@@ -5,6 +5,8 @@
  * import cycle (pareto.ts already imports from expand.ts).
  */
 
+import type { SkillRequirement } from './types'
+
 /** True if `a` is at least as good as `b` on every dimension, and they're
  * not identical -- exact ties must NOT count as domination (see pareto.ts). */
 export function dominates(a: readonly number[], b: readonly number[]): boolean {
@@ -16,6 +18,59 @@ export function dominates(a: readonly number[], b: readonly number[]): boolean {
   return !identical
 }
 
+/**
+ * Caps each dimension of `raw` at its own requirement's threshold (see
+ * docs/PLAN.md or the project's own direction: "once a requirement is met,
+ * more points in it don't make a build better"). Used everywhere a vector is
+ * built from raw per-skill point totals -- in `expand.ts`'s per-slot and
+ * decoration-filling pruning, and in `pareto.ts`'s per-slot reduction and
+ * cross-slot merge -- so that piling far more than what was asked for into
+ * one skill is correctly treated as *equal to*, never better than, barely
+ * meeting it. Applying this only at the very end (e.g. just before ranking
+ * final results) isn't enough: a build using fewer decorations to just meet
+ * a requirement would already have been discarded as "dominated" by one that
+ * overshoots it, long before ranking ever saw either -- this has to apply
+ * everywhere a vector is compared, all the way down.
+ *
+ * Capping is idempotent under repeated addition for non-negative values --
+ * `min(min(a, c) + min(b, c), c) === min(a + b, c)` for any a, b, c >= 0 --
+ * so re-capping a running total at every merge step (rather than only once
+ * at the very end) gives the same result either way. Real search queries
+ * only ever ask for non-negative minimums in practice (a UI control for
+ * "fewer than N points of a skill" doesn't exist), so this doesn't need to
+ * handle a negative `minPoints` producing a different answer than capping
+ * once at the end would -- only that it still returns *some* sound ranking
+ * rather than mis-computing feasibility (which stays correct regardless,
+ * since `isSalvageable`'s own bound check is unaffected either way: capping
+ * a dimension that has already reached its threshold can never change
+ * whether `vector[k] + bestElsewhere[k] >= requirements[k].minPoints` holds).
+ *
+ * One real trade-off: pruning a dominated candidate as a *future building
+ * block* (not just as a final answer) is only ever lossless if dominance is
+ * preserved under addition -- "A dominated by B" must guarantee "A + C
+ * dominated-or-tied by B + C" for *any* later addition C, or discarding A
+ * could silently throw away a distinct result nothing else reaches. Raw,
+ * uncapped addition always preserves a *strict* inequality (adding the same
+ * C to both sides never closes a gap), so the original uncapped pruning was
+ * fully lossless. Capping breaks that: because `min(x, c)` can map two
+ * different raw values to the same capped one, a source that loses to
+ * another *before* some addition can go from strictly-worse to exactly-tied
+ * *after* it -- a tie this DP can no longer discover, since the losing
+ * source was already discarded. This never hides a better achievable
+ * outcome or admits an invalid one (a pruned source is never later
+ * *strictly* better, only sometimes tied with a path that was kept) -- it
+ * can only under-count how many distinct raw ways reach a given tied
+ * outcome. See `expand.test.ts`'s brute-force property test, which checks
+ * distinct achievable vectors, not exact tie counts, for exactly this
+ * reason.
+ */
+export function cappedVector(
+  raw: readonly number[],
+  requirements: readonly SkillRequirement[],
+): number[] {
+  return raw.map((v, k) => Math.min(v, requirements[k].minPoints))
+}
+
 interface ParetoGroupInternal<T> {
   readonly vector: readonly number[]
   readonly origins: T[]
@@ -25,6 +80,26 @@ export interface ParetoGroup<T> {
   readonly vector: readonly number[]
   readonly origins: readonly T[]
 }
+
+/**
+ * How many alternative origins a single tied group (`ParetoFrontier.insert`)
+ * keeps once they all reach the exact same vector. Confirmed against the
+ * real dataset: capping (`cappedVector`) routinely collapses tens of
+ * thousands of distinct raw point totals onto one capped vector once a
+ * requirement is loose relative to how many items clear it (e.g. ~13,000 of
+ * ~13,000 head pieces alone satisfy "Attack >= 10") -- without a bound, every
+ * one of those becomes a separate leaf in the cross-slot merge tree
+ * (`pareto.ts`'s `mergeFrontierEntries`), and since tied vectors never
+ * dominate each other, the merge can't prune the resulting near-full
+ * cross-product away, which measurably ran the real search out of memory on
+ * a single loosely-constrained skill query. Small tie groups (a handful of
+ * genuinely different builds reaching the same outcome, the case this
+ * project's tests exercise) are completely unaffected by the cap; only
+ * groups that would otherwise grow far beyond what any caller could
+ * meaningfully show as "alternatives" are truncated, to an arbitrary but
+ * bounded sample rather than silently exploding.
+ */
+export const MAX_TIED_ORIGINS = 5
 
 /**
  * A non-dominated frontier of `origin`s keyed by their vector, built up one
@@ -48,6 +123,12 @@ export interface ParetoGroup<T> {
  * minute on a case that should finish in under a second. `toArray` expands
  * every group back out into one entry per tied origin, so every existing
  * caller's output shape is unchanged -- only how expensively it gets there.
+ *
+ * A group only ever keeps its first `MAX_TIED_ORIGINS` origins (see that
+ * constant's own docstring for why) -- later ones reaching the same vector
+ * are dropped rather than appended, keeping both this class's own memory use
+ * and every downstream consumer's input size bounded regardless of how many
+ * real items happen to tie.
  */
 export class ParetoFrontier<T> {
   private readonly groups: ParetoGroupInternal<T>[] = []
@@ -57,7 +138,7 @@ export class ParetoFrontier<T> {
     const key = vector.join(',')
     const exact = this.byVectorKey.get(key)
     if (exact !== undefined) {
-      exact.origins.push(origin)
+      if (exact.origins.length < MAX_TIED_ORIGINS) exact.origins.push(origin)
       return
     }
 
@@ -85,10 +166,18 @@ export class ParetoFrontier<T> {
   }
 
   /** Every origin across every group, flattened back into one entry per
-   * tied origin -- the shape every existing caller already expects. */
+   * tied origin -- the shape every existing caller already expects. Appends
+   * one at a time rather than `push(...group.origins)`: a spread call turns
+   * into one function argument per element, and a single tied group can
+   * legitimately hold tens of thousands of origins once vectors are capped
+   * per requirement (`cappedVector`) -- far more raw point totals land on
+   * the exact same capped value than used to tie on an uncapped one -- which
+   * blows the engine's argument-count limit. */
   toArray(): T[] {
     const flat: T[] = []
-    for (const group of this.groups) flat.push(...group.origins)
+    for (const group of this.groups) {
+      for (const origin of group.origins) flat.push(origin)
+    }
     return flat
   }
 }

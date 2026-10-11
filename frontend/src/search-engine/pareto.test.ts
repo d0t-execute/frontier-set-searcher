@@ -29,14 +29,23 @@ describe('computeFrontier', () => {
   it('returns a single entry for one slot with one candidate', () => {
     const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Helm', { 1: 5 })] }]
 
-    const frontier = computeFrontier(expand(slots), [{ skillId: 1, minPoints: 0 }])
+    // minPoints matches Helm's own value exactly: feasible (meets the
+    // requirement) without being capped down (it's at, not past, the cap).
+    const frontier = computeFrontier(expand(slots), [{ skillId: 1, minPoints: 5 }])
 
     expect(frontier).toHaveLength(1)
     expect(frontier[0].vector).toEqual([5])
     expect(frontier[0].picks.get('head')?.candidate.id).toBe('Helm')
   })
 
-  it('discards a candidate strictly dominated by another on every requested skill', () => {
+  it('excludes a candidate that can never meet the requirement on its own', () => {
+    // `computeFrontier` only ever returns results that already satisfy every
+    // requirement (see `isSalvageable`'s root-level check in pareto.ts) --
+    // Small Helm's 3 points never reaches a requirement of 5, regardless of
+    // dominance. (Two candidates that *both* meet the same requirement
+    // always tie once capped -- see "treats a combined build that
+    // overshoots..." below -- so this is the only way a single candidate in
+    // isolation gets excluded here.)
     const slots: SlotQuery[] = [
       {
         slotId: 'head',
@@ -44,36 +53,42 @@ describe('computeFrontier', () => {
       },
     ]
 
-    const frontier = computeFrontier(expand(slots), [{ skillId: 1, minPoints: 0 }])
+    const frontier = computeFrontier(expand(slots), [{ skillId: 1, minPoints: 5 }])
 
     expect(frontier).toHaveLength(1)
     expect(frontier[0].vector).toEqual([5])
+    expect(frontier[0].picks.get('head')?.candidate.id).toBe('Big Helm')
   })
 
-  it('keeps both candidates when neither dominates the other', () => {
+  it('preserves ties between candidates that satisfy requirements via different raw distributions', () => {
+    // Attack Helm overshoots skill 1 and just meets skill 2; Defense Helm is
+    // the mirror image -- genuinely different raw builds, but both capped to
+    // exactly the requirements vector once each dimension is independently
+    // satisfied, so neither is "better."
     const slots: SlotQuery[] = [
       {
         slotId: 'head',
         candidates: [
-          candidate('Attack Helm', { 1: 5, 2: 0 }),
-          candidate('Defense Helm', { 1: 0, 2: 5 }),
+          candidate('Attack Helm', { 1: 5, 2: 3 }),
+          candidate('Defense Helm', { 1: 3, 2: 5 }),
         ],
       },
     ]
 
     const requirements = [
-      { skillId: 1, minPoints: 0 },
-      { skillId: 2, minPoints: 0 },
+      { skillId: 1, minPoints: 3 },
+      { skillId: 2, minPoints: 3 },
     ]
     const frontier = computeFrontier(expand(slots), requirements)
 
-    const vectors = frontier.map((f) => f.vector).sort()
-    expect(vectors).toEqual(
-      [
-        [5, 0],
-        [0, 5],
-      ].sort(),
-    )
+    expect(frontier.map((f) => f.picks.get('head')?.candidate.id).sort()).toEqual([
+      'Attack Helm',
+      'Defense Helm',
+    ])
+    expect(frontier.map((f) => f.vector)).toEqual([
+      [3, 3],
+      [3, 3],
+    ])
   })
 
   it('preserves ties: two different builds achieving the same requested vector both survive', () => {
@@ -87,7 +102,7 @@ describe('computeFrontier', () => {
       },
     ]
 
-    const frontier = computeFrontier(expand(slots), [{ skillId: 1, minPoints: 0 }])
+    const frontier = computeFrontier(expand(slots), [{ skillId: 1, minPoints: 5 }])
 
     expect(frontier).toHaveLength(2)
     expect(frontier.map((f) => f.vector)).toEqual([[5], [5]])
@@ -103,7 +118,8 @@ describe('computeFrontier', () => {
       { slotId: 'chest', candidates: [candidate('Mail', { 1: 4 })] },
     ]
 
-    const frontier = computeFrontier(expand(slots), [{ skillId: 1, minPoints: 0 }])
+    // Matches the combined total (3 + 4) exactly -- feasible, uncapped.
+    const frontier = computeFrontier(expand(slots), [{ skillId: 1, minPoints: 7 }])
 
     expect(frontier).toHaveLength(1)
     expect(frontier[0].vector).toEqual([7])
@@ -112,8 +128,8 @@ describe('computeFrontier', () => {
   })
 
   it('ignores skills outside the requested set when computing dominance', () => {
-    // Fancy Helm is strictly better on the requested skill AND has an extra
-    // bonus skill -- it should dominate (and discard) Plain Helm regardless
+    // Fancy Helm meets the requirement and has an extra bonus skill; Plain
+    // Helm never reaches the requirement at all -- it's excluded regardless
     // of the bonus skill's existence.
     const slots: SlotQuery[] = [
       {
@@ -122,9 +138,30 @@ describe('computeFrontier', () => {
       },
     ]
 
-    const frontier = computeFrontier(expand(slots), [{ skillId: 1, minPoints: 0 }])
+    const frontier = computeFrontier(expand(slots), [{ skillId: 1, minPoints: 5 }])
 
     expect(frontier).toHaveLength(1)
     expect(frontier[0].picks.get('head')?.candidate.id).toBe('Fancy Helm')
+  })
+
+  it('treats a combined build that overshoots a requirement as tied with one that just meets it', () => {
+    // Confirmed project direction: once a requirement is met, more points in
+    // it don't make a build better. Without capping, "Big Helm" would
+    // dominate (and bury) "Just Enough Helm" purely for having more raw
+    // points toward a requirement that's already satisfied either way.
+    const slots: SlotQuery[] = [
+      {
+        slotId: 'head',
+        candidates: [candidate('Just Enough Helm', { 1: 10 }), candidate('Big Helm', { 1: 1000 })],
+      },
+    ]
+
+    const frontier = computeFrontier(expand(slots), [{ skillId: 1, minPoints: 10 }])
+
+    expect(frontier.map((f) => f.picks.get('head')?.candidate.id).sort()).toEqual([
+      'Big Helm',
+      'Just Enough Helm',
+    ])
+    expect(frontier.map((f) => f.vector)).toEqual([[10], [10]])
   })
 })

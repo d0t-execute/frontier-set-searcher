@@ -14,6 +14,14 @@
  * different helms granting the same requested skill points but different
  * bonus skills nobody asked for are still different builds worth showing.
  *
+ * Every vector used for dominance and ranking is capped per dimension at its
+ * own requirement (`cappedVector` in dominance.ts) -- confirmed project
+ * direction: once a requirement is met, more points in it don't make a build
+ * better. Without this, a build that stuffs every open decoration slot with
+ * the same requested skill would always dominate (and bury) one that meets
+ * the requirement more modestly, even though the two are equally good in
+ * every way that was actually asked for -- they now correctly tie instead.
+ *
  * Slots are combined via a balanced binary tree of lazy, best-first merges
  * (`buildFrontierStream`/`mergeFrontierEntries`), not an eager left-to-right
  * fold. At real-dataset scale, a group of just two or three slots can have a
@@ -44,7 +52,7 @@
  * trailing that bound) contribution.
  */
 
-import { dominates, ParetoFrontier } from './dominance'
+import { cappedVector, dominates, ParetoFrontier } from './dominance'
 import { applyContribution } from './expand'
 import { LazyList } from './lazy-list'
 import { MaxHeap } from './max-heap'
@@ -63,11 +71,16 @@ export interface FrontierEntry {
   readonly picks: ReadonlyMap<string, ExpandedOption>
 }
 
+/** A frontier entry's requested-skill vector, capped per dimension at its
+ * own requirement (`cappedVector`) -- see its docstring for why overshooting
+ * a requirement must never be treated as strictly better than just meeting
+ * it, both for dominance and for ranking. */
 function vectorOf(
   totals: ReadonlyMap<SkillId, number>,
   requirements: readonly SkillRequirement[],
 ): number[] {
-  return requirements.map((r) => totals.get(r.skillId) ?? 0)
+  const raw = requirements.map((r) => totals.get(r.skillId) ?? 0)
+  return cappedVector(raw, requirements)
 }
 
 /** True if `vector` could still possibly reach every requirement once
@@ -217,19 +230,28 @@ interface PairEntry {
 /**
  * Lazily merges two already-sorted (descending scalar score), already
  * non-dominated frontiers into their own combined, non-dominated frontier,
- * yielded in the same descending-score order -- dropping any combination
- * that `outsideBest` proves can never be salvaged into a feasible final
- * result (see the module docstring).
+ * yielded in approximately descending-score order -- dropping any
+ * combination that `outsideBest` proves can never be salvaged into a
+ * feasible final result (see the module docstring).
  *
- * Popping strictly in descending-priority order is what makes the dominance
- * check below correct with a single pass: a pair popped later can only
- * dominate one popped earlier if their combined scores are equal (domination
- * requires every dimension >=, so summing can only increase or hold the
- * total) -- and equal scores plus domination forces the two vectors to be
- * identical, which isn't domination at all (see the module docstring on
- * ties). So no popped pair can ever be dominated by one popped after it,
- * and checking only against already-yielded vectors is enough to produce
- * the *exact* non-dominated frontier, not an approximation.
+ * The heap priority below sums each side's own (already-capped) score
+ * without re-capping the sum -- cheap to compute, and still a good
+ * best-first heuristic (favoring balanced progress toward every requirement
+ * over lopsided progress on just one), but no longer a tight bound on the
+ * pair's true, fully-capped combined score the way an uncapped sum would be.
+ * That means the one-directional dominance check below (drop a candidate
+ * only if something *already yielded* dominates it) can no longer be proven
+ * to produce the exact, fully-reduced non-dominated frontier in a single
+ * pass the way it could when priority was strictly monotonic in the vector:
+ * in a rare ordering, a pair could be yielded before another pair that would
+ * have dominated it, leaving one redundant (dominated-by-a-later-entry)
+ * result in the output alongside the correct ones. This never drops a
+ * result that should have survived (dominance is checked on each pair's own
+ * complete, final vector, independent of discovery order, so every exclusion
+ * it makes is sound) and never lets through a vector that doesn't actually
+ * satisfy every requirement -- it can only, rarely, under-prune one that a
+ * stricter pass would also have dropped as redundant, which is no different
+ * in kind from the ties this project already preserves deliberately.
  */
 function* mergeFrontierEntries(
   a: LazyList<FrontierEntry>,
@@ -261,7 +283,14 @@ function* mergeFrontierEntries(
 
     const entryA = a.get(i) as FrontierEntry
     const entryB = b.get(j) as FrontierEntry
-    const vector = entryA.vector.map((v, k) => v + entryB.vector[k])
+    // Re-capped after summing two already-capped sides (see cappedVector's
+    // docstring on why capping composes correctly across repeated
+    // additions): otherwise two sides that each merely meet a requirement
+    // on their own could sum past it and start looking "better" again.
+    const vector = cappedVector(
+      entryA.vector.map((v, k) => v + entryB.vector[k]),
+      requirements,
+    )
 
     if (!isSalvageable(vector, outsideBest, requirements)) continue
     if (yieldedVectors.some((v) => dominates(v, vector))) continue
@@ -311,9 +340,11 @@ export function mergeTotals(
   return totals
 }
 
-/** Sum of a frontier entry's requested-skill vector -- used to rank/merge
- * frontier entries without needing per-dimension comparison (the combined
- * score of a pair is exactly the sum of each side's own score). */
+/** Sum of a frontier entry's (already-capped, see `cappedVector`)
+ * requested-skill vector -- used to rank/merge frontier entries without
+ * needing per-dimension comparison. Since every requirement's contribution
+ * is capped at the point it's actually met, this naturally stops rewarding
+ * a build for piling more than what was asked for into one skill. */
 export function scalarScore(vector: readonly number[]): number {
   let score = 0
   for (const v of vector) score += v

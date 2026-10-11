@@ -28,7 +28,7 @@
 
 import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
-import { dominates } from './dominance'
+import { cappedVector, dominates, MAX_TIED_ORIGINS } from './dominance'
 import { fillSlots } from './decorations'
 import { DecorationFillingCache, expandSlot, mergeSkills } from './expand'
 import type { Candidate, Decoration, SkillRequirement, SlotQuery } from './types'
@@ -52,24 +52,36 @@ function emptySlot(openSlotCount: number): SlotQuery {
   return { slotId: 'slot', candidates: [{ id: 'bare', skills: [], openSlotCount }] }
 }
 
+/** Recomputes each option's capped dominance vector from its (raw, kept for
+ * display) `skills` -- matching what `expandSlot` actually used to decide
+ * which options survived (see `cappedVector`'s docstring). */
 function vectorsOf(
   options: readonly { readonly skills: readonly { skillId: number; points: number }[] }[],
   requirements: readonly SkillRequirement[],
 ): number[][] {
   return options.map((option) =>
-    requirements.map((r) => option.skills.find((s) => s.skillId === r.skillId)?.points ?? 0),
+    cappedVector(
+      requirements.map((r) => option.skills.find((s) => s.skillId === r.skillId)?.points ?? 0),
+      requirements,
+    ),
   )
 }
 
 /** The deliberately naive reference: every raw filling from `fillSlots`,
- * reduced to its non-dominated vectors by brute force. */
+ * capped per requirement (matching `expandSlot`'s own capping -- see
+ * `cappedVector`'s docstring for why overshooting a requirement must never
+ * look strictly better than just meeting it), reduced to its non-dominated
+ * vectors by brute force. */
 function bruteForceFrontierVectors(
   capacity: number,
   decorations: readonly Decoration[],
   requirements: readonly SkillRequirement[],
 ): number[][] {
   const vectors = fillSlots(capacity, decorations).map((filling) =>
-    requirements.map((r) => filling.skills.find((s) => s.skillId === r.skillId)?.points ?? 0),
+    cappedVector(
+      requirements.map((r) => filling.skills.find((s) => s.skillId === r.skillId)?.points ?? 0),
+      requirements,
+    ),
   )
   return vectors.filter((v, i) => !vectors.some((other, j) => j !== i && dominates(other, v)))
 }
@@ -78,13 +90,23 @@ function sortVectors(vectors: number[][]): number[][] {
   return [...vectors].sort((a, b) => a.join(',').localeCompare(b.join(',')))
 }
 
+/** Distinct vectors only, ties collapsed -- see the "matches the brute-force
+ * reference" test below for why exact tie *counts* aren't compared. */
+function uniqueVectors(vectors: number[][]): number[][] {
+  return sortVectors([...new Map(vectors.map((v) => [v.join(','), v])).values()])
+}
+
 describe('expandSlot decoration filling', () => {
   it('offers a single-decoration filling for each decoration that fits', () => {
     const attack = deco('Attack Jewel', 1, { 1: 3 })
     const defense = deco('Defense Jewel', 1, { 2: 5 })
+    // minPoints set well above every raw value used below -- this test is
+    // about plain dominance between fillings, not the requirement-capping
+    // behavior (covered separately), so staying under the cap keeps vectors
+    // equal to their raw points, unaffected by it.
     const requirements: SkillRequirement[] = [
-      { skillId: 1, minPoints: 0 },
-      { skillId: 2, minPoints: 0 },
+      { skillId: 1, minPoints: 100 },
+      { skillId: 2, minPoints: 100 },
     ]
 
     const expanded = expandSlot(emptySlot(1), [attack, defense], requirements)
@@ -104,13 +126,33 @@ describe('expandSlot decoration filling', () => {
   it('drops a filling dominated by another on every requested skill', () => {
     const weak = deco('Weak Jewel', 1, { 1: 2 })
     const strong = deco('Strong Jewel', 1, { 1: 5 })
-    const requirements: SkillRequirement[] = [{ skillId: 1, minPoints: 0 }]
+    // Above both raw values, so capping is a no-op here -- see the comment
+    // on the previous test.
+    const requirements: SkillRequirement[] = [{ skillId: 1, minPoints: 100 }]
 
     const expanded = expandSlot(emptySlot(1), [weak, strong], requirements)
 
     const vectors = vectorsOf(expanded.options, requirements)
     expect(vectors).not.toContainEqual([2])
     expect(vectors).toContainEqual([5])
+  })
+
+  it('treats a filling that overshoots the requirement as tied with one that just meets it', () => {
+    // Confirmed project direction: once a requirement is met, more points in
+    // it don't make a build better. Without capping each dimension at its
+    // own requirement, "Big Jewel" would dominate (and bury) "Just Enough
+    // Jewel" purely for having more raw points, even though neither is
+    // actually better once the goal is already reached.
+    const justEnough = deco('Just Enough Jewel', 1, { 1: 10 })
+    const big = deco('Big Jewel', 1, { 1: 1000 })
+    const requirements: SkillRequirement[] = [{ skillId: 1, minPoints: 10 }]
+
+    const expanded = expandSlot(emptySlot(1), [justEnough, big], requirements)
+
+    expect(expanded.options.map((o) => o.decorationsUsed[0]?.id).sort()).toEqual([
+      'Big Jewel',
+      'Just Enough Jewel',
+    ])
   })
 
   it('shares one frontier across every candidate and slot with the same capacity via the cache', () => {
@@ -149,7 +191,20 @@ describe('expandSlot decoration filling', () => {
   )
   const capacityArb = fc.integer({ min: 0, max: 4 })
 
-  it('matches the brute-force (fillSlots + prune) reference frontier', () => {
+  it('reaches exactly the same set of distinct vectors as the brute-force (fillSlots + prune) reference', () => {
+    // Compares distinct vectors, not exact tie counts. Capping breaks a
+    // property the incremental DP otherwise relies on for completeness:
+    // without capping, "A is dominated by B" guarantees A+C is *strictly*
+    // dominated by B+C for any further addition C (raw addition preserves
+    // strict inequalities), so discarding a dominated source as a future
+    // building block never loses a genuinely distinct outcome. Capping is
+    // non-linear (`min(x, cap)`), so it can map two different raw values to
+    // the same capped one -- meaning a source dominated *before* some later
+    // addition can tie (not lose) with the winning source *after* it, via a
+    // path this DP never explores once that source was pruned. This can
+    // only ever under-count how many distinct raw ways reach a tied vector,
+    // never hide a better achievable outcome or admit a worse one -- every
+    // distinct vector the brute-force reference finds is still found here.
     fc.assert(
       fc.property(
         capacityArb,
@@ -172,8 +227,10 @@ describe('expandSlot decoration filling', () => {
 
           const expanded = expandSlot(emptySlot(capacity), relevant, requirements)
 
-          const actual = sortVectors(vectorsOf(expanded.options, requirements))
-          const expected = sortVectors(bruteForceFrontierVectors(capacity, relevant, requirements))
+          const actual = uniqueVectors(vectorsOf(expanded.options, requirements))
+          const expected = uniqueVectors(
+            bruteForceFrontierVectors(capacity, relevant, requirements),
+          )
 
           expect(actual).toEqual(expected)
         },
@@ -191,9 +248,15 @@ describe('expandSlot decoration filling', () => {
     const decorations: Decoration[] = Array.from({ length: 150 }, (_, i) =>
       deco(`deco-${i}`, 1, { [i % 4]: 1 + (i % 10) }),
     )
+    // A realistic, non-zero requirement per skill (matching real query
+    // magnitudes) -- minPoints: 0 would cap every dimension to 0, collapsing
+    // all 150 decorations into one single tied group and defeating the
+    // point of this test (it's no longer "many distinct vectors pruned
+    // efficiently," just "one group with many origins," a different case
+    // already covered by the "many candidates tie" tests below).
     const requirements: SkillRequirement[] = [0, 1, 2, 3].map((skillId) => ({
       skillId,
-      minPoints: 0,
+      minPoints: 5,
     }))
 
     const start = performance.now()
@@ -207,7 +270,9 @@ describe('expandSlot decoration filling', () => {
 
 describe('expandSlot candidate pruning', () => {
   it('drops a candidate-and-filling combination dominated by another, across different candidates', () => {
-    const requirements: SkillRequirement[] = [{ skillId: 1, minPoints: 0 }]
+    // Above both raw values, so capping is a no-op (this test is about
+    // plain dominance, not requirement-capping).
+    const requirements: SkillRequirement[] = [{ skillId: 1, minPoints: 100 }]
     const slot: SlotQuery = {
       slotId: 'slot',
       candidates: [
@@ -223,7 +288,7 @@ describe('expandSlot candidate pruning', () => {
   })
 
   it('preserves ties: two different candidates reaching the same requested vector both survive', () => {
-    const requirements: SkillRequirement[] = [{ skillId: 1, minPoints: 0 }]
+    const requirements: SkillRequirement[] = [{ skillId: 1, minPoints: 100 }]
     const slot: SlotQuery = {
       slotId: 'slot',
       candidates: [
@@ -258,7 +323,13 @@ describe('expandSlot candidate pruning', () => {
     // deliberate stress case -- see the module docstring on ties -- that
     // pathologically inflates the frontier with never-pruned duplicates
     // instead of exercising this fix; that's not what's being tested here.)
-    const requirements: SkillRequirement[] = [1, 2, 3].map((skillId) => ({ skillId, minPoints: 0 }))
+    // Above every reachable combined value (candidates alone run up to
+    // 7999), so capping is a no-op -- this test is about candidate-level
+    // pruning via plain dominance, not requirement-capping.
+    const requirements: SkillRequirement[] = [1, 2, 3].map((skillId) => ({
+      skillId,
+      minPoints: 100_000,
+    }))
     // Distinct point values per axis (not repeated across several
     // decorations) -- several decorations tying at the exact same point
     // value is itself the "many ties" case covered by the next test, and
@@ -286,12 +357,12 @@ describe('expandSlot candidate pruning', () => {
   it('stays fast even when many candidates tie on the exact same requested vector', () => {
     // The flip side of the test above: real equipment plausibly includes
     // many pieces that are cosmetically distinct but identical on every
-    // *requested* skill (e.g. color variants). Ties are never deduplicated
-    // by design (see the module docstring, and pareto.test.ts's "preserves
-    // ties" case) -- which is correct, but means the frontier can legitimately
-    // grow proportional to how many candidates tie, not just to how many
-    // truly distinct vectors exist. This pins a sane budget for that case
-    // rather than assuming it away.
+    // *requested* skill (e.g. color variants). Ties are preserved up to
+    // `MAX_TIED_ORIGINS` (see dominance.ts's docstring) rather than being
+    // deduplicated to a single representative -- but, confirmed against the
+    // real dataset, a loose requirement can make *most* of a ~13,000-item
+    // slot tie on the exact same vector, so the group itself must stay
+    // bounded rather than growing proportional to how many candidates tie.
     const requirements: SkillRequirement[] = [{ skillId: 1, minPoints: 0 }]
     const candidates: Candidate[] = Array.from({ length: 4000 }, (_, i) => ({
       id: `c-${i}`,
@@ -303,7 +374,7 @@ describe('expandSlot candidate pruning', () => {
     const expanded = expandSlot(slot, [], requirements)
     const elapsedMs = performance.now() - start
 
-    expect(expanded.options).toHaveLength(candidates.length) // all 4000 are genuine ties, none dropped
+    expect(expanded.options).toHaveLength(MAX_TIED_ORIGINS) // bounded, not all 4000 ties
     expect(elapsedMs).toBeLessThan(3000)
   })
 })

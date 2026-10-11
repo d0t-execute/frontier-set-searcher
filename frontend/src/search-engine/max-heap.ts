@@ -2,7 +2,7 @@
  * A standard binary max-heap, keyed by a caller-supplied priority function.
  * Used by the search engine's best-first exploration (see `engine.ts`) to
  * always expand the most-promising partial build next, which is what lets
- * it yield results in descending-surplus order without enumerating
+ * it yield results in approximately best-first order without enumerating
  * everything first.
  */
 export class MaxHeap<T> {

@@ -85,13 +85,11 @@ describe('formatResult', () => {
         [1, 15],
         [2, 8],
       ]),
-      surplus: 8,
     }
 
     const text = formatResult(result, 1)
 
     expect(text).toContain('#1')
-    expect(text).toContain('surplus: 8')
     expect(text).toContain('slot-0: item-A [+ deco-3]')
     expect(text).toContain('slot-1: item-B')
     expect(text).toContain('skill 1: 15')
@@ -103,7 +101,6 @@ describe('formatResult', () => {
       picks: new Map([['slot-0', { id: 'item-A', skills: [] }]]),
       decorations: new Map(),
       skillTotals: new Map(),
-      surplus: 0,
     }
 
     const text = formatResult(result, 1)

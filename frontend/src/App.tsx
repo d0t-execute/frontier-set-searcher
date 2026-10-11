@@ -14,9 +14,9 @@ type SearchStatus = 'idle' | 'searching' | 'done' | 'error'
 // manual testing, where an uncapped search rendered 25,000+ result cards and
 // nearly froze the page. Capping at a generous "first page" and stopping the
 // search there (the same cancellation the user's own Cancel button uses)
-// keeps the common case fast without losing anything: surplus-ranked
-// results are already best-first, so the top `MAX_RESULTS` are the most
-// interesting ones regardless.
+// keeps the common case fast without losing anything: results already
+// stream out in approximately best-first order, so the top `MAX_RESULTS`
+// are the most interesting ones regardless.
 const MAX_RESULTS = 20
 
 function App() {

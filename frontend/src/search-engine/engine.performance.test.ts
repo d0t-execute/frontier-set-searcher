@@ -76,10 +76,6 @@ describe('search performance', () => {
     // Generous budget for CI machine variance -- the point isn't a precise
     // number, it's "milliseconds, not tens of seconds."
     expect(elapsedMs).toBeLessThan(2000)
-
-    for (let i = 1; i < results.length; i++) {
-      expect(results[i - 1].surplus).toBeGreaterThanOrEqual(results[i].surplus)
-    }
   })
 
   it('returns the first several results within the sub-5-second target for simultaneous multi-skill requirements', () => {
@@ -96,10 +92,6 @@ describe('search performance', () => {
     // Measured ~1.7s on a dev machine; generous budget for CI variance
     // while still enforcing the plan's actual target.
     expect(elapsedMs).toBeLessThan(5000)
-
-    for (let i = 1; i < results.length; i++) {
-      expect(results[i - 1].surplus).toBeGreaterThanOrEqual(results[i].surplus)
-    }
   })
 
   it('stays within budget at a much larger, decoration-heavy scale with several simultaneous requirements', () => {
@@ -120,9 +112,5 @@ describe('search performance', () => {
     // completed at all before those fixes, so the budget here is generous
     // but still meaningfully enforces "seconds, not minutes."
     expect(elapsedMs).toBeLessThan(5000)
-
-    for (let i = 1; i < results.length; i++) {
-      expect(results[i - 1].surplus).toBeGreaterThanOrEqual(results[i].surplus)
-    }
   })
 })

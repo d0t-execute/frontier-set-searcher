@@ -35,7 +35,6 @@ describe('search', () => {
     expect(results).toHaveLength(1)
     expect(results[0].picks.get('head')?.id).toBe('Leather Helm')
     expect(results[0].skillTotals.get(1)).toBe(5)
-    expect(results[0].surplus).toBe(2)
   })
 
   it('returns nothing when no candidate meets the requirement', () => {
@@ -58,7 +57,6 @@ describe('search', () => {
 
     expect(results).toHaveLength(1)
     expect(results[0].skillTotals.get(1)).toBe(4)
-    expect(results[0].surplus).toBe(1)
   })
 
   it('requires exactly one candidate per slot in the query', () => {
@@ -101,11 +99,11 @@ describe('search', () => {
     expect(results[0].skillTotals.get(99)).toBeUndefined()
   })
 
-  it('prunes a candidate that is strictly dominated by another on every requested skill', () => {
-    // Small Helm's single-skill contribution (3) is strictly worse than Big
-    // Helm's (10) -- Small Helm's build can never outrank Big Helm's, so
-    // it's pruned rather than surfaced as a redundant, strictly-worse
-    // alternative (confirmed project direction).
+  it('excludes a candidate that never reaches the requirement on its own', () => {
+    // Small Helm's single-skill contribution (3) never reaches a requirement
+    // of 5 -- it's excluded as infeasible. (Once two candidates *both* meet
+    // the same requirement, they tie rather than one dominating -- see
+    // "treats two candidates that both meet a requirement as tied" below.)
     const slots: SlotQuery[] = [
       {
         slotId: 'head',
@@ -113,34 +111,26 @@ describe('search', () => {
       },
     ]
 
-    const results = [...search(slots, [{ skillId: 1, minPoints: 3 }])]
+    const results = [...search(slots, [{ skillId: 1, minPoints: 5 }])]
 
     expect(results.map((r) => r.picks.get('head')?.id)).toEqual(['Big Helm'])
-    expect(results.map((r) => r.surplus)).toEqual([7])
   })
 
-  it('ranks multiple non-dominated results by descending surplus', () => {
-    // Neither candidate dominates the other (Balanced Helm is better at
-    // skill 1, Off Helm is better at skill 2), so both survive -- ranked by
-    // their actual combined surplus, not by either skill alone.
+  it('treats two candidates that both meet a requirement as tied, not one dominating', () => {
+    // Confirmed project direction: once a requirement is met, more points in
+    // it don't make a build better. Without this, Big Helm's 10 points would
+    // always outrank Small Helm's 5, even though both equally satisfy a
+    // requirement of 5.
     const slots: SlotQuery[] = [
       {
         slotId: 'head',
-        candidates: [
-          candidate('Balanced Helm', { 1: 10, 2: 1 }),
-          candidate('Off Helm', { 1: 2, 2: 8 }),
-        ],
+        candidates: [candidate('Big Helm', { 1: 10 }), candidate('Small Helm', { 1: 5 })],
       },
     ]
-    const requirements = [
-      { skillId: 1, minPoints: 0 },
-      { skillId: 2, minPoints: 0 },
-    ]
 
-    const results = [...search(slots, requirements)]
+    const results = [...search(slots, [{ skillId: 1, minPoints: 5 }])]
 
-    expect(results.map((r) => r.picks.get('head')?.id)).toEqual(['Balanced Helm', 'Off Helm'])
-    expect(results.map((r) => r.surplus)).toEqual([11, 10])
+    expect(results.map((r) => r.picks.get('head')?.id).sort()).toEqual(['Big Helm', 'Small Helm'])
   })
 
   it('returns one result when the query has no slots and there are no requirements', () => {
@@ -148,7 +138,6 @@ describe('search', () => {
 
     expect(results).toHaveLength(1)
     expect(results[0].picks.size).toBe(0)
-    expect(results[0].surplus).toBe(0)
   })
 
   it('finds every non-dominated valid combination, not just the first', () => {
@@ -179,8 +168,12 @@ describe('search', () => {
     const generator = search(slots, [{ skillId: 1, minPoints: 3 }])
     const first = generator.next()
 
+    // Helm A and Helm B both meet the requirement, so they tie (see "treats
+    // two candidates that both meet a requirement as tied") -- there's no
+    // guaranteed winner to assert on, only that a result streams out lazily,
+    // before the generator is fully drained.
     expect(first.done).toBe(false)
-    expect(first.value.picks.get('head')?.id).toBe('Helm B') // higher surplus first
+    expect(['Helm A', 'Helm B']).toContain(first.value.picks.get('head')?.id)
   })
 })
 
@@ -218,35 +211,37 @@ describe('search with decorations', () => {
     expect(resultsWithIrrelevantDecoration[0].decorations.get('head')).toBeUndefined()
   })
 
-  it('prunes a decoration choice that is strictly dominated by a better one', () => {
-    // Small Jewel's contribution (1) is strictly worse than Big Jewel's (5)
-    // on the only requested skill -- same pruning rule as for candidates.
+  it('excludes a decoration choice that never reaches the requirement on its own', () => {
+    // Small Jewel's contribution (1) never reaches a requirement of 5 --
+    // same infeasibility rule as for candidates.
     const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Bare Helm', {}, 2)] }]
     const bigJewel = deco('Big Jewel', 2, { 1: 5 })
     const smallJewel = deco('Small Jewel', 2, { 1: 1 })
 
-    const results = [...search(slots, [{ skillId: 1, minPoints: 1 }], [bigJewel, smallJewel])]
+    const results = [...search(slots, [{ skillId: 1, minPoints: 5 }], [bigJewel, smallJewel])]
 
     const decorated = results.filter((r) => (r.decorations.get('head')?.length ?? 0) > 0)
     expect(decorated.map((r) => r.decorations.get('head')?.[0].id)).toEqual(['Big Jewel'])
   })
 
-  it('ranks non-dominated decoration choices by the surplus they produce', () => {
+  it('preserves ties between non-dominated decoration choices that both meet requirements', () => {
+    // Attack Jewel overshoots skill 1 and just meets skill 2; Defense Jewel
+    // is the mirror image -- genuinely different choices, but both tie once
+    // capped at the requirements (see pareto.test.ts's equivalent case).
     const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Bare Helm', {}, 2)] }]
     const attackJewel = deco('Attack Jewel', 2, { 1: 5, 2: 1 })
-    const defenseJewel = deco('Defense Jewel', 2, { 1: 1, 2: 4 })
+    const defenseJewel = deco('Defense Jewel', 2, { 1: 1, 2: 1 })
 
     const requirements = [
-      { skillId: 1, minPoints: 0 },
-      { skillId: 2, minPoints: 0 },
+      { skillId: 1, minPoints: 1 },
+      { skillId: 2, minPoints: 1 },
     ]
     const results = [...search(slots, requirements, [attackJewel, defenseJewel])]
 
     const decorated = results.filter((r) => (r.decorations.get('head')?.length ?? 0) > 0)
-    expect(decorated.map((r) => r.decorations.get('head')?.[0].id)).toEqual([
+    expect(decorated.map((r) => r.decorations.get('head')?.[0].id).sort()).toEqual([
       'Attack Jewel',
       'Defense Jewel',
     ])
-    expect(decorated.map((r) => r.surplus)).toEqual([6, 5])
   })
 })

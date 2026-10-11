@@ -24,7 +24,6 @@ const buildResult: BuildResult = {
   picks: new Map(),
   decorations: new Map(),
   skillTotals: new Map(),
-  surplus: 0,
 }
 
 describe('SearchWorkerClient', () => {

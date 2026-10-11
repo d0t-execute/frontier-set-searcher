@@ -15,5 +15,4 @@ export interface NamedBuildResult {
   readonly picks: ReadonlyMap<string, NamedCandidate>
   readonly decorations: ReadonlyMap<string, readonly NamedDecoration[]>
   readonly skillTotals: ReadonlyMap<SkillId, number>
-  readonly surplus: number
 }

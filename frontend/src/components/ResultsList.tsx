@@ -32,8 +32,6 @@ function ResultCard({
 }) {
   return (
     <div>
-      <div className="fw-semibold">Surplus: {result.surplus}</div>
-
       <dl className="row mb-2">
         {[...result.picks.entries()].map(([slotId, candidate]) => (
           <div key={slotId} className="col-12 d-flex gap-1">

@@ -10,6 +10,7 @@
 import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
 import { fillSlots } from './decorations'
+import { cappedVector } from './dominance'
 import { search } from './engine'
 import type { BuildResult, Candidate, Decoration, SkillRequirement, SlotQuery } from './types'
 
@@ -29,15 +30,10 @@ function bruteForceSearch(
       }
       const meetsAll = requirements.every((r) => (totals.get(r.skillId) ?? 0) >= r.minPoints)
       if (meetsAll) {
-        const surplus = requirements.reduce(
-          (sum, r) => sum + ((totals.get(r.skillId) ?? 0) - r.minPoints),
-          0,
-        )
         results.push({
           picks: new Map(picks),
           decorations: new Map(),
           skillTotals: totals,
-          surplus,
         })
       }
       return
@@ -58,12 +54,22 @@ function bruteForceSearch(
 /** search() only ever surfaces non-dominated builds (confirmed project
  * direction, see engine.ts's module docstring) -- the brute-force oracle
  * must be pruned the same way before comparing, independent of which exact
- * picks produced each vector (ties on the same vector are preserved). */
+ * picks produced each vector (ties on the same vector are preserved).
+ * Vectors are capped per requirement (`cappedVector`) to match search()'s
+ * own dominance rule: once a requirement is met, more points in it don't
+ * make a build better (see dominance.ts's module docstring) -- without this,
+ * the oracle would still treat "overshoots a requirement" as strictly better
+ * than "just meets it," which search() no longer does. */
 function pruneDominated(
   results: readonly BuildResult[],
   requirements: readonly SkillRequirement[],
 ): BuildResult[] {
-  const vectors = results.map((r) => requirements.map((req) => r.skillTotals.get(req.skillId) ?? 0))
+  const vectors = results.map((r) =>
+    cappedVector(
+      requirements.map((req) => r.skillTotals.get(req.skillId) ?? 0),
+      requirements,
+    ),
+  )
   return results.filter(
     (_, i) => !vectors.some((v, j) => j !== i && dominatesVector(v, vectors[i])),
   )
@@ -78,16 +84,18 @@ function dominatesVector(a: readonly number[], b: readonly number[]): boolean {
   return !identical
 }
 
-function pickSignature(result: BuildResult, slots: readonly SlotQuery[]): string {
-  return slots
-    .map((s) => {
-      const decoIds = (result.decorations.get(s.slotId) ?? [])
-        .map((d) => d.id)
-        .sort()
-        .join(',')
-      return `${s.slotId}=${result.picks.get(s.slotId)?.id}[${decoIds}]`
-    })
-    .join('|')
+/** A result's capped vector (see `cappedVector`'s docstring), as a
+ * comparable string -- used to compare *which outcomes* search() finds
+ * against the brute-force oracle, not *how many distinct raw ways* (which
+ * picks and decorations) it finds each one via. See `cappedVector`'s
+ * docstring on why capping can make the incremental merge under-count
+ * (never over-count, and never miss a better or admit a worse outcome)
+ * exactly how many tied paths reach a given vector. */
+function vectorSignature(result: BuildResult, requirements: readonly SkillRequirement[]): string {
+  return cappedVector(
+    requirements.map((r) => result.skillTotals.get(r.skillId) ?? 0),
+    requirements,
+  ).join(',')
 }
 
 const skillIdArb = fc.integer({ min: 1, max: 4 })
@@ -112,17 +120,19 @@ const requirementsArb = fc.uniqueArray(
 )
 
 describe('search (property-based)', () => {
-  it('returns exactly the same set of valid combinations as an unpruned brute-force search', () => {
+  it('reaches exactly the same set of distinct outcomes as an unpruned brute-force search', () => {
+    // Compares distinct (capped) vectors reached, not exact pick signatures
+    // or counts -- see `vectorSignature`'s docstring for why capping means
+    // these can no longer be compared tie-for-tie.
     fc.assert(
       fc.property(slotsArb, requirementsArb, (slots, requirements) => {
         const actual = [...search(slots, requirements)]
         const expected = pruneDominated(bruteForceSearch(slots, requirements), requirements)
 
-        const actualSignatures = new Set(actual.map((r) => pickSignature(r, slots)))
-        const expectedSignatures = new Set(expected.map((r) => pickSignature(r, slots)))
+        const actualVectors = new Set(actual.map((r) => vectorSignature(r, requirements)))
+        const expectedVectors = new Set(expected.map((r) => vectorSignature(r, requirements)))
 
-        expect(actualSignatures).toEqual(expectedSignatures)
-        expect(actual).toHaveLength(expected.length)
+        expect(actualVectors).toEqual(expectedVectors)
       }),
     )
   })
@@ -136,18 +146,6 @@ describe('search (property-based)', () => {
           for (const req of requirements) {
             expect(result.skillTotals.get(req.skillId) ?? 0).toBeGreaterThanOrEqual(req.minPoints)
           }
-        }
-      }),
-    )
-  })
-
-  it('always returns results sorted by descending surplus', () => {
-    fc.assert(
-      fc.property(slotsArb, requirementsArb, (slots, requirements) => {
-        const results = [...search(slots, requirements)]
-
-        for (let i = 1; i < results.length; i++) {
-          expect(results[i - 1].surplus).toBeGreaterThanOrEqual(results[i].surplus)
         }
       }),
     )
@@ -182,15 +180,10 @@ function bruteForceSearchWithDecorations(
     if (slotIndex === slots.length) {
       const meetsAll = requirements.every((r) => (totals.get(r.skillId) ?? 0) >= r.minPoints)
       if (meetsAll) {
-        const surplus = requirements.reduce(
-          (sum, r) => sum + ((totals.get(r.skillId) ?? 0) - r.minPoints),
-          0,
-        )
         results.push({
           picks: new Map(picks),
           decorations: new Map(chosenDecorations),
           skillTotals: new Map(totals),
-          surplus,
         })
       }
       return
@@ -257,7 +250,9 @@ const decorationsArb = fc.uniqueArray(
 )
 
 describe('search with decorations (property-based)', () => {
-  it('matches an unpruned brute-force search that also enumerates decoration fillings', () => {
+  it('reaches exactly the same set of distinct outcomes as an unpruned brute-force search', () => {
+    // Compares distinct (capped) vectors, not exact pick-and-decoration
+    // signatures -- see `vectorSignature`'s docstring.
     fc.assert(
       fc.property(
         slotsWithOpenSlotsArb,
@@ -270,10 +265,10 @@ describe('search with decorations (property-based)', () => {
             requirements,
           )
 
-          const actualSignatures = new Set(actual.map((r) => pickSignature(r, slots)))
-          const expectedSignatures = new Set(expected.map((r) => pickSignature(r, slots)))
+          const actualVectors = new Set(actual.map((r) => vectorSignature(r, requirements)))
+          const expectedVectors = new Set(expected.map((r) => vectorSignature(r, requirements)))
 
-          expect(actualSignatures).toEqual(expectedSignatures)
+          expect(actualVectors).toEqual(expectedVectors)
         },
       ),
       { numRuns: 50 }, // decoration enumeration is combinatorially heavier per case

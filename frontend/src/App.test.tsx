@@ -105,7 +105,6 @@ describe('App', () => {
         picks: new Map([['head', { id: 'head:0001', name: 'Leather Helm', skills: [] }]]),
         decorations: new Map(),
         skillTotals: new Map([[1, 15]]),
-        surplus: 5,
       })
       return 'req-1'
     })
@@ -132,7 +131,6 @@ describe('App', () => {
             picks: new Map([['head', { id: `head:${i}`, name: `Helm ${i}`, skills: [] }]]),
             decorations: new Map(),
             skillTotals: new Map([[1, 15]]),
-            surplus: 5,
           })
         }
       })
