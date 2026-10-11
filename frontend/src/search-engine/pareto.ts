@@ -44,7 +44,7 @@
  * trailing that bound) contribution.
  */
 
-import { dominates } from './dominance'
+import { dominates, ParetoFrontier } from './dominance'
 import { applyContribution } from './expand'
 import { LazyList } from './lazy-list'
 import { MaxHeap } from './max-heap'
@@ -61,18 +61,6 @@ export interface FrontierEntry {
    * display in the final result, never used for dominance or ranking. */
   readonly totals: ReadonlyMap<SkillId, number>
   readonly picks: ReadonlyMap<string, ExpandedOption>
-}
-
-function insert(frontier: FrontierEntry[], candidate: FrontierEntry): void {
-  for (const existing of frontier) {
-    if (dominates(existing.vector, candidate.vector)) return // candidate adds nothing
-  }
-  for (let i = frontier.length - 1; i >= 0; i--) {
-    if (dominates(candidate.vector, frontier[i].vector)) {
-      frontier.splice(i, 1)
-    }
-  }
-  frontier.push(candidate)
 }
 
 function vectorOf(
@@ -290,23 +278,26 @@ function* mergeFrontierEntries(
 /** A single slot's own options, Pareto-pruned in isolation (no other slots
  * involved yet) -- see the "reduce before combining" note in the module
  * docstring. Options `outsideBest` proves can never reach a feasible result
- * are dropped before they ever enter the frontier. Sorted descending by
- * scalar score so it can serve directly as a leaf of the lazy merge tree,
- * which requires both sides of a merge to already be in that order. */
+ * are dropped before they ever enter the frontier. Uses `ParetoFrontier` so
+ * options tying on the exact same vector (plausible at real scale -- see
+ * dominance.ts's module docstring) are grouped in O(1) rather than each
+ * re-scanning the whole frontier. Sorted descending by scalar score so it
+ * can serve directly as a leaf of the lazy merge tree, which requires both
+ * sides of a merge to already be in that order. */
 function reduceSlotOptions(
   slot: ExpandedSlot,
   requirements: readonly SkillRequirement[],
   outsideBest: readonly number[],
 ): FrontierEntry[] {
-  const reduced: FrontierEntry[] = []
+  const frontier = new ParetoFrontier<FrontierEntry>()
   for (const option of slot.options) {
     const totals = new Map<SkillId, number>()
     applyContribution(totals, option.skills, 1)
     const vector = vectorOf(totals, requirements)
     if (!isSalvageable(vector, outsideBest, requirements)) continue
-    insert(reduced, { vector, totals, picks: new Map([[slot.slotId, option]]) })
+    frontier.insert(vector, { vector, totals, picks: new Map([[slot.slotId, option]]) })
   }
-  return reduced.sort((x, y) => scalarScore(y.vector) - scalarScore(x.vector))
+  return frontier.toArray().sort((x, y) => scalarScore(y.vector) - scalarScore(x.vector))
 }
 
 export function mergeTotals(
