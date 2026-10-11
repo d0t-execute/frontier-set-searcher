@@ -85,7 +85,7 @@ function App() {
           <section className="mb-3">
             <h2 className="h5">Skills</h2>
             <SkillPicker
-              skills={[...bundle.skillNames.entries()].map(([id, name]) => ({ id, name }))}
+              skills={bundle.skills}
               requirements={requirements}
               onChange={setRequirements}
             />

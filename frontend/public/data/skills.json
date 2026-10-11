@@ -2,971 +2,3698 @@
   {
     "id": 1,
     "name": "Gather",
-    "category": null
+    "category": "Gathering/Transport Skills",
+    "tiers": [
+      {
+        "label": "Gathering+2",
+        "minPoints": 15,
+        "description": "Increases the chance of collecting and excavating from the second time onwards to 31/32."
+      },
+      {
+        "label": "Gathering+1",
+        "minPoints": 10,
+        "description": "Increases the chance of collecting and excavating from the second time onwards to 29/32."
+      },
+      {
+        "label": "Gathering-1",
+        "minPoints": -10,
+        "description": "Increases the chance of collecting and excavating from the second time onwards to 23/32."
+      },
+      {
+        "label": "Gathering-2",
+        "minPoints": -15,
+        "description": "Increases the chance of collecting and excavating from the second time onwards to 19/32."
+      }
+    ]
   },
   {
     "id": 2,
     "name": "Gathering Speed",
-    "category": null
+    "category": "Gathering/Transport Skills",
+    "tiers": [
+      {
+        "label": "High Speed Gathering",
+        "minPoints": 10,
+        "description": "Increases gathering speed."
+      }
+    ]
   },
   {
     "id": 3,
     "name": "Cooking",
-    "category": null
+    "category": "Item/Combo Skills",
+    "tiers": [
+      {
+        "label": "BBQ Master",
+        "minPoints": 15,
+        "description": "Fish and Meat remain Brown (ready) for much longer."
+      },
+      {
+        "label": "BBQ Expert",
+        "minPoints": 10,
+        "description": "Fish and Meat remain Brown (ready) longer."
+      },
+      {
+        "label": "False BBQ Expert",
+        "minPoints": -10,
+        "description": "Fish and Meat remain Brown (ready) for half the time of the usual."
+      }
+    ]
   },
   {
     "id": 4,
     "name": "Attack",
-    "category": null
+    "category": "Attack Skills",
+    "tiers": [
+      {
+        "label": "Attack Up (Absolute)",
+        "minPoints": 80,
+        "description": "Increases True Attack by 50."
+      },
+      {
+        "label": "Attack Up (Very Large)",
+        "minPoints": 50,
+        "description": "Increases True Attack by 30."
+      },
+      {
+        "label": "Attack Up (Large)",
+        "minPoints": 25,
+        "description": "Increases True Attack by 20."
+      },
+      {
+        "label": "Attack Up (Medium)",
+        "minPoints": 15,
+        "description": "Increases True Attack by 10."
+      },
+      {
+        "label": "Attack Up (Small)",
+        "minPoints": 10,
+        "description": "Increases True Attack by 5."
+      }
+    ]
   },
   {
     "id": 5,
     "name": "Psychic",
-    "category": null
+    "category": "Map/Detection Skills",
+    "tiers": [
+      {
+        "label": "Autotracker",
+        "minPoints": 15,
+        "description": "Monster locations and detailed icon are always shown on the map."
+      },
+      {
+        "label": "Detect",
+        "minPoints": 10,
+        "description": "Marked monsters are shown as a detailed icon rather than a round dot on the map."
+      }
+    ]
   },
   {
     "id": 6,
     "name": "Sleep",
-    "category": null
+    "category": "Abnormal Status Skills",
+    "tiers": [
+      {
+        "label": "Negate Sleep",
+        "minPoints": 20,
+        "description": "Immunity to Sleep."
+      },
+      {
+        "label": "Sleep Halved",
+        "minPoints": 10,
+        "description": "Sleep duration is halved."
+      },
+      {
+        "label": "Sleep Doubled",
+        "minPoints": -10,
+        "description": "Sleep duration is doubled."
+      }
+    ]
   },
   {
     "id": 7,
     "name": "Sharpening",
-    "category": null
+    "category": "Blademaster Skills",
+    "tiers": [
+      {
+        "label": "Sharpening Artisan",
+        "minPoints": 20,
+        "description": "Sharpen at 4x original speed, gain 30 seconds of infinite sharpness and Sharpness+1 after sharpening."
+      },
+      {
+        "label": "Speed Sharpening",
+        "minPoints": 10,
+        "description": "Sharpen with a single stroke of a whetstone."
+      },
+      {
+        "label": "Slothful Sharpening",
+        "minPoints": -10,
+        "description": "Sharpening duration is doubled."
+      }
+    ]
   },
   {
     "id": 8,
     "name": "Map",
-    "category": null
+    "category": "Map/Detection Skills",
+    "tiers": [
+      {
+        "label": "Map",
+        "minPoints": 10,
+        "description": "Always display the map."
+      }
+    ]
   },
   {
     "id": 9,
     "name": "Paralysis",
-    "category": null
+    "category": "Abnormal Status Skills",
+    "tiers": [
+      {
+        "label": "Negate Para",
+        "minPoints": 20,
+        "description": "Immunity to Paralysis."
+      },
+      {
+        "label": "Para Halved",
+        "minPoints": 10,
+        "description": "Paralysis duration is halved."
+      },
+      {
+        "label": "Para Doubled",
+        "minPoints": -10,
+        "description": "Paralysis duration is doubled."
+      }
+    ]
   },
   {
     "id": 10,
     "name": "Combining",
-    "category": null
+    "category": "Item/Combo Skills",
+    "tiers": [
+      {
+        "label": "Combining+30%",
+        "minPoints": 20,
+        "description": "Combo Rate +30%"
+      },
+      {
+        "label": "Combination+15%",
+        "minPoints": 15,
+        "description": "Combo Rate +15%"
+      },
+      {
+        "label": "Combination+10%",
+        "minPoints": 10,
+        "description": "Combo Rate +10%"
+      },
+      {
+        "label": "Combination-5%",
+        "minPoints": -10,
+        "description": "Combo Rate -5%"
+      }
+    ]
   },
   {
     "id": 11,
     "name": "Fish",
-    "category": null
+    "category": "Item/Combo Skills",
+    "tiers": [
+      {
+        "label": "Fishing Expert",
+        "minPoints": 10,
+        "description": "Fish always bite on their first attempt."
+      }
+    ]
   },
   {
     "id": 12,
     "name": "Eating",
-    "category": null
+    "category": "Health and Stamina",
+    "tiers": [
+      {
+        "label": "Speed Eating",
+        "minPoints": 10,
+        "description": "Increases the speed of eating consumables such as meat and healing potions."
+      },
+      {
+        "label": "Slow Eating",
+        "minPoints": -10,
+        "description": "Reduces the speed of eating consumables such as meat and healing potions."
+      }
+    ]
   },
   {
     "id": 13,
     "name": "Anti-Theft",
-    "category": null
+    "category": "Other Protection Skills",
+    "tiers": [
+      {
+        "label": "Anti-Theft",
+        "minPoints": 10,
+        "description": "Prevents items being stolen."
+      }
+    ]
   },
   {
     "id": 14,
     "name": "Recovery",
-    "category": null
+    "category": "Health and Stamina",
+    "tiers": [
+      {
+        "label": "Recovery Items Up",
+        "minPoints": 10,
+        "description": "Recovery item effect boosted 1.25x."
+      },
+      {
+        "label": "Recovery Items Down",
+        "minPoints": -10,
+        "description": "Recovery item effect lowered to 0.75x."
+      }
+    ]
   },
   {
     "id": 15,
     "name": "Gluttony",
-    "category": null
+    "category": "Health and Stamina",
+    "tiers": [
+      {
+        "label": "Scavenger",
+        "minPoints": 15,
+        "description": "Using consumables restores 25 maximum stamina."
+      },
+      {
+        "label": "Gourmand",
+        "minPoints": 10,
+        "description": "Stamina recovery when eating meat is increased by 25."
+      }
+    ]
   },
   {
     "id": 16,
     "name": "Stun",
-    "category": null
+    "category": "Abnormal Status Skills",
+    "tiers": [
+      {
+        "label": "Negate Stun",
+        "minPoints": 20,
+        "description": "Immunity to Stun."
+      },
+      {
+        "label": "Stun Halved",
+        "minPoints": 10,
+        "description": "Stun duration is halved."
+      },
+      {
+        "label": "Stun Doubled",
+        "minPoints": -10,
+        "description": "Stun duration is doubled."
+      }
+    ]
   },
   {
     "id": 17,
     "name": "Stamina",
-    "category": null
+    "category": "Health and Stamina",
+    "tiers": [
+      {
+        "label": "Peerless",
+        "minPoints": 20,
+        "description": "Stamina decrease rate is halved (decrease is reduced to 8 units).In addition, the reduction of stamina when evading or guarding is reduced to 50%."
+      },
+      {
+        "label": "Marathon Runner",
+        "minPoints": 10,
+        "description": "Stamina decrease rate is halved (decrease is reduced to 8 units).In addition, the reduction of stamina when evading or guarding is reduced to 75%."
+      },
+      {
+        "label": "Short Sprinter",
+        "minPoints": -10,
+        "description": "Stamina depletion speed is increased by 1.2 times (up to 18 units)."
+      }
+    ]
   },
   {
     "id": 18,
     "name": "Poison",
-    "category": null
+    "category": "Abnormal Status Skills",
+    "tiers": [
+      {
+        "label": "Negate Poison",
+        "minPoints": 20,
+        "description": "Immunity to Poison."
+      },
+      {
+        "label": "Poison Halved",
+        "minPoints": 10,
+        "description": "Poison duration is halved."
+      },
+      {
+        "label": "Double Poison",
+        "minPoints": -10,
+        "description": "Poison duration is doubled."
+      }
+    ]
   },
   {
     "id": 19,
     "name": "Wind Pressure",
-    "category": null
+    "category": "Other Protection Skills",
+    "tiers": [
+      {
+        "label": "Violent Wind Breaker",
+        "minPoints": 30,
+        "description": "Protects against Violent Wind."
+      },
+      {
+        "label": "Dragon Wind Breaker",
+        "minPoints": 20,
+        "description": "Protects against Dragon Wind."
+      },
+      {
+        "label": "Wind Res (Large)",
+        "minPoints": 15,
+        "description": "Protects against Large Wind."
+      },
+      {
+        "label": "Wind Res (Small)",
+        "minPoints": 10,
+        "description": "Protects against Small Wind."
+      }
+    ]
   },
   {
     "id": 20,
     "name": "Normal Shot Add",
-    "category": null
+    "category": "Gunner Skills",
+    "tiers": [
+      {
+        "label": "Normal S All",
+        "minPoints": 15,
+        "description": "Grants the ability to use all Normal S ammo."
+      },
+      {
+        "label": "Normal S Lv1",
+        "minPoints": 10,
+        "description": "Lv1 Normal bullets can be used."
+      }
+    ]
   },
   {
     "id": 21,
     "name": "Reload",
-    "category": null
+    "category": "Gunner Skills",
+    "tiers": [
+      {
+        "label": "Reload Speed+3",
+        "minPoints": 20,
+        "description": "Bowguns: Reload Speed increases by 3 levels.Bows: Coatings are automatically loaded when they are selected."
+      },
+      {
+        "label": "Reload Speed+2",
+        "minPoints": 15,
+        "description": "Bowguns: Reload Speed increases by 2 levels.Bows: Coating loading time is 75% of default time."
+      },
+      {
+        "label": "Reload Speed+1",
+        "minPoints": 10,
+        "description": "Bowguns: Reload Speed increases by 1 level.Bows: Coating loading time is 85% of default time."
+      },
+      {
+        "label": "Reload Speed-1",
+        "minPoints": -10,
+        "description": "Bowguns: Reload Speed decreases by 1 level.Bows: Coating loading time is 110% of default time."
+      }
+    ]
   },
   {
     "id": 22,
     "name": "Hearing Protection",
-    "category": null
+    "category": "Other Protection Skills",
+    "tiers": [
+      {
+        "label": "Super HG Earplugs",
+        "minPoints": 25,
+        "description": "Protects against all Monster roars."
+      },
+      {
+        "label": "High-Grade Earplugs",
+        "minPoints": 15,
+        "description": "Protects against second tier monster roars."
+      },
+      {
+        "label": "Earplugs",
+        "minPoints": 10,
+        "description": "Protects against first tier monster roars.Lowers the length of the flinching duration for second tier roars that aren't blocked."
+      }
+    ]
   },
   {
     "id": 23,
     "name": "Evasion",
-    "category": null
+    "category": "Other Protection Skills",
+    "tiers": [
+      {
+        "label": "Evasion+2",
+        "minPoints": 20,
+        "description": "Evasion invulnerability is increased to 12/30 seconds."
+      },
+      {
+        "label": "Evasion+1",
+        "minPoints": 10,
+        "description": "Evasion invulnerability is increased to 10/30 seconds."
+      }
+    ]
   },
   {
     "id": 24,
     "name": "Guard",
-    "category": null
+    "category": "Defensive Skills",
+    "tiers": [
+      {
+        "label": "Guard+2",
+        "minPoints": 20,
+        "description": "Maximum blocking damage reduction. Further decreases knock-back and stamina consumption for blocking.Allows for blocking of some previously unblockable attacks.Increases Lance's shield aura hit limit to 6."
+      },
+      {
+        "label": "Guard+1",
+        "minPoints": 10,
+        "description": "Increases blocking damage reduction.Decreases knock-back and stamina consumption forblocking.Increases Lance's shield aura hit limit to 4."
+      },
+      {
+        "label": "Guard-1",
+        "minPoints": -10,
+        "description": "Increases damage taken, knockback and stamina consumption while blocking."
+      },
+      {
+        "label": "Guard-2",
+        "minPoints": -15,
+        "description": "Greatly Increases damage taken, knockback and stamina consumption while blocking."
+      }
+    ]
   },
   {
     "id": 25,
     "name": "Defense",
-    "category": null
+    "category": "Defensive Skills",
+    "tiers": [
+      {
+        "label": "Defense+120",
+        "minPoints": 45,
+        "description": "Increases defense by 120"
+      },
+      {
+        "label": "Defense+90",
+        "minPoints": 35,
+        "description": "Increases defense by 90"
+      },
+      {
+        "label": "Defense+60",
+        "minPoints": 25,
+        "description": "Increases defense by 60"
+      },
+      {
+        "label": "Defense+30",
+        "minPoints": 15,
+        "description": "Increases defense by 30"
+      },
+      {
+        "label": "Defense+20",
+        "minPoints": 10,
+        "description": "Increases defense by 20"
+      },
+      {
+        "label": "Defense-20",
+        "minPoints": -10,
+        "description": "Decrease defense by 20"
+      },
+      {
+        "label": "Defense-30",
+        "minPoints": -15,
+        "description": "Decrease defense by 30"
+      },
+      {
+        "label": "Defense-40",
+        "minPoints": -20,
+        "description": "Decrease defense by 40"
+      }
+    ]
   },
   {
     "id": 26,
     "name": "Crag Shot Add",
-    "category": null
+    "category": "Gunner Skills",
+    "tiers": [
+      {
+        "label": "Crag S All",
+        "minPoints": 20,
+        "description": "Grants the ability to use all Crag S ammo."
+      },
+      {
+        "label": "Crag S Lv1&Lv2 Add",
+        "minPoints": 15,
+        "description": "Crag S Lv1&2 bullets can be used."
+      },
+      {
+        "label": "Crag S Lv1 Add",
+        "minPoints": 10,
+        "description": "Crag S Lv1 bullets can be used."
+      }
+    ]
   },
   {
     "id": 27,
     "name": "Health",
-    "category": null
+    "category": "Health and Stamina",
+    "tiers": [
+      {
+        "label": "Health+50",
+        "minPoints": 40,
+        "description": "Maximum Health +50"
+      },
+      {
+        "label": "Health+40",
+        "minPoints": 30,
+        "description": "Maximum Health +40"
+      },
+      {
+        "label": "Health+30",
+        "minPoints": 20,
+        "description": "Maximum Health +30"
+      },
+      {
+        "label": "Health+20",
+        "minPoints": 15,
+        "description": "Maximum Health +20"
+      },
+      {
+        "label": "Health+10",
+        "minPoints": 10,
+        "description": "Maximum Health +10"
+      },
+      {
+        "label": "Health-10",
+        "minPoints": -10,
+        "description": "Maximum Health -10"
+      },
+      {
+        "label": "Health-20",
+        "minPoints": -15,
+        "description": "Maximum Health -20"
+      },
+      {
+        "label": "Health-30",
+        "minPoints": -20,
+        "description": "Maximum Health -30"
+      }
+    ]
   },
   {
     "id": 28,
     "name": "Deoderant",
-    "category": null
+    "category": "Abnormal Status Skills",
+    "tiers": [
+      {
+        "label": "Deoderant",
+        "minPoints": 10,
+        "description": "Prevents Stench"
+      }
+    ]
   },
   {
     "id": 29,
     "name": "Heat Res",
-    "category": null
+    "category": "Other Protection Skills",
+    "tiers": [
+      {
+        "label": "Summer Person",
+        "minPoints": 25,
+        "description": "Heat Cancel and Damage Recovery Speed+1 in Hot areas."
+      },
+      {
+        "label": "Heat Cancel",
+        "minPoints": 15,
+        "description": "Grants immunity to heat (Health loss in Hot areas)."
+      },
+      {
+        "label": "Heat Halved",
+        "minPoints": 10,
+        "description": "The speed at which Health is lost in Hot areas is halved."
+      },
+      {
+        "label": "Heat Surge (Small)",
+        "minPoints": -10,
+        "description": "Health loss is increased to 1 unit per 1.3 seconds in the Volcano and 1 unit per 2 seconds in the Desert."
+      },
+      {
+        "label": "Heat Surge (Large)",
+        "minPoints": -20,
+        "description": "Health loss is increased to 1 unit per 1 second in the Volcano and 1 unit per 1.5 seconds in the Desert."
+      }
+    ]
   },
   {
     "id": 30,
     "name": "Backpacking",
-    "category": null
+    "category": "Gathering/Transport Skills",
+    "tiers": [
+      {
+        "label": "Pro Transporter",
+        "minPoints": 10,
+        "description": "Increases speed when carrying heavy items such as eggs, powderstone, soothstone, etc.Also be able to fall slightly higher altitudes without dropping the item."
+      }
+    ]
   },
   {
     "id": 31,
     "name": "Cold Res",
-    "category": null
+    "category": "Other Protection Skills",
+    "tiers": [
+      {
+        "label": "Winter General",
+        "minPoints": 25,
+        "description": "Cold Cancel, Frost bite Immunity and Marathon Runner effect while in cold areas."
+      },
+      {
+        "label": "Cold Cancel",
+        "minPoints": 15,
+        "description": "Grants immunity to cold (faster stamina loss)."
+      },
+      {
+        "label": "Cold Halved",
+        "minPoints": 10,
+        "description": "The speed at which stamina is lost (hunger) in Cold areas is halved."
+      },
+      {
+        "label": "Cold Surge (Small)",
+        "minPoints": -10,
+        "description": "The speed at which stamina is lost in Cold areas is increased x1.5."
+      },
+      {
+        "label": "Cold Surge (Large)",
+        "minPoints": -20,
+        "description": "The speed at which stamina is lost in Cold areas is increased x2."
+      }
+    ]
   },
   {
     "id": 32,
     "name": "Terrain",
-    "category": null
+    "category": "Other Protection Skills",
+    "tiers": [
+      {
+        "label": "Hazard Res (Large)",
+        "minPoints": 15,
+        "description": "Health Loss from Terrain Damage (Lava) and Heat Auras is reduced to 1/3 speed."
+      },
+      {
+        "label": "Hazard Res (Small)",
+        "minPoints": 10,
+        "description": "Health Loss from Terrain Damage (Lava) and Heat Auras is reduced to 2/3 speed."
+      },
+      {
+        "label": "Hazard Prone (Small)",
+        "minPoints": -10,
+        "description": "Health Loss from Terrain Damage (Lava) and Heat Auras is increased to x1.5 speed."
+      },
+      {
+        "label": "Hazard Prone (Large)",
+        "minPoints": -15,
+        "description": "Health Loss from Terrain Damage (Lava) and Heat Auras is increased to x2 speed."
+      }
+    ]
   },
   {
     "id": 33,
     "name": "Recovery Speed",
-    "category": null
+    "category": "Health and Stamina",
+    "tiers": [
+      {
+        "label": "Recovery Speed+2",
+        "minPoints": 20,
+        "description": "4x Health Recovery Speed"
+      },
+      {
+        "label": "Recovery Speed+1",
+        "minPoints": 10,
+        "description": "3x Health Recovery Speed"
+      },
+      {
+        "label": "Recovery Speed-1",
+        "minPoints": -10,
+        "description": "3x Slower Health Recovery Speed"
+      },
+      {
+        "label": "Recovery Speed-2",
+        "minPoints": -20,
+        "description": "4x Slower Health Recovery Speed"
+      }
+    ]
   },
   {
     "id": 34,
     "name": "Stealth",
-    "category": null
+    "category": "Map/Detection Skills",
+    "tiers": [
+      {
+        "label": "Sneak",
+        "minPoints": 10,
+        "description": "Monsters are less likely to target you."
+      },
+      {
+        "label": "Taunt",
+        "minPoints": -10,
+        "description": "Monsters are more likely to target you."
+      }
+    ]
   },
   {
     "id": 35,
     "name": "Ice Res",
-    "category": null
+    "category": "Resistance Skills",
+    "tiers": [
+      {
+        "label": "Ice Res+30",
+        "minPoints": 20,
+        "description": "Ice res values increase by 30."
+      },
+      {
+        "label": "Ice Res+20",
+        "minPoints": 15,
+        "description": "Ice res values increase by 20."
+      },
+      {
+        "label": "Ice Res+10",
+        "minPoints": 10,
+        "description": "Ice res values increase by 10."
+      },
+      {
+        "label": "Ice Res-10",
+        "minPoints": -10,
+        "description": "Ice res values decrease by 10."
+      },
+      {
+        "label": "Ice Res-20",
+        "minPoints": -15,
+        "description": "Ice res values decrease by 20."
+      },
+      {
+        "label": "Ice Res-30",
+        "minPoints": -20,
+        "description": "Ice res values decrease by 30."
+      }
+    ]
   },
   {
     "id": 36,
     "name": "Pierce Shot Add",
-    "category": null
+    "category": "Gunner Skills",
+    "tiers": [
+      {
+        "label": "Pierce S All",
+        "minPoints": 20,
+        "description": "Grants the ability to use all Pierce S ammo."
+      },
+      {
+        "label": "Pierce S Lv1&2 Add",
+        "minPoints": 15,
+        "description": "Pierce S Lv1&2 bullets can be used."
+      },
+      {
+        "label": "Pierce S Lv1 Add",
+        "minPoints": 10,
+        "description": "Pierce S Lv1 bullets can be used."
+      }
+    ]
   },
   {
     "id": 37,
     "name": "Alchemy",
-    "category": null
+    "category": "Item/Combo Skills",
+    "tiers": [
+      {
+        "label": "Alchemy",
+        "minPoints": 10,
+        "description": "Grants Alchemy Combinations (alternative item combinations)."
+      }
+    ]
   },
   {
     "id": 38,
     "name": "Dragon Res",
-    "category": null
+    "category": "Resistance Skills",
+    "tiers": [
+      {
+        "label": "Dragon Res+30",
+        "minPoints": 20,
+        "description": "Dragon res values increase by 30."
+      },
+      {
+        "label": "Dragon Res+20",
+        "minPoints": 15,
+        "description": "Dragon res values increase by 20."
+      },
+      {
+        "label": "Dragon Res+10",
+        "minPoints": 10,
+        "description": "Dragon res values increase by 10."
+      },
+      {
+        "label": "Dragon Res-10",
+        "minPoints": -10,
+        "description": "Dragon res values decrease by 10."
+      },
+      {
+        "label": "Dragon Res-20",
+        "minPoints": -15,
+        "description": "Dragon res values decrease by 20."
+      },
+      {
+        "label": "Dragon Res-30",
+        "minPoints": -20,
+        "description": "Dragon res values decrease by 30."
+      }
+    ]
   },
   {
     "id": 39,
     "name": "Loading",
-    "category": null
+    "category": "Gunner Skills",
+    "tiers": [
+      {
+        "label": "Loading Up",
+        "minPoints": 10,
+        "description": "+1 capacity for Bowgun and Gunlance ammo. Extra charge level for Bows."
+      }
+    ]
   },
   {
     "id": 40,
     "name": "Wide-Area",
-    "category": null
+    "category": "Item/Combo Skills",
+    "tiers": [
+      {
+        "label": "Wide-Area+3",
+        "minPoints": 30,
+        "description": "Mega Potions, Blight Cure Fruits, Zenith Espinas Anti-Venom and Violent Ravi Blood affect allies in the same areaas well as the items covered in Wide-Area+2."
+      },
+      {
+        "label": "Wide-Area+2",
+        "minPoints": 20,
+        "description": "Herbs, Potions, Antidotes, Cool Drinks, Hot Drinks, Armor Seed and Power Seed affects allies in the same area."
+      },
+      {
+        "label": "Wide-Area+1",
+        "minPoints": 10,
+        "description": "Herbs, Potions, Antidotes, Cool Drinks, Hot Drinks, Armor Seed and Power Seed affects allies in the same areawith 50% effectiveness."
+      },
+      {
+        "label": "Wide-Area-1",
+        "minPoints": -10,
+        "description": "The Player cannot be healed through Wide-Range Recovery."
+      }
+    ]
   },
   {
     "id": 41,
     "name": "Expert",
-    "category": null
+    "category": "Attack Skills",
+    "tiers": [
+      {
+        "label": "Critical Eye+5",
+        "minPoints": 50,
+        "description": "Affinity +50%"
+      },
+      {
+        "label": "Critical Eye+4",
+        "minPoints": 35,
+        "description": "Affinity +40%"
+      },
+      {
+        "label": "Critical Eye+3",
+        "minPoints": 20,
+        "description": "Affinity +30%"
+      },
+      {
+        "label": "Critical Eye+2",
+        "minPoints": 15,
+        "description": "Affinity +20%"
+      },
+      {
+        "label": "Critical Eye+1",
+        "minPoints": 10,
+        "description": "Affinity +10%"
+      }
+    ]
   },
   {
     "id": 42,
     "name": "Vocal Chords",
-    "category": null
+    "category": "Abnormal Status Skills",
+    "tiers": [
+      {
+        "label": "Vocal Chord Immunity",
+        "minPoints": 15,
+        "description": "Grants immunity to Chat Disable and Fatigue. Exclusive to Chameleos."
+      },
+      {
+        "label": "Vocal Chord Halved",
+        "minPoints": 10,
+        "description": "Halves Chat Disable and Fatigue duration."
+      }
+    ]
   },
   {
     "id": 43,
     "name": "All Res Up",
-    "category": null
+    "category": "Resistance Skills",
+    "tiers": [
+      {
+        "label": "All Res+20",
+        "minPoints": 20,
+        "description": "All resistance values increase by 20."
+      },
+      {
+        "label": "All Res Up+10",
+        "minPoints": 15,
+        "description": "All resistance values increase by 10."
+      },
+      {
+        "label": "All Res Up+5",
+        "minPoints": 10,
+        "description": "All resistance values increase by 5."
+      },
+      {
+        "label": "All Res-5",
+        "minPoints": -10,
+        "description": "All resistance values decrease by 5."
+      },
+      {
+        "label": "All Res-10",
+        "minPoints": -15,
+        "description": "All resistance values decrease by 10."
+      },
+      {
+        "label": "All Res-20",
+        "minPoints": -20,
+        "description": "All resistance values decrease by 20."
+      }
+    ]
   },
   {
     "id": 44,
     "name": "Fire Res",
-    "category": null
+    "category": "Resistance Skills",
+    "tiers": [
+      {
+        "label": "Fire Res+30",
+        "minPoints": 20,
+        "description": "Fire res values increase by 30."
+      },
+      {
+        "label": "Fire Res+20",
+        "minPoints": 15,
+        "description": "Fire res values increase by 20."
+      },
+      {
+        "label": "Fire Res+10",
+        "minPoints": 10,
+        "description": "Fire res values increase by 10."
+      },
+      {
+        "label": "Fire Res-10",
+        "minPoints": -10,
+        "description": "Fire res values decrease by 10."
+      },
+      {
+        "label": "Fire Res-20",
+        "minPoints": -15,
+        "description": "Fire res values decrease by 20."
+      },
+      {
+        "label": "Fire Res-30",
+        "minPoints": -20,
+        "description": "Fire res values decrease by 30."
+      }
+    ]
   },
   {
     "id": 45,
     "name": "Fate",
-    "category": null
+    "category": "Reward Skills",
+    "tiers": [
+      {
+        "label": "Great Luck",
+        "minPoints": 20,
+        "description": "Greatly increases chance for standard quest rewards. 29/32."
+      },
+      {
+        "label": "Good Luck",
+        "minPoints": 10,
+        "description": "Increases chance for standard quest rewards 26/32."
+      },
+      {
+        "label": "Bad Luck",
+        "minPoints": -10,
+        "description": "Decreases chance for standard quest rewards 16/32."
+      },
+      {
+        "label": "Horrible Luck",
+        "minPoints": -20,
+        "description": "Greatly Decreases chance for standard quest rewards. 8/32."
+      }
+    ]
   },
   {
     "id": 46,
     "name": "Adrenaline",
-    "category": null
+    "category": "Attack Skills",
+    "tiers": []
   },
   {
     "id": 47,
     "name": "Pierce Shot Up",
-    "category": null
+    "category": "Gunner Skills",
+    "tiers": [
+      {
+        "label": "Pierce/Pierce Up",
+        "minPoints": 10,
+        "description": "Pierce Shots and Pierce Bow Arrows do x1.1 damage."
+      }
+    ]
   },
   {
     "id": 48,
     "name": "Everlasting",
-    "category": null
+    "category": "Item/Combo Skills",
+    "tiers": [
+      {
+        "label": "Item Duration Up",
+        "minPoints": 10,
+        "description": "Item effect duration is increased to x1.5."
+      },
+      {
+        "label": "Item Duration Down",
+        "minPoints": -10,
+        "description": "Item effect duration is decreased x0.67."
+      }
+    ]
   },
   {
     "id": 49,
     "name": "Cluster Shot Add",
-    "category": null
+    "category": "Gunner Skills",
+    "tiers": [
+      {
+        "label": "Cluster S All",
+        "minPoints": 20,
+        "description": "Grants the ability to use all Cluster S ammo."
+      },
+      {
+        "label": "Cluster S Lv1&Lv2 Add",
+        "minPoints": 15,
+        "description": "Cluster S Lv1&2 bullets can be used."
+      },
+      {
+        "label": "Cluster S Lv1 Add",
+        "minPoints": 10,
+        "description": "Cluster S Lv1 bullets can be used."
+      }
+    ]
   },
   {
     "id": 50,
     "name": "Carving",
-    "category": null
+    "category": "Gathering/Transport Skills",
+    "tiers": [
+      {
+        "label": "Carving Expert",
+        "minPoints": 15,
+        "description": "Number of carves increased by 1."
+      }
+    ]
   },
   {
     "id": 51,
     "name": "Protection",
-    "category": null
+    "category": "Other Protection Skills",
+    "tiers": [
+      {
+        "label": "Goddess' Embrace",
+        "minPoints": 20,
+        "description": "1/4 chance to receive 0 damage from any attack."
+      },
+      {
+        "label": "Divine Protection",
+        "minPoints": 10,
+        "description": "1/8 chance to receive 0 damage from any attack."
+      },
+      {
+        "label": "Demonic Protection",
+        "minPoints": -10,
+        "description": "1/16 chance to die instantly from any attack."
+      },
+      {
+        "label": "Death God's Embrace",
+        "minPoints": -20,
+        "description": "1/8 chance to die instantly from any attack."
+      }
+    ]
   },
   {
     "id": 52,
     "name": "Bomb Boost",
-    "category": null
+    "category": "Attack Skills",
+    "tiers": [
+      {
+        "label": "Bomber",
+        "minPoints": 10,
+        "description": "Bomb Strength 1.5x, Bombs Combination Rate 100%, Blast Element Damage increased."
+      }
+    ]
   },
   {
     "id": 53,
     "name": "Status Attack",
-    "category": null
+    "category": "Attack Skills",
+    "tiers": [
+      {
+        "label": "Status Attack Up",
+        "minPoints": 10,
+        "description": "Poison, Paralysis and Sleep multiplied by 1.125x."
+      }
+    ]
   },
   {
     "id": 54,
     "name": "Monster",
-    "category": null
+    "category": "Reward Skills",
+    "tiers": [
+      {
+        "label": "Come on Big Guy!",
+        "minPoints": 10,
+        "description": "Increases the chances of larger boss monster spawns?"
+      }
+    ]
   },
   {
     "id": 55,
     "name": "Gunnery",
-    "category": null
+    "category": "Attack Skills",
+    "tiers": [
+      {
+        "label": "Artillery God",
+        "minPoints": 35,
+        "description": "GunneryArtillery ExpertArtillery GodBallistaDamage x1.1Damage x1.2Damage x1.3GunlanceShelling Raw Attribute x1.1Wyvern Fire Raw Attribute x1.2Shelling Raw Attribute x1.2Wyvern Fire Raw Attribute x1.3Shelling Raw Attribute x1.3Wyvern Fire Raw Attribute x1.4BowgunsCrag/Clust S Raw Attribute x1.5HBG Fire Beam damage x1.1Crag/Clust S Raw Attribute x1.5HBG Fire Beam damage x1.2Crag/Clust S Raw Attribute x1.5HBG Fire Beam damage x1.3TonfaRyuuki Detonation damage x1.25Ryuuki Detonation damage x1.4Ryuuki Detonation damage x1.6"
+      },
+      {
+        "label": "Artillery Expert",
+        "minPoints": 20,
+        "description": ""
+      },
+      {
+        "label": "Gunnery",
+        "minPoints": 10,
+        "description": ""
+      }
+    ]
   },
   {
     "id": 56,
     "name": "Water Res",
-    "category": null
+    "category": "Resistance Skills",
+    "tiers": [
+      {
+        "label": "Water Res+30",
+        "minPoints": 20,
+        "description": "Water res values increase by 30."
+      },
+      {
+        "label": "Water Res+20",
+        "minPoints": 15,
+        "description": "Water res values increase by 20."
+      },
+      {
+        "label": "Water Res+10",
+        "minPoints": 10,
+        "description": "Water res values increase by 10."
+      },
+      {
+        "label": "Water Res-10",
+        "minPoints": -10,
+        "description": "Water res values decrease by 10."
+      },
+      {
+        "label": "Water Res-20",
+        "minPoints": -15,
+        "description": "Water res values decrease by 20."
+      },
+      {
+        "label": "Water Res-30",
+        "minPoints": -20,
+        "description": "Water res values decrease by 30."
+      }
+    ]
   },
   {
     "id": 57,
     "name": "Thunder Res",
-    "category": null
+    "category": "Resistance Skills",
+    "tiers": [
+      {
+        "label": "Thunder Res+30",
+        "minPoints": 20,
+        "description": "Thunder res values increase by 30."
+      },
+      {
+        "label": "Thunder Res+20",
+        "minPoints": 15,
+        "description": "Thunder res values increase by 20."
+      },
+      {
+        "label": "Thunder Res+10",
+        "minPoints": 10,
+        "description": "Thunder res values increase by 10."
+      },
+      {
+        "label": "Thunder Res-10",
+        "minPoints": -10,
+        "description": "Thunder res values decrease by 10."
+      },
+      {
+        "label": "Thunder Res-20",
+        "minPoints": -15,
+        "description": "Thunder res values decrease by 20."
+      },
+      {
+        "label": "Thunder Res-30",
+        "minPoints": -20,
+        "description": "Thunder res values decrease by 30."
+      }
+    ]
   },
   {
     "id": 58,
     "name": "Precision",
-    "category": null
+    "category": "Gunner Skills",
+    "tiers": [
+      {
+        "label": "Precision+2",
+        "minPoints": 20,
+        "description": "Shot deviation (bullet drift) is decreased. and adds +5 to a bodypart's weakness (i.e. 35>40)when shooting with Normal/Pierce/Crag Shot or Bow Attacks within Critical Distance."
+      },
+      {
+        "label": "Deviation Down",
+        "minPoints": 10,
+        "description": "Shot deviation (bullet drift) is decreased."
+      },
+      {
+        "label": "Deviation Up",
+        "minPoints": -10,
+        "description": "Shot deviation (bullet drift) is increased."
+      }
+    ]
   },
   {
     "id": 59,
     "name": "Artisan",
-    "category": null
+    "category": "Blademaster Skills",
+    "tiers": [
+      {
+        "label": "Sharpness+1",
+        "minPoints": 10,
+        "description": "Maximum weapon sharpness increased by +1 level if possible."
+      }
+    ]
   },
   {
     "id": 60,
     "name": "Auto-Reload",
-    "category": null
+    "category": "Gunner Skills",
+    "tiers": [
+      {
+        "label": "Auto-Reload",
+        "minPoints": 10,
+        "description": "Bowguns: Can shoot without having to reload but receive high recoil for all shots.Bows: Charging time is reduced to 85% of the default speed."
+      }
+    ]
   },
   {
     "id": 61,
     "name": "Hunger",
-    "category": null
+    "category": "Health and Stamina",
+    "tiers": [
+      {
+        "label": "Hunger Negated",
+        "minPoints": 15,
+        "description": "Stamina bar length does not decrease in length over time."
+      },
+      {
+        "label": "Hunger Halved",
+        "minPoints": 10,
+        "description": "Stamina bar length decreases at 0.5x the speed over time."
+      },
+      {
+        "label": "Hunger Up (Sm)",
+        "minPoints": -10,
+        "description": "Stamina bar length decreases at 1.5x the speed over time."
+      },
+      {
+        "label": "Hunger Up (Lg)",
+        "minPoints": -15,
+        "description": "Stamina bar length decreases at 2.0x the speed over time."
+      }
+    ]
   },
   {
     "id": 62,
     "name": "Sharpness",
-    "category": null
+    "category": "Blademaster Skills",
+    "tiers": [
+      {
+        "label": "Razor Sharp+2",
+        "minPoints": 20,
+        "description": "Sharpness loss is halved where applicable50% chance of any sharpness loss being completely negated."
+      },
+      {
+        "label": "Razor Sharp+1",
+        "minPoints": 10,
+        "description": "Sharpness loss is halved where applicable."
+      },
+      {
+        "label": "Blunt Edge",
+        "minPoints": -10,
+        "description": "Sharpness loss is doubled."
+      }
+    ]
   },
   {
     "id": 63,
     "name": "Throwing",
-    "category": null
+    "category": "Item/Combo Skills",
+    "tiers": [
+      {
+        "label": "Throwing Distance Up",
+        "minPoints": 10,
+        "description": "Throwing Distance of Throwing Items is increased and the probability of losing Boomerangs is decreased to 1/8."
+      }
+    ]
   },
   {
     "id": 64,
     "name": "Pellet Shot Up",
-    "category": null
+    "category": "Gunner Skills",
+    "tiers": [
+      {
+        "label": "Pellet/Spread Up",
+        "minPoints": 10,
+        "description": "Pellet Shots and Scatter Bow Arrows do x1.3 damage."
+      }
+    ]
   },
   {
     "id": 65,
     "name": "Snowball Res",
-    "category": null
+    "category": "Abnormal Status Skills",
+    "tiers": [
+      {
+        "label": "Snowball Res",
+        "minPoints": 10,
+        "description": "Grants immunity to Snowman."
+      }
+    ]
   },
   {
     "id": 66,
     "name": "Pellet Shot Add",
-    "category": null
+    "category": "Gunner Skills",
+    "tiers": [
+      {
+        "label": "Pierce S All",
+        "minPoints": 20,
+        "description": "Grants the ability to use all Pellet S ammo."
+      },
+      {
+        "label": "Pellet S LV1&2 Add",
+        "minPoints": 15,
+        "description": "Pellet S Lv1&2 bullets can be used."
+      },
+      {
+        "label": "Pellet S LV1 Add",
+        "minPoints": 10,
+        "description": "Pellet S Lv1 bullets can be used."
+      }
+    ]
   },
   {
     "id": 67,
     "name": "Recoil",
-    "category": null
+    "category": "Gunner Skills",
+    "tiers": [
+      {
+        "label": "Recoil Reduction+3",
+        "minPoints": 30,
+        "description": "Bowguns: Recoil is reduced by 6 levels.Gunlance: Can evade after Shelling and Recoil from Wyvern Fire is reduced by 30 frames."
+      },
+      {
+        "label": "Recoil Reduction+2",
+        "minPoints": 15,
+        "description": "Bowguns: Recoil is reduced by 4 levels.Gunlance: Can evade after Shelling and Recoil from Wyvern Fire is reduced by 30 frames."
+      },
+      {
+        "label": "Recoil Reduction+1",
+        "minPoints": 10,
+        "description": "Bowguns: Recoil is reduced by 2 levels.Gunlance: Can evade after Shelling."
+      }
+    ]
   },
   {
     "id": 68,
     "name": "Quake Res",
-    "category": null
+    "category": "Other Protection Skills",
+    "tiers": [
+      {
+        "label": "Quake Res+2",
+        "minPoints": 25,
+        "description": "Protects against large quakes."
+      },
+      {
+        "label": "Quake Res+1",
+        "minPoints": 15,
+        "description": "Protects against small quakes."
+      }
+    ]
   },
   {
     "id": 69,
     "name": "Normal Shot Up",
-    "category": null
+    "category": "Gunner Skills",
+    "tiers": [
+      {
+        "label": "Normal/Rapid Up",
+        "minPoints": 10,
+        "description": "Normal S and Rapid Bow Arrows do x1.1 damage."
+      }
+    ]
   },
   {
     "id": 70,
     "name": "Ammo Combiner",
-    "category": null
+    "category": "Gunner Skills",
+    "tiers": [
+      {
+        "label": "Maximum Bullets",
+        "minPoints": 10,
+        "description": "When combining bullets or coatings you will always get the maximum possible back."
+      }
+    ]
   },
   {
     "id": 71,
     "name": "Passive",
-    "category": null
+    "category": "Other Protection Skills",
+    "tiers": [
+      {
+        "label": "Passive",
+        "minPoints": 10,
+        "description": "Invincibility time after getting up from an attack is lengthened 3x."
+      }
+    ]
   },
   {
     "id": 72,
     "name": "Bond",
-    "category": null
+    "category": "Other Skills",
+    "tiers": [
+      {
+        "label": "Bond",
+        "minPoints": 10,
+        "description": "When another Hunter of the opposite gender is present in a quest:Male Player: Attack +5.Female Player: Defense +40."
+      }
+    ]
   },
   {
     "id": 73,
     "name": "Flute Expert",
-    "category": null
+    "category": "Item/Combo Skills",
+    "tiers": [
+      {
+        "label": "Flute Expert",
+        "minPoints": 10,
+        "description": "50% less chance of horns breaking. All horn duration 1.5x (including Hunting Horn songs)."
+      }
+    ]
   },
   {
     "id": 74,
     "name": "Whim",
-    "category": null
+    "category": "Item/Combo Skills",
+    "tiers": [
+      {
+        "label": "Divine Whim",
+        "minPoints": 15,
+        "description": "Decreases chance of breaking Pickaxes, Bug Nets, Horns and Boomerangs by 50%."
+      },
+      {
+        "label": "Spirit's Whim",
+        "minPoints": 10,
+        "description": "Decreases chance of breaking Pickaxes, Bug Nets, Horns and Boomerangs by 25%."
+      },
+      {
+        "label": "Spectre's Whim",
+        "minPoints": -10,
+        "description": "Increases chance of breaking Pickaxes, Bug Nets, Horns and Boomerangs by 25%."
+      },
+      {
+        "label": "Devil's Whim",
+        "minPoints": -15,
+        "description": "Increases chance of breaking Pickaxes, Bug Nets, Horns and Boomerangs by 50%."
+      }
+    ]
   },
   {
     "id": 75,
     "name": "Auto-Guard",
-    "category": null
+    "category": "Defensive Skills",
+    "tiers": [
+      {
+        "label": "Auto-Guard",
+        "minPoints": 10,
+        "description": "Automatically blocks any incoming attacks which can be blocked while a weapon is unsheathed.ZZ Changes: No longer activates Reflect,Obscurity or Rush. Does not fill lance guard gauge."
+      }
+    ]
   },
   {
     "id": 76,
     "name": "Pressure",
-    "category": null
+    "category": "Reward Skills",
+    "tiers": [
+      {
+        "label": "Pressure (Large)",
+        "minPoints": 20,
+        "description": "Monster Bounty randomly increases by 30, 50, 75, 100 or 150%."
+      },
+      {
+        "label": "Pressure (Small)",
+        "minPoints": 10,
+        "description": "Monster Bounty increases by 30%."
+      }
+    ]
   },
   {
     "id": 77,
     "name": "Capture Proficiency",
-    "category": null
+    "category": "Other Skills",
+    "tiers": [
+      {
+        "label": "Capture Guru",
+        "minPoints": 20,
+        "description": "Monsters will blink on the map when they can be captured."
+      },
+      {
+        "label": "Capture Proficiency",
+        "minPoints": 10,
+        "description": "Chance of a captured Monster becoming a pet increases by 30%."
+      }
+    ]
   },
   {
     "id": 78,
     "name": "Inspiration",
-    "category": null
+    "category": "Other Skills",
+    "tiers": [
+      {
+        "label": "Inspiration",
+        "minPoints": 10,
+        "description": "Various effects are triggered at random when starting a quest.All Res +530%Heat & Cold Res16%Negate Stun16%Taunt15%Speed Eating12%All Res -20%7%Status Immunity4%"
+      }
+    ]
   },
   {
     "id": 79,
     "name": "Thunder Attack",
-    "category": null
+    "category": "Attack Skills",
+    "tiers": [
+      {
+        "label": "Thunder Attack (Large)",
+        "minPoints": 20,
+        "description": "Thunder Attack 1.2x"
+      },
+      {
+        "label": "Thunder Attack (Small)",
+        "minPoints": 10,
+        "description": "Thunder Attack 1.1x"
+      }
+    ]
   },
   {
     "id": 80,
     "name": "Fasting",
-    "category": null
+    "category": "Attack Skills",
+    "tiers": [
+      {
+        "label": "Starving Wolf+2",
+        "minPoints": 20,
+        "description": "Grants Evasion +2, Affinity +50% and an extra +0.10 critical hit multiplier.Activates while starving (25 stamina)"
+      },
+      {
+        "label": "Starving Wolf+1",
+        "minPoints": 10,
+        "description": "Grants Evasion +1 and + 50% AffinityActivates while starving (25 stamina)"
+      }
+    ]
   },
   {
     "id": 81,
     "name": "Poison Coating Add",
-    "category": null
+    "category": "Gunner Skills",
+    "tiers": [
+      {
+        "label": "Poison Coating Add",
+        "minPoints": 10,
+        "description": "Grants the ability to use Poison Coatings."
+      }
+    ]
   },
   {
     "id": 82,
     "name": "Water Attack",
-    "category": null
+    "category": "Attack Skills",
+    "tiers": [
+      {
+        "label": "Water Attack (Large)",
+        "minPoints": 20,
+        "description": "Water Attack 1.2x"
+      },
+      {
+        "label": "Water Attack (Small)",
+        "minPoints": 10,
+        "description": "Water Attack 1.1x"
+      }
+    ]
   },
   {
     "id": 83,
     "name": "Ice Attack",
-    "category": null
+    "category": "Attack Skills",
+    "tiers": [
+      {
+        "label": "Ice Attack (Large)",
+        "minPoints": 20,
+        "description": "Ice Attack 1.2x"
+      },
+      {
+        "label": "Ice Attack (Small)",
+        "minPoints": 10,
+        "description": "Ice Attack 1.1x"
+      }
+    ]
   },
   {
     "id": 84,
     "name": "Breakout",
-    "category": null
+    "category": "Other Protection Skills",
+    "tiers": [
+      {
+        "label": "Breakout",
+        "minPoints": 10,
+        "description": "Panic run speed is increased when below 20% health."
+      }
+    ]
   },
   {
     "id": 85,
     "name": "Taijutsu",
-    "category": null
+    "category": "Attack Skills",
+    "tiers": [
+      {
+        "label": "Kickboxing King",
+        "minPoints": 20,
+        "description": "Kick deals 15 damage and becomes a roundhouse kick whilestanding or a drop kick while moving. Tonfa kick attacks deal higher damage as well as adding more air time to all aerial attacks."
+      },
+      {
+        "label": "Martial Arts",
+        "minPoints": 10,
+        "description": "Kick deals 15 damage. Tonfa kick attacks deal slightly higher damage."
+      }
+    ]
   },
   {
     "id": 86,
     "name": "Strong Arm",
-    "category": null
+    "category": "Item/Combo Skills",
+    "tiers": [
+      {
+        "label": "Strong Arm+2",
+        "minPoints": 20,
+        "description": "Thrown items do x1.3 damage."
+      },
+      {
+        "label": "Strong Arm+1",
+        "minPoints": 10,
+        "description": "Thrown items do x1.1 damage."
+      }
+    ]
   },
   {
     "id": 87,
     "name": "Fire Attack",
-    "category": null
+    "category": "Attack Skills",
+    "tiers": [
+      {
+        "label": "Fire Attack (Large)",
+        "minPoints": 20,
+        "description": "Fire Attack 1.2x"
+      },
+      {
+        "label": "Fire Attack (Small)",
+        "minPoints": 10,
+        "description": "Fire Attack 1.1x"
+      }
+    ]
   },
   {
     "id": 88,
     "name": "Sleep Coating Add",
-    "category": null
+    "category": "Gunner Skills",
+    "tiers": [
+      {
+        "label": "Sleep Coating Add",
+        "minPoints": 10,
+        "description": "Grants the ability to use Sleep Coatings."
+      }
+    ]
   },
   {
     "id": 89,
     "name": "Fire Sword",
-    "category": null
+    "category": "Blademaster Skills",
+    "tiers": [
+      {
+        "label": "Fire Sword+3",
+        "minPoints": 20,
+        "description": "When the Flame Sword Crystal is loaded, the effect of the Flame Sword [strong] is activated. ※ Consumes double sharpness"
+      },
+      {
+        "label": "Fire Sword+2",
+        "minPoints": 15,
+        "description": "When the Flame Sword Crystal is loaded, the effect of the Flame Sword [medium] is activated. ※ Consumes double sharpness"
+      },
+      {
+        "label": "Fire Sword+1",
+        "minPoints": 10,
+        "description": "When the Flame Sword Crystal is loaded, the effect of the Flame Sword [weak] is activated. ※ Consumes double sharpness"
+      }
+    ]
   },
   {
     "id": 90,
     "name": "Poison Sword",
-    "category": null
+    "category": "Blademaster Skills",
+    "tiers": [
+      {
+        "label": "Poison Sword+3",
+        "minPoints": 20,
+        "description": "When the Poison Sword Crystal is loaded, the effect of Poison Sword [strong] is activated. ※ Consumes double sharpness"
+      },
+      {
+        "label": "Poison Sword+2",
+        "minPoints": 15,
+        "description": "When the Poison Sword Crystal is loaded, the effect of Poison Sword [medium] is activated. ※ Consumes double sharpness"
+      },
+      {
+        "label": "Poison Sword+1",
+        "minPoints": 10,
+        "description": "When the Poison Sword Crystal is loaded, the effect of Poison Sword [weak] is activated. ※ Consumes double sharpness"
+      }
+    ]
   },
   {
     "id": 91,
     "name": "Ice Sword",
-    "category": null
+    "category": "Blademaster Skills",
+    "tiers": [
+      {
+        "label": "Ice Sword+3",
+        "minPoints": 20,
+        "description": "When an Ice Sword Crystal is loaded, the effect of the Ice Sword [strong] is activated. ※ Consumes double sharpness"
+      },
+      {
+        "label": "Ice Sword+2",
+        "minPoints": 15,
+        "description": "When an Ice Sword Crystal is loaded, the effect of the Ice Sword [medium] is activated. ※ Consumes double sharpness"
+      },
+      {
+        "label": "Ice Sword+1",
+        "minPoints": 10,
+        "description": "When an Ice Sword Crystal is loaded, the effect of the Ice Sword [weak] is activated. ※ Consumes double sharpness"
+      }
+    ]
   },
   {
     "id": 92,
     "name": "Water Sword",
-    "category": null
+    "category": "Blademaster Skills",
+    "tiers": [
+      {
+        "label": "Water Sword+3",
+        "minPoints": 20,
+        "description": "When a Water Sword Crystal is loaded, the effect of Water Sword [strong] is activated. ※ Consumes double sharpness"
+      },
+      {
+        "label": "Water Sword+2",
+        "minPoints": 15,
+        "description": "When a Water Sword Crystal is loaded, the effect of Water Sword [medium] is activated. ※ Consumes double sharpness"
+      },
+      {
+        "label": "Water Sword+1",
+        "minPoints": 10,
+        "description": "When a Water Sword Crystal is loaded, the effect of Water Sword [weak] is activated. ※ Consumes double sharpness"
+      }
+    ]
   },
   {
     "id": 93,
     "name": "Sleep Sword",
-    "category": null
+    "category": "Blademaster Skills",
+    "tiers": [
+      {
+        "label": "Sleep Sword+3",
+        "minPoints": 20,
+        "description": "When the Sleep Sword Crystal is loaded, the effect of Sleep Sword [strong] is activated. ※ Consumes double sharpness"
+      },
+      {
+        "label": "Sleep Sword+2",
+        "minPoints": 15,
+        "description": "When the Sleep Sword Crystal is loaded, the effect of Sleep Sword [medium] is activated. ※ Consumes double sharpness"
+      },
+      {
+        "label": "Sleep Sword+1",
+        "minPoints": 10,
+        "description": "When the Sleep Sword Crystal is loaded, the effect of Sleep Sword [weak] is activated. ※ Consumes double sharpness"
+      }
+    ]
   },
   {
     "id": 94,
     "name": "Bomb Sword",
-    "category": null
+    "category": "Blademaster Skills",
+    "tiers": [
+      {
+        "label": "Bomb Sword+3",
+        "minPoints": 20,
+        "description": "When the Bomb Sword Crystal is loaded, the effect of the Bomb Sword [strong] is activated. ※ Consumes 3 times sharpness"
+      },
+      {
+        "label": "Bomb Sword+2",
+        "minPoints": 15,
+        "description": "When the Bomb Sword Crystal is loaded, the effect of the Bomb Sword [medium] is activated. ※ Consumes 3 times sharpness"
+      },
+      {
+        "label": "Bomb Sword+1",
+        "minPoints": 10,
+        "description": "When the Bomb Sword Crystal is loaded, the effect of the Bomb Sword [weak] is activated. ※ Consumes 3 times sharpness"
+      }
+    ]
   },
   {
     "id": 95,
     "name": "Para Sword",
-    "category": null
+    "category": "Blademaster Skills",
+    "tiers": [
+      {
+        "label": "Para Sword+3",
+        "minPoints": 20,
+        "description": "When the Paralysis Sword Crystal is loaded, the effect of Paralysis Sword [strong] is activated. ※ Consumes double sharpness"
+      },
+      {
+        "label": "Para Sword+2",
+        "minPoints": 15,
+        "description": "When the Paralysis Sword Crystal is loaded, the effect of Paralysis Sword [medium] is activated. ※ Consumes double sharpness"
+      },
+      {
+        "label": "Para Sword+1",
+        "minPoints": 10,
+        "description": "When the Paralysis Sword Crystal is loaded, the effect of Paralysis Sword [weak] is activated. ※ Consumes double sharpness"
+      }
+    ]
   },
   {
     "id": 96,
     "name": "Para Coating Add",
-    "category": null
+    "category": "Gunner Skills",
+    "tiers": [
+      {
+        "label": "Para Coating Add",
+        "minPoints": 10,
+        "description": "Grants the ability to use Para Coatings."
+      }
+    ]
   },
   {
     "id": 97,
     "name": "Dragon Sword",
-    "category": null
+    "category": "Blademaster Skills",
+    "tiers": [
+      {
+        "label": "Dragon Sword+3",
+        "minPoints": 20,
+        "description": "When a Dragon Sword Crystal is loaded, the effect of Dragon Sword [strong] is activated. ※ Consumes double sharpness"
+      },
+      {
+        "label": "Dragon Sword+2",
+        "minPoints": 15,
+        "description": "When a Dragon Sword Crystal is loaded, the effect of Dragon Sword [medium] is activated. ※ Consumes double sharpness"
+      },
+      {
+        "label": "Dragon Sword+1",
+        "minPoints": 10,
+        "description": "When a Dragon Sword Crystal is loaded, the effect of Dragon Sword [weak] is activated. ※ Consumes double sharpness"
+      }
+    ]
   },
   {
     "id": 98,
     "name": "Dragon Attack",
-    "category": null
+    "category": "Attack Skills",
+    "tiers": [
+      {
+        "label": "Dragon Attack (Large)",
+        "minPoints": 20,
+        "description": "Dragon Attack 1.2x"
+      },
+      {
+        "label": "Dragon Attack (Small)",
+        "minPoints": 10,
+        "description": "Dragon Attack 1.1x"
+      }
+    ]
   },
   {
     "id": 99,
     "name": "Focus",
-    "category": null
+    "category": "Attack Skills",
+    "tiers": [
+      {
+        "label": "Focus+2",
+        "minPoints": 20,
+        "description": "0.8x Charge attack duration for GS,Hammer,Long Sword,HBG,Lance,Tonfa and Switch Axe F where appropriate.1.2x fill rate for gauges (LS Spirit, SAF Sword and Tonfa)HBG heat beam meter filled an extra 2 units per shot (no effect for bows)."
+      },
+      {
+        "label": "Focus+1",
+        "minPoints": 10,
+        "description": "0.9x Charge attack duration for GS,Hammer,Long Sword,HBG,Lance,Tonfa and Switch Axe F where appropriate.1.1x fill rate for gauges (LS Spirit, SAF Sword and Tonfa)HBG heat beam meter filled an extra 1 unit per shot (no effect for bows)."
+      },
+      {
+        "label": "Distraction",
+        "minPoints": -10,
+        "description": "1.2x Charge attack duration for GS,Hammer,Long Sword,HBG,Lance,Tonfa and Switch Axe F where appropriate.0.8x fill rate for gauges (LS Spirit, SAF Sword and Tonfa)HBG heat beam meter loses 1 unit per shot (no effect for bows)."
+      }
+    ]
   },
   {
     "id": 100,
     "name": "SnS Tech",
-    "category": null
+    "category": "Hiden/Tech Skills",
+    "tiers": [
+      {
+        "label": "Sword Saint",
+        "minPoints": 30,
+        "description": "Attack x1.3, Fencing and Super High-Grade Earplugs when wielding a Sword and Shield.All Elemental Sword Stone Skills+3, All Status Sword Stone Skills+2, and Bomb Sword+2.Faster Movement with SnS unsheathed."
+      },
+      {
+        "label": "SnS Tech (Kaiden)",
+        "minPoints": 20,
+        "description": "Attack x1.1 and Fencing when wielding a Sword and Shield."
+      },
+      {
+        "label": "SnS Tech (Expert)",
+        "minPoints": 10,
+        "description": "Fencing when wielding a Sword and Shield."
+      },
+      {
+        "label": "SnS Tech (Novice)",
+        "minPoints": -10,
+        "description": "Attack x0.8 when wielding a Sword and Shield."
+      }
+    ]
   },
   {
     "id": 101,
     "name": "DS Tech",
-    "category": null
+    "category": "Hiden/Tech Skills",
+    "tiers": [
+      {
+        "label": "Dual Dragon",
+        "minPoints": 30,
+        "description": "Attack x1.2, Fencing and Super High-Grade Earplugs when wielding Dual Blades.Recover 3 units of Stamina per hit while attacking in either Demon Mode.Faster activation of Demon Modes."
+      },
+      {
+        "label": "DB Tech (Kaiden)",
+        "minPoints": 20,
+        "description": "Attack x1.1 and Fencing when wielding Dual Blades."
+      },
+      {
+        "label": "DB Tech (Expert)",
+        "minPoints": 10,
+        "description": "Fencing when wielding Dual Blades."
+      },
+      {
+        "label": "DB Tech (Novice)",
+        "minPoints": -10,
+        "description": "Attack x0.8 when wielding Dual Blades."
+      }
+    ]
   },
   {
     "id": 102,
     "name": "GS Tech",
-    "category": null
+    "category": "Hiden/Tech Skills",
+    "tiers": [
+      {
+        "label": "Sword King",
+        "minPoints": 30,
+        "description": "Attack x1.2, Fencing and Super High-Grade Earplugs when wielding a Great Sword.Faster charging (stacks with Focus), charge remains at level 4 longer before dropping to level 2 charge.Perfectly timed blocks cause no knockback, can be evaded out of, drain no stamina, and cause you to recover half of the sharpness that would be lost."
+      },
+      {
+        "label": "GS Tech (Kaiden)",
+        "minPoints": 20,
+        "description": "Attack x1.1 and Fencing when wielding a Great Sword."
+      },
+      {
+        "label": "GS Tech (Expert)",
+        "minPoints": 10,
+        "description": "Fencing when wielding a Great Sword."
+      },
+      {
+        "label": "GS Tech (Novice)",
+        "minPoints": -10,
+        "description": "Attack x0.8 when wielding a Great Sword."
+      }
+    ]
   },
   {
     "id": 103,
     "name": "LS Tech",
-    "category": null
+    "category": "Hiden/Tech Skills",
+    "tiers": [
+      {
+        "label": "Katana God",
+        "minPoints": 30,
+        "description": "Attack x1.2, Fencing and Super High-Grade Earplugs when wielding a Long Sword.Razor Sharp+2 while Spirit Bar is full and Attack x1.25 (originally x1.15) while the Spirit Bar is glowing (after being filled completely).Spirit Bar consumption halved."
+      },
+      {
+        "label": "LS Tech (Kaiden)",
+        "minPoints": 20,
+        "description": "Attack x1.1 and Fencing when wielding a Long Sword."
+      },
+      {
+        "label": "LS Tech (Expert)",
+        "minPoints": 10,
+        "description": "Fencing when wielding a Long Sword."
+      },
+      {
+        "label": "LS Tech (Novice)",
+        "minPoints": -10,
+        "description": "Attack x0.8 when wielding a Long Sword."
+      }
+    ]
   },
   {
     "id": 104,
     "name": "Lance Tech",
-    "category": null
+    "category": "Hiden/Tech Skills",
+    "tiers": [
+      {
+        "label": "Heavenly Spear",
+        "minPoints": 30,
+        "description": "Attack x1.2, Fencing and Super High-Grade Earplugs when wielding a Lance.Motion value +10 for final (3rd or 4th) Normal, Diagonal and Sky-Stabs.No Damage when blocking against all attacks. Can hop 4 times maximum (originally 3)."
+      },
+      {
+        "label": "Lance Tech (Kaiden)",
+        "minPoints": 20,
+        "description": "Attack x1.1 and Fencing when wielding a Lance."
+      },
+      {
+        "label": "Lance Tech (Expert)",
+        "minPoints": 10,
+        "description": "Fencing when wielding a Lance."
+      },
+      {
+        "label": "Lance Tech (Novice)",
+        "minPoints": -10,
+        "description": "Attack x0.8 when wielding a Lance."
+      }
+    ]
   },
   {
     "id": 105,
     "name": "GL Tech",
-    "category": null
+    "category": "Hiden/Tech Skills",
+    "tiers": [
+      {
+        "label": "Cannon Emperor",
+        "minPoints": 30,
+        "description": "Attack x1.2, Fencing and Super High-Grade Earplugs when wielding a Gunlance.Normal Shells +2, Long Shells +1, and Wide Shells +1 (stackable with Load Up).Wyvern Fire and Heat Blade cooldown time is halved, and Heat Blade Activation Time reduced to 3 seconds."
+      },
+      {
+        "label": "GL Tech (Kaiden)",
+        "minPoints": 20,
+        "description": "Attack x1.1 and Fencing when wielding a Gunlance."
+      },
+      {
+        "label": "GL Tech (Expert)",
+        "minPoints": 10,
+        "description": "Fencing when wielding a Gunlance."
+      },
+      {
+        "label": "GL Tech (Novice)",
+        "minPoints": -10,
+        "description": "Attack x0.8 when wielding a Gunlance."
+      }
+    ]
   },
   {
     "id": 106,
     "name": "Hammer Tech",
-    "category": null
+    "category": "Hiden/Tech Skills",
+    "tiers": [
+      {
+        "label": "Blunt Beast",
+        "minPoints": 30,
+        "description": "Attack x1.2, Fencing and Super High-Grade Earplugs when wielding a Hammer.When releasing a perfectly timed charged attack, Attack x1.3 for the entire current combo (includes infinite)."
+      },
+      {
+        "label": "Hammer Tech (Kaiden)",
+        "minPoints": 20,
+        "description": "Attack x1.1 and Fencing when wielding a Hammer."
+      },
+      {
+        "label": "Hammer Tech (Expert)",
+        "minPoints": 10,
+        "description": "Fencing when wielding a Hammer."
+      },
+      {
+        "label": "Hammer Tech (Novice)",
+        "minPoints": -10,
+        "description": "Attack x0.8 when wielding a Hammer."
+      }
+    ]
   },
   {
     "id": 107,
     "name": "HH Tech",
-    "category": null
+    "category": "Hiden/Tech Skills",
+    "tiers": [
+      {
+        "label": "Flamboyant Emperor",
+        "minPoints": 30,
+        "description": "Attack x1.2, Fencing and Super High-Grade Earplugs when wielding a Hunting Horn.Performance mode note color decisions are made 34% faster."
+      },
+      {
+        "label": "HH Tech (Kaiden)",
+        "minPoints": 20,
+        "description": "Attack x1.1 and Fencing when wielding a Hunting Horn."
+      },
+      {
+        "label": "HH Tech (Expert)",
+        "minPoints": 10,
+        "description": "Fencing when wielding a Hunting Horn."
+      },
+      {
+        "label": "HH Tech (Novice)",
+        "minPoints": -10,
+        "description": "Attack x0.8 when wielding a Hunting Horn."
+      }
+    ]
   },
   {
     "id": 108,
     "name": "LBG Tech",
-    "category": null
+    "category": "Hiden/Tech Skills",
+    "tiers": [
+      {
+        "label": "Gun Prodigy",
+        "minPoints": 30,
+        "description": "Attack x1.3, probability of ammo bouncing off monsters is reduced, and Super High-Grade Earplugs when wielding a Light Bowgun.Perfect Shot meter added to Just Shot meter dealing additional damage when successfuly used.Can consume items while the weapon is unsheathed."
+      },
+      {
+        "label": "LBG Tech (Kaiden)",
+        "minPoints": 20,
+        "description": "Attack x1.1 and the probability of ammo bouncing off monsters is reduced when wielding a Light Bowgun."
+      },
+      {
+        "label": "LBG Tech (Expert)",
+        "minPoints": 10,
+        "description": "The probability of ammo bouncing off monsters is reduced when wielding a Light Bowgun."
+      },
+      {
+        "label": "LBG Tech (Novice)",
+        "minPoints": -10,
+        "description": "Attack x0.8 when wielding a Light Bowgun."
+      }
+    ]
   },
   {
     "id": 109,
     "name": "Bow Tech",
-    "category": null
+    "category": "Hiden/Tech Skills",
+    "tiers": [
+      {
+        "label": "Bow Demon",
+        "minPoints": 30,
+        "description": "Attack x1.3, arrows no longer deflected, and Super High-Grade Earplugs when wielding a Bow.Power Coating modifier increases to x1.6 for normal Bows and to x1.7 for Gou Bows (and upgrades).Arc-Shot can be executed at charge lv2 for Evolution Bows (Raviente) and G-Rank Bows."
+      },
+      {
+        "label": "Bow Tech (Kaiden)",
+        "minPoints": 20,
+        "description": "Attack x1.1 and arrows are no longer deflected when wielding a Bow."
+      },
+      {
+        "label": "Bow Tech (Expert)",
+        "minPoints": 10,
+        "description": "Arrows are no longer deflected when wielding a Bow."
+      },
+      {
+        "label": "Bow Tech (Novice)",
+        "minPoints": -10,
+        "description": "Attack x0.8 when wielding a Bow."
+      }
+    ]
   },
   {
     "id": 110,
     "name": "HBG Tech",
-    "category": null
+    "category": "Hiden/Tech Skills",
+    "tiers": [
+      {
+        "label": "Gun Sage",
+        "minPoints": 30,
+        "description": "Attack x1.3, Evade Distance Up and Super High-Grade Earplugs when wielding a Heavy Bowgun.Melee Attacks and Crag/Clust Shots all do 15 KO Damage, Heat Beam does x1.2 damage, and power of Element/Status Ammo x1.2.Perfectly timed compression loading will result in more attack power for that 1 salvo."
+      },
+      {
+        "label": "HBG Tech (Kaiden)",
+        "minPoints": 20,
+        "description": "Attack x1.1 and Evade Extender when wielding a Heavy Bowgun."
+      },
+      {
+        "label": "HBG Tech (Expert)",
+        "minPoints": 10,
+        "description": "Evade Extender when wielding a Heavy Bowgun."
+      },
+      {
+        "label": "HBG Tech (Novice)",
+        "minPoints": -10,
+        "description": "Attack x0.8 when wielding a Heavy Bowgun."
+      }
+    ]
   },
   {
     "id": 111,
     "name": "Issen",
-    "category": null
+    "category": "Attack Skills",
+    "tiers": [
+      {
+        "label": "Issen+3",
+        "minPoints": 30,
+        "description": "Affinity +20% and an additional +0.25x crit modifier. Stacks with other sources."
+      },
+      {
+        "label": "Issen+2",
+        "minPoints": 20,
+        "description": "Affinity +10% and an additional +0.15x crit modifier. Stacks with other sources."
+      },
+      {
+        "label": "Issen+1",
+        "minPoints": 10,
+        "description": "Affinity +5% and an additional +0.10x crit modifier. Stacks with other sources."
+      }
+    ]
   },
   {
     "id": 112,
     "name": "Speed Setup",
-    "category": null
+    "category": "Item/Combo Skills",
+    "tiers": [
+      {
+        "label": "Trap Master",
+        "minPoints": 20,
+        "description": "Trap Setup Speed is lowered to x0.66. 100% combine rate for traps, Mocha Pots and Trap-related items."
+      },
+      {
+        "label": "Trap Expert",
+        "minPoints": 10,
+        "description": "Trap Setup Speed is lowered to x0.8. 100% combine rate for traps, Mocha Pots and Trap-related items."
+      }
+    ]
   },
   {
     "id": 113,
     "name": "Guts",
-    "category": null
+    "category": "Other Protection Skills",
+    "tiers": [
+      {
+        "label": "True Guts",
+        "minPoints": 30,
+        "description": "When Health and Stamina are 50 or higher, an otherwise lethal attack will be survived with 1 Health Point left.※ Does not work if you are paralysed while taking a hit."
+      },
+      {
+        "label": "Great Guts",
+        "minPoints": 20,
+        "description": "When Health is 70 or higher and Stamina is 50 or higher, an otherwise lethal attack will be survived with 1 Health Point left.※ Does not work if you are paralysed while taking a hit. Unlike True Guts, does not trigger in G Rank quests."
+      },
+      {
+        "label": "Guts",
+        "minPoints": 10,
+        "description": "When Health is 90 or higher and Stamina is 50 or higher, an otherwise lethal attack will be survived with 1 Health Point left.※ Does not work if you are paralysed while taking a hit. Unlike True Guts, does not trigger in G Rank quests."
+      }
+    ]
   },
   {
     "id": 114,
     "name": "Elemental Attack",
-    "category": null
+    "category": "Attack Skills",
+    "tiers": [
+      {
+        "label": "Elemental Attack Up",
+        "minPoints": 10,
+        "description": "All Elements 1.1x"
+      },
+      {
+        "label": "Elemental Attack Down",
+        "minPoints": -10,
+        "description": "All Elements 0.9x"
+      }
+    ]
   },
   {
     "id": 115,
     "name": "Def Lock",
-    "category": null
+    "category": "Abnormal Status Skills",
+    "tiers": [
+      {
+        "label": "Def Lock",
+        "minPoints": 10,
+        "description": "Grants immunity to Defense Down."
+      }
+    ]
   },
   {
     "id": 116,
     "name": "Knife Throwing",
-    "category": null
+    "category": "Item/Combo Skills",
+    "tiers": [
+      {
+        "label": "Throwing Knives+2",
+        "minPoints": 20,
+        "description": "Throw 5 Knives at once instead of 1. Only consumes 1."
+      },
+      {
+        "label": "Throwing Knives+1",
+        "minPoints": 10,
+        "description": "Throw 3 Knives at once instead of 1. Only consumes 1."
+      }
+    ]
   },
   {
     "id": 117,
     "name": "Weapon Handling",
-    "category": null
+    "category": "Attack Skills",
+    "tiers": [
+      {
+        "label": "Weapon Handling",
+        "minPoints": 10,
+        "description": "Weapon draw/sheath speed increased by 20%. Does not stack with Master Seal or G Finesse weapon effects."
+      }
+    ]
   },
   {
     "id": 118,
     "name": "Stamina Recovery",
-    "category": null
+    "category": "Health and Stamina",
+    "tiers": [
+      {
+        "label": "Stamina Recovery Up (Large)",
+        "minPoints": 20,
+        "description": "Doubles stamina recovery speed over time."
+      },
+      {
+        "label": "Stamina Rec (Small)",
+        "minPoints": 10,
+        "description": "Stamina recovery speed increases by 1.5 times over time."
+      },
+      {
+        "label": "Stamina Rec Down",
+        "minPoints": -10,
+        "description": "Halves stamina recovery speed over time."
+      }
+    ]
   },
   {
     "id": 119,
     "name": "Caring",
-    "category": null
+    "category": "Other Skills",
+    "tiers": [
+      {
+        "label": "Caring+3",
+        "minPoints": 25,
+        "description": "All Quests: Human Players cannot be interrupted by your attacks nor can they interrupt you.All Quests: NPCs cannot be interrupted by Human Players and will roll when hit instead."
+      },
+      {
+        "label": "Caring+2",
+        "minPoints": 15,
+        "description": "Non-G Rank Quests: Human Players cannot be interrupted by your attacks nor can they interrupt you.All Quests: NPCs cannot be interrupted by Human Players and will roll when hitinstead."
+      },
+      {
+        "label": "Caring+1",
+        "minPoints": 10,
+        "description": "All Quests: NPCs cannot be interrupted by Human Players and will roll when hit instead."
+      }
+    ]
   },
   {
     "id": 120,
     "name": "Fencing",
-    "category": null
+    "category": "Blademaster Skills",
+    "tiers": [
+      {
+        "label": "Fencing+2",
+        "minPoints": 20,
+        "description": "Grants ESP (no bouncing) as well as a 2nd hit for each attack.The 2nd hit deals 20% the damage of the first hit, including Raw, Element, Status and Sword Crystals.Sharpness and Sword Crystals keep the consumption of a single hit."
+      },
+      {
+        "label": "Fencing+1",
+        "minPoints": 10,
+        "description": "Grants ESP (no bouncing) when attacking."
+      }
+    ]
   },
   {
     "id": 121,
     "name": "Status Res",
-    "category": null
+    "category": "Abnormal Status Skills",
+    "tiers": [
+      {
+        "label": "S. Immunity (Myriad)",
+        "minPoints": 30,
+        "description": "Grants immunity to Poison, Paralysis, Sleep, Stench, Snowman, Chat Disabled, Defense Down, Drunk, Magnetism, Crystallization and Blast."
+      },
+      {
+        "label": "Status Immunity",
+        "minPoints": 20,
+        "description": "Grants immunity to Poison,Paralysis and Sleep."
+      },
+      {
+        "label": "Status Halved",
+        "minPoints": 10,
+        "description": "Halves Poison, Paralysis and Sleep duration."
+      },
+      {
+        "label": "Status Doubled",
+        "minPoints": -10,
+        "description": "Doubles Poison, Paralysis and Sleep duration."
+      }
+    ]
   },
   {
     "id": 122,
     "name": "Hunter",
-    "category": null
+    "category": "Item/Combo Skills",
+    "tiers": [
+      {
+        "label": "Hunter Valhalla",
+        "minPoints": 20,
+        "description": "Always shows the map and any large monsters location. Easier to fish and BBQ meat."
+      },
+      {
+        "label": "Hunter Life",
+        "minPoints": 10,
+        "description": "Always shows the map. Easier to fish and BBQ meat."
+      }
+    ]
   },
   {
     "id": 123,
     "name": "Breeder",
-    "category": null
+    "category": "Other Skills",
+    "tiers": [
+      {
+        "label": "Breeder",
+        "minPoints": 10,
+        "description": "Poogie item drops atthe Pugi Farm become more common. Halks also drop items more often."
+      }
+    ]
   },
   {
     "id": 124,
     "name": "Encourage",
-    "category": null
+    "category": "Item/Combo Skills",
+    "tiers": [
+      {
+        "label": "Encourage+2",
+        "minPoints": 20,
+        "description": "Flute Expert, and gives to the team (including the skill user) Evasion+2 and Stun Negate."
+      },
+      {
+        "label": "Encourage+1",
+        "minPoints": 10,
+        "description": "Flute Expert, and gives to the team (including the skill user) Evasion+1 and Stun Halved."
+      }
+    ]
   },
   {
     "id": 125,
     "name": "Strong Attack",
-    "category": null
+    "category": "Attack Skills",
+    "tiers": [
+      {
+        "label": "Strong Attack+6",
+        "minPoints": 50,
+        "description": "Increases True Attack by 200."
+      },
+      {
+        "label": "Strong Attack+5",
+        "minPoints": 40,
+        "description": "Increases True Attack by 150."
+      },
+      {
+        "label": "Strong Attack+4",
+        "minPoints": 30,
+        "description": "Increases True Attack by 80."
+      },
+      {
+        "label": "Strong Attack+3",
+        "minPoints": 20,
+        "description": "Increases True Attack by 50."
+      },
+      {
+        "label": "Strong Attack+2",
+        "minPoints": 15,
+        "description": "Increases True Attack by 35."
+      },
+      {
+        "label": "Strong Attack+1",
+        "minPoints": 10,
+        "description": "Increases True Attack by 20."
+      }
+    ]
   },
   {
     "id": 126,
     "name": "Light Tread",
-    "category": null
+    "category": "Other Protection Skills",
+    "tiers": [
+      {
+        "label": "Light Tread",
+        "minPoints": 10,
+        "description": "Immunity to monster's Pitfall Traps."
+      }
+    ]
   },
   {
     "id": 127,
     "name": "Vitality",
-    "category": null
+    "category": "Defensive Skills",
+    "tiers": [
+      {
+        "label": "Vitality+3",
+        "minPoints": 30,
+        "description": "Defense+90, Damage Recovery Speed+2, Recovery Items Up,100% Combination success rate for Potions, Mega Potions and Max Potions."
+      },
+      {
+        "label": "Vitality+2",
+        "minPoints": 15,
+        "description": "Defense+45, Damage Recovery Speed+1, Recovery Items Up,100% Combination success-rate for Potions, Mega Potions and Max Potions."
+      },
+      {
+        "label": "Vitality+1",
+        "minPoints": 10,
+        "description": "Defense+15, Damage Recovery Speed+1, Recovery Items Up,100% Combination success-rate for Potions, Mega Potions and Max Potions."
+      },
+      {
+        "label": "Vitality-1",
+        "minPoints": -10,
+        "description": "Health-10, Damage Recovery Speed-1, Recovery Items Weakened."
+      }
+    ]
   },
   {
     "id": 128,
     "name": "Exploit Weakness",
-    "category": null
+    "category": "Attack Skills",
+    "tiers": [
+      {
+        "label": "Exploit Weakness",
+        "minPoints": 15,
+        "description": "When attacking a part with a value of 35 or higher, +5 to the value of the target part. Attribute damage remains the same."
+      },
+      {
+        "label": "Reduce Weakness",
+        "minPoints": -10,
+        "description": "When attacking a part with a value of 35 or higher, -5 to the value of the target part. Attribute damage remains the same."
+      }
+    ]
   },
   {
     "id": 129,
     "name": "Combo Expert",
-    "category": null
+    "category": "Item/Combo Skills",
+    "tiers": [
+      {
+        "label": "Combo Expert+3",
+        "minPoints": 20,
+        "description": "Combo Rate +30% and the effects of Bullet Combination Expert and Health Recovery Items Improved."
+      },
+      {
+        "label": "Combo Expert+2",
+        "minPoints": 15,
+        "description": "Combo Rate +20% and the effect of Bullet Combination Expert."
+      },
+      {
+        "label": "Combo Expert+1",
+        "minPoints": 10,
+        "description": "Combo Rate +10% and the effect of Bullet Combination Expert."
+      },
+      {
+        "label": "Combo Expert-1",
+        "minPoints": -10,
+        "description": "Combo Rate -5%."
+      }
+    ]
   },
   {
     "id": 130,
     "name": "Reflect",
-    "category": null
+    "category": "Defensive Skills",
+    "tiers": [
+      {
+        "label": "Reflect+3",
+        "minPoints": 20,
+        "description": "Blocking an attack causes a special motion to trigger from the point of guarding that uses your current attack and sharpness values and inflicts impact based damage.The motion cannot deal critical hits, inflict status damage or deal elemental damage, and consumes 1 sharpness if the reflection hit the monster.It can trigger on every part of any attacks which hit multiple times without any cooldown period.Reflect+1 motion value : 24Reflect+2 motion value : 36Reflect+3 motion value : 48※ Does not benefit from Fencing+2 or utilise sword crystals if loaded."
+      },
+      {
+        "label": "Reflect+2",
+        "minPoints": 15,
+        "description": ""
+      },
+      {
+        "label": "Reflect+1",
+        "minPoints": 10,
+        "description": ""
+      }
+    ]
   },
   {
     "id": 131,
     "name": "Rapid Fire",
-    "category": null
+    "category": "Gunner Skills",
+    "tiers": [
+      {
+        "label": "Rapid Fire",
+        "minPoints": 15,
+        "description": "Rapid Fire volleys fire one extra round, when loading bullets that can be rapid fired you will load all bullets.(Doesn't apply to Ultra Rapid Fire)."
+      }
+    ]
   },
   {
     "id": 132,
     "name": "Relief",
-    "category": null
+    "category": "Other Skills",
+    "tiers": [
+      {
+        "label": "Relief",
+        "minPoints": 10,
+        "description": "Rastas, Fostas, Partners and Halks recover 50% faster after disappearing.Legendary Rastas do not leave and thus are not affected."
+      }
+    ]
   },
   {
     "id": 133,
     "name": "Survivor",
-    "category": null
+    "category": "Attack Skills",
+    "tiers": [
+      {
+        "label": "Tenacity",
+        "minPoints": 20,
+        "description": "Buff user each time the number of remaining revivals in the quest decreases.1st timeAttack +15Defense +1002nd timeAttack +20Defense +150※ Does not work in Great Slaying and Caravan Quests."
+      },
+      {
+        "label": "Fortify",
+        "minPoints": 10,
+        "description": "Buff user each time the number of remaining revivals in the quest decreases.1st timeAttack +5Defense +502nd timeAttack +10Defense +100※ Does not work in Great Slaying and Caravan Quests."
+      }
+    ]
   },
   {
     "id": 134,
     "name": "Lone Wolf",
-    "category": null
+    "category": "Attack Skills",
+    "tiers": [
+      {
+        "label": "Lone Wolf",
+        "minPoints": 10,
+        "description": "Increases True Attack by 100 when there are no Hunters or NPCs (Partner, Partnya, Rastas..) in the same area.Halks are allowed."
+      }
+    ]
   },
   {
     "id": 135,
     "name": "Rage",
-    "category": null
+    "category": "Attack Skills",
+    "tiers": [
+      {
+        "label": "Buchigiri",
+        "minPoints": 20,
+        "description": "True Guts and Adrenaline+2"
+      },
+      {
+        "label": "Wrath Awoken",
+        "minPoints": 15,
+        "description": "True Guts and Adrenaline+1"
+      }
+    ]
   },
   {
     "id": 136,
     "name": "Iron Arm",
-    "category": null
+    "category": "Item/Combo Skills",
+    "tiers": [
+      {
+        "label": "Iron Arm+2",
+        "minPoints": 20,
+        "description": "Throwing Distance Up, Strong Arm+2, Throwing Knives+2. Increases blocking duration for GS Guard Slash (Heaven and Storm Styles), Lance Shield Rush (Storm and Extreme Styles) and Tonfa's Guard points (Standard 1, Standard 3, Standard 4, Aerial 1-3, Continuous Thrust 2 and Dash Tonfa Rotatation)."
+      },
+      {
+        "label": "Iron Arm+1",
+        "minPoints": 10,
+        "description": "Throwing Distance Up, Strong Arm+1, Throwing Knives+1. Increases blocking frames duration for GS Guard Slash (Heaven and Storm Styles), Lance Shield Rush (Storm and Extreme Styles) and Tonfa's Guard points (Standard 1, Standard 3, Standard 4, Aerial 1-3, Continuous Thrust 2 and Dash Tonfa Rotatation)."
+      }
+    ]
   },
   {
     "id": 137,
     "name": "Sobriety",
-    "category": null
+    "category": "Abnormal Status Skills",
+    "tiers": [
+      {
+        "label": "Heavy Drinker",
+        "minPoints": 10,
+        "description": "Grants immunity to Drunk status."
+      },
+      {
+        "label": "Drunkard",
+        "minPoints": -10,
+        "description": "Doubles Drunk duration"
+      }
+    ]
   },
   {
     "id": 138,
     "name": "Mounting",
-    "category": null
+    "category": "Gunner Skills",
+    "tiers": [
+      {
+        "label": "Mounting+3",
+        "minPoints": 20,
+        "description": "Load Up & Reload Speed+3."
+      },
+      {
+        "label": "Mounting+2",
+        "minPoints": 15,
+        "description": "Load Up & Reload Speed+2."
+      },
+      {
+        "label": "Mounting+1",
+        "minPoints": 10,
+        "description": "Load Up & Reload Speed+1."
+      }
+    ]
   },
   {
     "id": 139,
     "name": "Movement Speed",
-    "category": null
+    "category": "Other Skills",
+    "tiers": [
+      {
+        "label": "Movement Speed Up+2",
+        "minPoints": 20,
+        "description": "Movement speed with weapon sheathed is increased slightly further."
+      },
+      {
+        "label": "Movement Speed Up+1",
+        "minPoints": 10,
+        "description": "Movement speed with weapon sheathed is increased slightly."
+      }
+    ]
   },
   {
     "id": 140,
     "name": "Magnetic Res",
-    "category": null
+    "category": "Abnormal Status Skills",
+    "tiers": [
+      {
+        "label": "Magnetic Res",
+        "minPoints": 10,
+        "description": "Grants immunity to Magnetism."
+      },
+      {
+        "label": "Magnet Vulnerability",
+        "minPoints": -10,
+        "description": "Doubles Magnetism duration"
+      }
+    ]
   },
   {
     "id": 141,
     "name": "Three Worlds",
-    "category": null
+    "category": "Other Protection Skills",
+    "tiers": [
+      {
+        "label": "Unaffected+3",
+        "minPoints": 20,
+        "description": "Super High-Grade Earplugs, Violent Wind Breaker and Quake Res+2."
+      },
+      {
+        "label": "Unaffected+2",
+        "minPoints": 15,
+        "description": "High-Grade Earplugs, Dragon Wind Breaker and Quake Res+1."
+      },
+      {
+        "label": "Unaffected+1",
+        "minPoints": 10,
+        "description": "Earplugs, Wind Resistance (Large) and Quake Res+1."
+      }
+    ]
   },
   {
     "id": 142,
     "name": "Charge Attack Up",
-    "category": null
+    "category": "Attack Skills",
+    "tiers": [
+      {
+        "label": "Charge Attack Up+2",
+        "minPoints": 20,
+        "description": "Greatsword, long sword, hammer, lance, and tonfa damage and attribute values are further increased when charging attacks.Can be used in combination with Focus."
+      },
+      {
+        "label": "Charge Attack Up+1",
+        "minPoints": 10,
+        "description": "Greatsword, long sword, hammer, lance, and tonfa damage and attribute values are increased when charging attacks.Can be used in combination with Focus."
+      }
+    ]
   },
   {
     "id": 143,
     "name": "Bullet Saver",
-    "category": null
+    "category": "Gunner Skills",
+    "tiers": [
+      {
+        "label": "Saving Expert",
+        "minPoints": 20,
+        "description": "When you fire a shot there is a 11/32 (34.3%) chance that it will not consume a shot or coating.Processes all bullets individually on compression shots (HBG only, any number from zero to all loaded shots can be saved)but does not work with Ultra Rapid Fire (LBG) or Heat Beams (HBG)."
+      },
+      {
+        "label": "Saving Master",
+        "minPoints": 10,
+        "description": "When you fire a shot there is a 7/32 (21.8%) chance that it will not consume a shot or coatingAlso works with compression (HBG). Does not work with Ultra Rapid Fire (LBG) and Heat Beam (HBG)."
+      }
+    ]
   },
   {
     "id": 144,
     "name": "Shiriagari",
-    "category": null
+    "category": "Attack Skills",
+    "tiers": [
+      {
+        "label": "Shiriagari",
+        "minPoints": 15,
+        "description": "Attack power (multiplier) increases according to the elapsed time of the quest.1 min3 min5 min10 min15 min20 min+20+50+80+130+180+200"
+      }
+    ]
   },
   {
     "id": 145,
     "name": "Evade Distance",
-    "category": null
+    "category": "Other Protection Skills",
+    "tiers": [
+      {
+        "label": "Evade Distance Up",
+        "minPoints": 20,
+        "description": "Extends movement distance for evasion and steps."
+      }
+    ]
   },
   {
     "id": 146,
     "name": "Reinforcement",
-    "category": null
+    "category": "Other Skills",
+    "tiers": [
+      {
+        "label": "Red Soul",
+        "minPoints": 10,
+        "description": "Own Attack +15. Hitting another player will increase their Attack +30.※ When hit by a player who has Blue Soul skill, you gain ability to KO monsters with any weapon when hitting their head and your own Attack rises by +30.※ Attack is a final addition that is always the stated value and completely unaffected by other skills and multipliers."
+      },
+      {
+        "label": "Blue Soul",
+        "minPoints": -10,
+        "description": "Own Defense +50. Hitting another player will increase their Defense +100.※ When hit by a player who has Red Soul skill, you gain Goddess' Embrace effect and your own Defense rises by +100.※ Hitting a player who is under the effect of Blue Soul while he/she is under any status ailment in the game will dispel the effect."
+      }
+    ]
   },
   {
     "id": 147,
     "name": "Grace",
-    "category": null
+    "category": "Other Skills",
+    "tiers": [
+      {
+        "label": "Grace+3",
+        "minPoints": 30,
+        "description": "When there are only 3 or fewer active skills: Attack Up (Absolute), Issen+3, High-Grade Earplugs, Wind Res (Large), Quake Res+1, Evasion+1, Guard+1, Goddess' Embrace and Weapon Handling will be active."
+      },
+      {
+        "label": "Grace+2",
+        "minPoints": 20,
+        "description": "When there are only 2 or fewer active skills: Attack Up (Absolute), Issen+3, High-Grade Earplugs, Wind Res (Large), Quake Res+1, Evasion+1, Guard+1, Goddess' Embrace and Weapon Handling will be active."
+      },
+      {
+        "label": "Grace+1",
+        "minPoints": 10,
+        "description": "When there is only 1 active skill: Attack Up (Absolute), Issen+3, High-Grade Earplugs, Wind Res (Large), Quake Res+1, Evasion+1, Guard+1, Goddess' Embrace and Weapon Handling will be active."
+      }
+    ]
   },
   {
     "id": 148,
     "name": "Steady Hand",
-    "category": null
+    "category": "Gunner Skills",
+    "tiers": [
+      {
+        "label": "Steady Hand+2",
+        "minPoints": 20,
+        "description": "Normal/Rapid Up, Pierce/Pierce Up, Pellet/Spread Up and +5 to weakness value with critical distance.Does not stack with the individual up skills, determination, precision, sniper or critical shot."
+      },
+      {
+        "label": "Steady Hand+1",
+        "minPoints": 15,
+        "description": "Normal/Rapid Up, Pierce/Pierce Up and Pellet/Spread Up. Does not stack with the individual skill versions."
+      }
+    ]
   },
   {
     "id": 149,
     "name": "Crystal Res",
-    "category": null
+    "category": "Abnormal Status Skills",
+    "tiers": [
+      {
+        "label": "Crystal Res",
+        "minPoints": 10,
+        "description": "Grants immunity to Crystallization."
+      },
+      {
+        "label": "Crystal Vulnerability",
+        "minPoints": -10,
+        "description": "It takes longer to recover from crystal state.Also, crystals are more likely to explode."
+      }
+    ]
   },
   {
     "id": 150,
     "name": "Edgemaster",
-    "category": null
+    "category": "Blademaster Skills",
+    "tiers": [
+      {
+        "label": "Honed Blade+3",
+        "minPoints": 20,
+        "description": "Attack Up (Absolute) and Sharpness+1Having a stronger Attack Up or Strong Attack Up skill activated replaces the Attack component of this skill."
+      },
+      {
+        "label": "Honed Blade+2",
+        "minPoints": 15,
+        "description": "Attack Up (Very Large) and Sharpness+1Having a stronger Attack Up or Strong Attack Up skill activated replaces the Attack component of this skill."
+      },
+      {
+        "label": "Honed Blade+1",
+        "minPoints": 10,
+        "description": "Attack Up (Large) and Sharpness+1Having a stronger Attack Up or Strong Attack Up skill activated replaces the Attack component of this skill."
+      }
+    ]
   },
   {
     "id": 151,
     "name": "Critical Shot",
-    "category": null
+    "category": "Gunner Skills",
+    "tiers": [
+      {
+        "label": "Critical Shot+3",
+        "minPoints": 20,
+        "description": "Attack Up and Sniper (Less shot deviation, +5 to a body part's weakness when hit by a Normal/Pierce/Crag Shot or Bow Attacks at a properly spaced critical distance).Critical Shot+3Attack Up (Absolute) (True Raw +50)Critical Shot+2Attack Up (Very Large) (True Raw +30)Critical Shot+1Attack Up (Large) (True Raw +20)Does not stack with other Attack skills or Sniper (e.g. Attack Up portion would be overwritten by Strong Attack+4).Stacks with Thunderclad, Acid Shots, HHSonicBomb Debuff and Point Breakthrough with the resulting value being used for Exploit Weakness."
+      },
+      {
+        "label": "Critical Shot+2",
+        "minPoints": 15,
+        "description": ""
+      },
+      {
+        "label": "Critical Shot+1",
+        "minPoints": 10,
+        "description": ""
+      }
+    ]
   },
   {
     "id": 152,
     "name": "Compensation",
-    "category": null
+    "category": "Other Skills",
+    "tiers": [
+      {
+        "label": "Compensation",
+        "minPoints": 10,
+        "description": "Death God's Embrace, Sharpness+1, Attack Up (Absolute), Evasion+2 and Critical Eye +4."
+      }
+    ]
   },
   {
     "id": 153,
     "name": "Herbal Science",
-    "category": null
+    "category": "Health and Stamina",
+    "tiers": [
+      {
+        "label": "Medical Sage",
+        "minPoints": 10,
+        "description": "Instant recovery of any Red HP when using any healing item.Additional effects if multiple party members have the skill.2 Hunters with the skillRecovery items apply to the entire party3 Hunters with the skillRecovery items apply to the entire party+20 extra HP Recovery4 Hunters with the skillRecovery items apply to the entire party+50 extra HP Recovery※ Only Health related recovery items are party wide (e.g. Max Potions & Ancient Potions work, Mega Dash Juice & Anti-Venoms do not).※ Stacks with Recovery skill."
+      }
+    ]
   },
   {
     "id": 154,
     "name": "Vampirism",
-    "category": null
+    "category": "Health and Stamina",
+    "tiers": [
+      {
+        "label": "Vampirism+2",
+        "minPoints": 20,
+        "description": "When attacking a monster, 80% chance to gain health and True Attack. True Attack has a limit of 80 and is lost upon getting hit. Leech effect turns red when the limit is reached."
+      },
+      {
+        "label": "Vampirism+1",
+        "minPoints": 10,
+        "description": "When attacking a monster, 60% chance to gain health and True Attack. True Attack has a limit of 80 and is lost upon getting hit. Leech effect turns red when the limit is reached."
+      }
+    ]
   },
   {
     "id": 155,
     "name": "Adaptation",
-    "category": null
+    "category": "Attack Skills",
+    "tiers": [
+      {
+        "label": "Adaptation+2",
+        "minPoints": 20,
+        "description": "When HP is 100 or over, the user attacks will be converted to use the most efficient Hitzone value attack type (Cutting, Impact or Shot).The special properties of the converted attack type will be active for the hit, meaning that hitting a tail weakest to Cutting attacks with a Hammer will then be able to cut it. This also works for Impact attacks (e.g. Akura Vashimu behavior to Impact damage) but this will not give the hits Stun values.Before conversion, the attacked Hitzone value will be altered by a multiplier set by two conditions, the Adaptation level and the Weapon type (Blademaster or Gunner).If the resulting Hitzone value for a weapon type is better than the current one, then the conversion happens.If the current Weapon attack type is resulting to be the best one, then no conversion happens and the skill will not do anything for this hit.BlademasterGunnerAdaptation HZV Formula and Modifiers PriorityAdaptation+2 multiplier0.81x0.72x(((((HZV + Thunder Clad + Acid Ammo + HH Debuff) + WEX) + Point Breakthrough) x multiplier) + Sniper)Adaptation+1 multiplier0.72x0.64xWhen using Adaptation, Sniper skill is moved to the end of the formula, meaning that the +5 Hitzone value provided by Sniper will never be accounted to trigger Exploit Weakness. This is neglectable when using Determination as it does not need the Hitzone value to be 35 or higher to work.※ Multiple hits within a single attack (e.g. Pierce ammo) will have their own instance, which means Adaptation will check and possibly convert each hit separately.※ When a hit is converted, it is indicated by a purple effect similar to that of a critical hit."
+      },
+      {
+        "label": "Adaptation+1",
+        "minPoints": 10,
+        "description": ""
+      }
+    ]
   },
   {
     "id": 156,
     "name": "Dark Pulse",
-    "category": null
+    "category": "Other Skills",
+    "tiers": [
+      {
+        "label": "Dark Finale",
+        "minPoints": 20,
+        "description": "Upon health dropping to 0, you will rise again, gaining full Health and Stamina bars and Heavy Buffs but will also start constantly losing health at a steady rate.Health loss cannot be halted by any methods and you will cart after exactly one minute has passed. Although the health degeneration cannot be stopped by any standard method, completing a quest will disable health loss meaning any final carts will not occur.In the risen form you are buffed with the following skills: Adrenaline+2, Starving Wolf+2, Defense+120, Sharpening Artisan, Super HG Earplugs, Violent Wind Breaker, Quake Res+2, Heat Cancel and Cold Cancel.These skills are always active in the risen form, effectively ignoring their usual conditions (meaning SW & Adren work at all times).Alongside these skills you will gain a Super Armour effect that grants immunity to all forms of knock back."
+      }
+    ]
   },
   {
     "id": 157,
     "name": "Incitement",
-    "category": null
+    "category": "Map/Detection Skills",
+    "tiers": [
+      {
+        "label": "Incitement",
+        "minPoints": 10,
+        "description": "Attacking a monster will force its attention towards you rather than your fellow Hunters. Damage received from the monster will also be reduced during this time. The yellow eye icon indicating you were spotted will turn Red when the skill is in effect.Going outside of the monster's range for too long will undo the effect prematurely, the skill has a 30 second cooldown before it can be activated again.While being targeted you gain +40 True Raw."
+      }
+    ]
   },
   {
     "id": 158,
     "name": "Absolute Defense",
-    "category": null
+    "category": "Other Protection Skills",
+    "tiers": [
+      {
+        "label": "Absolute Defense",
+        "minPoints": 20,
+        "description": "Adds a shield aura that completely negates hits, including all damage and status effects that the hit would cause.Shield vanishes for a set duration after each hit blocked, with the duration before recharging taking longer with each hit taken.Reduces Raw damage to around 0.8x while the shield is down. Only the Raw part of the attack is reduced, meaning that the weapon keeps its Elemental and Status capacity.Duration Formula: 15 + (TriggerCount x 5.1) seconds, or 460 Frames extended by 153 Frames each trigger.※ Absolute Defense takes the highest priority on any hit, meaning that it will replace shielding, parrying, or skills such as Reflect on activation."
+      }
+    ]
   },
   {
     "id": 159,
     "name": "Drug Knowledge",
-    "category": null
+    "category": "Attack Skills",
+    "tiers": [
+      {
+        "label": "Drug Knowledge",
+        "minPoints": 10,
+        "description": "The attack power of weapons with status attributes is increased by 1/4 of the abnormal status value, and status damage is dealt on every hit.(※ Status value on weapon is set to 0.38x with 25% of the true base status)."
+      }
+    ]
   },
   {
     "id": 160,
     "name": "Tonfa Tech",
-    "category": null
+    "category": "Hiden/Tech Skills",
+    "tiers": [
+      {
+        "label": "Piercing Phoenix",
+        "minPoints": 30,
+        "description": "Attack x1.2, Fencing and Super High-Grade Earplugs when wielding Tonfa.An additional 6th Combo / EX Meter segment is added."
+      },
+      {
+        "label": "Tonfa Tech (Kaiden)",
+        "minPoints": 20,
+        "description": "Attack x1.1 and Fencing when wielding Tonfa."
+      },
+      {
+        "label": "Tonfa Tech (Expert)",
+        "minPoints": 10,
+        "description": "Fencing when wielding Tonfa."
+      },
+      {
+        "label": "Tonfa Tech (Novice)",
+        "minPoints": -10,
+        "description": "Attack x0.8 when wielding Tonfa."
+      }
+    ]
   },
   {
     "id": 161,
     "name": "Mindfulness",
-    "category": null
+    "category": "Gathering/Transport Skills",
+    "tiers": [
+      {
+        "label": "Imperturbable",
+        "minPoints": 15,
+        "description": "While using an item or gathering, the Hunter can't be interrupted by any attack."
+      },
+      {
+        "label": "Fully Prepared",
+        "minPoints": 10,
+        "description": "While using an item or gathering, the Hunter can't be interrupted by other hunters or small monsters."
+      },
+      {
+        "label": "Negligence",
+        "minPoints": -10,
+        "description": "Damage taken from monsters is increased when taking a hit while using an item or gathering."
+      }
+    ]
   },
   {
     "id": 162,
     "name": "Assistance",
-    "category": null
+    "category": "Other Skills",
+    "tiers": [
+      {
+        "label": "Assistance",
+        "minPoints": 10,
+        "description": "The player's arm will glow red and grants +20 Attack, +50 Defense, Damage Recovery Speed+2, Status Immunity and Peerless to nearby Hunters.Effective radius is 3 rolls or 2 with Evade Distance Up. Affected players have their arms glow yellow.※ The player with the skill does get +20 Attack and +50 Defense but does not benefit from Peerless, Status Immunity or Damage Recovery Speed.※ The skills overwrite lower tier versions if any affected hunters have them. For example a hunter with Status Halved would gain Status Immunity within radius while a hunter with StatusImmunity (Myriad) would retain their version of the skill.※ Attack is a final addition thatis always the stated value and completely unaffected by other skills and multipliers."
+      }
+    ]
   },
   {
     "id": 163,
     "name": "Stylish",
-    "category": null
+    "category": "Blademaster Skills",
+    "tiers": [
+      {
+        "label": "Stylish",
+        "minPoints": 15,
+        "description": "Recover some sharpness when evading through attacks. Amount recovered varies per weapon type.DB12 unitsGL10 unitsSnS8 unitsHH, SAF, GS, Lance5 unitsLS, LS Blink5 units, 7 unitsHammer3 unitsTonfa, Tonfa jump, Tonfa EX/emergency, Tonfa dash kick4 units, 3 units, 10 units, 6 unitsMS, MS magnetic evade10 units, 9 units"
+      }
+    ]
   },
   {
     "id": 164,
     "name": "Sword God",
-    "category": null
+    "category": "Blademaster Skills",
+    "tiers": [
+      {
+        "label": "Sword God+3",
+        "minPoints": 25,
+        "description": "Sharpness+1, Razor Sharp+2, Fencing+2 and Sharpening Artisan in one skill."
+      },
+      {
+        "label": "Sword God+2",
+        "minPoints": 20,
+        "description": "Sharpness+1, Razor Sharp+2, Fencing+2 in one skill."
+      },
+      {
+        "label": "Sword God+1",
+        "minPoints": 10,
+        "description": "Sharpness+1, Razor Sharp+1, Fencing+1 in one skill."
+      }
+    ]
   },
   {
     "id": 165,
     "name": "Status Assault",
-    "category": null
+    "category": "Attack Skills",
+    "tiers": [
+      {
+        "label": "Status Pursuit",
+        "minPoints": 10,
+        "description": "Inflicts additional damage with status attacks on monsters suffering status ailments.This will only work if the weapon status is the same as the status the monster suffers of, meaning that if your weapon has poison, Status Pursuit will work on a poisonned monster.The extra damage will happen only if the weapon effectively apply status, meaning that coupled to Drug Knowledge Status Pursuit will work on every hit when the monster suffers the appropriate status.SnSDBGSLSHammerHHLanceGLTonfaSAFMSFormulas (use listed modifiers for calculation)Poison Modifier1210201113151310101113Poison: 1.5 × (Effective True Poison + Modifier)Poison Crystal: 1.5 × (Effective True Poison / 10)Paralysis Modifier7210710779676Paralysis: 6 × (Effective True Paralysis + Modifier)Paralysis Crystal: 6 × (Effective True Paralysis / 10)e.g a LS with 400 listed poison would result in 1.5 × ((400 / 10) + 11) = 76.5 damage.In the final damage calculation, Status Assault extra damage will be added to the initial attack damage before accounting the monster's Defense rate.※ Fencing+2 does work with the extra hit (applying 20% of its value).※ Status Assault has no effect on Raviente even if Raviente suffers the appropriate status."
+      }
+    ]
   },
   {
     "id": 166,
     "name": "Thunder Clad",
-    "category": null
+    "category": "Attack Skills",
+    "tiers": [
+      {
+        "label": "Thunder Clad",
+        "minPoints": 10,
+        "description": "You gain a gauge below the character name and it is accumulated by evading, attacking, and moving.When the gauge reaches its maximum you gain the following skills and benefits for 60 seconds.All raw hitzones +5 (this stacks with other sources), Status Negate, Movement Speed Up+2, Weapon Handling, and Evade Distance Up.If you take a hit that launches you before the bar was filled you will lose all progress."
+      }
+    ]
   },
   {
     "id": 167,
     "name": "Gentle Shot",
-    "category": null
+    "category": "Gunner Skills",
+    "tiers": [
+      {
+        "label": "Gentle Shot+3",
+        "minPoints": 20,
+        "description": "Load Up & Recoil Reduction+3."
+      },
+      {
+        "label": "Gentle Shot+2",
+        "minPoints": 15,
+        "description": "Load Up & Recoil Reduction+2."
+      },
+      {
+        "label": "Gentle Shot+1",
+        "minPoints": 10,
+        "description": "Load Up & Recoil Reduction+1."
+      }
+    ]
   },
   {
     "id": 168,
     "name": "Blazing Grace",
-    "category": null
+    "category": "Other Skills",
+    "tiers": [
+      {
+        "label": "Blazing Majesty+2",
+        "minPoints": 15,
+        "description": "Adrenaline+2, Red Soul, Bomber, Fire Res+30, Artillery God, Summer Person, Terrain Damage Decreased (Large)Fire Attack Up (Large), Flame Sword+3 and Bomb Sword+3 combined into 1 skill."
+      },
+      {
+        "label": "Blazing Majesty+1",
+        "minPoints": 10,
+        "description": "Adrenaline+1, Red Soul, Bomber, Fire Res+20, Artillery Expert, Heat Cancel, Terrain Damage Decreased (Small)Fire Attack Up (Small), Flame Sword+2 and Bomb Sword+2 combined into 1 skill."
+      }
+    ]
   },
   {
     "id": 169,
     "name": "Dissolver",
-    "category": null
+    "category": "Attack Skills",
+    "tiers": [
+      {
+        "label": "Elemental Exploit",
+        "minPoints": 15,
+        "description": "Increases monsters hitzones elemental effectiveness values by a value that varies based on weapon class when they are 20 or higher.SnS, GS, LS, Hammer, HH, Lance, SAF, MS+15DB, GL, LBG+10Tonfa, HBG, Bow+5"
+      },
+      {
+        "label": "Elemental Diffusion",
+        "minPoints": -10,
+        "description": "Decreases monsters' hitzones elemental effectiveness values -5 when they are 20 or higher."
+      }
+    ]
   },
   {
     "id": 170,
     "name": "Combat Supremacy",
-    "category": null
+    "category": "Attack Skills",
+    "tiers": [
+      {
+        "label": "Combat Supremacy",
+        "minPoints": 10,
+        "description": "Attack is increased by 1.2x when having the weapon unsheathed.However, stamina will drain constantly, and effects that grant infinite stamina will decay in seconds.Skills like Peerless or Drawing Arts double the time it takes for stamina to hit 0 from 20 to 40 seconds."
+      }
+    ]
   },
   {
     "id": 171,
     "name": "Vigorous",
-    "category": null
+    "category": "Attack Skills",
+    "tiers": [
+      {
+        "label": "Vigorous",
+        "minPoints": 10,
+        "description": "When HP is 100 or more, attack power increases by 1.15x."
+      }
+    ]
   },
   {
     "id": 172,
     "name": "Drawing Arts",
-    "category": null
+    "category": "Other Skills",
+    "tiers": [
+      {
+        "label": "Drawing Arts+2",
+        "minPoints": 15,
+        "description": "While weapon unsheathed: Peerless, Evasion+2, Weapon HandlingWhile weapon is sheathed: Damage Recovery Speed+2, Quick Stamina Recovery (Large)"
+      },
+      {
+        "label": "Drawing Arts+1",
+        "minPoints": 10,
+        "description": "While weapon unsheathed: Marathon Runner, Evasion+1, Weapon HandlingWhile weapon is sheathed: Damage Recovery Speed+1, Quick Stamina Recovery (Small)"
+      }
+    ]
   },
   {
     "id": 173,
     "name": "Stylish Assault",
-    "category": null
+    "category": "Attack Skills",
+    "tiers": [
+      {
+        "label": "Stylish Assault",
+        "minPoints": 15,
+        "description": "Evading through attacks increases attack by +100 true raw for a time period that varies based on weapon class.SnS, DB, Tonfa15 SecondsHBG25 SecondsAll Others20 Seconds"
+      }
+    ]
   },
   {
     "id": 174,
     "name": "Crit Conversion",
-    "category": null
+    "category": "Attack Skills",
+    "tiers": [
+      {
+        "label": "Critical Conversion",
+        "minPoints": 10,
+        "description": "Affinity increases by 30%. When Affinity excesses 100%, Attack increases by the rounded down result of following formula : √(Excess Affinity) x 7.※ e.g. Ceaseless just activated and my total Affinity rised to 130%, then I have √(30) x 7 = 38,34 rounded down, so 38 extra Attack."
+      }
+    ]
   },
   {
     "id": 175,
     "name": "Determination",
-    "category": null
+    "category": "Attack Skills",
+    "tiers": [
+      {
+        "label": "Solid Determination",
+        "minPoints": 10,
+        "description": "Blesses the hunter with great benefits.※ True Attack+100, Affinity +100%, Critical Multiplier +0.25x, Adrenaline+2※ Exploit Weakness and Elemental Exploiter without any hitbox requirements※ BM: Sharpness+1 | GN: +5 to raw hitbox values within Critical DistanceHowever completely disables many skills.※ Attack, Expert, Issen, Exploit Weakness, Dissolver, Precision, Critical Shot, Absolute Defense, Soul Revival※ Strong attack +1, +2, +3 and +4. Stacks with Strong Attack+5 and +6.※ Any form of Guts (Guts, Great Guts, True Guts, Guts Ticket, Mega Guts Ticket)"
+      }
+    ]
   },
   {
     "id": 176,
     "name": "Blast Resistance",
-    "category": null
+    "category": "Abnormal Status Skills",
+    "tiers": [
+      {
+        "label": "Blast Resistance",
+        "minPoints": 10,
+        "description": "Grants immunity to Blast blight."
+      }
+    ]
   },
   {
     "id": 177,
     "name": "Ice Age",
-    "category": null
+    "category": "Other Skills",
+    "tiers": [
+      {
+        "label": "Ice Age",
+        "minPoints": 10,
+        "description": "Upon attacking a monster the hunter is surrounded by an icy aura. This aura deals damage to all monsters in its area and grants a number of different skills. This aura has three stages and will progress with more hits.The aura also grants Stamina Recovery Up and Razor Sharp to all hunters affected by the aura and the one with the skill also gets Winter General.Multiple players with Ice Age active do their own unique and independant damage for each instance.Damage is dealt once every second fixed rather than over time.GS1 hit8(4) hits17(9) hitsStage 1: (0.042 x Weapon True Raw x DefRate) DPS. Duration: 11s-18s, 7s when downgraded to.Stage 2: (0.098 x Weapon True Raw x DefRate) DPS. Duration: 14s-25s, 10s when downgraded to.Stage 3: (0.14 x Weapon True Raw x DefRate) DPS. Duration: 6s-9s.The numbers in parenthesis are hits required when using Fencing+2.Hammer, HH1 hit9(5) hits21(11) hitsLS, Lance, GL, SAF, HBG1 hit12(6) hits26(13) hitsSnS, LBG, Bow, Tonfa1 hit17(9) hits38(19) hitsDB1 hit32(16) hits75(38) hitsMS1 hit10(5) hits22(11) hitsWeapon True Raw refers to the weapon true attack value, which can be affected by Sigils, SR Attack buff and 30 extra Raw for equipping 3 or more G+ armor parts. However it is not affected by any armor skills.※ On average Ice Age damage output is roughly equivalent to poison damage output for end game equipment, this varies greatly depending the defense rate of the monster."
+      }
+    ]
   },
   {
     "id": 178,
     "name": "Switch Axe tech",
-    "category": null
+    "category": "Hiden/Tech Skills",
+    "tiers": [
+      {
+        "label": "Edge Marshal",
+        "minPoints": 30,
+        "description": "Attack x1.2, Fencing and Super High-Grade Earplugs when wielding a Switch Axe.Successfully doing certain actions increases attack by x1.05 for a short time (Morphing in Earth Style, Sword Attacks in Heaven Style and Guarding in Storm Style.)Attacking in axe mode increases phial gauge, and attacks utilising the phial gauge consume less.Stamina consumption for infinite swing combo is halved."
+      },
+      {
+        "label": "SAF Tech (Kaiden)",
+        "minPoints": 20,
+        "description": "Attack x1.1 and Fencing when wielding a Switch Axe."
+      },
+      {
+        "label": "SAF Tech (Expert)",
+        "minPoints": 10,
+        "description": "Fencing when wielding a Switch Axe."
+      },
+      {
+        "label": "SAF Tech (Novice)",
+        "minPoints": -10,
+        "description": "Attack x0.8 when wielding a Switch Axe."
+      }
+    ]
   },
   {
     "id": 179,
     "name": "Lavish Attack",
-    "category": null
+    "category": "Attack Skills",
+    "tiers": [
+      {
+        "label": "Consumption Slayer",
+        "minPoints": 10,
+        "description": "Attack+100 at the cost of additional sharpness loss per hit with Blademaster weapons.Additional 0.2x multiplier on coatings at the cost of double consumption per shot. (no effect on bowguns)"
+      }
+    ]
   },
   {
     "id": 180,
     "name": "Fortification",
-    "category": null
+    "category": "Defensive Skills",
+    "tiers": [
+      {
+        "label": "Fortification+2",
+        "minPoints": 15,
+        "description": "Hybrid skill containing Guard+2, Peerless and Weapon Handling."
+      },
+      {
+        "label": "Fortification+1",
+        "minPoints": 10,
+        "description": "Hybrid skill containing Guard+1, Marathon Runner and Weapon Handling."
+      }
+    ]
   },
   {
     "id": 181,
     "name": "Freeze Res",
-    "category": null
+    "category": "Abnormal Status Skills",
+    "tiers": [
+      {
+        "label": "Freeze Resistance",
+        "minPoints": 10,
+        "description": "Grants immunity to Freezing (Toa Tesukatora)."
+      }
+    ]
   },
   {
     "id": 182,
     "name": "Obscurity",
-    "category": null
+    "category": "Attack Skills",
+    "tiers": [
+      {
+        "label": "Obscurity",
+        "minPoints": 10,
+        "description": "Your attack will increase by a set value every time you block an attack, up to 10x. Values differ per weapon.Taking a hit from monsters will entirely reset the attack gain.SnSLanceGLTonfaGSSAFMSLSFrom 1 to 5 Blocked AttacksAttack +40---Attack +30---Attack +20From 6 to 10 Blocked AttacksAttack +20---Attack +15---Attack +10Max BuffAttack +300---Attack +225---Attack +150"
+      }
+    ]
   },
   {
     "id": 183,
     "name": "Sniper",
-    "category": null
+    "category": "Gunner Skills",
+    "tiers": [
+      {
+        "label": "Sniper",
+        "minPoints": 10,
+        "description": "Auto-Reload and +5 to weakness value within critical distance. *Should only be used with Bows.*"
+      }
+    ]
   },
   {
     "id": 184,
     "name": "Evasion Boost",
-    "category": null
+    "category": "Other Protection Skills",
+    "tiers": [
+      {
+        "label": "Evasion Boost",
+        "minPoints": 15,
+        "description": "Grants the effects of Evasion+2 and Evade Distance Up."
+      }
+    ]
   },
   {
     "id": 185,
     "name": "Rush",
-    "category": null
+    "category": "Attack Skills",
+    "tiers": [
+      {
+        "label": "Rush",
+        "minPoints": 10,
+        "description": "Successful attacks and guard actions gradually increase an invisible meter that has two stages.Stage one: Chest flashes and gains purple effect, giving +50 attack. Stage two: Flash repeats, gains +130 attack total, and running with weapons no longer consumes stamina.The effect is completely reset when you use any items or sheathe your weapon.The attack meter builds based on the Motion Value of the attacks used. As damage is not involved, this means you can build up Rush on a dead monster.Melee weapons gain stages based purely on the total Motion Value dealt.SnS16 MV's800 MV'sDB17 MV's850 MV'sGS34 MV's1700 MV'sLS23 MV's1150 MV'sHammer16 MV's800 MV'sHH16 MV's800 MV'sLance27 MV's1350 MV'sGL25 MV's1250 MV'sTonfa23 MV's1150 MV'sSAF27 MV's1350 MV'sMS?? MV's???? MV'sRanged400 values20000 valuesGuarding1 time10 timesRanged weapons take into account all multipliers (Critical, Critical Distance, Bullet, Charge) and Raw Attack for stages.※ e.g. Firing a Normal lv.1 shot with a 1140 Attack LBG using a set with an Origin piece, Steady Hand and Issen+3, you would get Stage 1 in a single shot, and stage 2 in around 46 shots (0.12 x 1.5 x 1.8 x 1.1 x 1140 = 400).※ With stage 2 active, the Extreme Style run has no stamina consumption but will not work if your stamina is literally 0."
+      }
+    ]
   },
   {
     "id": 186,
     "name": "Ceaseless",
-    "category": null
+    "category": "Attack Skills",
+    "tiers": [
+      {
+        "label": "Ceaseless",
+        "minPoints": 10,
+        "description": "Increases affinity and crit multiplier across 2 stages.Stage 1+35% Affinity+0.1x Crit MultiplierStage 2+50% Affinity+0.15x Crit MultiplierEffect runs out when not attacking for too long.Reflect and Stylish Up count towards hit totals but Fencing+2 does not."
+      }
+    ]
   },
   {
     "id": 187,
     "name": "Skilled",
-    "category": null
+    "category": "Attack Skills",
+    "tiers": [
+      {
+        "label": "Skilled",
+        "minPoints": 15,
+        "description": "Grants the effects of Speed Eater, Movement Speed+2, True Guts and Weapon Handling."
+      }
+    ]
   },
   {
     "id": 188,
     "name": "Point Breakthrough",
-    "category": null
+    "category": "Attack Skills",
+    "tiers": [
+      {
+        "label": "Point Breakthrough",
+        "minPoints": 10,
+        "description": "Increases the Raw Weakness Value of a part that has been hit repeatedly by +5, for a limited period of time. After first activation, the part will require less hits to be activated.SnS30 seconds15(12) hits9(8) hitsThe numbers in parenthesis are hits required when using Fencing+2.DB30 seconds20(17) hits12(10) hitsGS55 seconds6(5) hits3(3) hitsLS30 seconds10(8) hits6(5) hitsHammer50 seconds6(5) hits4(3) hitsHH40 seconds7(6) hits4(4) hitsLance35 seconds10(8) hits6(5) hitsGL, Heatblade30 seconds10(8) hits, 6(5) hits6(5) hits, 4(3) hitsTonfa30 seconds16(13) hits10(8) hitsSAF40 seconds8(7) hits5(4) hitsMS40 seconds7(6) hits5(4) hitsLBG30 seconds20 hits12 hitsHBG45 seconds8 hits5 hitsBow35 seconds17 hits10 hits※ The debuff effect can stack up on multiple parts at the same time, however only one part actually gets the +5 hitzone buff, and hitting that same part or other parts does neither extend or cancel the duration of an active effect. It counts as a status buildup and will slowly decay over time, so hitting less often will need more hits."
+      }
+    ]
   },
   {
     "id": 189,
     "name": "Abnormality",
-    "category": null
+    "category": "Attack Skills",
+    "tiers": [
+      {
+        "label": "Abnormality",
+        "minPoints": 15,
+        "description": "Grants Status Attack Up, Status Pursuit and Drug Knowledge."
+      }
+    ]
   },
   {
     "id": 190,
     "name": "Spacing",
-    "category": null
+    "category": "Gunner Skills",
+    "tiers": [
+      {
+        "label": "Spacing",
+        "minPoints": 10,
+        "description": "Alters critical distance for Normal,Pierce,Pellet and Blunt shots to be lower and further increases damage at critical distance.If you consistently attack within this critical distance you gain Movement Speed+2 and Evade Distance Up.LBG and HBG get increased perfect shot (3 Segments) and compression windows (2 segments). Bow gets lowered charge times that stack with Auto-Reload.Does not buff attacks without Critical Distance, is added to the buff for the first half of HBG's Critical Distance.Buff builds an internal meter that fills in much the same way as Thunder Clad and total hits needed will vary with Attack, Affinity, Shot Type, etc. but meter build up is not reset on being launched etc."
+      }
+    ]
   },
   {
     "id": 191,
     "name": "Furious",
-    "category": null
+    "category": "Attack Skills",
+    "tiers": [
+      {
+        "label": "Furious",
+        "minPoints": 10,
+        "description": "Increase Attack, Affinity, Elemental and Status across 3 stages as you perform attacks, evasions and guards.A mix of damage and guards/evades is required to progress to higher stages. Damage only will not work.Taking hits from monsters will drop Furious level by one stage, except for cheap damage. Multiple hits will remove multiple Furious stages.Furious stages have greatly noticeable visual effects indicating the current level.Stage 3True Attack +180Elemental 1.20xStatus 1.20xAffinity +40%The entire body emits an overwhelming orange aura.Stage 2True Attack +100Elemental 1.10xStatus 1.10xAffinity +25%Both arms emit a noticeable orange aura.Stage 1True Attack +70Elemental 1.05xStatus 1.05xAffinity +10%Left arm emits a weak orange aura.Each weapon require a different amount of actions to progress to higher Furious stages.GSDBHammer, HH, LBG, HBG, BowLS, SAF, MSSnS, TonfaLance, GunlanceEvasions required1, 2, 52, 3, 71, 2, 51, 3, 62, 3, 71, 2, 5Guard required1, 3, 61, 3, 61, 2, 51, 2, 5※ Doing a Perfect Guard while using the Caravan skill Perfect Defense will rise Furious stages twice faster for LS, GS, SAF and MS."
+      }
+    ]
   },
   {
     "id": 192,
     "name": "MS Tech",
-    "category": null
+    "category": "Hiden/Tech Skills",
+    "tiers": [
+      {
+        "label": "Magnetic Star",
+        "minPoints": 30,
+        "description": "Attack x1.2, Fencing and Super High-Grade Earplugs when wielding a Magnet Spike.Successful evasive motions boost attack (x1.03) and gauge recovery (x1.5) for 30 seconds.Movement speed up (x1.2). Magnetic target marker doesn't disappear."
+      },
+      {
+        "label": "MS Tech (Kaiden)",
+        "minPoints": 20,
+        "description": "Attack x1.1 and Fencing when wielding a Magnet Spike."
+      },
+      {
+        "label": "MS Tech (Expert)",
+        "minPoints": 10,
+        "description": "Fencing when wielding a Magnet Spike."
+      },
+      {
+        "label": "MS Tech (Novice)",
+        "minPoints": -10,
+        "description": "Attack x0.8 when wielding a Magnet Spike."
+      }
+    ]
   },
   {
     "id": 193,
     "name": "Trained",
-    "category": null
+    "category": "Attack Skills",
+    "tiers": [
+      {
+        "label": "Trained+2",
+        "minPoints": 15,
+        "description": "Grants Focus+2 and Kickboxing King. Stops hits interacting with players and AI."
+      },
+      {
+        "label": "Trained+1",
+        "minPoints": 10,
+        "description": "Grants Focus+1 and Martial Arts. Stops hits interacting with players and AI."
+      }
+    ]
   },
   {
     "id": 194,
     "name": "Thunder Sword",
-    "category": null
+    "category": "Blademaster Skills",
+    "tiers": [
+      {
+        "label": "Thunder Sword+3",
+        "minPoints": 20,
+        "description": "When a Thunder Sword Crystal is loaded, the effect of Thunder Sword [strong] is activated. ※ Consumes double sharpness"
+      },
+      {
+        "label": "Thunder Sword+2",
+        "minPoints": 15,
+        "description": "When a Thunder Sword Crystal is loaded, the effect of Thunder Sword [medium] is activated. ※ Consumes double sharpness"
+      },
+      {
+        "label": "Thunder Sword+1",
+        "minPoints": 10,
+        "description": "When a Thunder Sword Crystal is loaded, the effect of Thunder Sword [weak] is activated. ※ Consumes double sharpness"
+      }
+    ]
   }
 ]

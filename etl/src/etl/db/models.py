@@ -145,3 +145,14 @@ class Weapon:
 class SkillPoints:
     skill: Skill
     points: int
+
+
+@dataclass(frozen=True, slots=True)
+class SkillTier:
+    """One named, point-thresholded tier of a normal skill (e.g. "Health+50"
+    at threshold 40) -- see docs/data-format-notes.md "Skill tiers".
+    threshold can be negative (a penalty tier)."""
+
+    label: str
+    threshold: int
+    description: str | None = None

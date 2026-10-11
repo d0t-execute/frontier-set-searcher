@@ -1,7 +1,7 @@
 import sqlite3
 
 from etl.db import repository as repo
-from etl.db.models import SkillPoints
+from etl.db.models import SkillPoints, SkillTier
 
 
 def test_insert_and_fetch_equipment_by_external_id(conn: sqlite3.Connection) -> None:
@@ -271,3 +271,49 @@ def test_zenith_weapon_round_trips_zenith_skill(conn: sqlite3.Connection) -> Non
     assert fetched == created
     assert fetched is not None
     assert fetched.zenith_skill_id == zenith_skill.id
+
+
+def test_skill_tiers_round_trip_in_order_including_negative_thresholds(
+    conn: sqlite3.Connection,
+) -> None:
+    skill = repo.insert_skill(conn, name="Health")
+
+    repo.insert_skill_tier(
+        conn,
+        skill_id=skill.id,
+        tier_order=0,
+        label="Health+50",
+        threshold=40,
+        description="Maximum Health +50",
+    )
+    repo.insert_skill_tier(
+        conn,
+        skill_id=skill.id,
+        tier_order=1,
+        label="Health-20",
+        threshold=-15,
+        description="Maximum Health -20",
+    )
+
+    assert repo.get_skill_tiers(conn, skill.id) == [
+        SkillTier(label="Health+50", threshold=40, description="Maximum Health +50"),
+        SkillTier(label="Health-20", threshold=-15, description="Maximum Health -20"),
+    ]
+
+
+def test_get_skill_tiers_returns_empty_list_for_a_skill_with_no_tiers(
+    conn: sqlite3.Connection,
+) -> None:
+    skill = repo.insert_skill(conn, name="Gather")
+
+    assert repo.get_skill_tiers(conn, skill.id) == []
+
+
+def test_set_skill_category_updates_an_existing_skill(conn: sqlite3.Connection) -> None:
+    skill = repo.insert_skill(conn, name="Health")
+
+    repo.set_skill_category(conn, skill_id=skill.id, category="Health and Stamina")
+
+    fetched_skill = repo.get_skill_by_name(conn, "Health")
+    assert fetched_skill is not None
+    assert fetched_skill.category == "Health and Stamina"

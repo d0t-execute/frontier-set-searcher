@@ -3,7 +3,7 @@ from pathlib import Path
 
 from etl.db import repository as repo
 from etl.db.connection import connect
-from etl.pipeline import load_equipment, load_weapons
+from etl.pipeline import load_equipment, load_skill_tiers, load_weapons
 
 FIXTURES_DIR = Path(__file__).resolve().parent / "fixtures"
 
@@ -256,3 +256,92 @@ def test_load_weapons_shares_one_zenith_skill_row_across_multiple_weapons(
 
     (zenith_skill_row_count,) = conn.execute("SELECT COUNT(*) FROM zenith_skill").fetchone()
     assert zenith_skill_row_count == 1
+
+
+_TIER_HTML = """
+<table id="skills_base"><tbody id="skills_base">
+<tr onclick="x"><th colspan="5" class="title">-Health and Stamina-</th></tr>
+<tr class="l"><td class="g" rowspan="2">Health</td><td class="g" rowspan="2">o</td>
+    <td class="t">Health+50</td><td class="n">40</td><td class="b">+50 max health</td></tr>
+<tr><td class="t">Health-10</td><td class="n">-10</td><td class="b">-10 max health</td></tr>
+<tr class="l"><td class="g">Not In Catalog</td><td class="g"></td>
+    <td class="t">Not In Catalog</td><td class="n">10</td><td class="b">desc</td></tr>
+</tbody></table>
+"""
+
+
+def test_load_skill_tiers_attaches_tiers_and_category_to_a_matching_skill(
+    tmp_path: Path,
+) -> None:
+    conn = _conn(tmp_path)
+    health = repo.insert_skill(conn, name="Health")
+
+    load_skill_tiers(conn, html=_TIER_HTML)
+
+    tiers = repo.get_skill_tiers(conn, health.id)
+    assert [t.label for t in tiers] == ["Health+50", "Health-10"]
+    assert [t.threshold for t in tiers] == [40, -10]
+
+    updated = repo.get_skill_by_name(conn, "Health")
+    assert updated is not None
+    assert updated.category == "Health and Stamina"
+
+
+def test_load_skill_tiers_reports_groups_with_no_matching_catalog_skill(
+    tmp_path: Path,
+) -> None:
+    conn = _conn(tmp_path)
+    repo.insert_skill(conn, name="Health")
+
+    summary = load_skill_tiers(conn, html=_TIER_HTML)
+
+    assert summary.matched_group_count == 1
+    assert summary.unmatched_group_names == ("Not In Catalog",)
+
+
+def test_load_skill_tiers_reports_catalog_skills_with_no_tier_data(tmp_path: Path) -> None:
+    conn = _conn(tmp_path)
+    repo.insert_skill(conn, name="Health")
+    repo.insert_skill(conn, name="Gather")  # not present in _TIER_HTML at all
+
+    summary = load_skill_tiers(conn, html=_TIER_HTML)
+
+    assert summary.unmatched_skill_names == ("Gather",)
+
+
+def test_load_skill_tiers_is_safe_to_run_twice(tmp_path: Path) -> None:
+    # Re-running the pipeline against the same DB (e.g. after a re-crawl)
+    # must not hit the (skill_id, tier_order) uniqueness constraint.
+    conn = _conn(tmp_path)
+    repo.insert_skill(conn, name="Health")
+
+    load_skill_tiers(conn, html=_TIER_HTML)
+    load_skill_tiers(conn, html=_TIER_HTML)
+
+    health = repo.get_skill_by_name(conn, "Health")
+    assert health is not None
+    assert len(repo.get_skill_tiers(conn, health.id)) == 2
+
+
+def test_load_skill_tiers_matches_a_known_alias_when_the_exact_name_differs(
+    tmp_path: Path,
+) -> None:
+    # The two sites are independently-maintained fan translations -- e.g. the
+    # tier site's "Para" is this project's catalog's "Paralysis". Confirmed
+    # against the live site's full run (see pipeline.SKILL_TIER_NAME_ALIASES).
+    conn = _conn(tmp_path)
+    repo.insert_skill(conn, name="Paralysis")
+    html = """
+    <table id="skills_base"><tbody id="skills_base">
+    <tr class="l"><td class="g">Para</td><td class="g"></td>
+        <td class="t">Negate Para</td><td class="n">20</td><td class="b">desc</td></tr>
+    </tbody></table>
+    """
+
+    summary = load_skill_tiers(conn, html=html)
+
+    assert summary.matched_group_count == 1
+    assert summary.unmatched_group_names == ()
+    skill = repo.get_skill_by_name(conn, "Paralysis")
+    assert skill is not None
+    assert len(repo.get_skill_tiers(conn, skill.id)) == 1

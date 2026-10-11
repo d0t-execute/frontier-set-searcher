@@ -107,7 +107,39 @@ def test_exports_a_skill_lookup_table(tmp_path: Path) -> None:
     export_bundle(conn, out_dir)
 
     assert _load(out_dir / "skills.json") == [
-        {"id": attack.id, "name": "Attack Up (Small)", "category": "offense"}
+        {"id": attack.id, "name": "Attack Up (Small)", "category": "offense", "tiers": []}
+    ]
+
+
+def test_exports_a_skills_tiers_in_order(tmp_path: Path) -> None:
+    conn = _conn(tmp_path)
+    health = repo.insert_skill(conn, name="Health", category="Health and Stamina")
+    repo.insert_skill_tier(
+        conn,
+        skill_id=health.id,
+        tier_order=0,
+        label="Health+50",
+        threshold=40,
+        description="Maximum Health +50",
+    )
+    repo.insert_skill_tier(
+        conn, skill_id=health.id, tier_order=1, label="Health-10", threshold=-10, description=None
+    )
+    conn.commit()
+    out_dir = tmp_path / "bundle"
+
+    export_bundle(conn, out_dir)
+
+    assert _load(out_dir / "skills.json") == [
+        {
+            "id": health.id,
+            "name": "Health",
+            "category": "Health and Stamina",
+            "tiers": [
+                {"label": "Health+50", "minPoints": 40, "description": "Maximum Health +50"},
+                {"label": "Health-10", "minPoints": -10, "description": None},
+            ],
+        }
     ]
 
 

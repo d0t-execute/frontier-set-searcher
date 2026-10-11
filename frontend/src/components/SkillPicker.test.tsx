@@ -2,12 +2,17 @@ import { fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { SkillPicker } from './SkillPicker'
+import type { SkillOption } from './SkillPicker'
 
-const SKILLS = [
-  { id: 1, name: 'Attack' },
-  { id: 2, name: 'Defense' },
-  { id: 3, name: 'Evasion' },
-]
+function skill(
+  id: number,
+  name: string,
+  overrides: Partial<Pick<SkillOption, 'category' | 'tiers'>> = {},
+): SkillOption {
+  return { id, name, category: null, tiers: [], ...overrides }
+}
+
+const SKILLS = [skill(1, 'Attack'), skill(2, 'Defense'), skill(3, 'Evasion')]
 
 describe('SkillPicker', () => {
   it('offers every skill in the "add a skill" control when none are picked', () => {
@@ -102,5 +107,117 @@ describe('SkillPicker', () => {
 
     const addControl = screen.getByRole('combobox', { name: /add a skill/i })
     expect(within(addControl).queryByRole('option', { name: 'Attack' })).not.toBeInTheDocument()
+  })
+
+  describe('categorization', () => {
+    const CATEGORIZED_SKILLS = [
+      skill(1, 'Health', { category: 'Health and Stamina' }),
+      skill(2, 'Vampirism', { category: 'Health and Stamina' }),
+      skill(3, 'Attack', { category: 'Attack Skills' }),
+      skill(4, 'Mystery Skill'), // no category
+    ]
+
+    it('groups the add-a-skill options under their category as optgroups', () => {
+      render(<SkillPicker skills={CATEGORIZED_SKILLS} requirements={[]} onChange={vi.fn()} />)
+
+      const addControl = screen.getByRole('combobox', { name: /add a skill/i })
+      const healthGroup = within(addControl).getByRole('group', { name: 'Health and Stamina' })
+      expect(
+        within(healthGroup)
+          .getAllByRole('option')
+          .map((o) => o.textContent),
+      ).toEqual(['Health', 'Vampirism'])
+      expect(
+        within(within(addControl).getByRole('group', { name: 'Attack Skills' })).getByRole(
+          'option',
+          { name: 'Attack' },
+        ),
+      ).toBeInTheDocument()
+    })
+
+    it('groups skills with no category under "Other"', () => {
+      render(<SkillPicker skills={CATEGORIZED_SKILLS} requirements={[]} onChange={vi.fn()} />)
+
+      const addControl = screen.getByRole('combobox', { name: /add a skill/i })
+      const otherGroup = within(addControl).getByRole('group', { name: 'Other' })
+      expect(within(otherGroup).getByRole('option', { name: 'Mystery Skill' })).toBeInTheDocument()
+    })
+  })
+
+  describe('leveled skills', () => {
+    const VAMPIRISM_TIERS = [
+      { label: 'Vampirism+2', minPoints: 20, description: null },
+      { label: 'Vampirism+1', minPoints: 10, description: null },
+    ]
+    const LEVELED_SKILLS = [skill(1, 'Vampirism', { tiers: VAMPIRISM_TIERS })]
+
+    it('renders a level select instead of a raw point input for a skill with tiers', () => {
+      render(
+        <SkillPicker
+          skills={LEVELED_SKILLS}
+          requirements={[{ skillId: 1, minPoints: 10 }]}
+          onChange={vi.fn()}
+        />,
+      )
+
+      expect(screen.queryByRole('spinbutton')).not.toBeInTheDocument()
+      const levelSelect = screen.getByRole('combobox', { name: /vampirism level/i })
+      expect(
+        within(levelSelect)
+          .getAllByRole('option')
+          .map((o) => o.textContent),
+      ).toEqual(['Vampirism+2', 'Vampirism+1'])
+      expect(levelSelect).toHaveValue('10')
+    })
+
+    it("sets the requirement's minPoints to the chosen tier's threshold", async () => {
+      const onChange = vi.fn()
+      const user = userEvent.setup()
+      render(
+        <SkillPicker
+          skills={LEVELED_SKILLS}
+          requirements={[{ skillId: 1, minPoints: 10 }]}
+          onChange={onChange}
+        />,
+      )
+
+      await user.selectOptions(
+        screen.getByRole('combobox', { name: /vampirism level/i }),
+        'Vampirism+2',
+      )
+
+      expect(onChange).toHaveBeenCalledWith([{ skillId: 1, minPoints: 20 }])
+    })
+
+    it('defaults a newly-added leveled skill to its weakest non-penalty tier', async () => {
+      const onChange = vi.fn()
+      const user = userEvent.setup()
+      render(<SkillPicker skills={LEVELED_SKILLS} requirements={[]} onChange={onChange} />)
+
+      await user.selectOptions(screen.getByRole('combobox', { name: /add a skill/i }), 'Vampirism')
+
+      expect(onChange).toHaveBeenCalledWith([{ skillId: 1, minPoints: 10 }])
+    })
+
+    it('defaults to the first tier when every tier is a penalty (negative threshold)', async () => {
+      const onChange = vi.fn()
+      const user = userEvent.setup()
+      const allPenalty = [
+        skill(1, 'Cursed Skill', {
+          tiers: [
+            { label: 'Cursed-1', minPoints: -10, description: null },
+            { label: 'Cursed-2', minPoints: -20, description: null },
+          ],
+        }),
+      ]
+      render(<SkillPicker skills={allPenalty} requirements={[]} onChange={onChange} />)
+
+      await user.selectOptions(
+        screen.getByRole('combobox', { name: /add a skill/i }),
+        'Cursed Skill',
+      )
+
+      expect(onChange).toHaveBeenCalledWith([{ skillId: 1, minPoints: -10 }])
+    })
   })
 })

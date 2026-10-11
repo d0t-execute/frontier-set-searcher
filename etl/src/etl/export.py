@@ -25,6 +25,7 @@ from etl.db.models import EquipmentType
 from etl.db.repository import (
     get_decoration_skills,
     get_equipment_skills,
+    get_skill_tiers,
     list_decorations,
     list_equipment,
     list_skills,
@@ -55,7 +56,18 @@ def export_bundle(conn: sqlite3.Connection, output_dir: Path) -> None:
 
 
 def _export_skills(conn: sqlite3.Connection) -> list[dict[str, Any]]:
-    return [{"id": s.id, "name": s.name, "category": s.category} for s in list_skills(conn)]
+    return [
+        {
+            "id": s.id,
+            "name": s.name,
+            "category": s.category,
+            "tiers": [
+                {"label": t.label, "minPoints": t.threshold, "description": t.description}
+                for t in get_skill_tiers(conn, s.id)
+            ],
+        }
+        for s in list_skills(conn)
+    ]
 
 
 def _export_decorations(conn: sqlite3.Connection) -> list[dict[str, Any]]:

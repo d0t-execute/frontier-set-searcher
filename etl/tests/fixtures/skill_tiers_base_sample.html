@@ -1,0 +1,58 @@
+<html lang="ja"><head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<link href="./tables.css" rel="stylesheet">
+</head><body class="scroller">
+
+<table id="skills_base" style="width:100%; padding-right:10px;" cellspacing="0" cellpadding="1" border="1">
+
+	<colgroup>
+		<col>	<col>	<col>	<col style="width:2em">
+	</colgroup>
+
+	<tbody id="skills_base">
+
+	<tr><td colspan="2" rowspan="1" class="intro" style="background-color: rgb(95, 85, 130);">&#10148; All Skills :</td><td colspan="4" style="background-color:rgb(95,85,130);">Index of all in-game skills.</td> </tr>
+		<tr class="sep"></tr>
+	<tr onclick="parent.toggleTitle(this);"><th colspan="5" class="title">-Health and Stamina-</th>	</tr>
+<!-- Health -->
+		<tr class="sep"></tr>
+		<tr class="l" style=""><td class="g" rowspan="4">Health</td><td class="g" rowspan="4">&#9675;</td><td class="t">Health+50</td><td class="n">40</td><td style="" class="b">Maximum Health +50</td></tr>
+		<tr style=""><td class="t">Health+40</td><td class="n">30</td><td style="" class="b">Maximum Health +40</td></tr>
+		<tr style=""><td class="t">Health-10</td><td class="n">-10</td><td style="" class="b">Maximum Health -10</td></tr>
+		<tr style=""><td class="t">Health-20</td><td class="n">-15</td><td style="" class="b">Maximum Health -20</td></tr>
+<!-- Lone Wolf (single tier) -->
+		<tr class="sep" style=""></tr>
+		<tr class="l" style=""><td class="g">Lone Wolf</td><td class="g"></td><td class="t">Lone Wolf</td><td class="n">10</td><td style="" class="b">Solo buff.</td></tr>
+
+		<tr class="sep" style=""></tr>
+		<tr onclick="parent.toggleTitle(this);"><th colspan="5" class="title">-Attack Skills-</th></tr>
+
+<!-- Adrenaline: baseline row has no real tier, and two tiers have ambiguous
+     <br>-separated dual values that must not be parsed as a single number -->
+		<tr class="sep"></tr>
+		<tr class="l" style=""><td class="g" rowspan="4">Adrenaline</td><td class="g" rowspan="4">&#215;</td><td class="n" colspan="2"><br></td><td style="" class="b">Baseline: no bonus.</td></tr>
+		<tr style=""><td class="t">Adrenaline+2</td><td class="n">15<br>&#8741;<br>20</td><td style="" class="b">Large bonus.</td></tr>
+		<tr style=""><td class="t">Adrenaline+1</td><td class="n">10<br>21</td><td style="" class="b">Small bonus.</td></tr>
+		<tr style=""><td class="t">Worry</td><td class="n">-15<br>30</td><td style="" class="b">Penalty.</td></tr>
+
+<!-- Guard: baseline row's description embeds a hidden, nested <table> with
+     its own <tr>/<td> rows that must NOT be picked up as sibling skill rows -->
+		<tr class="sep" style=""></tr>
+		<tr class="l" style=""><td class="g" rowspan="3">Guard</td><td class="g" rowspan="3">&#9675;</td><td class="n" colspan="2"><br></td><td style="" class="b">No damage if not significantly attacked.<table style="display: none;"><tbody><tr><th>Weapon type</th><th>Power Value1~15</th></tr><tr><td class="t">SnS</td><td>Slight KB</td></tr></tbody></table></td></tr>
+		<tr style=""><td class="t">Guard+2</td><td class="n">20</td><td style="" class="b">Large guard window.</td></tr>
+		<tr style=""><td class="t">Guard+1</td><td class="n">10</td><td style="" class="b">Guard window.</td></tr>
+
+		<tr class="sep" style=""></tr>
+		<tr onclick="parent.toggleTitle(this);"><th colspan="5" class="title">-Hiden/Tech Skills-</th></tr>
+
+<!-- SnS Tech: top tier's "points" column is non-numeric text, not a threshold -->
+		<tr class="sep"></tr>
+		<tr class="l" style=""><td class="g" rowspan="4">SnS Tech</td><td class="g" rowspan="4"></td><td class="t">SnS Tech (Master)</td><td class="n">Both Hiden</td><td style="" class="b">Requires both Hiden skills.</td></tr>
+		<tr style=""><td class="t">Sword Saint</td><td class="n">30</td><td style="" class="b">Top numeric tier.</td></tr>
+		<tr style=""><td class="t">SnS Tech (Expert)</td><td class="n">10</td><td style="" class="b">Mid tier.</td></tr>
+		<tr style=""><td class="t">SnS Tech (Novice)</td><td class="n">-10</td><td style="" class="b">Penalty tier.</td></tr>
+
+	</tbody>
+</table>
+
+</body></html>

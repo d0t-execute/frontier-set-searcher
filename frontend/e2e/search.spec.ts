@@ -9,7 +9,13 @@ test('picks skills and streams ranked, decorated results from the real dataset',
   await expect(addSkill).toBeVisible()
 
   await addSkill.selectOption({ label: 'Attack' })
-  await page.getByRole('spinbutton').first().fill('15')
+  // Attack has real point-threshold levels (scraped from a second data
+  // source -- see docs/data-format-notes.md "Skill tiers"), so picking it
+  // renders a level select rather than a raw points input; this exercises
+  // that real level-selection flow end to end.
+  await page
+    .getByRole('combobox', { name: /attack level/i })
+    .selectOption({ label: 'Attack Up (Small)' })
 
   await page.getByRole('button', { name: /^search$/i }).click()
 
@@ -26,7 +32,11 @@ test('picks skills and streams ranked, decorated results from the real dataset',
 test('shows an empty-results message for a requirement nothing can meet', async ({ page }) => {
   await page.goto('/')
 
-  await page.getByRole('combobox', { name: /add a skill/i }).selectOption({ label: 'Attack' })
+  // Adrenaline's source data has two ambiguous, unparseable point values per
+  // tier (see parse/skill_tiers.py's module docstring), so it has no tiers
+  // and still falls back to a raw points input -- useful here since this
+  // test needs an arbitrarily large, unachievable target.
+  await page.getByRole('combobox', { name: /add a skill/i }).selectOption({ label: 'Adrenaline' })
   await page.getByRole('spinbutton').first().fill('999999')
 
   await page.getByRole('button', { name: /^search$/i }).click()

@@ -20,10 +20,17 @@ interface Manifest {
   readonly slotTypes: readonly string[]
 }
 
-interface SkillRecord {
+export interface SkillTierRecord {
+  readonly label: string
+  readonly minPoints: number
+  readonly description: string | null
+}
+
+export interface NamedSkill {
   readonly id: number
   readonly name: string
   readonly category: string | null
+  readonly tiers: readonly SkillTierRecord[]
 }
 
 /** A Candidate as exported (see etl/src/etl/export.py) also carries a
@@ -45,6 +52,7 @@ export interface NamedSlotQuery {
 export interface DataBundle {
   readonly slots: readonly NamedSlotQuery[]
   readonly decorations: readonly NamedDecoration[]
+  readonly skills: readonly NamedSkill[]
   readonly skillNames: ReadonlyMap<number, string>
 }
 
@@ -58,7 +66,7 @@ export async function loadBundle(baseUrl: string, fetchImpl: FetchLike): Promise
   }
 
   const [skills, decorations, equipmentBySlotType] = await Promise.all([
-    fetchJson<SkillRecord[]>(fetchImpl, `${baseUrl}/skills.json`),
+    fetchJson<NamedSkill[]>(fetchImpl, `${baseUrl}/skills.json`),
     fetchJson<NamedDecoration[]>(fetchImpl, `${baseUrl}/decorations.json`),
     Promise.all(
       manifest.slotTypes.map((slotType) =>
@@ -73,6 +81,7 @@ export async function loadBundle(baseUrl: string, fetchImpl: FetchLike): Promise
       candidates: equipmentBySlotType[i],
     })),
     decorations,
+    skills,
     skillNames: new Map(skills.map((skill) => [skill.id, skill.name])),
   }
 }

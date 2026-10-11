@@ -19,6 +19,23 @@ CREATE TABLE IF NOT EXISTS zenith_skill (
     name TEXT NOT NULL UNIQUE
 );
 
+-- One normal skill's named, point-thresholded tiers (see
+-- docs/data-format-notes.md "Skill tiers") -- e.g. skill "Health" has tiers
+-- "Health+50" (threshold 40) down to "Health-20" (threshold -15). Scraped
+-- from a second source (mertna.github.io/MHFZ-Skills), separate from the
+-- rest of this schema's xl3lackout-sourced data, since the primary source
+-- never exposes tier/threshold information at all -- only a flat point
+-- value per equipment piece. threshold has no sign restriction: a skill can
+-- have penalty tiers activated by negative accumulated points.
+CREATE TABLE IF NOT EXISTS skill_tier (
+    skill_id INTEGER NOT NULL REFERENCES skill (id) ON DELETE CASCADE,
+    tier_order INTEGER NOT NULL,
+    label TEXT NOT NULL,
+    threshold INTEGER NOT NULL,
+    description TEXT,
+    PRIMARY KEY (skill_id, tier_order)
+);
+
 CREATE TABLE IF NOT EXISTS equipment (
     id INTEGER PRIMARY KEY,
     external_id TEXT NOT NULL UNIQUE,
@@ -125,6 +142,7 @@ CREATE TABLE IF NOT EXISTS weapon (
     source_url TEXT
 );
 
+CREATE INDEX IF NOT EXISTS idx_skill_tier_skill_id ON skill_tier (skill_id);
 CREATE INDEX IF NOT EXISTS idx_equipment_slot_type ON equipment (slot_type);
 CREATE INDEX IF NOT EXISTS idx_equipment_skill_skill_id ON equipment_skill (skill_id);
 CREATE INDEX IF NOT EXISTS idx_decoration_skill_skill_id ON decoration_skill (skill_id);

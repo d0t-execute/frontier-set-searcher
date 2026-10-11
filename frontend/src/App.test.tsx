@@ -14,6 +14,7 @@ const mockUseSearchWorker = vi.mocked(useSearchWorker)
 const BUNDLE = {
   slots: [{ slotId: 'head', candidates: [{ id: 'head:0001', name: 'Leather Helm', skills: [] }] }],
   decorations: [],
+  skills: [{ id: 1, name: 'Attack', category: null, tiers: [] }],
   skillNames: new Map([[1, 'Attack']]),
 }
 

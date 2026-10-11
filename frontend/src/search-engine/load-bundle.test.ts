@@ -3,7 +3,14 @@ import { loadBundle } from './load-bundle'
 import type { FetchLike } from './load-bundle'
 
 const manifest = { formatVersion: 1, slotTypes: ['head', 'chest'] }
-const skills = [{ id: 1, name: 'Attack Up (Small)', category: 'offense' }]
+const skills = [
+  {
+    id: 1,
+    name: 'Attack Up (Small)',
+    category: 'offense',
+    tiers: [{ label: 'Attack Up (Small)', minPoints: 10, description: null }],
+  },
+]
 const decorations = [
   { id: 'D001', name: 'Attack Jewel', slotSize: 1, skills: [{ skillId: 1, points: 3 }] },
 ]
@@ -49,6 +56,12 @@ describe('loadBundle', () => {
     const bundle = await loadBundle('/data', fakeFetch(allFiles))
 
     expect(bundle.skillNames.get(1)).toBe('Attack Up (Small)')
+  })
+
+  it('exposes the full skill catalog, including category and tiers', async () => {
+    const bundle = await loadBundle('/data', fakeFetch(allFiles))
+
+    expect(bundle.skills).toEqual(skills)
   })
 
   it('rejects a bundle whose format version this build does not understand', async () => {

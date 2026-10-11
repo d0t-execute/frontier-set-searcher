@@ -24,6 +24,7 @@ def test_schema_creates_expected_tables(conn: sqlite3.Connection) -> None:
         "cuff_skill",
         "zenith_skill",
         "weapon",
+        "skill_tier",
     } <= tables
 
 
@@ -197,3 +198,27 @@ def test_weapon_zenith_skill_id_requires_an_existing_zenith_skill(
             weapon_type="great_sword",
             zenith_skill_id=999,
         )
+
+
+def test_skill_tier_requires_an_existing_skill(conn: sqlite3.Connection) -> None:
+    with pytest.raises(sqlite3.IntegrityError):
+        repo.insert_skill_tier(conn, skill_id=999, tier_order=0, label="Health+50", threshold=40)
+
+
+def test_skill_tier_order_is_unique_per_skill(conn: sqlite3.Connection) -> None:
+    skill = repo.insert_skill(conn, name="Health")
+    repo.insert_skill_tier(conn, skill_id=skill.id, tier_order=0, label="Health+50", threshold=40)
+
+    with pytest.raises(sqlite3.IntegrityError):
+        repo.insert_skill_tier(
+            conn, skill_id=skill.id, tier_order=0, label="Duplicate order", threshold=10
+        )
+
+
+def test_skill_tier_is_removed_when_its_skill_is_deleted(conn: sqlite3.Connection) -> None:
+    skill = repo.insert_skill(conn, name="Health")
+    repo.insert_skill_tier(conn, skill_id=skill.id, tier_order=0, label="Health+50", threshold=40)
+
+    conn.execute("DELETE FROM skill WHERE id = ?", (skill.id,))
+
+    assert repo.get_skill_tiers(conn, skill.id) == []

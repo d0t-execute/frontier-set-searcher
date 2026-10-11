@@ -20,6 +20,7 @@ from etl.db.models import (
     RankType,
     Skill,
     SkillPoints,
+    SkillTier,
     Weapon,
     WeaponType,
     ZenithSkill,
@@ -68,6 +69,42 @@ def insert_zenith_skill(conn: sqlite3.Connection, *, name: str) -> ZenithSkill:
 def list_skills(conn: sqlite3.Connection) -> list[Skill]:
     rows = conn.execute("SELECT id, name, category FROM skill ORDER BY id").fetchall()
     return [_skill_from_row(row) for row in rows]
+
+
+def set_skill_category(conn: sqlite3.Connection, *, skill_id: int, category: str) -> None:
+    conn.execute("UPDATE skill SET category = ? WHERE id = ?", (category, skill_id))
+
+
+def insert_skill_tier(
+    conn: sqlite3.Connection,
+    *,
+    skill_id: int,
+    tier_order: int,
+    label: str,
+    threshold: int,
+    description: str | None = None,
+) -> None:
+    conn.execute(
+        """
+        INSERT INTO skill_tier (skill_id, tier_order, label, threshold, description)
+        VALUES (?, ?, ?, ?, ?)
+        """,
+        (skill_id, tier_order, label, threshold, description),
+    )
+
+
+def get_skill_tiers(conn: sqlite3.Connection, skill_id: int) -> list[SkillTier]:
+    rows = conn.execute(
+        """
+        SELECT label, threshold, description FROM skill_tier
+        WHERE skill_id = ? ORDER BY tier_order
+        """,
+        (skill_id,),
+    ).fetchall()
+    return [
+        SkillTier(label=row["label"], threshold=row["threshold"], description=row["description"])
+        for row in rows
+    ]
 
 
 def get_zenith_skill_by_name(conn: sqlite3.Connection, name: str) -> ZenithSkill | None:
