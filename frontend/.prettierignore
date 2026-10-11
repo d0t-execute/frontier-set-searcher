@@ -3,3 +3,7 @@ public/data/
 
 # Vendored third-party assets, not our source
 src/vendor/
+
+# Playwright output
+test-results/
+playwright-report/
