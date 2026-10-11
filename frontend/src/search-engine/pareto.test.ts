@@ -3,13 +3,14 @@ import { expandSlot } from './expand'
 import { computeFrontier } from './pareto'
 import type { Candidate, SkillRequirement, SlotQuery } from './types'
 
-function candidate(id: string, skills: Record<number, number>): Candidate {
+function candidate(id: string, skills: Record<number, number>, openSlotCount = 0): Candidate {
   return {
     id,
     skills: Object.entries(skills).map(([skillId, points]) => ({
       skillId: Number(skillId),
       points,
     })),
+    openSlotCount,
   }
 }
 
@@ -22,7 +23,8 @@ describe('computeFrontier', () => {
     const frontier = computeFrontier([], [{ skillId: 1, minPoints: 0 }])
 
     expect(frontier).toHaveLength(1)
-    expect(frontier[0].vector).toEqual([0])
+    // [requested skill, open slots, bonus points] -- see vectorOf's docstring.
+    expect(frontier[0].vector).toEqual([0, 0, 0])
     expect(frontier[0].picks.size).toBe(0)
   })
 
@@ -31,10 +33,11 @@ describe('computeFrontier', () => {
 
     // minPoints matches Helm's own value exactly: feasible (meets the
     // requirement) without being capped down (it's at, not past, the cap).
-    const frontier = computeFrontier(expand(slots), [{ skillId: 1, minPoints: 5 }])
+    const requirements = [{ skillId: 1, minPoints: 5 }]
+    const frontier = computeFrontier(expand(slots, requirements), requirements)
 
     expect(frontier).toHaveLength(1)
-    expect(frontier[0].vector).toEqual([5])
+    expect(frontier[0].vector).toEqual([5, 0, 0])
     expect(frontier[0].picks.get('head')?.candidate.id).toBe('Helm')
   })
 
@@ -53,10 +56,11 @@ describe('computeFrontier', () => {
       },
     ]
 
-    const frontier = computeFrontier(expand(slots), [{ skillId: 1, minPoints: 5 }])
+    const requirements = [{ skillId: 1, minPoints: 5 }]
+    const frontier = computeFrontier(expand(slots, requirements), requirements)
 
     expect(frontier).toHaveLength(1)
-    expect(frontier[0].vector).toEqual([5])
+    expect(frontier[0].vector).toEqual([5, 0, 0])
     expect(frontier[0].picks.get('head')?.candidate.id).toBe('Big Helm')
   })
 
@@ -86,12 +90,19 @@ describe('computeFrontier', () => {
       'Defense Helm',
     ])
     expect(frontier.map((f) => f.vector)).toEqual([
-      [3, 3],
-      [3, 3],
+      [3, 3, 0, 0],
+      [3, 3, 0, 0],
     ])
   })
 
-  it('preserves ties: two different builds achieving the same requested vector both survive', () => {
+  it('prefers a build with more bonus skill points when the requested vector is otherwise tied', () => {
+    // Confirmed project direction (see pareto.ts's `vectorOf` docstring):
+    // a bonus skill nobody asked for makes a build strictly better, not
+    // merely different, once every requested skill is already tied --
+    // "Fancy Helm" no longer just ties with "Plain Helm" here, it wins.
+    // (This is the cross-slot level, where bonus points is cheap enough to
+    // be full dominance, not just a tie-break -- see expand.ts's
+    // `skillAndSlotsVector` docstring for where and why that differs.)
     const slots: SlotQuery[] = [
       {
         slotId: 'head',
@@ -102,14 +113,29 @@ describe('computeFrontier', () => {
       },
     ]
 
-    const frontier = computeFrontier(expand(slots), [{ skillId: 1, minPoints: 5 }])
+    const requirements = [{ skillId: 1, minPoints: 5 }]
+    const frontier = computeFrontier(expand(slots, requirements), requirements)
 
-    expect(frontier).toHaveLength(2)
-    expect(frontier.map((f) => f.vector)).toEqual([[5], [5]])
-    // The bonus skill is preserved in `totals` even though it doesn't affect
-    // the dominance vector.
-    const fancy = frontier.find((f) => f.picks.get('head')?.candidate.id === 'Fancy Helm')
-    expect(fancy?.totals.get(99)).toBe(10)
+    expect(frontier).toHaveLength(1)
+    expect(frontier[0].picks.get('head')?.candidate.id).toBe('Fancy Helm')
+    // The bonus skill is preserved in `totals` as well as counted toward the
+    // dominance vector's own bonus-points dimension.
+    expect(frontier[0].totals.get(99)).toBe(10)
+  })
+
+  it('prefers a build with more open decoration slots when the requested vector is otherwise tied', () => {
+    const slots: SlotQuery[] = [
+      {
+        slotId: 'head',
+        candidates: [candidate('Plain Helm', { 1: 5 }, 0), candidate('Slotted Helm', { 1: 5 }, 3)],
+      },
+    ]
+
+    const requirements = [{ skillId: 1, minPoints: 5 }]
+    const frontier = computeFrontier(expand(slots, requirements), requirements)
+
+    expect(frontier).toHaveLength(1)
+    expect(frontier[0].picks.get('head')?.candidate.id).toBe('Slotted Helm')
   })
 
   it('combines candidates across multiple slots, summing contributions', () => {
@@ -119,10 +145,11 @@ describe('computeFrontier', () => {
     ]
 
     // Matches the combined total (3 + 4) exactly -- feasible, uncapped.
-    const frontier = computeFrontier(expand(slots), [{ skillId: 1, minPoints: 7 }])
+    const requirements = [{ skillId: 1, minPoints: 7 }]
+    const frontier = computeFrontier(expand(slots, requirements), requirements)
 
     expect(frontier).toHaveLength(1)
-    expect(frontier[0].vector).toEqual([7])
+    expect(frontier[0].vector).toEqual([7, 0, 0])
     expect(frontier[0].picks.get('head')?.candidate.id).toBe('Helm')
     expect(frontier[0].picks.get('chest')?.candidate.id).toBe('Mail')
   })
@@ -138,7 +165,8 @@ describe('computeFrontier', () => {
       },
     ]
 
-    const frontier = computeFrontier(expand(slots), [{ skillId: 1, minPoints: 5 }])
+    const requirements = [{ skillId: 1, minPoints: 5 }]
+    const frontier = computeFrontier(expand(slots, requirements), requirements)
 
     expect(frontier).toHaveLength(1)
     expect(frontier[0].picks.get('head')?.candidate.id).toBe('Fancy Helm')
@@ -156,12 +184,16 @@ describe('computeFrontier', () => {
       },
     ]
 
-    const frontier = computeFrontier(expand(slots), [{ skillId: 1, minPoints: 10 }])
+    const requirements = [{ skillId: 1, minPoints: 10 }]
+    const frontier = computeFrontier(expand(slots, requirements), requirements)
 
     expect(frontier.map((f) => f.picks.get('head')?.candidate.id).sort()).toEqual([
       'Big Helm',
       'Just Enough Helm',
     ])
-    expect(frontier.map((f) => f.vector)).toEqual([[10], [10]])
+    expect(frontier.map((f) => f.vector)).toEqual([
+      [10, 0, 0],
+      [10, 0, 0],
+    ])
   })
 })

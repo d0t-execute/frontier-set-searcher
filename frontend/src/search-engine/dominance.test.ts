@@ -108,7 +108,7 @@ describe('ParetoFrontier', () => {
     expect(elapsedMs).toBeLessThan(500)
   })
 
-  it('keeps only the first MAX_TIED_ORIGINS alternatives once a tied group grows past it', () => {
+  it('keeps only the first MAX_TIED_ORIGINS alternatives once a tied group grows past it, with no tie-break score given', () => {
     const frontier = new ParetoFrontier<string>()
     frontier.insert([5], 'a')
     frontier.insert([5], 'b')
@@ -118,6 +118,41 @@ describe('ParetoFrontier', () => {
     frontier.insert([5], 'f') // past the cap -- dropped, not appended
 
     expect(frontier.toArray()).toEqual(['a', 'b', 'c', 'd', 'e'])
+  })
+
+  it('replaces the worst-scoring alternative once a full tied group sees a better one', () => {
+    // Confirmed real-world need: the decoration-filling DP groups fillings by
+    // requested skill alone (a documented performance trade-off -- see
+    // expand.ts's `computeDecorationFillingFrontier` docstring), so once a
+    // popular skill has many relevant decorations, far more than
+    // MAX_TIED_ORIGINS distinct fillings can tie on the same requested-skill
+    // vector. Picking the first 5 *found* (arbitrary, insertion-order
+    // dependent) systematically favored fillings that happened to be built
+    // from several decorations stacked together over a single decoration
+    // that reached the same vector alone -- exactly backwards from "leave as
+    // many slots open as possible." A tie-break score lets the better
+    // alternative win the slot instead of whichever arrived first.
+    const frontier = new ParetoFrontier<number>((n) => n) // higher score wins
+    frontier.insert([5], 1)
+    frontier.insert([5], 2)
+    frontier.insert([5], 3)
+    frontier.insert([5], 4)
+    frontier.insert([5], 5)
+    frontier.insert([5], 100) // scores higher than the worst-kept (1) -- replaces it
+
+    expect(frontier.toArray().sort((a, b) => a - b)).toEqual([2, 3, 4, 5, 100])
+  })
+
+  it('keeps the existing alternatives when a new one scores no better than the worst kept', () => {
+    const frontier = new ParetoFrontier<number>((n) => n)
+    frontier.insert([5], 5)
+    frontier.insert([5], 4)
+    frontier.insert([5], 3)
+    frontier.insert([5], 2)
+    frontier.insert([5], 1)
+    frontier.insert([5], 0) // scores worse than everything kept -- dropped
+
+    expect(frontier.toArray().sort((a, b) => a - b)).toEqual([1, 2, 3, 4, 5])
   })
 
   it('stays fast with many distinct, mostly-dominated candidates', () => {
@@ -161,5 +196,16 @@ describe('cappedVector', () => {
     const combined = cappedVector([left[0] + right[0]], [{ skillId: 1, minPoints: 15 }])
 
     expect(combined).toEqual([15])
+  })
+
+  it('passes dimensions beyond the requirements through unchanged, uncapped', () => {
+    // Every vector this engine builds has two scoring dimensions appended
+    // after one per requirement -- open decoration slots remaining and total
+    // bonus skill points (see pareto.ts's and expand.ts's vector-building
+    // functions). Neither has a "requirement" to cap against -- more is
+    // always better, unboundedly -- so `cappedVector` must leave anything
+    // past `requirements.length` alone rather than trying to index a
+    // requirement that doesn't exist for it.
+    expect(cappedVector([1146, 3, 7], requirements)).toEqual([15, 3, 7])
   })
 })

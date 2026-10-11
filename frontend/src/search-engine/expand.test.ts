@@ -52,34 +52,89 @@ function emptySlot(openSlotCount: number): SlotQuery {
   return { slotId: 'slot', candidates: [{ id: 'bare', skills: [], openSlotCount }] }
 }
 
-/** Recomputes each option's capped dominance vector from its (raw, kept for
- * display) `skills` -- matching what `expandSlot` actually used to decide
- * which options survived (see `cappedVector`'s docstring). */
+/** Total decoration-slot capacity a set of placed decorations consumes --
+ * independently reimplemented here (not imported from `expand.ts`) so this
+ * oracle doesn't just trivially mirror the implementation under test. */
+function usedSlotSize(decorationsUsed: readonly Decoration[]): number {
+  return decorationsUsed.reduce((sum, d) => sum + d.slotSize, 0)
+}
+
+/** Recomputes an option's full (requested skill, open slots, bonus points)
+ * vector from its (raw, kept for display) `skills` plus how much
+ * decoration-slot capacity it left open -- an independent projection for
+ * verifying a surviving option's own properties, not a claim that
+ * `expandSlot`'s own dominance matches this exactly (it deliberately
+ * doesn't, for performance -- see `skillAndSlotsVector`'s docstring). */
+function fullVector(
+  skills: readonly { skillId: number; points: number }[],
+  openSlots: number,
+  requirements: readonly SkillRequirement[],
+): number[] {
+  const requestedIds = new Set(requirements.map((r) => r.skillId))
+  const raw = requirements.map((r) => skills.find((s) => s.skillId === r.skillId)?.points ?? 0)
+  const bonusPoints = skills
+    .filter((s) => !requestedIds.has(s.skillId))
+    .reduce((sum, s) => sum + s.points, 0)
+  return cappedVector([...raw, openSlots, bonusPoints], requirements)
+}
+
+/** `fullVector` for every option sharing a single known capacity (every test
+ * below uses `emptySlot`, a single candidate with one fixed capacity, to
+ * isolate the decoration-filling frontier from everything else `expandSlot`
+ * does -- see `emptySlot`'s own docstring). */
 function vectorsOf(
-  options: readonly { readonly skills: readonly { skillId: number; points: number }[] }[],
+  options: readonly {
+    readonly skills: readonly { skillId: number; points: number }[]
+    readonly decorationsUsed: readonly Decoration[]
+  }[],
+  capacity: number,
   requirements: readonly SkillRequirement[],
 ): number[][] {
   return options.map((option) =>
-    cappedVector(
-      requirements.map((r) => option.skills.find((s) => s.skillId === r.skillId)?.points ?? 0),
-      requirements,
-    ),
+    fullVector(option.skills, capacity - usedSlotSize(option.decorationsUsed), requirements),
   )
 }
 
-/** The deliberately naive reference: every raw filling from `fillSlots`,
- * capped per requirement (matching `expandSlot`'s own capping -- see
- * `cappedVector`'s docstring for why overshooting a requirement must never
- * look strictly better than just meeting it), reduced to its non-dominated
- * vectors by brute force. */
+/** A filling's requested-skill-plus-open-slots vector -- no bonus points --
+ * what `computeDecorationFillingFrontier`'s own internal DP now compares
+ * fillings on (see its docstring: bonus points is tracked only as a
+ * tie-break within an exact match on *this* vector, not as a further
+ * dominance dimension, to keep the DP's own distinct-group count bounded). */
+function skillAndSlotsVector(
+  skills: readonly { skillId: number; points: number }[],
+  openSlots: number,
+  requirements: readonly SkillRequirement[],
+): number[] {
+  const raw = requirements.map((r) => skills.find((s) => s.skillId === r.skillId)?.points ?? 0)
+  return cappedVector([...raw, openSlots], requirements)
+}
+
+/** The deliberately naive reference for the property test below: every raw
+ * filling from `fillSlots`, reduced by brute force to its non-dominated
+ * *requested-skill-plus-open-slots* vectors -- deliberately not the full
+ * `fullVector` (which also folds in bonus points). Once more than
+ * `MAX_TIED_ORIGINS` distinct raw fillings reach the identical
+ * requested-skill-and-open-slots vector -- plausible with several
+ * differently-sized decorations sharing a capacity -- which *specific*
+ * representative(s) survive is decided by bonus points
+ * (`computeDecorationFillingFrontier`'s `tieBreakScore`), not reproducible by
+ * an independent brute force without replicating that tie-break exactly. The
+ * requested-skill-and-open-slots *set* of reachable vectors is still exactly
+ * reproducible, though (appending a dimension that's part of the DP's own
+ * grouping key, unlike bonus points, can only add representatives to an
+ * already-reached vector, never remove the vector itself) -- which is what
+ * this property test actually checks; the smaller, example-based tests above
+ * directly exercise the open-slots/bonus-points preference itself, at a
+ * scale too small to ever hit that cap. */
 function bruteForceFrontierVectors(
   capacity: number,
   decorations: readonly Decoration[],
   requirements: readonly SkillRequirement[],
 ): number[][] {
   const vectors = fillSlots(capacity, decorations).map((filling) =>
-    cappedVector(
-      requirements.map((r) => filling.skills.find((s) => s.skillId === r.skillId)?.points ?? 0),
+    skillAndSlotsVector(
+      filling.skills,
+      capacity - usedSlotSize(filling.decorationsUsed),
       requirements,
     ),
   )
@@ -111,16 +166,17 @@ describe('expandSlot decoration filling', () => {
 
     const expanded = expandSlot(emptySlot(1), [attack, defense], requirements)
 
-    // The empty filling [0, 0] is correctly absent: it's dominated by both
-    // single-decoration options (at least as good on every dimension, and
-    // not identical), so it can never be part of an optimal build.
-    const vectors = sortVectors(vectorsOf(expanded.options, requirements))
-    expect(vectors).toEqual(
-      sortVectors([
-        [3, 0],
-        [0, 5],
-      ]),
-    )
+    // Neither decorated filling dominates the other (each makes progress on
+    // a different skill, using up the same single slot) -- both survive. An
+    // undecorated option also survives alongside them now: it trades all
+    // skill progress for a slot left fully open, a genuine trade-off of its
+    // own (see `skillAndSlotsVector`'s docstring), not something either
+    // decorated option strictly beats.
+    const decorated = expanded.options.filter((o) => o.decorationsUsed.length > 0)
+    expect(decorated.map((o) => o.decorationsUsed[0]?.id).sort()).toEqual([
+      'Attack Jewel',
+      'Defense Jewel',
+    ])
   })
 
   it('drops a filling dominated by another on every requested skill', () => {
@@ -132,9 +188,10 @@ describe('expandSlot decoration filling', () => {
 
     const expanded = expandSlot(emptySlot(1), [weak, strong], requirements)
 
-    const vectors = vectorsOf(expanded.options, requirements)
-    expect(vectors).not.toContainEqual([2])
-    expect(vectors).toContainEqual([5])
+    // Weak and strong use the identical single slot, so they're equal on
+    // open slots -- strong still wins on skill points alone.
+    const decorated = expanded.options.filter((o) => o.decorationsUsed.length > 0)
+    expect(decorated.map((o) => o.decorationsUsed[0]?.id)).toEqual(['Strong Jewel'])
   })
 
   it('treats a filling that overshoots the requirement as tied with one that just meets it', () => {
@@ -149,10 +206,71 @@ describe('expandSlot decoration filling', () => {
 
     const expanded = expandSlot(emptySlot(1), [justEnough, big], requirements)
 
-    expect(expanded.options.map((o) => o.decorationsUsed[0]?.id).sort()).toEqual([
+    const decorated = expanded.options.filter((o) => o.decorationsUsed.length > 0)
+    expect(decorated.map((o) => o.decorationsUsed[0]?.id).sort()).toEqual([
       'Big Jewel',
       'Just Enough Jewel',
     ])
+  })
+
+  it('prefers a filling that meets the requirement using fewer decoration slots, leaving more open', () => {
+    // Confirmed project direction: among fillings that already tie on every
+    // requested skill, one that leaves more decoration-slot capacity unused
+    // is strictly better -- that capacity is what the player gets to spend
+    // on whatever decorations suit their own playstyle. A second (or third)
+    // copy of the same jewel reaches the identical capped skill vector while
+    // wasting a slot that could otherwise stay open, so it must not survive
+    // once a single-jewel filling already reaches the same vector.
+    const jewel = deco('Attack Jewel', 1, { 1: 10 })
+    const requirements: SkillRequirement[] = [{ skillId: 1, minPoints: 10 }]
+
+    const expanded = expandSlot(emptySlot(3), [jewel], requirements)
+
+    // 1, 2, and 3 jewels all reach the identical capped skill vector, so only
+    // the single-jewel (most slots left open among the decorated options)
+    // filling survives. The never-decorated option (skill unmet, all 3 slots
+    // open) is a genuinely different, non-dominated point -- neither it nor
+    // the 1-jewel filling beats the other (one has more skill progress, the
+    // other more open slots) -- so it survives too.
+    const usedCounts = expanded.options.map((o) => o.decorationsUsed.length).sort()
+    expect(usedCounts).toEqual([0, 1])
+  })
+
+  it('prefers a filling with more bonus skill points when requested skills and slot usage are otherwise identical', () => {
+    const plain = deco('Plain Jewel', 1, { 1: 10 })
+    const bonus = deco('Bonus Jewel', 1, { 1: 10, 99: 5 })
+    const requirements: SkillRequirement[] = [{ skillId: 1, minPoints: 10 }]
+
+    const expanded = expandSlot(emptySlot(1), [plain, bonus], requirements)
+
+    const decorated = expanded.options.filter((o) => o.decorationsUsed.length > 0)
+    expect(decorated.map((o) => o.decorationsUsed[0]?.id)).toEqual(['Bonus Jewel'])
+  })
+
+  it('prefers the slot-efficient filling over one with more bonus points, once decoration choices differ in both', () => {
+    // The decoration-filling DP itself (`computeDecorationFillingFrontier`)
+    // correctly keeps both as a genuine trade-off -- it tracks bonus points
+    // in full dominance now, not just as a tie-break (see its docstring).
+    // The loss happens one level up: `expandSlot`'s own dominance
+    // (`skillAndSlotsVector`) deliberately stops at requested skill and open
+    // slots, for performance at its ~13,000-candidate scale (see that
+    // function's docstring) -- so here, where both fillings apply to the
+    // *same* bare candidate, open-slots-only dominance sees "1 slot used, 1
+    // open" (efficient) as strictly better than "2 slots used, 0 open"
+    // (versatile), regardless of versatile's bonus points, and versatile
+    // never gets a chance to reach `pareto.ts`'s own full-dominance pass the
+    // way a losing *candidate* (see "doesn't prune a candidate..." below)
+    // does. A documented, accepted trade-off, narrower in scope than it used
+    // to be: it only costs a decoration-choice alternative on one candidate,
+    // not a whole candidate.
+    const efficient = deco('Efficient Jewel', 1, { 1: 10 })
+    const versatile = deco('Versatile Jewel', 2, { 1: 10, 99: 20 })
+    const requirements: SkillRequirement[] = [{ skillId: 1, minPoints: 10 }]
+
+    const expanded = expandSlot(emptySlot(2), [efficient, versatile], requirements)
+
+    const decorated = expanded.options.filter((o) => o.decorationsUsed.length > 0)
+    expect(decorated.map((o) => o.decorationsUsed[0]?.id)).toEqual(['Efficient Jewel'])
   })
 
   it('shares one frontier across every candidate and slot with the same capacity via the cache', () => {
@@ -184,9 +302,17 @@ describe('expandSlot decoration filling', () => {
   // always `[]`), so nothing ever gets pruned and even irrelevant
   // decorations produce "distinct" tied entries -- a degenerate case the
   // skip-irrelevant-decorations optimization below deliberately doesn't
-  // preserve, since it can never arise from a real search.
+  // preserve, since it can never arise from a real search. `minPoints` starts
+  // at 1, not 0, for the same reason: every real skill tier threshold is
+  // positive (confirmed by the project's own skill-tier data), and a
+  // `minPoints: 0` requirement caps *every* raw value to 0 regardless of
+  // decorations used, making an unrealistically large number of genuinely
+  // different fillings tie on the exact same requested-skill vector at once
+  // -- exactly the degenerate scenario `MAX_TIED_ORIGINS` (dominance.ts's
+  // own docstring) documents as an accepted, bounded trade-off, not
+  // something a real query ever triggers.
   const requirementsArb = fc.uniqueArray(
-    fc.record({ skillId: skillIdArb, minPoints: fc.integer({ min: 0, max: 15 }) }),
+    fc.record({ skillId: skillIdArb, minPoints: fc.integer({ min: 1, max: 15 }) }),
     { selector: (r) => r.skillId, minLength: 1, maxLength: 4 },
   )
   const capacityArb = fc.integer({ min: 0, max: 4 })
@@ -227,7 +353,18 @@ describe('expandSlot decoration filling', () => {
 
           const expanded = expandSlot(emptySlot(capacity), relevant, requirements)
 
-          const actual = uniqueVectors(vectorsOf(expanded.options, requirements))
+          // Requested-skill-plus-open-slots comparison -- see
+          // `bruteForceFrontierVectors`'s docstring for why bonus points isn't
+          // folded in here too.
+          const actual = uniqueVectors(
+            expanded.options.map((o) =>
+              skillAndSlotsVector(
+                o.skills,
+                capacity - usedSlotSize(o.decorationsUsed),
+                requirements,
+              ),
+            ),
+          )
           const expected = uniqueVectors(
             bruteForceFrontierVectors(capacity, relevant, requirements),
           )
@@ -283,11 +420,74 @@ describe('expandSlot candidate pruning', () => {
 
     const expanded = expandSlot(slot, [], requirements)
 
-    const vectors = vectorsOf(expanded.options, requirements)
-    expect(vectors).toEqual([[5]])
+    const vectors = vectorsOf(expanded.options, 0, requirements)
+    expect(vectors).toEqual([[5, 0, 0]])
   })
 
-  it('preserves ties: two different candidates reaching the same requested vector both survive', () => {
+  it('prefers a candidate with more open decoration slots when requested skills are otherwise identical', () => {
+    // Confirmed project direction: a candidate that leaves more decoration
+    // capacity free for the player's own playstyle choices, with nothing
+    // else different, is strictly better -- not merely a display concern.
+    const requirements: SkillRequirement[] = [{ skillId: 1, minPoints: 5 }]
+    const slot: SlotQuery = {
+      slotId: 'slot',
+      candidates: [
+        { id: 'plain', skills: [{ skillId: 1, points: 5 }], openSlotCount: 1 },
+        { id: 'slotted', skills: [{ skillId: 1, points: 5 }], openSlotCount: 3 },
+      ],
+    }
+
+    const expanded = expandSlot(slot, [], requirements)
+
+    expect(expanded.options.map((o) => o.candidate.id)).toEqual(['slotted'])
+  })
+
+  it('preserves ties: two different candidates reaching the same full scoring vector both survive', () => {
+    // Identical on every dimension -- requested skill, open slots, and bonus
+    // points -- e.g. cosmetically distinct color variants of the same piece.
+    // This test uses matching bonus skills on both candidates rather than
+    // giving one a bonus the other lacks, so it holds regardless of whether
+    // bonus points is read as full dominance or only a tie-break at whatever
+    // layer happens to compare them.
+    const requirements: SkillRequirement[] = [{ skillId: 1, minPoints: 100 }]
+    const slot: SlotQuery = {
+      slotId: 'slot',
+      candidates: [
+        {
+          id: 'red-variant',
+          skills: [
+            { skillId: 1, points: 5 },
+            { skillId: 99, points: 10 },
+          ],
+        },
+        {
+          id: 'blue-variant',
+          skills: [
+            { skillId: 1, points: 5 },
+            { skillId: 99, points: 10 },
+          ],
+        },
+      ],
+    }
+
+    const expanded = expandSlot(slot, [], requirements)
+
+    expect(expanded.options.map((o) => o.candidate.id).sort()).toEqual([
+      'blue-variant',
+      'red-variant',
+    ])
+  })
+
+  it("doesn't prune a candidate with fewer bonus skill points at this layer, deferring to pareto.ts's full dominance", () => {
+    // `expandSlot`'s own dominance deliberately stops at requested skill and
+    // open slots (see `skillAndSlotsVector`'s docstring: bonus points only
+    // breaks ties once a group is already over `MAX_TIED_ORIGINS`, which two
+    // candidates never reach) -- so "plain" and "fancy" both survive *this*
+    // layer, tied on (skill, open slots) alone. `pareto.ts`'s own vector
+    // still applies full dominance including bonus points on the resulting
+    // (much smaller) candidate set, which is where "fancy" actually wins --
+    // see pareto.test.ts's "prefers a build with more bonus skill points..."
+    // for that.
     const requirements: SkillRequirement[] = [{ skillId: 1, minPoints: 100 }]
     const slot: SlotQuery = {
       slotId: 'slot',

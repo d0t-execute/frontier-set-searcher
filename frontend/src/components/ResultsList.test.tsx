@@ -75,6 +75,63 @@ describe('ResultsList', () => {
     expect(screen.getByText(/attack jewel/i)).toBeInTheDocument()
   })
 
+  it('shows how many decoration slots a piece leaves open', () => {
+    render(
+      <ResultsList
+        results={[
+          result({
+            picks: new Map([
+              ['head', { id: 'head:0001', name: 'Leather Helm', skills: [], openSlotCount: 3 }],
+            ]),
+          }),
+        ]}
+        skillNames={skillNames}
+      />,
+    )
+
+    expect(screen.getByText(/3 open slots/i)).toBeInTheDocument()
+  })
+
+  it('subtracts placed decorations’ slot size from the open-slots count shown', () => {
+    render(
+      <ResultsList
+        results={[
+          result({
+            picks: new Map([
+              ['head', { id: 'head:0001', name: 'Leather Helm', skills: [], openSlotCount: 3 }],
+            ]),
+            decorations: new Map([
+              ['head', [{ id: 'D001', name: 'Attack Jewel', slotSize: 1, skills: [] }]],
+            ]),
+          }),
+        ]}
+        skillNames={skillNames}
+      />,
+    )
+
+    expect(screen.getByText(/2 open slots/i)).toBeInTheDocument()
+  })
+
+  it("shows nothing about open slots when a piece's slots are all used", () => {
+    render(
+      <ResultsList
+        results={[
+          result({
+            picks: new Map([
+              ['head', { id: 'head:0001', name: 'Leather Helm', skills: [], openSlotCount: 1 }],
+            ]),
+            decorations: new Map([
+              ['head', [{ id: 'D001', name: 'Attack Jewel', slotSize: 1, skills: [] }]],
+            ]),
+          }),
+        ]}
+        skillNames={skillNames}
+      />,
+    )
+
+    expect(screen.queryByText(/open slot/i)).not.toBeInTheDocument()
+  })
+
   it('resolves skill totals to their names', () => {
     render(
       <ResultsList

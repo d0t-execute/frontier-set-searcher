@@ -52,8 +52,8 @@
  * trailing that bound) contribution.
  */
 
-import { cappedVector, dominates, ParetoFrontier } from './dominance'
-import { applyContribution } from './expand'
+import { cappedVector, dominates, OPEN_SLOT_SCORE_WEIGHT, ParetoFrontier } from './dominance'
+import { applyContribution, usedSlotSize } from './expand'
 import { LazyList } from './lazy-list'
 import { MaxHeap } from './max-heap'
 import type { ExpandedOption, ExpandedSlot } from './expand'
@@ -62,25 +62,48 @@ import type { SkillId, SkillRequirement } from './types'
 export { dominates } from './dominance'
 
 export interface FrontierEntry {
-  /** Points toward each of `requirements`, in the same order -- this (and
-   * only this) is what dominance and ranking are computed from. */
+  /** One capped dimension per requirement, in the same order, followed by
+   * two uncapped scoring dimensions -- open decoration slots left unused,
+   * then total points in skills nobody requested (see `vectorOf`'s
+   * docstring) -- this (and only this) is what dominance and ranking are
+   * computed from. */
   readonly vector: readonly number[]
-  /** Full skill totals, including skills nobody requested -- kept only for
-   * display in the final result, never used for dominance or ranking. */
+  /** Full skill totals, including skills nobody requested -- kept for
+   * display in the final result, and to compute the vector's own
+   * bonus-points dimension; never used directly for dominance or ranking. */
   readonly totals: ReadonlyMap<SkillId, number>
   readonly picks: ReadonlyMap<string, ExpandedOption>
 }
 
-/** A frontier entry's requested-skill vector, capped per dimension at its
- * own requirement (`cappedVector`) -- see its docstring for why overshooting
- * a requirement must never be treated as strictly better than just meeting
- * it, both for dominance and for ranking. */
+/** A frontier entry's full scoring vector: one dimension per requirement,
+ * capped at its own requirement (`cappedVector`) -- see its docstring for
+ * why overshooting a requirement must never be treated as strictly better
+ * than just meeting it, both for dominance and for ranking -- followed by
+ * open decoration slots left unused and total points in skills nobody
+ * requested. Confirmed project direction (see `expand.ts`'s
+ * `skillAndSlotsVector` docstring for the full rationale): among builds that
+ * already tie on every requested skill, one that leaves more decoration
+ * capacity open for the player's own playstyle choices, or grants more
+ * unrequested skill value, is strictly better, not merely different. This is
+ * the one place in the search engine where bonus points still participates
+ * in full dominance (not just as a tie-break the way `expandSlot`'s and the
+ * decoration DP's own vectors use it) -- by the time a slot's options reach
+ * here, `expandSlot` has already reduced tens of thousands of raw
+ * candidates down to a few hundred at most, so the same O(distinct groups)
+ * cost that made bonus points too expensive to track one level down is
+ * negligible here. */
 function vectorOf(
   totals: ReadonlyMap<SkillId, number>,
+  openSlots: number,
   requirements: readonly SkillRequirement[],
 ): number[] {
+  const requestedIds = new Set(requirements.map((r) => r.skillId))
   const raw = requirements.map((r) => totals.get(r.skillId) ?? 0)
-  return cappedVector(raw, requirements)
+  let bonusPoints = 0
+  for (const [skillId, points] of totals) {
+    if (!requestedIds.has(skillId)) bonusPoints += points
+  }
+  return cappedVector([...raw, openSlots, bonusPoints], requirements)
 }
 
 /** True if `vector` could still possibly reach every requirement once
@@ -169,7 +192,7 @@ function buildFrontierStreamBounded(
 ): LazyList<FrontierEntry> {
   if (slots.length === 0) {
     const empty: FrontierEntry = {
-      vector: vectorOf(new Map(), requirements),
+      vector: vectorOf(new Map(), 0, requirements),
       totals: new Map(),
       picks: new Map(),
     }
@@ -269,7 +292,11 @@ function* mergeFrontierEntries(
     const entryB = b.get(j)
     if (entryA === undefined || entryB === undefined) return
     visited.add(key)
-    heap.push({ i, j, priority: scalarScore(entryA.vector) + scalarScore(entryB.vector) })
+    heap.push({
+      i,
+      j,
+      priority: scalarScore(entryA.vector, requirements) + scalarScore(entryB.vector, requirements),
+    })
   }
 
   tryPush(0, 0)
@@ -322,11 +349,14 @@ function reduceSlotOptions(
   for (const option of slot.options) {
     const totals = new Map<SkillId, number>()
     applyContribution(totals, option.skills, 1)
-    const vector = vectorOf(totals, requirements)
+    const openSlots = (option.candidate.openSlotCount ?? 0) - usedSlotSize(option.decorationsUsed)
+    const vector = vectorOf(totals, openSlots, requirements)
     if (!isSalvageable(vector, outsideBest, requirements)) continue
     frontier.insert(vector, { vector, totals, picks: new Map([[slot.slotId, option]]) })
   }
-  return frontier.toArray().sort((x, y) => scalarScore(y.vector) - scalarScore(x.vector))
+  return frontier
+    .toArray()
+    .sort((x, y) => scalarScore(y.vector, requirements) - scalarScore(x.vector, requirements))
 }
 
 export function mergeTotals(
@@ -340,13 +370,22 @@ export function mergeTotals(
   return totals
 }
 
-/** Sum of a frontier entry's (already-capped, see `cappedVector`)
- * requested-skill vector -- used to rank/merge frontier entries without
- * needing per-dimension comparison. Since every requirement's contribution
- * is capped at the point it's actually met, this naturally stops rewarding
- * a build for piling more than what was asked for into one skill. */
-export function scalarScore(vector: readonly number[]): number {
+/** Weighted sum of a frontier entry's vector -- used to rank/merge frontier
+ * entries without needing per-dimension comparison. Every requirement's own
+ * contribution is already capped at the point it's actually met (see
+ * `cappedVector`'s docstring), so this naturally stops rewarding a build for
+ * piling more than what was asked for into one skill; among builds that tie
+ * on every requirement (the common case for any already-valid, fully-capped
+ * result -- see `vectorOf`'s docstring), the two trailing scoring dimensions
+ * (open slots, then bonus points, see `vectorOf`) are what actually
+ * differentiate the ranking, weighted so open slots dominate. */
+export function scalarScore(
+  vector: readonly number[],
+  requirements: readonly SkillRequirement[],
+): number {
   let score = 0
-  for (const v of vector) score += v
+  for (let k = 0; k < requirements.length; k++) score += vector[k]
+  score += vector[requirements.length] * OPEN_SLOT_SCORE_WEIGHT
+  score += vector[requirements.length + 1]
   return score
 }

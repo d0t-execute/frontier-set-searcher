@@ -63,12 +63,24 @@ export function dominates(a: readonly number[], b: readonly number[]): boolean {
  * outcome. See `expand.test.ts`'s brute-force property test, which checks
  * distinct achievable vectors, not exact tie counts, for exactly this
  * reason.
+ *
+ * Every vector this engine builds carries two more dimensions after one per
+ * requirement -- open decoration slots left unused, and total points in
+ * skills nobody requested (see `pareto.ts`'s `vectorOf` and `expand.ts`'s
+ * `requestedVector`/decoration-filling DP, confirmed project direction: among
+ * builds that already tie on every requested skill, leaving more decoration
+ * capacity free for the player's own playstyle choices, or granting more
+ * unrequested skill value, makes a build strictly *better*, not merely
+ * different). Neither has a "requirement" to cap against -- more is always
+ * better, with no ceiling -- so anything past `requirements.length` passes
+ * through here unchanged instead of indexing a requirement that doesn't
+ * exist for it.
  */
 export function cappedVector(
   raw: readonly number[],
   requirements: readonly SkillRequirement[],
 ): number[] {
-  return raw.map((v, k) => Math.min(v, requirements[k].minPoints))
+  return raw.map((v, k) => (k < requirements.length ? Math.min(v, requirements[k].minPoints) : v))
 }
 
 interface ParetoGroupInternal<T> {
@@ -101,6 +113,19 @@ export interface ParetoGroup<T> {
  */
 export const MAX_TIED_ORIGINS = 5
 
+/** How much more a single open decoration slot is worth than a single bonus
+ * skill point, when ranking builds that already tie on every requested skill
+ * (see `expand.ts`'s `skillAndSlotsVector` and `pareto.ts`'s `vectorOf` docstrings
+ * for the full rationale) -- confirmed project direction: open slots should
+ * count for "vastly" more. Large enough that no realistic bonus-points total
+ * could ever outweigh a single additional open slot, so this holds in
+ * practice, not just on average. Shared between `pareto.ts`'s `scalarScore`
+ * (final build ranking) and `expand.ts`'s decoration-filling DP (its
+ * `tieBreakScore`, which needs the identical preference -- fewer decoration
+ * slots used, matters far more than extra bonus points -- to decide which
+ * fillings survive a full tied group). */
+export const OPEN_SLOT_SCORE_WEIGHT = 10_000
+
 /**
  * A non-dominated frontier of `origin`s keyed by their vector, built up one
  * `insert` at a time. Shared by every Pareto-frontier builder in the search
@@ -128,17 +153,44 @@ export const MAX_TIED_ORIGINS = 5
  * constant's own docstring for why) -- later ones reaching the same vector
  * are dropped rather than appended, keeping both this class's own memory use
  * and every downstream consumer's input size bounded regardless of how many
- * real items happen to tie.
+ * real items happen to tie. With no `tieBreakScore`, "first found" is
+ * whatever arbitrary order `insert` happened to be called in -- fine when
+ * every tied origin really is interchangeable, but wrong when some are
+ * genuinely better by a measure the vector itself doesn't capture (see
+ * `tieBreakScore`'s own parameter docs). Passing one replaces the
+ * worst-scoring kept origin with a better-scoring new one once the group is
+ * full, instead of keeping whichever arrived first.
  */
 export class ParetoFrontier<T> {
   private readonly groups: ParetoGroupInternal<T>[] = []
   private readonly byVectorKey = new Map<string, ParetoGroupInternal<T>>()
+  private readonly tieBreakScore?: (origin: T) => number
+
+  /** @param tieBreakScore Optional. When a tied group is already at
+   * `MAX_TIED_ORIGINS`, a new origin reaching the same vector only replaces
+   * the currently-kept origin with the lowest score here (ties keep whatever
+   * was already there) -- otherwise it's dropped, same as with no score
+   * given at all. Confirmed real need: `expand.ts`'s decoration-filling DP
+   * groups fillings by requested skill alone, so once a popular skill has
+   * many relevant decorations, far more fillings than `MAX_TIED_ORIGINS` can
+   * tie on the same requested-skill vector -- without this, "first found"
+   * (insertion order, driven by which decoration happens to be folded in
+   * first) systematically favored fillings built from *several* decorations
+   * stacked together over a single decoration reaching the same vector
+   * alone, exactly backwards from leaving as many slots open as possible. */
+  constructor(tieBreakScore?: (origin: T) => number) {
+    this.tieBreakScore = tieBreakScore
+  }
 
   insert(vector: readonly number[], origin: T): void {
     const key = vector.join(',')
     const exact = this.byVectorKey.get(key)
     if (exact !== undefined) {
-      if (exact.origins.length < MAX_TIED_ORIGINS) exact.origins.push(origin)
+      if (exact.origins.length < MAX_TIED_ORIGINS) {
+        exact.origins.push(origin)
+      } else if (this.tieBreakScore !== undefined) {
+        this.replaceWorstIfBetter(exact.origins, origin, this.tieBreakScore)
+      }
       return
     }
 
@@ -155,6 +207,24 @@ export class ParetoFrontier<T> {
     const group: ParetoGroupInternal<T> = { vector, origins: [origin] }
     this.groups.push(group)
     this.byVectorKey.set(key, group)
+  }
+
+  /** `origins` is already at `MAX_TIED_ORIGINS` -- replaces whichever
+   * currently-kept one scores lowest with `candidate` if `candidate` scores
+   * strictly higher, otherwise leaves `origins` untouched (a tie keeps
+   * whatever was already there, matching "first found" when scores never
+   * differ at all). */
+  private replaceWorstIfBetter(origins: T[], candidate: T, scoreOf: (origin: T) => number): void {
+    let worstIndex = 0
+    let worstScore = scoreOf(origins[0])
+    for (let i = 1; i < origins.length; i++) {
+      const score = scoreOf(origins[i])
+      if (score < worstScore) {
+        worstScore = score
+        worstIndex = i
+      }
+    }
+    if (scoreOf(candidate) > worstScore) origins[worstIndex] = candidate
   }
 
   /** Every distinct non-dominated vector currently in the frontier, each
