@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { search } from './engine'
+import { collect } from './test-helpers'
 import type { Candidate, Decoration, SlotQuery } from './types'
 
 function candidate(id: string, skills: Record<number, number>, openSlotCount = 0): Candidate {
@@ -25,41 +26,41 @@ function deco(id: string, slotSize: number, skills: Record<number, number>): Dec
 }
 
 describe('search', () => {
-  it('returns a single-slot candidate that satisfies the requirement alone', () => {
+  it('returns a single-slot candidate that satisfies the requirement alone', async () => {
     const slots: SlotQuery[] = [
       { slotId: 'head', candidates: [candidate('Leather Helm', { 1: 5 })] },
     ]
 
-    const results = [...search(slots, [{ skillId: 1, minPoints: 3 }])]
+    const results = await collect(search(slots, [{ skillId: 1, minPoints: 3 }]))
 
     expect(results).toHaveLength(1)
     expect(results[0].picks.get('head')?.id).toBe('Leather Helm')
     expect(results[0].skillTotals.get(1)).toBe(5)
   })
 
-  it('returns nothing when no candidate meets the requirement', () => {
+  it('returns nothing when no candidate meets the requirement', async () => {
     const slots: SlotQuery[] = [
       { slotId: 'head', candidates: [candidate('Leather Helm', { 1: 1 })] },
     ]
 
-    const results = [...search(slots, [{ skillId: 1, minPoints: 3 }])]
+    const results = await collect(search(slots, [{ skillId: 1, minPoints: 3 }]))
 
     expect(results).toEqual([])
   })
 
-  it('combines candidates across multiple slots to meet the requirement', () => {
+  it('combines candidates across multiple slots to meet the requirement', async () => {
     const slots: SlotQuery[] = [
       { slotId: 'head', candidates: [candidate('Helm', { 1: 2 })] },
       { slotId: 'chest', candidates: [candidate('Mail', { 1: 2 })] },
     ]
 
-    const results = [...search(slots, [{ skillId: 1, minPoints: 3 }])]
+    const results = await collect(search(slots, [{ skillId: 1, minPoints: 3 }]))
 
     expect(results).toHaveLength(1)
     expect(results[0].skillTotals.get(1)).toBe(4)
   })
 
-  it('requires exactly one candidate per slot in the query', () => {
+  it('requires exactly one candidate per slot in the query', async () => {
     const slots: SlotQuery[] = [
       {
         slotId: 'head',
@@ -67,39 +68,39 @@ describe('search', () => {
       },
     ]
 
-    const results = [...search(slots, [{ skillId: 1, minPoints: 3 }])]
+    const results = await collect(search(slots, [{ skillId: 1, minPoints: 3 }]))
 
     expect(results).toHaveLength(1)
     expect(results[0].picks.get('head')?.id).toBe('Helm A')
   })
 
-  it('satisfies multiple simultaneous skill requirements', () => {
+  it('satisfies multiple simultaneous skill requirements', async () => {
     const slots: SlotQuery[] = [
       { slotId: 'head', candidates: [candidate('Helm', { 1: 5, 2: 1 })] },
       { slotId: 'chest', candidates: [candidate('Mail', { 2: 4 })] },
     ]
 
-    const results = [
-      ...search(slots, [
+    const results = await collect(
+      search(slots, [
         { skillId: 1, minPoints: 3 },
         { skillId: 2, minPoints: 5 },
       ]),
-    ]
+    )
 
     expect(results).toHaveLength(1)
     expect(results[0].skillTotals.get(1)).toBe(5)
     expect(results[0].skillTotals.get(2)).toBe(5)
   })
 
-  it("omits a requirement's skill from totals only when truly absent, otherwise reports 0 contribution", () => {
+  it("omits a requirement's skill from totals only when truly absent, otherwise reports 0 contribution", async () => {
     const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Helm', { 1: 5 })] }]
 
-    const results = [...search(slots, [{ skillId: 1, minPoints: 3 }])]
+    const results = await collect(search(slots, [{ skillId: 1, minPoints: 3 }]))
 
     expect(results[0].skillTotals.get(99)).toBeUndefined()
   })
 
-  it('excludes a candidate that never reaches the requirement on its own', () => {
+  it('excludes a candidate that never reaches the requirement on its own', async () => {
     // Small Helm's single-skill contribution (3) never reaches a requirement
     // of 5 -- it's excluded as infeasible. (Once two candidates *both* meet
     // the same requirement, they tie rather than one dominating -- see
@@ -111,12 +112,12 @@ describe('search', () => {
       },
     ]
 
-    const results = [...search(slots, [{ skillId: 1, minPoints: 5 }])]
+    const results = await collect(search(slots, [{ skillId: 1, minPoints: 5 }]))
 
     expect(results.map((r) => r.picks.get('head')?.id)).toEqual(['Big Helm'])
   })
 
-  it('treats two candidates that both meet a requirement as tied, not one dominating', () => {
+  it('treats two candidates that both meet a requirement as tied, not one dominating', async () => {
     // Confirmed project direction: once a requirement is met, more points in
     // it don't make a build better. Without this, Big Helm's 10 points would
     // always outrank Small Helm's 5, even though both equally satisfy a
@@ -128,19 +129,19 @@ describe('search', () => {
       },
     ]
 
-    const results = [...search(slots, [{ skillId: 1, minPoints: 5 }])]
+    const results = await collect(search(slots, [{ skillId: 1, minPoints: 5 }]))
 
     expect(results.map((r) => r.picks.get('head')?.id).sort()).toEqual(['Big Helm', 'Small Helm'])
   })
 
-  it('returns one result when the query has no slots and there are no requirements', () => {
-    const results = [...search([], [])]
+  it('returns one result when the query has no slots and there are no requirements', async () => {
+    const results = await collect(search([], []))
 
     expect(results).toHaveLength(1)
     expect(results[0].picks.size).toBe(0)
   })
 
-  it('finds every non-dominated valid combination, not just the first', () => {
+  it('finds every non-dominated valid combination, not just the first', async () => {
     const slots: SlotQuery[] = [
       {
         slotId: 'head',
@@ -152,12 +153,12 @@ describe('search', () => {
       { skillId: 2, minPoints: 0 },
     ]
 
-    const results = [...search(slots, requirements)]
+    const results = await collect(search(slots, requirements))
 
     expect(results.map((r) => r.picks.get('head')?.id).sort()).toEqual(['Helm A', 'Helm B'])
   })
 
-  it('can be consumed lazily, stopping before the full result set is computed', () => {
+  it('can be consumed lazily, stopping before the full result set is computed', async () => {
     const slots: SlotQuery[] = [
       {
         slotId: 'head',
@@ -166,7 +167,7 @@ describe('search', () => {
     ]
 
     const generator = search(slots, [{ skillId: 1, minPoints: 3 }])
-    const first = generator.next()
+    const first = await generator.next()
 
     // Helm A and Helm B both meet the requirement, so they tie (see "treats
     // two candidates that both meet a requirement as tied") -- there's no
@@ -178,27 +179,27 @@ describe('search', () => {
 })
 
 describe('search with decorations', () => {
-  it('uses a decoration placed in an open slot to meet the requirement', () => {
+  it('uses a decoration placed in an open slot to meet the requirement', async () => {
     const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Bare Helm', {}, 2)] }]
     const jewel = deco('Attack Jewel', 2, { 1: 5 })
 
-    const results = [...search(slots, [{ skillId: 1, minPoints: 3 }], [jewel])]
+    const results = await collect(search(slots, [{ skillId: 1, minPoints: 3 }], [jewel]))
 
     expect(results).toHaveLength(1)
     expect(results[0].skillTotals.get(1)).toBe(5)
     expect(results[0].decorations.get('head')).toEqual([jewel])
   })
 
-  it('still returns the undecorated result when no decoration is needed or supplied', () => {
+  it('still returns the undecorated result when no decoration is needed or supplied', async () => {
     const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Helm', { 1: 5 }, 2)] }]
 
-    const resultsWithoutDecorations = [...search(slots, [{ skillId: 1, minPoints: 3 }])]
+    const resultsWithoutDecorations = await collect(search(slots, [{ skillId: 1, minPoints: 3 }]))
     expect(resultsWithoutDecorations).toHaveLength(1)
     expect(resultsWithoutDecorations[0].decorations.get('head')).toBeUndefined()
 
-    const resultsWithIrrelevantDecoration = [
-      ...search(slots, [{ skillId: 1, minPoints: 3 }], [deco('Irrelevant Jewel', 2, { 99: 1 })]),
-    ]
+    const resultsWithIrrelevantDecoration = await collect(
+      search(slots, [{ skillId: 1, minPoints: 3 }], [deco('Irrelevant Jewel', 2, { 99: 1 })]),
+    )
     // A decoration that contributes to none of the requested skills can
     // never change whether a requirement is met or how results rank, so it
     // isn't expanded into a separate result variant -- only the undecorated
@@ -211,23 +212,25 @@ describe('search with decorations', () => {
     expect(resultsWithIrrelevantDecoration[0].decorations.get('head')).toBeUndefined()
   })
 
-  it('excludes a decoration choice that never reaches the requirement on its own', () => {
+  it('excludes a decoration choice that never reaches the requirement on its own', async () => {
     // Small Jewel's contribution (1) never reaches a requirement of 5 --
     // same infeasibility rule as for candidates.
     const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Bare Helm', {}, 2)] }]
     const bigJewel = deco('Big Jewel', 2, { 1: 5 })
     const smallJewel = deco('Small Jewel', 2, { 1: 1 })
 
-    const results = [...search(slots, [{ skillId: 1, minPoints: 5 }], [bigJewel, smallJewel])]
+    const results = await collect(
+      search(slots, [{ skillId: 1, minPoints: 5 }], [bigJewel, smallJewel]),
+    )
 
     const decorated = results.filter((r) => (r.decorations.get('head')?.length ?? 0) > 0)
     expect(decorated.map((r) => r.decorations.get('head')?.[0].id)).toEqual(['Big Jewel'])
   })
 
-  it('preserves ties between non-dominated decoration choices that both meet requirements', () => {
+  it('preserves ties between non-dominated decoration choices that both meet requirements', async () => {
     // Attack Jewel overshoots skill 1 and just meets skill 2; Defense Jewel
     // is the mirror image -- genuinely different choices, but both tie once
-    // capped at the requirements (see pareto.test.ts's equivalent case).
+    // capped at the requirements (see ilp-model.test.ts's equivalent case).
     const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Bare Helm', {}, 2)] }]
     const attackJewel = deco('Attack Jewel', 2, { 1: 5, 2: 1 })
     const defenseJewel = deco('Defense Jewel', 2, { 1: 1, 2: 1 })
@@ -236,7 +239,7 @@ describe('search with decorations', () => {
       { skillId: 1, minPoints: 1 },
       { skillId: 2, minPoints: 1 },
     ]
-    const results = [...search(slots, requirements, [attackJewel, defenseJewel])]
+    const results = await collect(search(slots, requirements, [attackJewel, defenseJewel]))
 
     const decorated = results.filter((r) => (r.decorations.get('head')?.length ?? 0) > 0)
     expect(decorated.map((r) => r.decorations.get('head')?.[0].id).sort()).toEqual([

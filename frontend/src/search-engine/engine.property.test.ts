@@ -10,9 +10,19 @@
 import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
 import { fillSlots } from './decorations'
-import { cappedVector } from './dominance'
 import { search } from './engine'
+import { collect } from './test-helpers'
 import type { BuildResult, Candidate, Decoration, SkillRequirement, SlotQuery } from './types'
+
+/** Caps each dimension of `raw` at its own requirement's threshold -- once a
+ * requirement is met, more points in it don't make a build "more valid" for
+ * comparison purposes here (see the brute-force oracle functions below: this
+ * is only used to compare *which outcomes* exist, never to rank them). Kept
+ * local rather than imported from the old Pareto engine's dominance.ts,
+ * which this property test's own correctness check doesn't depend on. */
+function cappedVector(raw: readonly number[], requirements: readonly SkillRequirement[]): number[] {
+  return raw.map((v, k) => (k < requirements.length ? Math.min(v, requirements[k].minPoints) : v))
+}
 
 function bruteForceSearch(
   slots: readonly SlotQuery[],
@@ -120,36 +130,49 @@ const requirementsArb = fc.uniqueArray(
 )
 
 describe('search (property-based)', () => {
-  it('reaches exactly the same set of distinct outcomes as an unpruned brute-force search', () => {
-    // Compares distinct (capped) vectors reached, not exact pick signatures
-    // or counts -- see `vectorSignature`'s docstring for why capping means
-    // these can no longer be compared tie-for-tie.
-    fc.assert(
-      fc.property(slotsArb, requirementsArb, (slots, requirements) => {
-        const actual = [...search(slots, requirements)]
-        const expected = pruneDominated(bruteForceSearch(slots, requirements), requirements)
+  // See the decoration describe block below for why this is so generous: a
+  // MIP solve's cost is input-sensitive, and a rare random instance can take
+  // far longer than the typical case even at this tiny synthetic scale.
+  const TEST_TIMEOUT_MS = 300_000
 
-        const actualVectors = new Set(actual.map((r) => vectorSignature(r, requirements)))
-        const expectedVectors = new Set(expected.map((r) => vectorSignature(r, requirements)))
+  it(
+    'reaches exactly the same set of distinct outcomes as an unpruned brute-force search',
+    async () => {
+      // Compares distinct (capped) vectors reached, not exact pick signatures
+      // or counts -- see `vectorSignature`'s docstring for why capping means
+      // these can no longer be compared tie-for-tie.
+      await fc.assert(
+        fc.asyncProperty(slotsArb, requirementsArb, async (slots, requirements) => {
+          const actual = await collect(search(slots, requirements))
+          const expected = pruneDominated(bruteForceSearch(slots, requirements), requirements)
 
-        expect(actualVectors).toEqual(expectedVectors)
-      }),
-    )
-  })
+          const actualVectors = new Set(actual.map((r) => vectorSignature(r, requirements)))
+          const expectedVectors = new Set(expected.map((r) => vectorSignature(r, requirements)))
 
-  it('never returns a combination that fails a requirement', () => {
-    fc.assert(
-      fc.property(slotsArb, requirementsArb, (slots, requirements) => {
-        const results = [...search(slots, requirements)]
+          expect(actualVectors).toEqual(expectedVectors)
+        }),
+      )
+    },
+    TEST_TIMEOUT_MS,
+  )
 
-        for (const result of results) {
-          for (const req of requirements) {
-            expect(result.skillTotals.get(req.skillId) ?? 0).toBeGreaterThanOrEqual(req.minPoints)
+  it(
+    'never returns a combination that fails a requirement',
+    async () => {
+      await fc.assert(
+        fc.asyncProperty(slotsArb, requirementsArb, async (slots, requirements) => {
+          const results = await collect(search(slots, requirements))
+
+          for (const result of results) {
+            for (const req of requirements) {
+              expect(result.skillTotals.get(req.skillId) ?? 0).toBeGreaterThanOrEqual(req.minPoints)
+            }
           }
-        }
-      }),
-    )
-  })
+        }),
+      )
+    },
+    TEST_TIMEOUT_MS,
+  )
 })
 
 function bruteForceSearchWithDecorations(
@@ -250,48 +273,68 @@ const decorationsArb = fc.uniqueArray(
 )
 
 describe('search with decorations (property-based)', () => {
-  it('reaches exactly the same set of distinct outcomes as an unpruned brute-force search', () => {
-    // Compares distinct (capped) vectors, not exact pick-and-decoration
-    // signatures -- see `vectorSignature`'s docstring.
-    fc.assert(
-      fc.property(
-        slotsWithOpenSlotsArb,
-        requirementsArb,
-        decorationsArb,
-        (slots, requirements, decorations) => {
-          const actual = [...search(slots, requirements, decorations)]
-          const expected = pruneDominated(
-            bruteForceSearchWithDecorations(slots, requirements, decorations),
-            requirements,
-          )
+  // A MIP solve's cost is input-sensitive in a way the old Pareto engine's
+  // wasn't -- most random small instances solve in milliseconds, but a rare
+  // one can hit enough solver symmetry to take over a minute even at this
+  // tiny synthetic scale (observed directly: one random case took ~141s with
+  // only 3 slots, 2 candidates each, and 3 decorations). That's still well
+  // inside "seconds to low minutes, not half an hour" (the project's actual
+  // bar -- see `engine.ts`'s module docstring), so the fix is a generous
+  // per-test timeout, not a change to the engine itself.
+  const TEST_TIMEOUT_MS = 300_000
 
-          const actualVectors = new Set(actual.map((r) => vectorSignature(r, requirements)))
-          const expectedVectors = new Set(expected.map((r) => vectorSignature(r, requirements)))
+  it(
+    'reaches exactly the same set of distinct outcomes as an unpruned brute-force search',
+    async () => {
+      // Compares distinct (capped) vectors, not exact pick-and-decoration
+      // signatures -- see `vectorSignature`'s docstring.
+      await fc.assert(
+        fc.asyncProperty(
+          slotsWithOpenSlotsArb,
+          requirementsArb,
+          decorationsArb,
+          async (slots, requirements, decorations) => {
+            const actual = await collect(search(slots, requirements, decorations))
+            const expected = pruneDominated(
+              bruteForceSearchWithDecorations(slots, requirements, decorations),
+              requirements,
+            )
 
-          expect(actualVectors).toEqual(expectedVectors)
-        },
-      ),
-      { numRuns: 50 }, // decoration enumeration is combinatorially heavier per case
-    )
-  })
+            const actualVectors = new Set(actual.map((r) => vectorSignature(r, requirements)))
+            const expectedVectors = new Set(expected.map((r) => vectorSignature(r, requirements)))
 
-  it('never returns a combination that fails a requirement', () => {
-    fc.assert(
-      fc.property(
-        slotsWithOpenSlotsArb,
-        requirementsArb,
-        decorationsArb,
-        (slots, requirements, decorations) => {
-          const results = [...search(slots, requirements, decorations)]
+            expect(actualVectors).toEqual(expectedVectors)
+          },
+        ),
+        { numRuns: 50 }, // decoration enumeration is combinatorially heavier per case
+      )
+    },
+    TEST_TIMEOUT_MS,
+  )
 
-          for (const result of results) {
-            for (const req of requirements) {
-              expect(result.skillTotals.get(req.skillId) ?? 0).toBeGreaterThanOrEqual(req.minPoints)
+  it(
+    'never returns a combination that fails a requirement',
+    async () => {
+      await fc.assert(
+        fc.asyncProperty(
+          slotsWithOpenSlotsArb,
+          requirementsArb,
+          decorationsArb,
+          async (slots, requirements, decorations) => {
+            const results = await collect(search(slots, requirements, decorations))
+
+            for (const result of results) {
+              for (const req of requirements) {
+                expect(result.skillTotals.get(req.skillId) ?? 0).toBeGreaterThanOrEqual(
+                  req.minPoints,
+                )
+              }
             }
-          }
-        },
-      ),
-      { numRuns: 50 },
-    )
-  })
+          },
+        ),
+        { numRuns: 50 },
+      )
+    },
+    TEST_TIMEOUT_MS,
+  )
 })

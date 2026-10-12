@@ -33,7 +33,7 @@ import { search } from '../engine'
 import type { SkillRequirement } from '../types'
 import { generateDecorations, generateSlots } from './generate'
 
-function run(label: string, requirements: SkillRequirement[], take: number): void {
+async function run(label: string, requirements: SkillRequirement[], take: number): Promise<void> {
   const options = {
     slotCount: 7,
     candidatesPerSlot: 100,
@@ -49,7 +49,7 @@ function run(label: string, requirements: SkillRequirement[], take: number): voi
   const generator = search(slots, requirements, decorations)
   const results = []
   for (let i = 0; i < take; i++) {
-    const next = generator.next()
+    const next = await generator.next()
     if (next.done) break
     results.push(next.value)
   }
@@ -57,9 +57,9 @@ function run(label: string, requirements: SkillRequirement[], take: number): voi
   console.log(`${label}: first ${results.length} results in ${elapsedMs.toFixed(0)}ms`)
 }
 
-run('1 requirement, low threshold', [{ skillId: 1, minPoints: 8 }], 20)
+await run('1 requirement, low threshold', [{ skillId: 1, minPoints: 8 }], 20)
 
-run(
+await run(
   '3 requirements, higher thresholds',
   [
     { skillId: 1, minPoints: 15 },

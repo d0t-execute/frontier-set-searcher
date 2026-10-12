@@ -9,7 +9,7 @@
 import { runSearch } from './cli'
 
 try {
-  runSearch(process.argv.slice(2))
+  await runSearch(process.argv.slice(2))
 } catch (error) {
   console.error(error instanceof Error ? error.message : error)
   process.exitCode = 1

@@ -11,16 +11,18 @@ import type { SkillRequirement } from './search-engine/types'
 
 type SearchStatus = 'idle' | 'searching' | 'done' | 'error'
 
-// The engine streams results in an anytime/best-first order and can, for a
-// loosely-constrained query against the real ~62k-equipment dataset, have
-// tens of thousands of non-dominated combinations to offer -- confirmed by
-// manual testing, where an uncapped search rendered 25,000+ result cards and
-// nearly froze the page. Capping at a generous "first page" and stopping the
-// search there (the same cancellation the user's own Cancel button uses)
-// keeps the common case fast without losing anything: results already
-// stream out in approximately best-first order, so the top `MAX_RESULTS`
-// are the most interesting ones regardless.
-const MAX_RESULTS = 20
+// The search engine formulates each query as a mixed-integer program and
+// gets additional ranked results via a "solve, exclude, re-solve" loop (see
+// search-engine/engine.ts's module docstring) -- each one is a real solver
+// round-trip costing anywhere from milliseconds to tens of seconds,
+// unlike the old Pareto-dominance engine's sub-second streaming. A "top 20"
+// cap made sense when results were nearly free; now it risks the UI sitting
+// on a search for minutes just to fill a page nobody asked to wait that long
+// for. Capped lower, and still stopping the search as soon as the cap is
+// reached (the same cancellation the user's own Cancel button uses) -- results
+// still stream in one at a time as each round completes, so the user sees
+// progress immediately rather than waiting for the whole batch.
+const MAX_RESULTS = 5
 
 function App() {
   const bundleQuery = useDataBundle()

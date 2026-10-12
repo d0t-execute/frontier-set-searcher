@@ -1,88 +1,123 @@
 /**
- * The build search engine (see docs/PLAN.md §6). Slots are combined via
- * `pareto.ts`'s lazy, recursive meet-in-the-middle frontier stream -- every
- * group of slots is reduced to its Pareto-optimal frontier of achievable
- * skill vectors through a balanced binary tree of best-first merges, never
- * materializing more of any intermediate frontier than the final results
- * actually pulled require. Results stream out in approximately best-first
- * order (§6 step 5, "anytime/streaming output") -- see `pareto.ts`'s
- * `mergeFrontierEntries` docstring for why that's "approximately," not
- * strictly, guaranteed.
+ * The build search engine (see docs/PLAN.md §6). Formulates the entire query
+ * -- every slot's candidates, every relevant decoration, every simultaneous
+ * skill requirement -- as a single mixed-integer program (`ilp-model.ts`) and
+ * hands it to HiGHS, rather than combining per-slot Pareto frontiers.
  *
- * This replaces an earlier single-pass best-first branch-and-bound over all
- * slots at once. That approach's pruning bound (every requested skill's
- * best-available option at every remaining slot, summed independently per
- * skill) is *sound* but becomes very loose once several skills must be
- * satisfied simultaneously -- confirmed by instrumentation: a realistic
- * 7-slot, 3-skill-requirement query explored 200,000 search-tree nodes
- * without reaching a single complete, valid result. An earlier version of
- * this meet-in-the-middle approach then eagerly folded each half's slots
- * together before merging the two halves; that in turn fell over at the
- * real dataset's scale (tens of thousands of genuinely distinct candidates
- * per slot), where even a two-or-three-slot group's fully-reduced frontier
- * can run to tens of thousands of entries -- forcing all of it to be built
- * before a single result could be yielded. Recursing the same lazy two-way
- * merge all the way down (`pareto.ts`) fixes that: the amount of work done
- * is driven by how many results are actually asked for, not by the size of
- * intermediate frontiers nobody asked to see in full.
+ * This replaces an earlier meet-in-the-middle Pareto-dominance engine
+ * (pareto.ts/dominance.ts/expand.ts/lazy-list.ts/max-heap.ts). That approach
+ * combined slots by tracking the non-dominated frontier of achievable skill
+ * vectors, pruning any combination no better than another on every requested
+ * skill -- correct, and fast for a handful of simultaneous requirements, but
+ * it suffers the "curse of dimensionality" once many skills are requested at
+ * once: with enough independent dimensions, almost nothing dominates
+ * anything else, so the frontier stops collapsing and grows toward the full
+ * candidate pool instead. Confirmed against a real ~17-simultaneous-skill
+ * end-game query: a single decoration-filling sub-problem alone grew from
+ * 294 entries at one open-slot capacity to 32,093 at the next, and the
+ * search never completed. A MIP solver doesn't build any such frontier --
+ * branch-and-cut prunes the search *tree*, not a materialized set of partial
+ * results, so it doesn't share this failure mode. Validated directly against
+ * the real dataset and the real query that exposed the old engine's hang
+ * (see `engine.real-data.performance.test.ts`): a single solve consistently
+ * finds a proven-optimal build in seconds, not minutes.
  *
- * Results are deliberately pruned to non-dominated builds only: a build
- * that's no better than another on *every* requested skill is never worth
- * seeing (confirmed project direction) -- something else is always at least
- * as good. `pareto.ts` enforces this at every merge in the tree, using
- * vectors capped per requirement (`cappedVector` in dominance.ts) so that
- * overshooting a requirement is never "better," only ever equal to just
- * meeting it. Ties -- two distinct builds reaching the exact same vector --
- * are always preserved, never collapsed.
+ * There's no open-source MIP solver with a built-in "solution pool" (that's
+ * a commercial-solver-only feature) -- getting more than one ranked result
+ * uses the standard "no-good cut" technique instead (`ilp-model.ts`'s
+ * `exclusionRow`): solve, forbid the exact combination just found (which
+ * candidate per slot, and how many of which decoration), re-solve, repeat
+ * until the model becomes infeasible (no combination left) or the caller
+ * stops pulling results. Each round reuses the same persistent HiGHS model
+ * (`addRow` rather than rebuilding from scratch), so repeated solves stay
+ * close to the first solve's cost instead of compounding.
+ *
+ * Each round is also time-boxed (`TIME_BOX_SECONDS`, via HiGHS's
+ * `mipInterrupt` callback): proving a solution is the single best-ranked one
+ * can occasionally take far longer than finding *a* fully valid one at all --
+ * confirmed against a real, user-supplied ~16-simultaneous-skill query (many
+ * niche, barely-satisfiable skills at once) that hadn't reached a proven
+ * optimum after 20+ minutes on some rounds. Since every skill requirement is
+ * a hard constraint on the model, not part of the objective, any feasible
+ * incumbent the solver has found by the time its box runs out already
+ * satisfies every one of them exactly (`ilp-model.ts`'s `isUsableResult`) --
+ * interrupting early only risks a worse-ranked (more decoration slots used,
+ * or fewer bonus points) result than the true optimum, never an invalid one.
  */
 
-import { DecorationFillingCache, expandSlot, filterRelevantDecorations } from './expand'
-import { buildFrontierStream } from './pareto'
-import type { FrontierEntry } from './pareto'
-import type { BuildResult, Decoration, SkillRequirement, SlotQuery } from './types'
+import { filterRelevantDecorations } from './expand'
+import { getHighs } from './highs-runtime'
+import { buildModel, decodeSolution, exclusionRow, isUsableResult } from './ilp-model'
+import type { BuildResult, Decoration, SkillId, SkillRequirement, SlotQuery } from './types'
+import type { Highs, Model, ModelStatusCode, SymbolDisposable } from 'highs'
 
-export function* search(
+/** Seconds a single round may search before settling for its best feasible
+ * incumbent instead of continuing to look for a proven-optimal one (see this
+ * module's own docstring). Chosen from direct measurement: reliably produced
+ * a fully valid build within this budget, every round, against the real
+ * hard query that motivated this -- generous enough that most queries never
+ * hit it at all (reaching proven-optimal well under it). */
+const TIME_BOX_SECONDS = 30
+
+/** If a round's first time box expires with no feasible incumbent at all --
+ * observed to happen occasionally, not just hypothetically, when the box is
+ * too tight for a given query -- one retry at double the budget meaningfully
+ * reduces the chance of stopping early on a query that was merely unlucky in
+ * which part of the search tree got explored first, while still keeping the
+ * worst realistic case (90s) far inside "not half an hour." */
+const MAX_TIME_BOX_ATTEMPTS = 2
+
+function runTimeBoxed(native: SymbolDisposable<Model>, highs: Highs): boolean {
+  let seconds = TIME_BOX_SECONDS
+  for (let attempt = 1; attempt <= MAX_TIME_BOX_ATTEMPTS; attempt++) {
+    const result = native.run({
+      [highs.constants.callbackType.mipInterrupt](event) {
+        if ((event.data.running_time ?? 0) >= seconds) event.interrupt()
+      },
+    })
+    const modelStatus: ModelStatusCode = result.modelStatus
+    const primalSolutionStatus = native.info.get('primal_solution_status') as number
+    if (isUsableResult(highs, modelStatus, primalSolutionStatus)) return true
+    if (modelStatus !== highs.constants.modelStatus.interrupted) return false // genuinely infeasible, not just out of time
+    seconds *= 2
+  }
+  return false
+}
+
+export async function* search(
   slots: readonly SlotQuery[],
   requirements: readonly SkillRequirement[],
   decorations: readonly Decoration[] = [],
-): Generator<BuildResult> {
-  const relevantDecorations = filterRelevantDecorations(decorations, requirements)
-  const decorationCache = new DecorationFillingCache()
-  const expandedSlots = slots.map((slot) =>
-    expandSlot(slot, relevantDecorations, requirements, decorationCache),
-  )
-  const frontier = buildFrontierStream(expandedSlots, requirements)
-
-  for (let i = 0; ; i++) {
-    const entry = frontier.get(i)
-    if (entry === undefined) return
-
-    if (!meetsAllRequirements(entry.vector, requirements)) continue
-    yield buildResult(entry)
-  }
-}
-
-function meetsAllRequirements(
-  vector: readonly number[],
-  requirements: readonly SkillRequirement[],
-): boolean {
-  for (let k = 0; k < requirements.length; k++) {
-    if (vector[k] < requirements[k].minPoints) return false
-  }
-  return true
-}
-
-function buildResult(entry: FrontierEntry): BuildResult {
-  const resultDecorations = new Map<string, readonly Decoration[]>()
-  for (const [slotId, option] of entry.picks) {
-    if (option.decorationsUsed.length > 0) {
-      resultDecorations.set(slotId, option.decorationsUsed)
+): AsyncGenerator<BuildResult> {
+  if (slots.length === 0) {
+    // Nothing to choose, so nothing to solve for -- but an empty build still
+    // only counts as a result if every requirement is trivially already met
+    // (only possible when every requirement's minPoints is 0 or less),
+    // matching the old engine's behavior for this edge case.
+    const skillTotals = new Map<SkillId, number>()
+    const meetsAll = requirements.every((r) => (skillTotals.get(r.skillId) ?? 0) >= r.minPoints)
+    if (meetsAll) {
+      yield { picks: new Map(), decorations: new Map(), skillTotals }
     }
+    return
   }
 
-  return {
-    picks: new Map([...entry.picks].map(([slotId, option]) => [slotId, option.candidate])),
-    decorations: resultDecorations,
-    skillTotals: entry.totals,
+  const relevantDecorations = filterRelevantDecorations(decorations, requirements)
+  const highs = await getHighs()
+  const { model, columns } = buildModel(highs, slots, relevantDecorations, requirements)
+  const native = highs.createModel(model)
+
+  try {
+    for (;;) {
+      if (!runTimeBoxed(native, highs)) return
+
+      const solution = native.getSolution()
+      yield decodeSolution(columns, solution.colValue)
+
+      const cut = exclusionRow(highs, columns, solution.colValue)
+      native.addRow(cut.lower, cut.upper, { indices: cut.indices, values: cut.values })
+    }
+  } finally {
+    native.dispose()
   }
 }

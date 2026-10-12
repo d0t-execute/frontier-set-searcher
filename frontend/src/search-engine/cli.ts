@@ -92,7 +92,7 @@ export function formatResult(result: BuildResult, index: number): string {
   return lines.join('\n')
 }
 
-export function runSearch(argv: readonly string[]): void {
+export async function runSearch(argv: readonly string[]): Promise<void> {
   const options = parseArgs(argv)
 
   console.log(
@@ -110,7 +110,7 @@ export function runSearch(argv: readonly string[]): void {
   const start = performance.now()
   const generator = search(slots, options.requirements, decorations)
   let count = 0
-  for (const result of generator) {
+  for await (const result of generator) {
     count++
     console.log(formatResult(result, count))
     if (count >= options.take) break
