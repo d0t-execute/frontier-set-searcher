@@ -90,6 +90,9 @@ class Equipment:
     # See docs/data-format-notes.md "Tower Armor".
     is_tower: bool = False
     zenith_skill_id: int | None = None
+    # The reference set-searcher's gear-level category leaf -- see
+    # docs/gear-category-taxonomy.md.
+    category: str = "standard_plain"
     source_url: str | None = None
 
 

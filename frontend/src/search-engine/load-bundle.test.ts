@@ -15,9 +15,23 @@ const decorations = [
   { id: 'D001', name: 'Attack Jewel', slotSize: 1, skills: [{ skillId: 1, points: 3 }] },
 ]
 const headEquipment = [
-  { id: 'head:0001', name: 'Leather Helm', skills: [{ skillId: 1, points: 5 }], openSlotCount: 1 },
+  {
+    id: 'head:0001',
+    name: 'Leather Helm',
+    skills: [{ skillId: 1, points: 5 }],
+    openSlotCount: 1,
+    category: 'standard_plain',
+  },
 ]
-const chestEquipment = [{ id: 'body:0001', name: 'Leather Vest', skills: [], openSlotCount: 0 }]
+const chestEquipment = [
+  {
+    id: 'body:0001',
+    name: 'Leather Vest',
+    skills: [],
+    openSlotCount: 0,
+    category: 'standard_plain',
+  },
+]
 
 function fakeFetch(files: Record<string, unknown>): FetchLike {
   return async (url: string) => {

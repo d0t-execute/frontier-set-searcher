@@ -89,6 +89,7 @@ def _export_equipment(conn: sqlite3.Connection, slot_type: EquipmentType) -> lis
             "name": equipment.name,
             "skills": _skills_payload(get_equipment_skills(conn, equipment.id)),
             "openSlotCount": equipment.slot_count_max,
+            "category": equipment.category,
         }
         for equipment in list_equipment(conn, slot_type=slot_type)
     ]

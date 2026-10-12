@@ -61,6 +61,9 @@ CREATE TABLE IF NOT EXISTS equipment (
     -- docs/data-format-notes.md "Tower Armor".
     is_tower INTEGER NOT NULL DEFAULT 0,
     zenith_skill_id INTEGER REFERENCES zenith_skill (id) ON DELETE RESTRICT,
+    -- The reference set-searcher's gear-level category leaf (CRE + CLASS +
+    -- name-suffix derived) -- see docs/gear-category-taxonomy.md.
+    category TEXT NOT NULL DEFAULT 'standard_plain',
     source_url TEXT
 );
 
@@ -144,6 +147,7 @@ CREATE TABLE IF NOT EXISTS weapon (
 
 CREATE INDEX IF NOT EXISTS idx_skill_tier_skill_id ON skill_tier (skill_id);
 CREATE INDEX IF NOT EXISTS idx_equipment_slot_type ON equipment (slot_type);
+CREATE INDEX IF NOT EXISTS idx_equipment_category ON equipment (category);
 CREATE INDEX IF NOT EXISTS idx_equipment_skill_skill_id ON equipment_skill (skill_id);
 CREATE INDEX IF NOT EXISTS idx_decoration_skill_skill_id ON decoration_skill (skill_id);
 CREATE INDEX IF NOT EXISTS idx_cuff_skill_skill_id ON cuff_skill (skill_id);

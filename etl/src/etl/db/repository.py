@@ -129,6 +129,7 @@ def insert_equipment(
     min_gr: int | None = None,
     is_tower: bool = False,
     zenith_skill_id: int | None = None,
+    category: str = "standard_plain",
     source_url: str | None = None,
 ) -> Equipment:
     """Insert a new equipment row.
@@ -142,8 +143,8 @@ def insert_equipment(
         INSERT INTO equipment (
             external_id, name, slot_type, rarity, defense_base, defense_max,
             slot_count_base, slot_count_max, min_hr, min_gr, is_tower,
-            zenith_skill_id, source_url
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            zenith_skill_id, category, source_url
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             external_id,
@@ -158,6 +159,7 @@ def insert_equipment(
             min_gr,
             is_tower,
             zenith_skill_id,
+            category,
             source_url,
         ),
     )
@@ -177,6 +179,7 @@ def insert_equipment(
         min_gr=min_gr,
         is_tower=is_tower,
         zenith_skill_id=zenith_skill_id,
+        category=category,
         source_url=source_url,
     )
 
@@ -453,6 +456,7 @@ def _equipment_from_row(row: sqlite3.Row) -> Equipment:
         min_gr=row["min_gr"],
         is_tower=bool(row["is_tower"]),
         zenith_skill_id=row["zenith_skill_id"],
+        category=row["category"],
         source_url=row["source_url"],
     )
 

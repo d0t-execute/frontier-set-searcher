@@ -2,15 +2,20 @@ import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { ResultsList } from './ResultsList'
 import type { NamedBuildResult } from './types'
+import type { NamedCandidate } from '../search-engine/load-bundle'
 
 const skillNames = new Map([
   [1, 'Attack'],
   [2, 'Defense'],
 ])
 
+function candidate(overrides: Partial<NamedCandidate> & Pick<NamedCandidate, 'id' | 'name'>) {
+  return { skills: [], category: 'standard_plain', ...overrides }
+}
+
 function result(overrides: Partial<NamedBuildResult> = {}): NamedBuildResult {
   return {
-    picks: new Map([['head', { id: 'head:0001', name: 'Leather Helm', skills: [] }]]),
+    picks: new Map([['head', candidate({ id: 'head:0001', name: 'Leather Helm' })]]),
     decorations: new Map(),
     skillTotals: new Map([[1, 15]]),
     ...overrides,
@@ -23,10 +28,10 @@ describe('ResultsList', () => {
       <ResultsList
         results={[
           result({
-            picks: new Map([['head', { id: 'a', name: 'Helm A', skills: [] }]]),
+            picks: new Map([['head', candidate({ id: 'a', name: 'Helm A' })]]),
           }),
           result({
-            picks: new Map([['head', { id: 'b', name: 'Helm B', skills: [] }]]),
+            picks: new Map([['head', candidate({ id: 'b', name: 'Helm B' })]]),
           }),
         ]}
         skillNames={skillNames}
@@ -45,8 +50,8 @@ describe('ResultsList', () => {
         results={[
           result({
             picks: new Map([
-              ['head', { id: 'head:0001', name: 'Leather Helm', skills: [] }],
-              ['chest', { id: 'body:0001', name: 'Leather Vest', skills: [] }],
+              ['head', candidate({ id: 'head:0001', name: 'Leather Helm' })],
+              ['chest', candidate({ id: 'body:0001', name: 'Leather Vest' })],
             ]),
           }),
         ]}
@@ -81,7 +86,7 @@ describe('ResultsList', () => {
         results={[
           result({
             picks: new Map([
-              ['head', { id: 'head:0001', name: 'Leather Helm', skills: [], openSlotCount: 3 }],
+              ['head', candidate({ id: 'head:0001', name: 'Leather Helm', openSlotCount: 3 })],
             ]),
           }),
         ]}
@@ -98,7 +103,7 @@ describe('ResultsList', () => {
         results={[
           result({
             picks: new Map([
-              ['head', { id: 'head:0001', name: 'Leather Helm', skills: [], openSlotCount: 3 }],
+              ['head', candidate({ id: 'head:0001', name: 'Leather Helm', openSlotCount: 3 })],
             ]),
             decorations: new Map([
               ['head', [{ id: 'D001', name: 'Attack Jewel', slotSize: 1, skills: [] }]],
@@ -118,7 +123,7 @@ describe('ResultsList', () => {
         results={[
           result({
             picks: new Map([
-              ['head', { id: 'head:0001', name: 'Leather Helm', skills: [], openSlotCount: 1 }],
+              ['head', candidate({ id: 'head:0001', name: 'Leather Helm', openSlotCount: 1 })],
             ]),
             decorations: new Map([
               ['head', [{ id: 'D001', name: 'Attack Jewel', slotSize: 1, skills: [] }]],

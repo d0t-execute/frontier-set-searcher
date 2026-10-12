@@ -91,6 +91,7 @@ def load_equipment(
                 if row.zenith_skill_id is not None
                 else None
             ),
+            category=row.category,
             source_url=source_url,
         )
         for skill_id, points in row.skills:

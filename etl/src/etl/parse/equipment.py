@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from enum import IntEnum
 
 from etl.db.models import EquipmentType
+from etl.parse.gear_category import classify_equipment_category
 from etl.parse.js_extract import extract_balanced
 
 BUCKET_TO_SLOT_TYPE: dict[str, EquipmentType] = {
@@ -40,6 +41,8 @@ class Field(IntEnum):
     """Positional column indices, named after SkillForm.js's I_b* constants."""
 
     NAME = 0
+    SEX = 1
+    TYPE = 2
     RARE = 3
     SN1 = 10
     SP1 = 11
@@ -57,6 +60,7 @@ class Field(IntEnum):
     SLOT1 = 27
     SLOT7 = 28
     DEFPTN = 30
+    CRE = 33
     DEC = 34
     CLASS = 35
     TENI = 37
@@ -89,6 +93,9 @@ class ParsedEquipmentRow:
     # Zenith/Tan'i equipment (CLASS "P"/"Q") carries a Zenith skill (via the
     # Teni field) in addition to its normal `skills` -- see "Zenith skills".
     zenith_skill_id: int | None = None
+    # The reference set-searcher's gear-level category leaf (CRE + CLASS +
+    # name-suffix derived) -- see docs/gear-category-taxonomy.md.
+    category: str = "standard_plain"
 
 
 @dataclass(frozen=True, slots=True)
@@ -218,6 +225,7 @@ def parse_equipment_bucket(
                 skills=_extract_skills(fields),
                 is_tower=_field(fields, Field.CLASS) == _TOWER_CLASS,
                 zenith_skill_id=_int_or_none(_field(fields, Field.TENI)),
+                category=classify_equipment_category(fields),
             )
         )
     return parsed

@@ -12,7 +12,15 @@ const mockUseDataBundle = vi.mocked(useDataBundle)
 const mockUseSearchWorker = vi.mocked(useSearchWorker)
 
 const BUNDLE = {
-  slots: [{ slotId: 'head', candidates: [{ id: 'head:0001', name: 'Leather Helm', skills: [] }] }],
+  slots: [
+    {
+      slotId: 'head',
+      candidates: [
+        { id: 'head:0001', name: 'Leather Helm', skills: [], category: 'standard_plain' },
+        { id: 'head:0002', name: 'White Cat Mask', skills: [], category: 'paid_premium_kit' },
+      ],
+    },
+  ],
   decorations: [],
   skills: [{ id: 1, name: 'Attack', category: null, tiers: [] }],
   skillNames: new Map([[1, 'Attack']]),
@@ -94,6 +102,24 @@ describe('App', () => {
         onDone: expect.any(Function),
         onError: expect.any(Function),
       }),
+    )
+  })
+
+  it('excludes candidates whose gear-level category is unchecked from the search', async () => {
+    const worker = makeWorker()
+    mockUseSearchWorker.mockReturnValue(worker as unknown as ReturnType<typeof useSearchWorker>)
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.selectOptions(screen.getByRole('combobox', { name: /add a skill/i }), 'Attack')
+    await user.click(screen.getByRole('checkbox', { name: 'Premium Kit' }))
+    await user.click(screen.getByRole('button', { name: /search/i }))
+
+    expect(worker.search).toHaveBeenCalledWith(
+      [{ slotId: 'head', candidates: [BUNDLE.slots[0].candidates[0]] }],
+      [{ skillId: 1, minPoints: 1 }],
+      BUNDLE.decorations,
+      expect.anything(),
     )
   })
 

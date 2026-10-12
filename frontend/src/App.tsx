@@ -1,9 +1,12 @@
 import { useState } from 'react'
+import { CategoryFilter } from './components/CategoryFilter'
 import { ResultsList } from './components/ResultsList'
 import { SkillPicker } from './components/SkillPicker'
 import type { NamedBuildResult } from './components/types'
 import { useDataBundle } from './data/useDataBundle'
 import { useSearchWorker } from './search/useSearchWorker'
+import { GEAR_CATEGORY_GROUPS } from './search-engine/gear-categories'
+import type { NamedSlotQuery } from './search-engine/load-bundle'
 import type { SkillRequirement } from './search-engine/types'
 
 type SearchStatus = 'idle' | 'searching' | 'done' | 'error'
@@ -24,6 +27,7 @@ function App() {
   const worker = useSearchWorker()
 
   const [requirements, setRequirements] = useState<SkillRequirement[]>([])
+  const [excludedCategories, setExcludedCategories] = useState<Set<string>>(new Set())
   const [results, setResults] = useState<NamedBuildResult[]>([])
   const [status, setStatus] = useState<SearchStatus>('idle')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -31,6 +35,14 @@ function App() {
   const [reachedCap, setReachedCap] = useState(false)
 
   const bundle = bundleQuery.data
+
+  function slotsAfterCategoryFilter(slots: readonly NamedSlotQuery[]): NamedSlotQuery[] {
+    if (excludedCategories.size === 0) return [...slots]
+    return slots.map((slot) => ({
+      ...slot,
+      candidates: slot.candidates.filter((c) => !excludedCategories.has(c.category)),
+    }))
+  }
 
   function handleSearch(): void {
     if (!worker || !bundle || requirements.length === 0) return
@@ -42,7 +54,8 @@ function App() {
 
     let count = 0
     let capped = false
-    const requestId = worker.search(bundle.slots, requirements, bundle.decorations, {
+    const slots = slotsAfterCategoryFilter(bundle.slots)
+    const requestId = worker.search(slots, requirements, bundle.decorations, {
       onResult: (result) => {
         // `worker.cancel` below races a message round-trip to the worker, so
         // a result or two can still arrive after the cap is hit -- ignoring
@@ -88,6 +101,15 @@ function App() {
               skills={bundle.skills}
               requirements={requirements}
               onChange={setRequirements}
+            />
+          </section>
+
+          <section className="mb-3">
+            <h2 className="h5">Gear levels</h2>
+            <CategoryFilter
+              groups={GEAR_CATEGORY_GROUPS}
+              excludedCategories={excludedCategories}
+              onChange={setExcludedCategories}
             />
           </section>
 

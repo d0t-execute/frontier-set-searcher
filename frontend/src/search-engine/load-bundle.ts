@@ -34,10 +34,13 @@ export interface NamedSkill {
 }
 
 /** A Candidate as exported (see etl/src/etl/export.py) also carries a
- * display name -- the search engine itself never needs it (Candidate
- * doesn't declare it), but the UI does. */
+ * display name and a gear-level category -- the search engine itself never
+ * needs either (Candidate doesn't declare them), but the UI does: `name` for
+ * display, `category` for the gear-level filter (see
+ * docs/gear-category-taxonomy.md). */
 export interface NamedCandidate extends Candidate {
   readonly name: string
+  readonly category: string
 }
 
 export interface NamedDecoration extends Decoration {

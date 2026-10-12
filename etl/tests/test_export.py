@@ -61,6 +61,7 @@ def test_exports_equipment_shaped_for_the_search_engine(tmp_path: Path) -> None:
             "name": "Leather Helm",
             "skills": [{"skillId": attack.id, "points": 3}],
             "openSlotCount": 2,
+            "category": "standard_plain",
         }
     ]
 

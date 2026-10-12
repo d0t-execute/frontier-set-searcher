@@ -210,6 +210,7 @@ def test_parses_the_leather_helm_row_end_to_end() -> None:
             skills=((22, 3), (63, 3), (80, 3)),
             is_tower=False,
             zenith_skill_id=None,
+            category="standard_plain",
         )
     ]
 
@@ -346,6 +347,10 @@ def test_parse_equip_js_covers_every_armor_bucket() -> None:
         skills=((9, 5), (68, 10), (26, 5), (18, 5), (65, 4)),
         is_tower=False,
         zenith_skill_id=None,
+        # CRE "5-" (Promotional) wins over CLASS "E" (HC) -- the acquisition
+        # code takes precedence over the origin tier, confirmed against the
+        # real dataset (see docs/gear-category-taxonomy.md).
+        category="paid_promotional",
     )
     assert by_id["body:1000"].slot_type == "chest"
     assert by_id["body:1000"].min_hr == 2200
