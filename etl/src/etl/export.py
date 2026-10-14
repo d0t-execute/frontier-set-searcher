@@ -6,10 +6,14 @@ search engine's own types directly (frontend/src/search-engine/types.ts) --
 no further transformation should be needed on the frontend side beyond
 parsing JSON.
 
-Only the five skill-bearing armor slot types are exported; weapons/charms/
-cuffs/Zenith/Tower compatibility are out of scope for this groundwork pass
-(see docs/PLAN.md Phase 3's "search engine spike" scope and
-docs/data-format-notes.md's taxonomy notes for what's deferred).
+Only the five skill-bearing armor slot types, plus decorations and cuffs, are
+exported; weapons/charms/Zenith skills/Tower compatibility are out of scope
+for this groundwork pass (see docs/PLAN.md Phase 3's "search engine spike"
+scope and docs/data-format-notes.md's taxonomy notes for what's deferred).
+The `Cuff` model carries a `zenith_skill_id`, but it isn't exported yet --
+the Zenith skill pool is a separate, not-yet-modeled system (see the
+skill-system-roadmap TODO), so exporting it now would be a dead field with
+nothing downstream to consume it.
 """
 
 from __future__ import annotations
@@ -23,9 +27,11 @@ from typing import Any
 from etl.db.connection import connect
 from etl.db.models import EquipmentType
 from etl.db.repository import (
+    get_cuff_skills,
     get_decoration_skills,
     get_equipment_skills,
     get_skill_tiers,
+    list_cuffs,
     list_decorations,
     list_equipment,
     list_skills,
@@ -47,6 +53,7 @@ def export_bundle(conn: sqlite3.Connection, output_dir: Path) -> None:
 
     _write_json(output_dir / "skills.json", _export_skills(conn))
     _write_json(output_dir / "decorations.json", _export_decorations(conn))
+    _write_json(output_dir / "cuffs.json", _export_cuffs(conn))
     for slot_type in ARMOR_SLOT_TYPES:
         _write_json(equipment_dir / f"{slot_type}.json", _export_equipment(conn, slot_type))
     _write_json(
@@ -79,6 +86,19 @@ def _export_decorations(conn: sqlite3.Connection) -> list[dict[str, Any]]:
             "skills": _skills_payload(get_decoration_skills(conn, decoration.id)),
         }
         for decoration in list_decorations(conn)
+    ]
+
+
+def _export_cuffs(conn: sqlite3.Connection) -> list[dict[str, Any]]:
+    return [
+        {
+            "id": cuff.external_id,
+            "name": cuff.name,
+            "slotSize": cuff.slot_size,
+            "skills": _skills_payload(get_cuff_skills(conn, cuff.id)),
+            "category": cuff.category,
+        }
+        for cuff in list_cuffs(conn)
     ]
 
 

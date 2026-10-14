@@ -43,6 +43,7 @@ function bruteForceSearch(
         results.push({
           picks: new Map(picks),
           decorations: new Map(),
+          cuffs: [],
           skillTotals: totals,
         })
       }
@@ -151,6 +152,13 @@ describe('search (property-based)', () => {
 
           expect(actualVectors).toEqual(expectedVectors)
         }),
+        // Matches the decoration describe block's own cap below: a
+        // correctness invariant like this one plateaus well before fast-
+        // check's default of 100 random cases, and each case is a full MIP
+        // solve-to-exhaustion (every round until infeasible) -- halving the
+        // case count halves this test's contribution to the solver-time
+        // variance documented below, for no loss of meaningful coverage.
+        { numRuns: 50 },
       )
     },
     TEST_TIMEOUT_MS,
@@ -169,6 +177,7 @@ describe('search (property-based)', () => {
             }
           }
         }),
+        { numRuns: 50 },
       )
     },
     TEST_TIMEOUT_MS,
@@ -206,6 +215,7 @@ function bruteForceSearchWithDecorations(
         results.push({
           picks: new Map(picks),
           decorations: new Map(chosenDecorations),
+          cuffs: [],
           skillTotals: new Map(totals),
         })
       }

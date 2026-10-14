@@ -104,6 +104,10 @@ CREATE TABLE IF NOT EXISTS cuff (
     -- Zenith Cuffs (DEC "3" + CLASS "P") carry only a Zenith skill, no
     -- normal skills -- see docs/data-format-notes.md "Cuffs".
     zenith_skill_id INTEGER REFERENCES zenith_skill (id) ON DELETE RESTRICT,
+    -- The reference set-searcher's cuff-tree category leaf (Premium vs
+    -- Standard Poogie-clothes gating, among others) -- see
+    -- docs/gear-category-taxonomy.md "Tree 2: Decorations and Cuffs".
+    category TEXT NOT NULL DEFAULT 'cuff_standard_tier1',
     source_url TEXT
 );
 
@@ -148,6 +152,7 @@ CREATE TABLE IF NOT EXISTS weapon (
 CREATE INDEX IF NOT EXISTS idx_skill_tier_skill_id ON skill_tier (skill_id);
 CREATE INDEX IF NOT EXISTS idx_equipment_slot_type ON equipment (slot_type);
 CREATE INDEX IF NOT EXISTS idx_equipment_category ON equipment (category);
+CREATE INDEX IF NOT EXISTS idx_cuff_category ON cuff (category);
 CREATE INDEX IF NOT EXISTS idx_equipment_skill_skill_id ON equipment_skill (skill_id);
 CREATE INDEX IF NOT EXISTS idx_decoration_skill_skill_id ON decoration_skill (skill_id);
 CREATE INDEX IF NOT EXISTS idx_cuff_skill_skill_id ON cuff_skill (skill_id);

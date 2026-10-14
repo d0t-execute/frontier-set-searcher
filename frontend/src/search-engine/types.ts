@@ -46,6 +46,44 @@ export interface SlotQuery {
   readonly candidates: readonly Candidate[]
 }
 
+/** Shaped identically to `Decoration` (id, slotSize, skills) -- see
+ * etl/src/etl/export.py's `_export_cuffs` -- but spent from a wholly separate
+ * "Poogie slot" budget shared across at most 2 equipped cuffs, not an armor
+ * piece's own open slots (confirmed by the project owner; see
+ * docs/data-format-notes.md's "Cuffs" section). Kept as its own alias rather
+ * than used as `Decoration` directly so a call site reads correctly even
+ * though the shapes match today. */
+export type Cuff = Decoration
+
+export interface SkillTierThresholds {
+  readonly skillId: SkillId
+  /** Every point threshold that activates one of this skill's tiers, in any
+   * order -- some are negative (a penalty tier, e.g. "-10"), most are
+   * positive. Mirrors `skills.json`'s `tiers[].minPoints` (see
+   * `load-bundle.ts`'s `SkillTierRecord`), without the display-only label
+   * and description `ilp-model.ts` has no use for. */
+  readonly tierThresholds: readonly number[]
+}
+
+export interface SearchOptions {
+  /** When true, changes the ranking tie-break (see `ilp-model.ts`'s
+   * `buildModel`) from rewarding unrequested ("bonus") skill points to
+   * penalizing *builds that activate a bonus skill's tier at all* --
+   * reaching 9 points of a skill nobody asked for is harmless (it does
+   * nothing in-game), but 10 might turn on a real, possibly unwanted effect
+   * (including a negative one, e.g. a "-10" penalty tier). Off by default to
+   * preserve existing ranking behavior; a build that already needs bonus
+   * points to meet a requirement is unaffected either way, since
+   * requirements are hard constraints, not objective terms. */
+  readonly preferExactMatches?: boolean
+  /** Every requestable skill's tier thresholds, used only when
+   * `preferExactMatches` is set so the engine can tell a harmless incidental
+   * point or two apart from a threshold actually crossed. A skill left out
+   * here (or this left undefined entirely) is simply never penalized --
+   * "unknown" defaults to "assume harmless," not "assume bad." */
+  readonly skillTiers?: readonly SkillTierThresholds[]
+}
+
 export interface BuildResult {
   /** One chosen candidate per slot, keyed by `slotId`. */
   readonly picks: ReadonlyMap<string, Candidate>
@@ -53,7 +91,12 @@ export interface BuildResult {
    * Only present for slots whose candidate has `openSlotCount` and at least
    * one decoration was placed. */
   readonly decorations: ReadonlyMap<string, readonly Decoration[]>
-  /** Summed skill points across all picks and placed decorations, keyed by
-   * `skillId`. */
+  /** Cuffs equipped by this build, 0-2 entries (duplicates allowed -- the
+   * same cuff can fill both of a build's two cuff slots). Flat, not keyed by
+   * slot, since cuffs aren't tied to any armor slot -- see `Cuff`. Empty when
+   * no cuffs were offered to the search at all, not just when none helped. */
+  readonly cuffs: readonly Cuff[]
+  /** Summed skill points across all picks, placed decorations, and equipped
+   * cuffs, keyed by `skillId`. */
   readonly skillTotals: ReadonlyMap<SkillId, number>
 }

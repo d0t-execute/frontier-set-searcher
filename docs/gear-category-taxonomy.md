@@ -160,6 +160,22 @@ dimension (not required for this taxonomy to work).
 
 ## Tree 2: Decorations and Cuffs (`DEC="1"` = cuff, `DEC=""` = deco)
 
+**Cuffs half implemented (2026-10-14)**: `etl/src/etl/parse/gear_category.py`'s
+`classify_cuff_category` implements every leaf in "Premium Outfit Pugi
+Cuffs"/"Standard Pugi Cuffs" below, threaded through `Cuff.category` ->
+`cuffs.json`'s `category` field (see the skill-system-roadmap's cuff-support
+TODO). Every leaf's count was re-verified by re-running the full ETL
+pipeline against the live cached dataset and tabulating `cuff.category` --
+all 18 leaves matched this table's counts exactly (3,332 cuffs total), so
+every "INFERRED" tag below should be read as re-confirmed, not just
+originally plausible. Decorations are NOT classified by this function yet
+(out of scope for the cuff-support work that prompted this verification
+pass) -- the "Decorations" tree further below remains undocumented-only.
+Display labels for cuff leaves still haven't been confirmed against the
+reference tool's own tree (unlike every equipment leaf above) -- the
+`cuff_*` category keys are correct and already usable for filtering, but
+treat their eventual UI label as open.
+
 ### Premium Outfit Pugi Cuffs
 | Leaf | Rule | Count | Confidence |
 |---|---|---|---|

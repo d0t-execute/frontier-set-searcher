@@ -8,11 +8,12 @@
  * the worker (App.tsx), not scattered through every component.
  */
 
-import type { NamedCandidate, NamedDecoration } from '../search-engine/load-bundle'
+import type { NamedCandidate, NamedCuff, NamedDecoration } from '../search-engine/load-bundle'
 import type { SkillId } from '../search-engine/types'
 
 export interface NamedBuildResult {
   readonly picks: ReadonlyMap<string, NamedCandidate>
   readonly decorations: ReadonlyMap<string, readonly NamedDecoration[]>
+  readonly cuffs: readonly NamedCuff[]
   readonly skillTotals: ReadonlyMap<SkillId, number>
 }

@@ -6,7 +6,14 @@
  * Worker/DOM needed (see worker-client.test.ts).
  */
 
-import type { BuildResult, Decoration, SkillRequirement, SlotQuery } from './types'
+import type {
+  BuildResult,
+  Cuff,
+  Decoration,
+  SearchOptions,
+  SkillRequirement,
+  SlotQuery,
+} from './types'
 import type { WorkerRequest, WorkerResponse } from './worker-protocol'
 
 /** The slice of the DOM `Worker` interface this client relies on. */
@@ -37,10 +44,20 @@ export class SearchWorkerClient {
     requirements: readonly SkillRequirement[],
     decorations: readonly Decoration[],
     callbacks: SearchCallbacks,
+    options: SearchOptions = {},
+    cuffs: readonly Cuff[] = [],
   ): string {
     const requestId = `req-${++this.nextRequestId}`
     this.pending.set(requestId, callbacks)
-    this.worker.postMessage({ type: 'search', requestId, slots, requirements, decorations })
+    this.worker.postMessage({
+      type: 'search',
+      requestId,
+      slots,
+      requirements,
+      decorations,
+      options,
+      cuffs,
+    })
     return requestId
   }
 

@@ -21,7 +21,13 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { search } from './engine'
-import type { Decoration, SkillRequirement, SlotQuery } from './types'
+import type {
+  Decoration,
+  SearchOptions,
+  SkillRequirement,
+  SkillTierThresholds,
+  SlotQuery,
+} from './types'
 
 const DATA_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'public', 'data')
 
@@ -31,6 +37,15 @@ function loadJson<T>(relativePath: string): T {
 
 interface Manifest {
   readonly slotTypes: readonly string[]
+}
+
+interface SkillTierRecord {
+  readonly minPoints: number
+}
+
+interface NamedSkill {
+  readonly id: number
+  readonly tiers: readonly SkillTierRecord[]
 }
 
 function loadRealBundle(): { slots: SlotQuery[]; decorations: Decoration[] } {
@@ -44,10 +59,21 @@ function loadRealBundle(): { slots: SlotQuery[]; decorations: Decoration[] } {
   }
 }
 
-async function firstResults(requirements: SkillRequirement[], take: number) {
+function loadRealSkillTiers(): SkillTierThresholds[] {
+  return loadJson<NamedSkill[]>('skills.json').map((skill) => ({
+    skillId: skill.id,
+    tierThresholds: skill.tiers.map((tier) => tier.minPoints),
+  }))
+}
+
+async function firstResults(
+  requirements: SkillRequirement[],
+  take: number,
+  options: SearchOptions = {},
+) {
   const { slots, decorations } = loadRealBundle()
   const start = performance.now()
-  const generator = search(slots, requirements, decorations)
+  const generator = search(slots, requirements, decorations, options)
   const results = []
   for (let i = 0; i < take; i++) {
     const next = await generator.next()
@@ -165,4 +191,55 @@ describe('search against the real data bundle', () => {
     expect(elapsedMs).toBeLessThan(100_000)
     expectAllMeetRequirements(results, requirements)
   }, 120_000)
+
+  it('finds a result for the exceptionally tight sword-build query with preferExactMatches, without activating any bonus skill tier', async () => {
+    // Same real, exceptionally tight query as above, but with
+    // preferExactMatches on and the real per-skill tier data loaded --
+    // reproduces a real regression: this used to return zero results at all
+    // (the per-skill big-M indicator machinery was sized so loosely against
+    // the real dataset's ~1000 relevant decorations per slot that it made an
+    // already-borderline-feasible query unsolvable within its time box; see
+    // `ilp-model.ts`'s `computeAchievableRanges`). Budget is looser than the
+    // equivalent test above since the extra machinery measurably slows this
+    // particular query down (observed ~90s vs ~31s without it) -- still
+    // comfortably inside "seconds to low minutes," the project's actual bar.
+    const requirements: SkillRequirement[] = [
+      { skillId: 100, minPoints: 30 }, // SnS Tech - Sword Saint
+      { skillId: 175, minPoints: 10 }, // Determination - Solid Determination
+      { skillId: 125, minPoints: 50 }, // Strong Attack - Strong Attack+6
+      { skillId: 191, minPoints: 10 }, // Furious
+      { skillId: 166, minPoints: 10 }, // Thunder Clad
+      { skillId: 185, minPoints: 10 }, // Rush
+      { skillId: 164, minPoints: 20 }, // Sword God - Sword God+2
+      { skillId: 188, minPoints: 10 }, // Point Breakthrough
+      { skillId: 172, minPoints: 15 }, // Drawing Arts - Drawing Arts+2
+      { skillId: 154, minPoints: 20 }, // Vampirism - Vampirism+2
+      { skillId: 177, minPoints: 10 }, // Ice Age
+      { skillId: 171, minPoints: 10 }, // Vigorous
+      { skillId: 173, minPoints: 15 }, // Stylish Assault
+      { skillId: 163, minPoints: 15 }, // Stylish
+      { skillId: 114, minPoints: 10 }, // Elemental Attack - Elemental Attack Up
+      { skillId: 174, minPoints: 10 }, // Crit Conversion - Critical Conversion
+      { skillId: 186, minPoints: 10 }, // Ceaseless
+    ]
+    const skillTiers = loadRealSkillTiers()
+    const tierThresholdsById = new Map(skillTiers.map((s) => [s.skillId, s.tierThresholds]))
+    const requestedSkillIds = new Set(requirements.map((r) => r.skillId))
+
+    const { results, elapsedMs } = await firstResults(requirements, 1, {
+      preferExactMatches: true,
+      skillTiers,
+    })
+
+    expect(results.length).toBeGreaterThan(0)
+    expect(elapsedMs).toBeLessThan(110_000)
+    expectAllMeetRequirements(results, requirements)
+    for (const [skillId, points] of results[0].skillTotals) {
+      if (requestedSkillIds.has(skillId)) continue
+      for (const threshold of tierThresholdsById.get(skillId) ?? []) {
+        if (threshold > 0) expect(points).toBeLessThan(threshold)
+        else expect(points).toBeGreaterThan(threshold)
+      }
+    }
+  }, 150_000)
 })

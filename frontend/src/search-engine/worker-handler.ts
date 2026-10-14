@@ -30,7 +30,13 @@ export async function handleSearchRequest(
   if (cancelled.has(request.requestId)) return
 
   try {
-    const generator = search(request.slots, request.requirements, request.decorations ?? [])
+    const generator = search(
+      request.slots,
+      request.requirements,
+      request.decorations ?? [],
+      request.options ?? {},
+      request.cuffs ?? [],
+    )
     for await (const result of generator) {
       post({ type: 'result', requestId: request.requestId, result })
       await yieldToEventLoop()

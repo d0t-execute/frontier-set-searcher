@@ -61,6 +61,12 @@ function ResultCard({
         })}
       </dl>
 
+      {result.cuffs.length > 0 && (
+        <div className="mb-2">
+          <span className="fw-bold">Cuffs:</span> {result.cuffs.map((cuff) => cuff.name).join(', ')}
+        </div>
+      )}
+
       <div className="small text-muted">
         {[...result.skillTotals.entries()]
           .map(([skillId, points]) => `${skillNames.get(skillId) ?? `Skill ${skillId}`}: ${points}`)

@@ -133,6 +133,7 @@ def test_cuff_bucket_accepts_slot_size_zero_for_hiden_cuffs() -> None:
             slot_size=0,
             skills=((129, 6),),
             zenith_skill_id=None,
+            category="cuff_hiden",
         )
     ]
 
@@ -153,6 +154,7 @@ def test_parses_a_zenith_cuff_row() -> None:
             slot_size=1,
             skills=(),
             zenith_skill_id=1,
+            category="cuff_standard_zenith",
         )
     ]
 
@@ -179,6 +181,7 @@ def test_parses_a_zenith_cuff_with_dec_1_not_just_dec_3() -> None:
             slot_size=2,
             skills=(),
             zenith_skill_id=1,
+            category="cuff_standard_zenith",
         )
     ]
 
@@ -320,6 +323,7 @@ def test_parses_a_regular_cuff_row() -> None:
             slot_size=2,
             skills=((21, 5), (67, 2)),
             zenith_skill_id=None,
+            category="cuff_premium_tier2",
         )
     ]
 
@@ -411,6 +415,7 @@ def test_parse_equip_js_covers_cuffs() -> None:
         slot_size=2,
         skills=((21, 4), (45, 3)),
         zenith_skill_id=None,
+        category="cuff_premium_tier2",
     )
     assert by_id["cuff:3F20"] == ParsedCuffRow(
         external_id="cuff:3F20",
@@ -418,6 +423,7 @@ def test_parse_equip_js_covers_cuffs() -> None:
         slot_size=0,
         skills=((129, 6),),
         zenith_skill_id=None,
+        category="cuff_hiden",
     )
     assert by_id["cuff:3918"] == ParsedCuffRow(
         external_id="cuff:3918",
@@ -425,4 +431,5 @@ def test_parse_equip_js_covers_cuffs() -> None:
         slot_size=1,
         skills=(),
         zenith_skill_id=1,
+        category="cuff_standard_zenith",
     )

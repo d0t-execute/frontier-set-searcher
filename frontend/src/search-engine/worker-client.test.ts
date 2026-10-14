@@ -23,6 +23,7 @@ const slots: SlotQuery[] = []
 const buildResult: BuildResult = {
   picks: new Map(),
   decorations: new Map(),
+  cuffs: [],
   skillTotals: new Map(),
 }
 
@@ -43,7 +44,49 @@ describe('SearchWorkerClient', () => {
       slots,
       requirements: [{ skillId: 1, minPoints: 1 }],
       decorations: [],
+      options: {},
     })
+  })
+
+  it('forwards preferExactMatches through to the posted search message', () => {
+    const worker = new FakeWorker()
+    const client = new SearchWorkerClient(worker)
+
+    client.search(
+      slots,
+      [{ skillId: 1, minPoints: 1 }],
+      [],
+      { onResult: vi.fn(), onDone: vi.fn(), onError: vi.fn() },
+      { preferExactMatches: true },
+    )
+
+    expect(worker.posted[0]).toMatchObject({ options: { preferExactMatches: true } })
+  })
+
+  it('defaults cuffs to an empty array when none are given', () => {
+    const worker = new FakeWorker()
+    const client = new SearchWorkerClient(worker)
+
+    client.search(slots, [], [], { onResult: vi.fn(), onDone: vi.fn(), onError: vi.fn() })
+
+    expect(worker.posted[0]).toMatchObject({ cuffs: [] })
+  })
+
+  it('forwards cuffs through to the posted search message', () => {
+    const worker = new FakeWorker()
+    const client = new SearchWorkerClient(worker)
+    const cuffs = [{ id: 'cuff:C001', slotSize: 1, skills: [] }]
+
+    client.search(
+      slots,
+      [],
+      [],
+      { onResult: vi.fn(), onDone: vi.fn(), onError: vi.fn() },
+      {},
+      cuffs,
+    )
+
+    expect(worker.posted[0]).toMatchObject({ cuffs })
   })
 
   it('routes result and done messages to the matching request callbacks', () => {

@@ -22,6 +22,22 @@ const BUNDLE = {
     },
   ],
   decorations: [],
+  cuffs: [
+    {
+      id: 'cuff:C001',
+      name: 'Sharpening PC1',
+      slotSize: 1,
+      skills: [],
+      category: 'cuff_premium_tier1',
+    },
+    {
+      id: 'cuff:C002',
+      name: 'Sharpening SC1',
+      slotSize: 1,
+      skills: [],
+      category: 'cuff_standard_tier1',
+    },
+  ],
   skills: [{ id: 1, name: 'Attack', category: null, tiers: [] }],
   skillNames: new Map([[1, 'Attack']]),
 }
@@ -102,6 +118,28 @@ describe('App', () => {
         onDone: expect.any(Function),
         onError: expect.any(Function),
       }),
+      { preferExactMatches: false, skillTiers: [{ skillId: 1, tierThresholds: [] }] },
+      BUNDLE.cuffs,
+    )
+  })
+
+  it("passes preferExactMatches and the bundle's skill tiers through once the toggle is checked", async () => {
+    const worker = makeWorker()
+    mockUseSearchWorker.mockReturnValue(worker as unknown as ReturnType<typeof useSearchWorker>)
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.selectOptions(screen.getByRole('combobox', { name: /add a skill/i }), 'Attack')
+    await user.click(screen.getByRole('checkbox', { name: /prefer exact matches/i }))
+    await user.click(screen.getByRole('button', { name: /search/i }))
+
+    expect(worker.search).toHaveBeenCalledWith(
+      BUNDLE.slots,
+      [{ skillId: 1, minPoints: 1 }],
+      BUNDLE.decorations,
+      expect.anything(),
+      { preferExactMatches: true, skillTiers: [{ skillId: 1, tierThresholds: [] }] },
+      BUNDLE.cuffs,
     )
   })
 
@@ -120,6 +158,28 @@ describe('App', () => {
       [{ skillId: 1, minPoints: 1 }],
       BUNDLE.decorations,
       expect.anything(),
+      expect.anything(),
+      BUNDLE.cuffs,
+    )
+  })
+
+  it('excludes cuffs whose category is unchecked from the search', async () => {
+    const worker = makeWorker()
+    mockUseSearchWorker.mockReturnValue(worker as unknown as ReturnType<typeof useSearchWorker>)
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.selectOptions(screen.getByRole('combobox', { name: /add a skill/i }), 'Attack')
+    await user.click(screen.getByRole('checkbox', { name: 'Premium' }))
+    await user.click(screen.getByRole('button', { name: /search/i }))
+
+    expect(worker.search).toHaveBeenCalledWith(
+      BUNDLE.slots,
+      [{ skillId: 1, minPoints: 1 }],
+      BUNDLE.decorations,
+      expect.anything(),
+      expect.anything(),
+      [BUNDLE.cuffs[1]],
     )
   })
 
@@ -130,6 +190,7 @@ describe('App', () => {
       callbacks.onResult({
         picks: new Map([['head', { id: 'head:0001', name: 'Leather Helm', skills: [] }]]),
         decorations: new Map(),
+        cuffs: [],
         skillTotals: new Map([[1, 15]]),
       })
       return 'req-1'
@@ -156,6 +217,7 @@ describe('App', () => {
           callbacks.onResult({
             picks: new Map([['head', { id: `head:${i}`, name: `Helm ${i}`, skills: [] }]]),
             decorations: new Map(),
+            cuffs: [],
             skillTotals: new Map([[1, 15]]),
           })
         }

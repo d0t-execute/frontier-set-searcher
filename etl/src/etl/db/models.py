@@ -119,6 +119,9 @@ class Cuff:
     slot_size: int
     # Zenith Cuffs carry only a Zenith skill, no normal skills.
     zenith_skill_id: int | None = None
+    # The reference set-searcher's cuff-tree category leaf -- see
+    # docs/gear-category-taxonomy.md.
+    category: str = "cuff_standard_tier1"
     source_url: str | None = None
 
 

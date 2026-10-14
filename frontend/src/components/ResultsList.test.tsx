@@ -17,6 +17,7 @@ function result(overrides: Partial<NamedBuildResult> = {}): NamedBuildResult {
   return {
     picks: new Map([['head', candidate({ id: 'head:0001', name: 'Leather Helm' })]]),
     decorations: new Map(),
+    cuffs: [],
     skillTotals: new Map([[1, 15]]),
     ...overrides,
   }
@@ -135,6 +136,35 @@ describe('ResultsList', () => {
     )
 
     expect(screen.queryByText(/open slot/i)).not.toBeInTheDocument()
+  })
+
+  it('shows equipped cuffs by name, when present', () => {
+    render(
+      <ResultsList
+        results={[
+          result({
+            cuffs: [
+              {
+                id: 'cuff:C001',
+                name: 'Sharpening PC1',
+                slotSize: 1,
+                skills: [],
+                category: 'cuff_premium_tier1',
+              },
+            ],
+          }),
+        ]}
+        skillNames={skillNames}
+      />,
+    )
+
+    expect(screen.getByText(/sharpening pc1/i)).toBeInTheDocument()
+  })
+
+  it('shows nothing about cuffs when none are equipped', () => {
+    render(<ResultsList results={[result()]} skillNames={skillNames} />)
+
+    expect(screen.queryByText(/cuffs/i)).not.toBeInTheDocument()
   })
 
   it('resolves skill totals to their names', () => {

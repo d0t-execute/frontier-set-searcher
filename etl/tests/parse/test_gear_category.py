@@ -13,6 +13,24 @@ from etl.parse.gear_category import (
     CATEGORY_CARAVAN_HS,
     CATEGORY_CARAVAN_PLAIN,
     CATEGORY_CARAVAN_RX,
+    CATEGORY_CUFF_HIDEN,
+    CATEGORY_CUFF_PREMIUM_EVENT,
+    CATEGORY_CUFF_PREMIUM_NET_CAFE,
+    CATEGORY_CUFF_PREMIUM_SPECIAL,
+    CATEGORY_CUFF_PREMIUM_TIER1,
+    CATEGORY_CUFF_PREMIUM_TIER2,
+    CATEGORY_CUFF_PREMIUM_TIER3,
+    CATEGORY_CUFF_PREMIUM_UNAVAILABLE,
+    CATEGORY_CUFF_PREMIUM_ZENITH,
+    CATEGORY_CUFF_STANDARD_EVENT,
+    CATEGORY_CUFF_STANDARD_FESTIVAL,
+    CATEGORY_CUFF_STANDARD_GUILD,
+    CATEGORY_CUFF_STANDARD_MYSTERY_QUEST,
+    CATEGORY_CUFF_STANDARD_TIER1,
+    CATEGORY_CUFF_STANDARD_TIER2,
+    CATEGORY_CUFF_STANDARD_TRAINING_ONLY,
+    CATEGORY_CUFF_STANDARD_UNAVAILABLE,
+    CATEGORY_CUFF_STANDARD_ZENITH,
     CATEGORY_DIVA_DEFENSE,
     CATEGORY_EVENT_MYSTERY,
     CATEGORY_EVENT_PLAIN,
@@ -71,6 +89,7 @@ from etl.parse.gear_category import (
     CATEGORY_ZENITH_PLAIN,
     CATEGORY_ZENITH_ZX,
     CATEGORY_ZENITH_ZY,
+    classify_cuff_category,
     classify_equipment_category,
 )
 
@@ -78,6 +97,18 @@ from etl.parse.gear_category import (
 def _row(name: str, cre: str = "", clazz: str = "") -> list[str]:
     fields = [""] * 36
     fields[0] = name
+    fields[33] = cre
+    fields[35] = clazz
+    return fields
+
+
+def _cuff_row(
+    name: str, cre: str = "", clazz: str = "", recipe: str = "", hr: str = ""
+) -> list[str]:
+    fields = [""] * 36
+    fields[0] = name
+    fields[21] = recipe
+    fields[22] = hr
     fields[33] = cre
     fields[35] = clazz
     return fields
@@ -520,3 +551,149 @@ def test_standard_plain() -> None:
 
 def test_standard_sp() -> None:
     assert classify_equipment_category(_row("SP Helm", clazz="A")) == CATEGORY_STANDARD_SP
+
+
+# == Cuffs (Tree 2 in docs/gear-category-taxonomy.md) =========================
+# Real example names/recipe prefixes from the live dataset (etl/.data/cache/
+# equip.body), counts verified against the taxonomy doc's confirmed totals.
+
+# -- Premium -------------------------------------------------------------------
+
+
+def test_cuff_premium_tier1() -> None:
+    assert (
+        classify_cuff_category(_cuff_row("Artisan PA1", cre="4k", recipe="09E51"))
+        == CATEGORY_CUFF_PREMIUM_TIER1
+    )
+
+
+def test_cuff_premium_tier2() -> None:
+    assert (
+        classify_cuff_category(_cuff_row("Sharpening PB1", cre="4k", recipe="110E1"))
+        == CATEGORY_CUFF_PREMIUM_TIER2
+    )
+
+
+def test_cuff_premium_tier3() -> None:
+    assert (
+        classify_cuff_category(_cuff_row("Evasion PC1", cre="4k", recipe="208C1"))
+        == CATEGORY_CUFF_PREMIUM_TIER3
+    )
+
+
+def test_cuff_premium_tier3_is_the_fallback_for_an_unrecognized_recipe_prefix() -> None:
+    assert (
+        classify_cuff_category(_cuff_row("Mystery PA1", cre="4k", recipe="FFFF1"))
+        == CATEGORY_CUFF_PREMIUM_TIER3
+    )
+
+
+def test_cuff_premium_net_cafe() -> None:
+    assert (
+        classify_cuff_category(_cuff_row("Something PA1", cre="3e"))
+        == CATEGORY_CUFF_PREMIUM_NET_CAFE
+    )
+
+
+def test_cuff_premium_event() -> None:
+    assert classify_cuff_category(_cuff_row("Event PA1", cre="1e")) == CATEGORY_CUFF_PREMIUM_EVENT
+
+
+def test_cuff_premium_special() -> None:
+    assert classify_cuff_category(_cuff_row("Nova PA1", cre="5-")) == CATEGORY_CUFF_PREMIUM_SPECIAL
+
+
+def test_cuff_premium_zenith() -> None:
+    assert (
+        classify_cuff_category(_cuff_row("Skill Slots Up PZ1", cre="4g", clazz="P"))
+        == CATEGORY_CUFF_PREMIUM_ZENITH
+    )
+
+
+def test_cuff_premium_unavailable() -> None:
+    assert (
+        classify_cuff_category(_cuff_row("Unreleased PA1", cre="9"))
+        == CATEGORY_CUFF_PREMIUM_UNAVAILABLE
+    )
+
+
+# -- Standard ------------------------------------------------------------------
+
+
+def test_cuff_standard_tier1_below_hr_2001() -> None:
+    assert (
+        classify_cuff_category(_cuff_row("Para Res SA1", cre="1-", hr="100"))
+        == CATEGORY_CUFF_STANDARD_TIER1
+    )
+
+
+def test_cuff_standard_tier2_at_or_above_hr_2001() -> None:
+    assert (
+        classify_cuff_category(_cuff_row("Gather Speed SB1", cre="1-", hr="2001"))
+        == CATEGORY_CUFF_STANDARD_TIER2
+    )
+
+
+def test_cuff_standard_event() -> None:
+    assert classify_cuff_category(_cuff_row("Hunger SA1", cre="1e")) == CATEGORY_CUFF_STANDARD_EVENT
+
+
+def test_cuff_standard_mystery_quest() -> None:
+    assert (
+        classify_cuff_category(_cuff_row("Backpacking SB1", cre="1i"))
+        == CATEGORY_CUFF_STANDARD_MYSTERY_QUEST
+    )
+
+
+def test_cuff_standard_guild() -> None:
+    assert (
+        classify_cuff_category(_cuff_row("Fasting SA1", cre="2-")) == CATEGORY_CUFF_STANDARD_GUILD
+    )
+
+
+def test_cuff_standard_guild_also_covers_the_lone_interception_outlier() -> None:
+    # One real row ("Rush SA1") has CRE "2u" instead of the expected "2-" --
+    # confirmed folded into the same leaf, not split out like equipment's
+    # Diva Defense (there's no separate Diva Defense leaf for cuffs).
+    assert classify_cuff_category(_cuff_row("Rush SA1", cre="2u")) == CATEGORY_CUFF_STANDARD_GUILD
+
+
+def test_cuff_standard_festival() -> None:
+    assert (
+        classify_cuff_category(_cuff_row("Adrenaline SB1", cre="2m"))
+        == CATEGORY_CUFF_STANDARD_FESTIVAL
+    )
+
+
+def test_cuff_standard_zenith_sz_variant() -> None:
+    assert (
+        classify_cuff_category(_cuff_row("Skill Slots Up SZ", cre="1-", clazz="P"))
+        == CATEGORY_CUFF_STANDARD_ZENITH
+    )
+
+
+def test_cuff_standard_zenith_sigil_variant() -> None:
+    assert (
+        classify_cuff_category(_cuff_row("Skill Slots Up Sigil", cre="1t", clazz="P"))
+        == CATEGORY_CUFF_STANDARD_ZENITH
+    )
+
+
+def test_cuff_standard_unavailable() -> None:
+    assert (
+        classify_cuff_category(_cuff_row("Capture Expert", cre="9"))
+        == CATEGORY_CUFF_STANDARD_UNAVAILABLE
+    )
+
+
+def test_cuff_standard_training_only() -> None:
+    assert (
+        classify_cuff_category(_cuff_row("Guild R. Cuff 1", cre="7-"))
+        == CATEGORY_CUFF_STANDARD_TRAINING_ONLY
+    )
+
+
+def test_cuff_hiden() -> None:
+    assert (
+        classify_cuff_category(_cuff_row("SnS - Basic", cre="1-", clazz="L")) == CATEGORY_CUFF_HIDEN
+    )

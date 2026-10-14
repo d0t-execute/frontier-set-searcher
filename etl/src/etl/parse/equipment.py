@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from enum import IntEnum
 
 from etl.db.models import EquipmentType
-from etl.parse.gear_category import classify_equipment_category
+from etl.parse.gear_category import classify_cuff_category, classify_equipment_category
 from etl.parse.js_extract import extract_balanced
 
 BUCKET_TO_SLOT_TYPE: dict[str, EquipmentType] = {
@@ -54,6 +54,7 @@ class Field(IntEnum):
     SP4 = 17
     SN5 = 18
     SP5 = 19
+    RECIPE1 = 21
     HR1 = 22
     LVMAX = 24
     DEF = 26
@@ -122,6 +123,9 @@ class ParsedCuffRow:
     skills: tuple[tuple[int, int], ...]
     # Zenith Cuffs carry only a Zenith skill, no normal skills at all.
     zenith_skill_id: int | None = None
+    # The reference set-searcher's cuff-tree category leaf (CRE + name-suffix
+    # derived) -- see docs/gear-category-taxonomy.md.
+    category: str = "cuff_standard_tier1"
 
 
 @dataclass(frozen=True, slots=True)
@@ -291,6 +295,7 @@ def parse_cuff_bucket(bucket_json: str) -> list[ParsedCuffRow]:
                 slot_size=_int_or_none(_field(fields, Field.SLOT7)) or 0,
                 skills=_extract_skills(fields),
                 zenith_skill_id=_int_or_none(_field(fields, Field.TENI)),
+                category=classify_cuff_category(fields),
             )
         )
     return parsed

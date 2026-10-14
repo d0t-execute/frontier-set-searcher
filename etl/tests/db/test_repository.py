@@ -106,6 +106,17 @@ def test_cuff_with_no_skills_returns_empty_list(conn: sqlite3.Connection) -> Non
     assert repo.get_cuff_skills(conn, cuff.id) == []
 
 
+def test_list_cuffs_returns_everything_inserted(conn: sqlite3.Connection) -> None:
+    repo.insert_cuff(conn, external_id="C001", name="Sharpening PC1", slot_size=1)
+    repo.insert_cuff(conn, external_id="C002", name="Artisan PA1", slot_size=2)
+
+    assert {c.external_id for c in repo.list_cuffs(conn)} == {"C001", "C002"}
+
+
+def test_list_cuffs_on_empty_db_returns_empty_list(conn: sqlite3.Connection) -> None:
+    assert repo.list_cuffs(conn) == []
+
+
 def test_insert_zenith_skill_is_idempotent_by_name(conn: sqlite3.Connection) -> None:
     first = repo.insert_zenith_skill(conn, name="Skill Slots Up+1")
     second = repo.insert_zenith_skill(conn, name="Skill Slots Up+1")
@@ -185,6 +196,27 @@ def test_cuff_defaults_to_no_zenith_skill(conn: sqlite3.Connection) -> None:
     created = repo.insert_cuff(conn, external_id="C001", name="Sharpening PC1", slot_size=1)
 
     assert created.zenith_skill_id is None
+
+
+def test_cuff_round_trips_category(conn: sqlite3.Connection) -> None:
+    created = repo.insert_cuff(
+        conn,
+        external_id="C001",
+        name="Artisan PA1",
+        slot_size=2,
+        category="cuff_premium_tier1",
+    )
+    fetched = repo.get_cuff_by_external_id(conn, "C001")
+
+    assert fetched == created
+    assert fetched is not None
+    assert fetched.category == "cuff_premium_tier1"
+
+
+def test_cuff_defaults_to_standard_tier1_category(conn: sqlite3.Connection) -> None:
+    created = repo.insert_cuff(conn, external_id="C002", name="Para Res SA1", slot_size=2)
+
+    assert created.category == "cuff_standard_tier1"
 
 
 def test_insert_and_fetch_weapon_by_external_id(conn: sqlite3.Connection) -> None:

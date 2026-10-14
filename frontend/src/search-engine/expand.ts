@@ -1,4 +1,4 @@
-import type { Decoration, SkillRequirement } from './types'
+import type { Cuff, Decoration, SkillRequirement } from './types'
 
 /**
  * A decoration that contributes to none of the requested skills can never
@@ -15,4 +15,16 @@ export function filterRelevantDecorations(
 ): Decoration[] {
   const requestedSkillIds = new Set(requirements.map((r) => r.skillId))
   return decorations.filter((d) => d.skills.some((s) => requestedSkillIds.has(s.skillId)))
+}
+
+/** Same filter as `filterRelevantDecorations`, under its own name for
+ * clarity at call sites -- a cuff is shaped identically to a Decoration (see
+ * types.ts's `Cuff` alias), and the real cuff catalog (~3,332 entries) is
+ * large enough that the same "don't give the solver a dead column" rationale
+ * applies equally here. */
+export function filterRelevantCuffs(
+  cuffs: readonly Cuff[],
+  requirements: readonly SkillRequirement[],
+): Cuff[] {
+  return filterRelevantDecorations(cuffs, requirements)
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { filterRelevantDecorations } from './expand'
+import { filterRelevantCuffs, filterRelevantDecorations } from './expand'
 import type { Decoration, SkillRequirement } from './types'
 
 function deco(id: string, skills: Record<number, number>): Decoration {
@@ -39,5 +39,15 @@ describe('filterRelevantDecorations', () => {
     const attack = deco('Attack Jewel', { 1: 3 })
 
     expect(filterRelevantDecorations([attack], [])).toEqual([])
+  })
+})
+
+describe('filterRelevantCuffs', () => {
+  it('keeps a cuff that contributes to a requested skill and drops one that does not', () => {
+    const attack = deco('Artisan PA1', { 1: 3 })
+    const irrelevant = deco('Gathering PB1', { 99: 3 })
+    const requirements: SkillRequirement[] = [{ skillId: 1, minPoints: 1 }]
+
+    expect(filterRelevantCuffs([attack, irrelevant], requirements)).toEqual([attack])
   })
 })

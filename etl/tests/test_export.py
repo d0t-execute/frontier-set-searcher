@@ -99,6 +99,70 @@ def test_exports_decorations_shaped_for_the_search_engine(tmp_path: Path) -> Non
     ]
 
 
+def test_exports_cuffs_shaped_for_the_search_engine(tmp_path: Path) -> None:
+    conn = _conn(tmp_path)
+    sharpness = repo.insert_skill(conn, name="Sharpness")
+    cuff = repo.insert_cuff(
+        conn,
+        external_id="cuff:C001",
+        name="Sharpening PC1",
+        slot_size=1,
+        category="cuff_standard_tier1",
+    )
+    repo.add_cuff_skill(conn, cuff_id=cuff.id, skill_id=sharpness.id, points=2)
+    conn.commit()
+    out_dir = tmp_path / "bundle"
+
+    export_bundle(conn, out_dir)
+
+    assert _load(out_dir / "cuffs.json") == [
+        {
+            "id": "cuff:C001",
+            "name": "Sharpening PC1",
+            "slotSize": 1,
+            "skills": [{"skillId": sharpness.id, "points": 2}],
+            "category": "cuff_standard_tier1",
+        }
+    ]
+
+
+def test_exports_a_zenith_only_cuff_with_an_empty_skills_list(tmp_path: Path) -> None:
+    conn = _conn(tmp_path)
+    zenith_skill = repo.insert_zenith_skill(conn, name="Skill Slots Up+1")
+    repo.insert_cuff(
+        conn,
+        external_id="cuff:C002",
+        name="Skill Slots Up SZ",
+        slot_size=2,
+        zenith_skill_id=zenith_skill.id,
+        category="cuff_standard_zenith",
+    )
+    conn.commit()
+    out_dir = tmp_path / "bundle"
+
+    export_bundle(conn, out_dir)
+
+    cuffs = _load(out_dir / "cuffs.json")
+    assert cuffs == [
+        {
+            "id": "cuff:C002",
+            "name": "Skill Slots Up SZ",
+            "slotSize": 2,
+            "skills": [],
+            "category": "cuff_standard_zenith",
+        }
+    ]
+
+
+def test_writes_an_empty_cuffs_file_when_there_are_none(tmp_path: Path) -> None:
+    conn = _conn(tmp_path)
+    out_dir = tmp_path / "bundle"
+
+    export_bundle(conn, out_dir)
+
+    assert _load(out_dir / "cuffs.json") == []
+
+
 def test_exports_a_skill_lookup_table(tmp_path: Path) -> None:
     conn = _conn(tmp_path)
     attack = repo.insert_skill(conn, name="Attack Up (Small)", category="offense")

@@ -6,7 +6,14 @@
  * testable without a real Worker or browser environment.
  */
 
-import type { BuildResult, Decoration, SkillRequirement, SlotQuery } from './types'
+import type {
+  BuildResult,
+  Cuff,
+  Decoration,
+  SearchOptions,
+  SkillRequirement,
+  SlotQuery,
+} from './types'
 
 export interface SearchRequestMessage {
   readonly type: 'search'
@@ -14,6 +21,8 @@ export interface SearchRequestMessage {
   readonly slots: readonly SlotQuery[]
   readonly requirements: readonly SkillRequirement[]
   readonly decorations?: readonly Decoration[]
+  readonly options?: SearchOptions
+  readonly cuffs?: readonly Cuff[]
 }
 
 export interface CancelMessage {

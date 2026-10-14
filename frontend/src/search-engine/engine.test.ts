@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { search } from './engine'
 import { collect } from './test-helpers'
-import type { Candidate, Decoration, SlotQuery } from './types'
+import type { Candidate, Cuff, Decoration, SlotQuery } from './types'
 
 function candidate(id: string, skills: Record<number, number>, openSlotCount = 0): Candidate {
   return {
@@ -24,6 +24,10 @@ function deco(id: string, slotSize: number, skills: Record<number, number>): Dec
     })),
   }
 }
+
+// A Cuff is shaped identically to a Decoration (see types.ts) -- reused
+// under its own name here for readability at cuff-specific call sites.
+const cuff: (id: string, slotSize: number, skills: Record<number, number>) => Cuff = deco
 
 describe('search', () => {
   it('returns a single-slot candidate that satisfies the requirement alone', async () => {
@@ -158,6 +162,24 @@ describe('search', () => {
     expect(results.map((r) => r.picks.get('head')?.id).sort()).toEqual(['Helm A', 'Helm B'])
   })
 
+  it('ranks the build that avoids activating a bonus skill tier first when preferExactMatches is set', async () => {
+    const slots: SlotQuery[] = [
+      {
+        slotId: 'head',
+        candidates: [candidate('Plain', { 1: 5 }), candidate('Bonus', { 1: 5, 2: 100 })],
+      },
+    ]
+
+    const results = await collect(
+      search(slots, [{ skillId: 1, minPoints: 3 }], [], {
+        preferExactMatches: true,
+        skillTiers: [{ skillId: 2, tierThresholds: [10] }],
+      }),
+    )
+
+    expect(results[0].picks.get('head')?.id).toBe('Plain')
+  })
+
   it('can be consumed lazily, stopping before the full result set is computed', async () => {
     const slots: SlotQuery[] = [
       {
@@ -246,5 +268,66 @@ describe('search with decorations', () => {
       'Attack Jewel',
       'Defense Jewel',
     ])
+  })
+})
+
+describe('search with cuffs', () => {
+  it('equips a cuff to help meet a requirement armor alone cannot reach', async () => {
+    const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Helm', { 1: 3 })] }]
+    // slotSize 2 (the full Poogie-slot budget) so a second copy can't also fit -- keeps this
+    // test's expected result unambiguous (see the cuff-budget test below for the 2-cuff case).
+    const sharpening = cuff('Sharpening PC1', 2, { 2: 10 })
+
+    const results = await collect(
+      search(
+        slots,
+        [
+          { skillId: 1, minPoints: 3 },
+          { skillId: 2, minPoints: 10 },
+        ],
+        [],
+        {},
+        [sharpening],
+      ),
+    )
+
+    expect(results).toHaveLength(1)
+    expect(results[0].cuffs).toEqual([sharpening])
+    expect(results[0].skillTotals.get(2)).toBe(10)
+  })
+
+  it('never equips a cuff nobody asked for, same as decorations', async () => {
+    const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Helm', { 1: 3 })] }]
+    const irrelevant = cuff('Gathering PB1', 1, { 99: 5 })
+
+    const results = await collect(
+      search(slots, [{ skillId: 1, minPoints: 3 }], [], {}, [irrelevant]),
+    )
+
+    expect(results).toHaveLength(1)
+    expect(results[0].cuffs).toEqual([])
+  })
+
+  it('rejects two cuffs whose combined slot cost exceeds the shared Poogie-slot budget', async () => {
+    const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Helm', { 1: 3 })] }]
+    // Each costs the full budget (2) on its own.
+    const cuffA = cuff('Skill Slots Up SZ', 2, { 2: 5 })
+    const cuffB = cuff('Guard Up SZ', 2, { 3: 5 })
+
+    const results = await collect(
+      search(
+        slots,
+        [
+          { skillId: 1, minPoints: 3 },
+          { skillId: 2, minPoints: 5 },
+          { skillId: 3, minPoints: 5 },
+        ],
+        [],
+        {},
+        [cuffA, cuffB],
+      ),
+    )
+
+    expect(results).toHaveLength(0)
   })
 })

@@ -43,12 +43,32 @@
  * satisfies every one of them exactly (`ilp-model.ts`'s `isUsableResult`) --
  * interrupting early only risks a worse-ranked (more decoration slots used,
  * or fewer bonus points) result than the true optimum, never an invalid one.
+ *
+ * `options.preferExactMatches` (see `types.ts`'s `SearchOptions`) only
+ * changes that ranking, not which builds are valid: it asks `buildModel` to
+ * penalize unrequested skill points instead of rewarding them, for a user
+ * who'd rather get a build that introduces as few skills they didn't ask for
+ * as possible, instead of one that happens to pile on the most of them.
+ *
+ * `cuffs` is a wholly separate equipment pool from `decorations` -- see
+ * `ilp-model.ts`'s own docstring for how the "at most 2 equipped, combined
+ * slot-cost budget" rule is modeled -- filtered down to relevant ones the
+ * same way `decorations` is, for the same reason (the real cuff catalog is
+ * large enough that an unfiltered one would bloat the model for no benefit).
  */
 
-import { filterRelevantDecorations } from './expand'
+import { filterRelevantCuffs, filterRelevantDecorations } from './expand'
 import { getHighs } from './highs-runtime'
 import { buildModel, decodeSolution, exclusionRow, isUsableResult } from './ilp-model'
-import type { BuildResult, Decoration, SkillId, SkillRequirement, SlotQuery } from './types'
+import type {
+  BuildResult,
+  Cuff,
+  Decoration,
+  SearchOptions,
+  SkillId,
+  SkillRequirement,
+  SlotQuery,
+} from './types'
 import type { Highs, Model, ModelStatusCode, SymbolDisposable } from 'highs'
 
 /** Seconds a single round may search before settling for its best feasible
@@ -88,6 +108,8 @@ export async function* search(
   slots: readonly SlotQuery[],
   requirements: readonly SkillRequirement[],
   decorations: readonly Decoration[] = [],
+  options: SearchOptions = {},
+  cuffs: readonly Cuff[] = [],
 ): AsyncGenerator<BuildResult> {
   if (slots.length === 0) {
     // Nothing to choose, so nothing to solve for -- but an empty build still
@@ -97,14 +119,22 @@ export async function* search(
     const skillTotals = new Map<SkillId, number>()
     const meetsAll = requirements.every((r) => (skillTotals.get(r.skillId) ?? 0) >= r.minPoints)
     if (meetsAll) {
-      yield { picks: new Map(), decorations: new Map(), skillTotals }
+      yield { picks: new Map(), decorations: new Map(), cuffs: [], skillTotals }
     }
     return
   }
 
   const relevantDecorations = filterRelevantDecorations(decorations, requirements)
+  const relevantCuffs = filterRelevantCuffs(cuffs, requirements)
   const highs = await getHighs()
-  const { model, columns } = buildModel(highs, slots, relevantDecorations, requirements)
+  const { model, columns } = buildModel(
+    highs,
+    slots,
+    relevantDecorations,
+    requirements,
+    options,
+    relevantCuffs,
+  )
   const native = highs.createModel(model)
 
   try {

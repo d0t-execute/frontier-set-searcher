@@ -291,14 +291,15 @@ def insert_cuff(
     name: str,
     slot_size: int,
     zenith_skill_id: int | None = None,
+    category: str = "cuff_standard_tier1",
     source_url: str | None = None,
 ) -> Cuff:
     cursor = conn.execute(
         """
-        INSERT INTO cuff (external_id, name, slot_size, zenith_skill_id, source_url)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO cuff (external_id, name, slot_size, zenith_skill_id, category, source_url)
+        VALUES (?, ?, ?, ?, ?, ?)
         """,
-        (external_id, name, slot_size, zenith_skill_id, source_url),
+        (external_id, name, slot_size, zenith_skill_id, category, source_url),
     )
     row_id = cursor.lastrowid
     assert row_id is not None
@@ -308,6 +309,7 @@ def insert_cuff(
         name=name,
         slot_size=slot_size,
         zenith_skill_id=zenith_skill_id,
+        category=category,
         source_url=source_url,
     )
 
@@ -317,6 +319,11 @@ def get_cuff_by_external_id(conn: sqlite3.Connection, external_id: str) -> Cuff 
     if row is None:
         return None
     return _cuff_from_row(row)
+
+
+def list_cuffs(conn: sqlite3.Connection) -> list[Cuff]:
+    rows = conn.execute("SELECT * FROM cuff ORDER BY id").fetchall()
+    return [_cuff_from_row(row) for row in rows]
 
 
 def add_cuff_skill(conn: sqlite3.Connection, *, cuff_id: int, skill_id: int, points: int) -> None:
@@ -433,6 +440,7 @@ def _cuff_from_row(row: sqlite3.Row) -> Cuff:
         name=row["name"],
         slot_size=row["slot_size"],
         zenith_skill_id=row["zenith_skill_id"],
+        category=row["category"],
         source_url=row["source_url"],
     )
 

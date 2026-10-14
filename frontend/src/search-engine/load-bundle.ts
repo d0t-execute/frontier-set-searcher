@@ -6,7 +6,7 @@
  * responses, with no live network access (per docs/PLAN.md §3).
  */
 
-import type { Candidate, Decoration } from './types'
+import type { Candidate, Decoration, SkillContribution } from './types'
 
 /** The slice of the global `fetch` this module relies on. */
 export type FetchLike = (
@@ -47,6 +47,23 @@ export interface NamedDecoration extends Decoration {
   readonly name: string
 }
 
+/** A Cuff is shaped exactly like a Decoration (id, slotSize, skills) -- see
+ * etl/src/etl/export.py's `_export_cuffs` -- but is a separate equipment
+ * category with its own "Poogie slot" budget, not an armor decoration (see
+ * docs/data-format-notes.md's "Cuffs" section). Kept as its own type rather
+ * than aliased to NamedDecoration so the two can't be mixed up at a call
+ * site even though the shape matches today. `category` mirrors
+ * `NamedCandidate`'s -- the Premium/Standard split (and finer leaves within
+ * each) the UI's cuff category filter needs (see
+ * docs/gear-category-taxonomy.md's "Tree 2"). */
+export interface NamedCuff {
+  readonly id: string
+  readonly name: string
+  readonly slotSize: number
+  readonly skills: readonly SkillContribution[]
+  readonly category: string
+}
+
 export interface NamedSlotQuery {
   readonly slotId: string
   readonly candidates: readonly NamedCandidate[]
@@ -55,6 +72,7 @@ export interface NamedSlotQuery {
 export interface DataBundle {
   readonly slots: readonly NamedSlotQuery[]
   readonly decorations: readonly NamedDecoration[]
+  readonly cuffs: readonly NamedCuff[]
   readonly skills: readonly NamedSkill[]
   readonly skillNames: ReadonlyMap<number, string>
 }
@@ -68,9 +86,10 @@ export async function loadBundle(baseUrl: string, fetchImpl: FetchLike): Promise
     )
   }
 
-  const [skills, decorations, equipmentBySlotType] = await Promise.all([
+  const [skills, decorations, cuffs, equipmentBySlotType] = await Promise.all([
     fetchJson<NamedSkill[]>(fetchImpl, `${baseUrl}/skills.json`),
     fetchJson<NamedDecoration[]>(fetchImpl, `${baseUrl}/decorations.json`),
+    fetchJson<NamedCuff[]>(fetchImpl, `${baseUrl}/cuffs.json`),
     Promise.all(
       manifest.slotTypes.map((slotType) =>
         fetchJson<NamedCandidate[]>(fetchImpl, `${baseUrl}/equipment/${slotType}.json`),
@@ -84,6 +103,7 @@ export async function loadBundle(baseUrl: string, fetchImpl: FetchLike): Promise
       candidates: equipmentBySlotType[i],
     })),
     decorations,
+    cuffs,
     skills,
     skillNames: new Map(skills.map((skill) => [skill.id, skill.name])),
   }

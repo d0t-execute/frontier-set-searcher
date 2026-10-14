@@ -81,6 +81,7 @@ describe('formatResult', () => {
         ['slot-1', { id: 'item-B', skills: [{ skillId: 2, points: 8 }] }],
       ]),
       decorations: new Map([['slot-0', [decoration]]]),
+      cuffs: [],
       skillTotals: new Map([
         [1, 15],
         [2, 8],
@@ -100,6 +101,7 @@ describe('formatResult', () => {
     const result: BuildResult = {
       picks: new Map([['slot-0', { id: 'item-A', skills: [] }]]),
       decorations: new Map(),
+      cuffs: [],
       skillTotals: new Map(),
     }
 

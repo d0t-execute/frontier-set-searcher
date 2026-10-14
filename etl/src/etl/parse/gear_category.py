@@ -1,6 +1,6 @@
-"""Classifies an equipment row into the reference set-searcher's gear-level
-category leaf, from the raw CRE (acquisition method), CLASS (origin tier),
-and name-suffix fields already scraped out of skill/equip.js.
+"""Classifies an equipment or cuff row into the reference set-searcher's
+gear-level category leaf, from the raw CRE (acquisition method), CLASS
+(origin tier), and name-suffix fields already scraped out of skill/equip.js.
 
 Every rule here, including the leaf names and their confirmed row counts, is
 documented in docs/gear-category-taxonomy.md -- that file is the source of
@@ -14,7 +14,11 @@ into this module, so this module can't import back from equipment.py.
 
 from __future__ import annotations
 
+import re
+
 _NAME = 0
+_RECIPE1 = 21
+_HR1 = 22
 _CRE = 33
 _CLASS = 35
 
@@ -117,6 +121,35 @@ CATEGORY_STANDARD_SP = "standard_sp"
 
 CATEGORY_UNAVAILABLE_NOT_IMPLEMENTED = "unavailable_not_implemented"
 CATEGORY_UNAVAILABLE_TRAINING_ONLY = "unavailable_training_only"
+
+# Cuff category leaf keys -- "Tree 2: Decorations and Cuffs" (Cuffs half) in
+# docs/gear-category-taxonomy.md. Prefixed `cuff_` (rather than reusing the
+# equipment constants above) because a cuff and an armor piece can land on
+# the same CRE code but mean a different leaf in each tree -- see
+# `classify_cuff_category`'s own docstring. Display labels for these leaves
+# haven't been confirmed against the reference tool's own cuff tree yet
+# (unlike every equipment leaf above) -- these keys are correct and already
+# usable for filtering, but treat the eventual UI label for each as still
+# open, the same way CATEGORY_GRANK_BURST_SPECIES's label is flagged above.
+CATEGORY_CUFF_PREMIUM_TIER1 = "cuff_premium_tier1"  # P
+CATEGORY_CUFF_PREMIUM_TIER2 = "cuff_premium_tier2"  # P_II
+CATEGORY_CUFF_PREMIUM_TIER3 = "cuff_premium_tier3"  # P_G
+CATEGORY_CUFF_PREMIUM_NET_CAFE = "cuff_premium_net_cafe"  # P_ネ
+CATEGORY_CUFF_PREMIUM_EVENT = "cuff_premium_event"  # P_イ
+CATEGORY_CUFF_PREMIUM_SPECIAL = "cuff_premium_special"  # P_特
+CATEGORY_CUFF_PREMIUM_ZENITH = "cuff_premium_zenith"  # P_辿
+CATEGORY_CUFF_PREMIUM_UNAVAILABLE = "cuff_premium_unavailable"  # P_未
+
+CATEGORY_CUFF_STANDARD_TIER1 = "cuff_standard_tier1"  # S
+CATEGORY_CUFF_STANDARD_TIER2 = "cuff_standard_tier2"  # S_G
+CATEGORY_CUFF_STANDARD_EVENT = "cuff_standard_event"  # S_イ
+CATEGORY_CUFF_STANDARD_MYSTERY_QUEST = "cuff_standard_mystery_quest"  # S_謎
+CATEGORY_CUFF_STANDARD_GUILD = "cuff_standard_guild"  # S_猟
+CATEGORY_CUFF_STANDARD_FESTIVAL = "cuff_standard_festival"  # S_祭
+CATEGORY_CUFF_STANDARD_ZENITH = "cuff_standard_zenith"  # S_辿
+CATEGORY_CUFF_STANDARD_UNAVAILABLE = "cuff_standard_unavailable"  # S_未
+CATEGORY_CUFF_STANDARD_TRAINING_ONLY = "cuff_standard_training_only"  # S_不
+CATEGORY_CUFF_HIDEN = "cuff_hiden"  # 祕
 
 # Name-suffix tokens that mark a gear tier (NOT the "F"/"FY"/"FZ" forge-level
 # upgrade markers, which appear within every category uniformly and don't
@@ -290,3 +323,75 @@ def classify_equipment_category(fields: list[str]) -> str:
         return CATEGORY_GRANK_GX if "GX" in tokens else CATEGORY_GRANK_G
 
     return CATEGORY_STANDARD_PLAIN
+
+
+# The name-suffix marker that separates Premium from Standard cuffs --
+# confirmed against the real dataset (etl/.data/cache/equip.body): among the
+# 2,890 "regular" cuffs (CLASS ""), 1,775 names end in `P` + letter + digit
+# (PA1/PB2/PC1/...) and 1,102 end in `S` + letter + digit (SA1/SB2/...); the
+# same pattern also separates the 276 "SZ"-slot Zenith cuffs into 250
+# premium ("...PZ1" through "...PZ19") vs 26 standard ("...SZ", no digit).
+# Confirmed by the project owner: Premium cuffs can only be equipped when
+# Poogie is wearing Premium (not Standard) clothes; Standard cuffs are fine
+# either way, so this is purely a per-cuff availability tag, not a build-time
+# exclusivity constraint (no two cuffs can ever conflict over it).
+_PREMIUM_SUFFIX_RE = re.compile(r"P[A-Z]\d+$")
+
+
+def _is_premium_suffix(name: str) -> bool:
+    tokens = name.split()
+    return bool(tokens) and _PREMIUM_SUFFIX_RE.search(tokens[-1]) is not None
+
+
+def classify_cuff_category(fields: list[str]) -> str:
+    """Returns the gear-level category leaf key for one cuff row.
+
+    `fields` is the same raw comma-split field list `parse_cuff_bucket`
+    already builds (only ever called with rows already confirmed to be
+    cuffs -- see `_is_cuff_row`). See docs/gear-category-taxonomy.md's
+    "Standard Pugi Cuffs"/"Premium Outfit Pugi Cuffs" tables for the full
+    rule set and confirmed row counts this implements -- CRE wins first
+    (matching `classify_equipment_category`'s own precedence), with the
+    name-suffix Premium/Standard marker only used to disambiguate within a
+    CRE bucket that covers both (CRE=4g, CRE=1e, CRE=9).
+    """
+    name = _field(fields, _NAME)
+    cre = _field(fields, _CRE).replace("#", "")
+    clazz = _field(fields, _CLASS)
+    recipe = _field(fields, _RECIPE1)
+    premium = _is_premium_suffix(name)
+
+    if cre == "7-":
+        return CATEGORY_CUFF_STANDARD_TRAINING_ONLY
+    if cre == "9":
+        return CATEGORY_CUFF_PREMIUM_UNAVAILABLE if premium else CATEGORY_CUFF_STANDARD_UNAVAILABLE
+    if cre == "4k":
+        if recipe[:4] in ("09E5", "09E6", "09E7"):
+            return CATEGORY_CUFF_PREMIUM_TIER1
+        if recipe[:4] in ("110C", "110D", "110E"):
+            return CATEGORY_CUFF_PREMIUM_TIER2
+        return CATEGORY_CUFF_PREMIUM_TIER3  # recipe 208A/B/C, or an unseen prefix
+    if cre == "3e":
+        return CATEGORY_CUFF_PREMIUM_NET_CAFE
+    if cre == "1e":
+        return CATEGORY_CUFF_PREMIUM_EVENT if premium else CATEGORY_CUFF_STANDARD_EVENT
+    if cre == "5-":
+        return CATEGORY_CUFF_PREMIUM_SPECIAL
+    if cre == "4g":
+        return CATEGORY_CUFF_PREMIUM_ZENITH
+    if cre == "1i":
+        return CATEGORY_CUFF_STANDARD_MYSTERY_QUEST
+    if cre in ("2-", "2u"):
+        return CATEGORY_CUFF_STANDARD_GUILD
+    if cre == "2m":
+        return CATEGORY_CUFF_STANDARD_FESTIVAL
+
+    # Remaining rows are all CRE "1-" or "1t" -- decided by CLASS, then HR.
+    if clazz == _CLASS_G_HIDEN:
+        return CATEGORY_CUFF_HIDEN
+    if clazz == _CLASS_ZENITH:
+        return CATEGORY_CUFF_STANDARD_ZENITH
+    hr = _field(fields, _HR1)
+    if hr.isdigit() and int(hr) >= 2001:
+        return CATEGORY_CUFF_STANDARD_TIER2
+    return CATEGORY_CUFF_STANDARD_TIER1

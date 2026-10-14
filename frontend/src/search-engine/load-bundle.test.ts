@@ -14,6 +14,15 @@ const skills = [
 const decorations = [
   { id: 'D001', name: 'Attack Jewel', slotSize: 1, skills: [{ skillId: 1, points: 3 }] },
 ]
+const cuffs = [
+  {
+    id: 'cuff:C001',
+    name: 'Sharpening PC1',
+    slotSize: 1,
+    skills: [{ skillId: 1, points: 2 }],
+    category: 'cuff_premium_tier1',
+  },
+]
 const headEquipment = [
   {
     id: 'head:0001',
@@ -47,6 +56,7 @@ const allFiles = {
   'manifest.json': manifest,
   'skills.json': skills,
   'decorations.json': decorations,
+  'cuffs.json': cuffs,
   'equipment/head.json': headEquipment,
   'equipment/chest.json': chestEquipment,
 }
@@ -64,6 +74,12 @@ describe('loadBundle', () => {
     const bundle = await loadBundle('/data', fakeFetch(allFiles))
 
     expect(bundle.decorations).toEqual(decorations)
+  })
+
+  it('exposes the cuff catalog as-is', async () => {
+    const bundle = await loadBundle('/data', fakeFetch(allFiles))
+
+    expect(bundle.cuffs).toEqual(cuffs)
   })
 
   it('builds a skill id -> name lookup', async () => {
