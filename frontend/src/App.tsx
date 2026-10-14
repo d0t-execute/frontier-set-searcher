@@ -30,6 +30,7 @@ function App() {
   const worker = useSearchWorker()
 
   const [requirements, setRequirements] = useState<SkillRequirement[]>([])
+  const [zenithRequirements, setZenithRequirements] = useState<SkillRequirement[]>([])
   const [excludedCategories, setExcludedCategories] = useState<Set<string>>(new Set())
   const [excludedCuffCategories, setExcludedCuffCategories] = useState<Set<string>>(new Set())
   const [preferExactMatches, setPreferExactMatches] = useState(false)
@@ -47,10 +48,10 @@ function App() {
   // SearchOptions.skillTiers and ilp-model.ts's buildModel.
   const skillTiers = useMemo<SkillTierThresholds[]>(
     () =>
-      bundle?.skills.map((skill) => ({
+      [...(bundle?.skills ?? []), ...(bundle?.zenithSkills ?? [])].map((skill) => ({
         skillId: skill.id,
         tierThresholds: skill.tiers.map((tier) => tier.minPoints),
-      })) ?? [],
+      })),
     [bundle],
   )
 
@@ -68,7 +69,8 @@ function App() {
   }
 
   function handleSearch(): void {
-    if (!worker || !bundle || requirements.length === 0) return
+    const allRequirements = [...requirements, ...zenithRequirements]
+    if (!worker || !bundle || allRequirements.length === 0) return
 
     setResults([])
     setErrorMessage(null)
@@ -81,7 +83,7 @@ function App() {
     const cuffs = cuffsAfterCategoryFilter(bundle.cuffs)
     const requestId = worker.search(
       slots,
-      requirements,
+      allRequirements,
       bundle.decorations,
       {
         onResult: (result) => {
@@ -137,6 +139,16 @@ function App() {
           </section>
 
           <section className="mb-3">
+            <h2 className="h5">Zenith skills</h2>
+            <SkillPicker
+              skills={bundle.zenithSkills}
+              requirements={zenithRequirements}
+              onChange={setZenithRequirements}
+              addLabel="Add a Zenith skill"
+            />
+          </section>
+
+          <section className="mb-3">
             <h2 className="h5">Gear levels</h2>
             <CategoryFilter
               groups={GEAR_CATEGORY_GROUPS}
@@ -176,7 +188,11 @@ function App() {
             <button
               type="button"
               className="btn btn-primary"
-              disabled={requirements.length === 0 || !worker || status === 'searching'}
+              disabled={
+                (requirements.length === 0 && zenithRequirements.length === 0) ||
+                !worker ||
+                status === 'searching'
+              }
               onClick={handleSearch}
             >
               Search

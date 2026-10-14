@@ -17,6 +17,11 @@ export interface SkillPickerProps {
   readonly skills: readonly SkillOption[]
   readonly requirements: readonly SkillRequirement[]
   readonly onChange: (next: SkillRequirement[]) => void
+  /** Accessible name (and placeholder text) for the "add a skill" control --
+   * distinguishes multiple `SkillPicker` instances on the same page (e.g.
+   * normal vs. Zenith skills in App.tsx), since otherwise both would render
+   * an identically-labeled "Add a skill…" control. */
+  readonly addLabel?: string
 }
 
 const DEFAULT_MIN_POINTS = 1
@@ -54,7 +59,12 @@ function groupByCategory(
   return ordered
 }
 
-export function SkillPicker({ skills, requirements, onChange }: SkillPickerProps) {
+export function SkillPicker({
+  skills,
+  requirements,
+  onChange,
+  addLabel = 'Add a skill',
+}: SkillPickerProps) {
   const skillOf = (skillId: number) => skills.find((s) => s.id === skillId)
   const nameOf = (skillId: number) => skillOf(skillId)?.name ?? `Skill ${skillId}`
   const pickedIds = new Set(requirements.map((r) => r.skillId))
@@ -120,14 +130,14 @@ export function SkillPicker({ skills, requirements, onChange }: SkillPickerProps
 
       <select
         className="form-select mt-2"
-        aria-label="Add a skill"
+        aria-label={addLabel}
         value=""
         onChange={(e) => {
           if (e.target.value) addSkill(Number(e.target.value))
         }}
       >
         <option value="" disabled>
-          Add a skill…
+          {addLabel}…
         </option>
         {groupByCategory(available).map(([category, categorySkills]) => (
           <optgroup key={category} label={category}>

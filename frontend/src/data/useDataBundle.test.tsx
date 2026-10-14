@@ -18,6 +18,7 @@ describe('useDataBundle', () => {
     const files: Record<string, unknown> = {
       '/data/manifest.json': { formatVersion: 1, slotTypes: ['head'] },
       '/data/skills.json': [{ id: 1, name: 'Attack', category: null }],
+      '/data/zenith-skills.json': [],
       '/data/decorations.json': [],
       '/data/cuffs.json': [],
       '/data/equipment/head.json': [{ id: 'head:0001', name: 'Leather Helm', skills: [] }],

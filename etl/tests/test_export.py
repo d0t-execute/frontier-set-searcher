@@ -5,7 +5,7 @@ from typing import Any
 
 from etl.db import repository as repo
 from etl.db.connection import connect
-from etl.export import EXPORT_FORMAT_VERSION, export_bundle
+from etl.export import EXPORT_FORMAT_VERSION, ZENITH_SKILL_ID_OFFSET, export_bundle
 
 
 def _conn(tmp_path: Path) -> sqlite3.Connection:
@@ -126,7 +126,9 @@ def test_exports_cuffs_shaped_for_the_search_engine(tmp_path: Path) -> None:
     ]
 
 
-def test_exports_a_zenith_only_cuff_with_an_empty_skills_list(tmp_path: Path) -> None:
+def test_exports_a_zenith_only_cuffs_zenith_skill_as_an_ordinary_skill_contribution(
+    tmp_path: Path,
+) -> None:
     conn = _conn(tmp_path)
     zenith_skill = repo.insert_zenith_skill(conn, name="Skill Slots Up+1")
     repo.insert_cuff(
@@ -148,10 +150,106 @@ def test_exports_a_zenith_only_cuff_with_an_empty_skills_list(tmp_path: Path) ->
             "id": "cuff:C002",
             "name": "Skill Slots Up SZ",
             "slotSize": 2,
-            "skills": [],
+            "skills": [{"skillId": ZENITH_SKILL_ID_OFFSET + zenith_skill.id, "points": 1}],
             "category": "cuff_standard_zenith",
         }
     ]
+
+
+def test_exports_an_armor_pieces_zenith_skill_alongside_its_normal_skills(tmp_path: Path) -> None:
+    conn = _conn(tmp_path)
+    attack = repo.insert_skill(conn, name="Attack Up (Small)")
+    zenith_skill = repo.insert_zenith_skill(conn, name="Vampirism Up+1")
+    equipment = repo.insert_equipment(
+        conn,
+        external_id="head:0002",
+        name="Zenith Helm",
+        slot_type="head",
+        slot_count_base=0,
+        slot_count_max=0,
+        zenith_skill_id=zenith_skill.id,
+    )
+    repo.add_equipment_skill(conn, equipment_id=equipment.id, skill_id=attack.id, points=3)
+    conn.commit()
+    out_dir = tmp_path / "bundle"
+
+    export_bundle(conn, out_dir)
+
+    heads = _load(out_dir / "equipment" / "head.json")
+    assert heads[0]["skills"] == [
+        {"skillId": attack.id, "points": 3},
+        {"skillId": ZENITH_SKILL_ID_OFFSET + zenith_skill.id, "points": 1},
+    ]
+
+
+def test_zenith_skills_json_groups_same_family_names_under_one_shared_id(tmp_path: Path) -> None:
+    conn = _conn(tmp_path)
+    tier1 = repo.insert_zenith_skill(conn, name="Vampirism Up+1")
+    tier2 = repo.insert_zenith_skill(conn, name="Vampirism Up+2")
+    single = repo.insert_zenith_skill(conn, name="Dissolver Up")
+    # Only pieces that actually grant these (see
+    # list_zenith_skill_ids_used_by_equipment_or_cuffs) are eligible to appear
+    # in the exported catalog at all.
+    repo.insert_cuff(
+        conn, external_id="cuff:C101", name="Vampirism SZ", slot_size=0, zenith_skill_id=tier1.id
+    )
+    repo.insert_cuff(
+        conn, external_id="cuff:C102", name="Vampirism SZ2", slot_size=0, zenith_skill_id=tier2.id
+    )
+    repo.insert_cuff(
+        conn, external_id="cuff:C103", name="Dissolver SZ", slot_size=0, zenith_skill_id=single.id
+    )
+    conn.commit()
+    out_dir = tmp_path / "bundle"
+
+    export_bundle(conn, out_dir)
+
+    zenith_skills = _load(out_dir / "zenith-skills.json")
+    assert zenith_skills == [
+        {
+            "id": ZENITH_SKILL_ID_OFFSET + tier1.id,
+            "name": "Vampirism Up",
+            "category": None,
+            "tiers": [],
+        },
+        {
+            "id": ZENITH_SKILL_ID_OFFSET + single.id,
+            "name": "Dissolver Up",
+            "category": None,
+            "tiers": [],
+        },
+    ]
+    # "Vampirism Up+2" (tier2) shares its family's id with "Vampirism Up+1"
+    # rather than appearing as a second catalog entry -- the exact-length,
+    # exact-content assertion above already proves this.
+    assert tier2.id != tier1.id
+
+
+def test_zenith_skills_json_excludes_families_only_referenced_by_weapons(tmp_path: Path) -> None:
+    conn = _conn(tmp_path)
+    weapon_only = repo.insert_zenith_skill(conn, name="Earplugs Up+1")
+    repo.insert_weapon(
+        conn,
+        external_id="weapon:W001",
+        name="Some Great Sword",
+        weapon_type="great_sword",
+        zenith_skill_id=weapon_only.id,
+    )
+    conn.commit()
+    out_dir = tmp_path / "bundle"
+
+    export_bundle(conn, out_dir)
+
+    assert _load(out_dir / "zenith-skills.json") == []
+
+
+def test_writes_an_empty_zenith_skills_file_when_there_are_none(tmp_path: Path) -> None:
+    conn = _conn(tmp_path)
+    out_dir = tmp_path / "bundle"
+
+    export_bundle(conn, out_dir)
+
+    assert _load(out_dir / "zenith-skills.json") == []
 
 
 def test_writes_an_empty_cuffs_file_when_there_are_none(tmp_path: Path) -> None:

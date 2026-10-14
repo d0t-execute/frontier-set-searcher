@@ -74,6 +74,16 @@ export interface DataBundle {
   readonly decorations: readonly NamedDecoration[]
   readonly cuffs: readonly NamedCuff[]
   readonly skills: readonly NamedSkill[]
+  /** Zenith skills (see etl/src/etl/export.py's module docstring) -- a
+   * separate catalog from `skills`, but shaped identically (same
+   * `NamedSkill`) and consumed through the exact same `SkillRequirement`/
+   * `SkillContribution` machinery: every family's exported id is offset well
+   * clear of `skills`' id space, so a Zenith skill requirement is just
+   * another entry in the same requirements list passed to `search()`. Always
+   * has empty `tiers` (see the export module's docstring for why) -- the UI
+   * picks a point value with a free-entry number input, not a tier
+   * dropdown. */
+  readonly zenithSkills: readonly NamedSkill[]
   readonly skillNames: ReadonlyMap<number, string>
 }
 
@@ -86,8 +96,9 @@ export async function loadBundle(baseUrl: string, fetchImpl: FetchLike): Promise
     )
   }
 
-  const [skills, decorations, cuffs, equipmentBySlotType] = await Promise.all([
+  const [skills, zenithSkills, decorations, cuffs, equipmentBySlotType] = await Promise.all([
     fetchJson<NamedSkill[]>(fetchImpl, `${baseUrl}/skills.json`),
+    fetchJson<NamedSkill[]>(fetchImpl, `${baseUrl}/zenith-skills.json`),
     fetchJson<NamedDecoration[]>(fetchImpl, `${baseUrl}/decorations.json`),
     fetchJson<NamedCuff[]>(fetchImpl, `${baseUrl}/cuffs.json`),
     Promise.all(
@@ -105,7 +116,8 @@ export async function loadBundle(baseUrl: string, fetchImpl: FetchLike): Promise
     decorations,
     cuffs,
     skills,
-    skillNames: new Map(skills.map((skill) => [skill.id, skill.name])),
+    zenithSkills,
+    skillNames: new Map([...skills, ...zenithSkills].map((skill) => [skill.id, skill.name])),
   }
 }
 

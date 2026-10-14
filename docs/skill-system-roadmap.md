@@ -24,32 +24,42 @@ skills.
 
 ## 2. Zenith skills as a separate filter
 
-Partially implemented already -- the data model and parsing exist end-to-end in the ETL/DB layer;
-what's missing is exporting it and wiring it into the frontend.
+**Status (2026-10-15): DONE, end to end.** Confirmed with the project owner: Zenith skills stack
+additively exactly like normal skills (e.g. two "Vampirism Up+1" pieces reach the same total as a
+hypothetical "+2" piece) -- NOT a flat one-shot grant as the "second, separate skill-point system"
+phrasing below once speculated. That meant this could reuse the search engine's existing
+`SkillContribution`/`SkillRequirement` machinery completely unchanged: `engine.ts`, `ilp-model.ts`,
+`worker-protocol.ts`, `worker-client.ts`, and `worker-handler.ts` needed zero edits. Only ETL export
++ frontend data loading + UI were needed:
 
-- Confirmed in [data-format-notes.md](data-format-notes.md)'s "Zenith skills" section: Zenith
-  skills are a completely separate system from normal skills, carried via a `Teni` field (not
-  `SN1-5`), indexed into a 52-entry `TENINAME` lookup (e.g. "Skill Slots Up+1...+7", "Crit
-  Conversion Up+1/+2", "Guard Up+1/+2", "Reflect Up+1/+2/+3", "Vampirism Up+1/+2"). Every
-  `CLASS="P"`/`"Q"` armor row has one, confirmed exception-free.
-- Two carriers: Zenith Armor (stacks a Zenith skill on top of normal skills) and Zenith Cuffs
-  ("SZ"/"Sigil" variants -- Zenith skill only, no normal skills).
-- ETL/DB layer already parses and models this: `etl/src/etl/parse/equipment.py` parses
-  `zenith_skill_id` on equipment/cuff records, `etl/src/etl/parse/skills.py`'s
-  `parse_zenith_skill_names` parses `TENINAME` (fixture at
-  `etl/tests/fixtures/zenith_skill_names_sample.js`), and `etl/src/etl/db/models.py`/`repository.py`
-  has a dedicated `zenith_skill` table parallel to `skill`.
-- **The gap**: `etl/src/etl/export.py`'s `_export_equipment` does NOT include `zenith_skill_id` in
-  the exported JSON -- confirmed empty (no Zenith field at all) on a real "Espinas Z Grip" entry in
-  `frontend/public/data/equipment/arms.json`. The frontend/search engine has zero visibility into
-  Zenith skills today.
+- `etl/src/etl/export.py` now exports `zenith-skills.json` (one entry per Zenith skill *family* --
+  `_zenith_family` strips a raw name's "+<N>" tier suffix, e.g. "Vampirism Up+2" -> family
+  "Vampirism Up" at level 2; a suffix-less name like "Dissolver Up" is its own single-tier family at
+  level 1) and appends each equipment/cuff row's Zenith contribution directly into its ordinary
+  `skills` array as `{skillId, points}`, using a new `ZENITH_SKILL_ID_OFFSET` (1,000,000) to keep
+  every Zenith family id clear of the normal skill id space. Verified against the real dataset:
+  every `zenith_skill` row actually referenced by equipment/cuffs is a "+1" or suffix-less name --
+  no single real item ever grants more than level 1 of a family, so `tiers: []` is exported
+  deliberately empty (renders as a free-entry number input in `SkillPicker.tsx`, not a constrained
+  dropdown, since the real achievable total is open-ended and bounded only by how many same-family
+  pieces a build equips).
+- The raw `zenith_skill` table also carries ids referenced only by `weapon` rows (weapons aren't
+  exported at all) -- a new `list_zenith_skill_ids_used_by_equipment_or_cuffs` repository function
+  filters those out so the catalog never offers an unsatisfiable requirement (confirmed 3 real
+  examples: "Earplugs Up+1"/"S. Assault Up+1"/"C. Conversion Up+1", weapon-only in the real data).
+- Frontend: `load-bundle.ts`'s `DataBundle.zenithSkills: readonly NamedSkill[]` (same type as
+  `skills`), `App.tsx` gained a second `<SkillPicker>` instance under a "Zenith skills" heading
+  (requirements combined with normal ones into one array before calling `worker.search()`) --
+  `SkillPicker.tsx` gained an `addLabel` prop so the two instances' "Add a …" controls have distinct
+  accessible names. `skillNames` (used for result display) now merges both catalogs.
+- Verified end to end against the real, regenerated data bundle: a direct engine probe proved
+  stacking works exactly as described (3 different Zenith-armor pieces, each contributing 1 point
+  of "Dissolver Up", correctly satisfy `minPoints` 1/2/3), and a live browser search streamed back a
+  real result showing "Dissolver Up: 1" in its skill totals.
 - Don't confuse with the "Zenith" gear *category* (origin tier, e.g. "Zenith Armour", "Zenith
   ZY/ZX") that already exists as a UI filter in `gear-categories.ts`/
   [gear-category-taxonomy.md](gear-category-taxonomy.md) -- that's the equipment-tier filter,
   unrelated to this Zenith *skill pool* TODO.
-- To implement: add `zenith_skill_id` to export.py's equipment payload, thread it through the
-  search engine as a second, separate skill-point system (distinct SkillId namespace or a parallel
-  requirement type), and add UI filtering/requirement-picking for it.
 
 ## 3. Exotic skills
 

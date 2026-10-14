@@ -46615,105 +46615,180 @@
     "id": "cuff:3637",
     "name": "Skill Slots Up SZ",
     "slotSize": 2,
-    "skills": [],
+    "skills": [
+      {
+        "skillId": 1000001,
+        "points": 1
+      }
+    ],
     "category": "cuff_standard_zenith"
   },
   {
     "id": "cuff:3638",
     "name": "Crit Conversion Up SZ",
     "slotSize": 2,
-    "skills": [],
+    "skills": [
+      {
+        "skillId": 1000005,
+        "points": 1
+      }
+    ],
     "category": "cuff_standard_zenith"
   },
   {
     "id": "cuff:3639",
     "name": "S. Assault Up SZ",
     "slotSize": 2,
-    "skills": [],
+    "skills": [
+      {
+        "skillId": 1000004,
+        "points": 1
+      }
+    ],
     "category": "cuff_standard_zenith"
   },
   {
     "id": "cuff:363A",
     "name": "Dissolver Up SZ",
     "slotSize": 2,
-    "skills": [],
+    "skills": [
+      {
+        "skillId": 1000008,
+        "points": 1
+      }
+    ],
     "category": "cuff_standard_zenith"
   },
   {
     "id": "cuff:363B",
     "name": "Thunder Clad Up SZ",
     "slotSize": 2,
-    "skills": [],
+    "skills": [
+      {
+        "skillId": 1000006,
+        "points": 1
+      }
+    ],
     "category": "cuff_standard_zenith"
   },
   {
     "id": "cuff:363C",
     "name": "Ice Age Up SZ",
     "slotSize": 2,
-    "skills": [],
+    "skills": [
+      {
+        "skillId": 1000007,
+        "points": 1
+      }
+    ],
     "category": "cuff_standard_zenith"
   },
   {
     "id": "cuff:363D",
     "name": "Vampirism Up SZ",
     "slotSize": 2,
-    "skills": [],
+    "skills": [
+      {
+        "skillId": 1000002,
+        "points": 1
+      }
+    ],
     "category": "cuff_standard_zenith"
   },
   {
     "id": "cuff:363E",
     "name": "Drug Knowledge Up SZ",
     "slotSize": 2,
-    "skills": [],
+    "skills": [
+      {
+        "skillId": 1000019,
+        "points": 1
+      }
+    ],
     "category": "cuff_standard_zenith"
   },
   {
     "id": "cuff:363F",
     "name": "Assistance Up SZ",
     "slotSize": 2,
-    "skills": [],
+    "skills": [
+      {
+        "skillId": 1000010,
+        "points": 1
+      }
+    ],
     "category": "cuff_standard_zenith"
   },
   {
     "id": "cuff:3640",
     "name": "Earplugs Up SZ",
     "slotSize": 2,
-    "skills": [],
+    "skills": [
+      {
+        "skillId": 1000009,
+        "points": 1
+      }
+    ],
     "category": "cuff_standard_zenith"
   },
   {
     "id": "cuff:3641",
     "name": "Wind Res Up SZ",
     "slotSize": 2,
-    "skills": [],
+    "skills": [
+      {
+        "skillId": 1000015,
+        "points": 1
+      }
+    ],
     "category": "cuff_standard_zenith"
   },
   {
     "id": "cuff:3642",
     "name": "Quake Res Up SZ",
     "slotSize": 2,
-    "skills": [],
+    "skills": [
+      {
+        "skillId": 1000003,
+        "points": 1
+      }
+    ],
     "category": "cuff_standard_zenith"
   },
   {
     "id": "cuff:3643",
     "name": "Poison Res Up SZ",
     "slotSize": 2,
-    "skills": [],
+    "skills": [
+      {
+        "skillId": 1000018,
+        "points": 1
+      }
+    ],
     "category": "cuff_standard_zenith"
   },
   {
     "id": "cuff:3644",
     "name": "Para Res Up SZ",
     "slotSize": 2,
-    "skills": [],
+    "skills": [
+      {
+        "skillId": 1000017,
+        "points": 1
+      }
+    ],
     "category": "cuff_standard_zenith"
   },
   {
     "id": "cuff:3645",
     "name": "Sleep Res Up SZ",
     "slotSize": 2,
-    "skills": [],
+    "skills": [
+      {
+        "skillId": 1000022,
+        "points": 1
+      }
+    ],
     "category": "cuff_standard_zenith"
   },
   {
@@ -46736,28 +46811,48 @@
     "id": "cuff:372F",
     "name": "Bullet Saver Up SZ",
     "slotSize": 2,
-    "skills": [],
+    "skills": [
+      {
+        "skillId": 1000014,
+        "points": 1
+      }
+    ],
     "category": "cuff_standard_zenith"
   },
   {
     "id": "cuff:3730",
     "name": "Guard Up SZ",
     "slotSize": 2,
-    "skills": [],
+    "skills": [
+      {
+        "skillId": 1000011,
+        "points": 1
+      }
+    ],
     "category": "cuff_standard_zenith"
   },
   {
     "id": "cuff:3731",
     "name": "Adaptation Up SZ",
     "slotSize": 2,
-    "skills": [],
+    "skills": [
+      {
+        "skillId": 1000012,
+        "points": 1
+      }
+    ],
     "category": "cuff_standard_zenith"
   },
   {
     "id": "cuff:3732",
     "name": "Encourage Up SZ",
     "slotSize": 2,
-    "skills": [],
+    "skills": [
+      {
+        "skillId": 1000013,
+        "points": 1
+      }
+    ],
     "category": "cuff_standard_zenith"
   },
   {
@@ -46780,21 +46875,36 @@
     "id": "cuff:37D3",
     "name": "Reflect Up SZ",
     "slotSize": 2,
-    "skills": [],
+    "skills": [
+      {
+        "skillId": 1000016,
+        "points": 1
+      }
+    ],
     "category": "cuff_standard_zenith"
   },
   {
     "id": "cuff:37D4",
     "name": "Stylish Up SZ",
     "slotSize": 2,
-    "skills": [],
+    "skills": [
+      {
+        "skillId": 1000020,
+        "points": 1
+      }
+    ],
     "category": "cuff_standard_zenith"
   },
   {
     "id": "cuff:389C",
     "name": "Vigorous Up SZ",
     "slotSize": 2,
-    "skills": [],
+    "skills": [
+      {
+        "skillId": 1000021,
+        "points": 1
+      }
+    ],
     "category": "cuff_standard_zenith"
   },
   {
@@ -46833,154 +46943,264 @@
     "id": "cuff:3918",
     "name": "Skill Slots Up Sigil",
     "slotSize": 1,
-    "skills": [],
+    "skills": [
+      {
+        "skillId": 1000001,
+        "points": 1
+      }
+    ],
     "category": "cuff_standard_zenith"
   },
   {
     "id": "cuff:3919",
     "name": "Crit Conv Up Sigil",
     "slotSize": 1,
-    "skills": [],
+    "skills": [
+      {
+        "skillId": 1000005,
+        "points": 1
+      }
+    ],
     "category": "cuff_standard_zenith"
   },
   {
     "id": "cuff:391A",
     "name": "Sty. Assault Up Sigil",
     "slotSize": 1,
-    "skills": [],
+    "skills": [
+      {
+        "skillId": 1000004,
+        "points": 1
+      }
+    ],
     "category": "cuff_standard_zenith"
   },
   {
     "id": "cuff:391B",
     "name": "Dissolver Up Sigil",
     "slotSize": 1,
-    "skills": [],
+    "skills": [
+      {
+        "skillId": 1000008,
+        "points": 1
+      }
+    ],
     "category": "cuff_standard_zenith"
   },
   {
     "id": "cuff:391C",
     "name": "Thunder Clad Up Sigil",
     "slotSize": 1,
-    "skills": [],
+    "skills": [
+      {
+        "skillId": 1000006,
+        "points": 1
+      }
+    ],
     "category": "cuff_standard_zenith"
   },
   {
     "id": "cuff:391D",
     "name": "Ice Age Up Sigil",
     "slotSize": 1,
-    "skills": [],
+    "skills": [
+      {
+        "skillId": 1000007,
+        "points": 1
+      }
+    ],
     "category": "cuff_standard_zenith"
   },
   {
     "id": "cuff:391E",
     "name": "Poison Res Up Sigil",
     "slotSize": 1,
-    "skills": [],
+    "skills": [
+      {
+        "skillId": 1000002,
+        "points": 1
+      }
+    ],
     "category": "cuff_standard_zenith"
   },
   {
     "id": "cuff:391F",
     "name": "Para Res Up Sigil",
     "slotSize": 1,
-    "skills": [],
+    "skills": [
+      {
+        "skillId": 1000019,
+        "points": 1
+      }
+    ],
     "category": "cuff_standard_zenith"
   },
   {
     "id": "cuff:3920",
     "name": "Sleep Res Up Sigil",
     "slotSize": 1,
-    "skills": [],
+    "skills": [
+      {
+        "skillId": 1000010,
+        "points": 1
+      }
+    ],
     "category": "cuff_standard_zenith"
   },
   {
     "id": "cuff:3921",
     "name": "Hearing P. Up Sigil",
     "slotSize": 1,
-    "skills": [],
+    "skills": [
+      {
+        "skillId": 1000009,
+        "points": 1
+      }
+    ],
     "category": "cuff_standard_zenith"
   },
   {
     "id": "cuff:3922",
     "name": "Wind Res Up Sigil",
     "slotSize": 1,
-    "skills": [],
+    "skills": [
+      {
+        "skillId": 1000015,
+        "points": 1
+      }
+    ],
     "category": "cuff_standard_zenith"
   },
   {
     "id": "cuff:3923",
     "name": "Quake Res Up Sigil",
     "slotSize": 1,
-    "skills": [],
+    "skills": [
+      {
+        "skillId": 1000003,
+        "points": 1
+      }
+    ],
     "category": "cuff_standard_zenith"
   },
   {
     "id": "cuff:3924",
     "name": "Poison Res Up Sigil",
     "slotSize": 1,
-    "skills": [],
+    "skills": [
+      {
+        "skillId": 1000018,
+        "points": 1
+      }
+    ],
     "category": "cuff_standard_zenith"
   },
   {
     "id": "cuff:3925",
     "name": "Para Res Up Sigil",
     "slotSize": 1,
-    "skills": [],
+    "skills": [
+      {
+        "skillId": 1000017,
+        "points": 1
+      }
+    ],
     "category": "cuff_standard_zenith"
   },
   {
     "id": "cuff:3926",
     "name": "Sleep Res Up Sigil",
     "slotSize": 1,
-    "skills": [],
+    "skills": [
+      {
+        "skillId": 1000022,
+        "points": 1
+      }
+    ],
     "category": "cuff_standard_zenith"
   },
   {
     "id": "cuff:3927",
     "name": "Bullet Saver Up Sigil",
     "slotSize": 1,
-    "skills": [],
+    "skills": [
+      {
+        "skillId": 1000014,
+        "points": 1
+      }
+    ],
     "category": "cuff_standard_zenith"
   },
   {
     "id": "cuff:3928",
     "name": "Guard Up Sigil",
     "slotSize": 1,
-    "skills": [],
+    "skills": [
+      {
+        "skillId": 1000011,
+        "points": 1
+      }
+    ],
     "category": "cuff_standard_zenith"
   },
   {
     "id": "cuff:3929",
     "name": "Adaptation Up Sigil",
     "slotSize": 1,
-    "skills": [],
+    "skills": [
+      {
+        "skillId": 1000012,
+        "points": 1
+      }
+    ],
     "category": "cuff_standard_zenith"
   },
   {
     "id": "cuff:392A",
     "name": "Encourage Up Sigil",
     "slotSize": 1,
-    "skills": [],
+    "skills": [
+      {
+        "skillId": 1000013,
+        "points": 1
+      }
+    ],
     "category": "cuff_standard_zenith"
   },
   {
     "id": "cuff:392B",
     "name": "Reflect Up Sigil",
     "slotSize": 1,
-    "skills": [],
+    "skills": [
+      {
+        "skillId": 1000016,
+        "points": 1
+      }
+    ],
     "category": "cuff_standard_zenith"
   },
   {
     "id": "cuff:392C",
     "name": "Stylish Up Sigil",
     "slotSize": 1,
-    "skills": [],
+    "skills": [
+      {
+        "skillId": 1000020,
+        "points": 1
+      }
+    ],
     "category": "cuff_standard_zenith"
   },
   {
     "id": "cuff:392D",
     "name": "Vigorous Up Sigil",
     "slotSize": 1,
-    "skills": [],
+    "skills": [
+      {
+        "skillId": 1000021,
+        "points": 1
+      }
+    ],
     "category": "cuff_standard_zenith"
   },
   {
@@ -47019,14 +47239,24 @@
     "id": "cuff:39D2",
     "name": "Obscurity Up SZ",
     "slotSize": 2,
-    "skills": [],
+    "skills": [
+      {
+        "skillId": 1000023,
+        "points": 1
+      }
+    ],
     "category": "cuff_standard_zenith"
   },
   {
     "id": "cuff:3A61",
     "name": "Obscurity Up Sigil",
     "slotSize": 1,
-    "skills": [],
+    "skills": [
+      {
+        "skillId": 1000023,
+        "points": 1
+      }
+    ],
     "category": "cuff_standard_zenith"
   },
   {
@@ -47065,14 +47295,24 @@
     "id": "cuff:3AFC",
     "name": "Soul Up SZ",
     "slotSize": 2,
-    "skills": [],
+    "skills": [
+      {
+        "skillId": 1000024,
+        "points": 1
+      }
+    ],
     "category": "cuff_standard_zenith"
   },
   {
     "id": "cuff:3AFD",
     "name": "Soul Up Sigil",
     "slotSize": 1,
-    "skills": [],
+    "skills": [
+      {
+        "skillId": 1000024,
+        "points": 1
+      }
+    ],
     "category": "cuff_standard_zenith"
   },
   {
@@ -47095,7 +47335,12 @@
     "id": "cuff:3CCE",
     "name": "Rush Up SZ",
     "slotSize": 2,
-    "skills": [],
+    "skills": [
+      {
+        "skillId": 1000025,
+        "points": 1
+      }
+    ],
     "category": "cuff_standard_zenith"
   },
   {
@@ -47106,6 +47351,10 @@
       {
         "skillId": 141,
         "points": 5
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47118,6 +47367,10 @@
       {
         "skillId": 125,
         "points": 5
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47130,6 +47383,10 @@
       {
         "skillId": 111,
         "points": 5
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47142,6 +47399,10 @@
       {
         "skillId": 185,
         "points": 5
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47154,6 +47415,10 @@
       {
         "skillId": 186,
         "points": 5
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47166,6 +47431,10 @@
       {
         "skillId": 166,
         "points": 5
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47178,6 +47447,10 @@
       {
         "skillId": 174,
         "points": 5
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47190,6 +47463,10 @@
       {
         "skillId": 179,
         "points": 5
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47202,6 +47479,10 @@
       {
         "skillId": 190,
         "points": 5
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47214,6 +47495,10 @@
       {
         "skillId": 143,
         "points": 5
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47226,6 +47511,10 @@
       {
         "skillId": 164,
         "points": 5
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47238,6 +47527,10 @@
       {
         "skillId": 173,
         "points": 5
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47250,6 +47543,10 @@
       {
         "skillId": 180,
         "points": 5
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47262,6 +47559,10 @@
       {
         "skillId": 154,
         "points": 5
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47274,6 +47575,10 @@
       {
         "skillId": 148,
         "points": 5
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47286,6 +47591,10 @@
       {
         "skillId": 188,
         "points": 5
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47298,6 +47607,10 @@
       {
         "skillId": 189,
         "points": 5
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47310,6 +47623,10 @@
       {
         "skillId": 183,
         "points": 5
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47322,6 +47639,10 @@
       {
         "skillId": 167,
         "points": 5
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47334,6 +47655,10 @@
       {
         "skillId": 184,
         "points": 6
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47346,6 +47671,10 @@
       {
         "skillId": 187,
         "points": 6
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47358,6 +47687,10 @@
       {
         "skillId": 135,
         "points": 6
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47370,6 +47703,10 @@
       {
         "skillId": 150,
         "points": 5
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47382,6 +47719,10 @@
       {
         "skillId": 151,
         "points": 5
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47394,6 +47735,10 @@
       {
         "skillId": 124,
         "points": 5
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47406,6 +47751,10 @@
       {
         "skillId": 169,
         "points": 5
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47418,6 +47767,10 @@
       {
         "skillId": 138,
         "points": 5
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47430,6 +47783,10 @@
       {
         "skillId": 142,
         "points": 5
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47442,6 +47799,10 @@
       {
         "skillId": 172,
         "points": 6
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47454,6 +47815,10 @@
       {
         "skillId": 168,
         "points": 5
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47466,6 +47831,10 @@
       {
         "skillId": 155,
         "points": 5
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47478,6 +47847,10 @@
       {
         "skillId": 157,
         "points": 5
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47490,6 +47863,10 @@
       {
         "skillId": 158,
         "points": 5
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47502,6 +47879,10 @@
       {
         "skillId": 162,
         "points": 5
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47514,6 +47895,10 @@
       {
         "skillId": 170,
         "points": 5
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47526,6 +47911,10 @@
       {
         "skillId": 171,
         "points": 5
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47538,6 +47927,10 @@
       {
         "skillId": 177,
         "points": 5
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47550,6 +47943,10 @@
       {
         "skillId": 182,
         "points": 5
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47562,6 +47959,10 @@
       {
         "skillId": 136,
         "points": 10
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47574,6 +47975,10 @@
       {
         "skillId": 152,
         "points": 5
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47586,6 +47991,10 @@
       {
         "skillId": 156,
         "points": 5
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47598,6 +48007,10 @@
       {
         "skillId": 80,
         "points": 5
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47610,6 +48023,10 @@
       {
         "skillId": 139,
         "points": 10
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47622,6 +48039,10 @@
       {
         "skillId": 146,
         "points": 10
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47634,6 +48055,10 @@
       {
         "skillId": 146,
         "points": -10
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47646,6 +48071,10 @@
       {
         "skillId": 129,
         "points": 10
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47658,6 +48087,10 @@
       {
         "skillId": 127,
         "points": 10
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47670,6 +48103,10 @@
       {
         "skillId": 163,
         "points": 6
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47682,6 +48119,10 @@
       {
         "skillId": 131,
         "points": 5
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47694,6 +48135,10 @@
       {
         "skillId": 134,
         "points": 5
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47706,6 +48151,10 @@
       {
         "skillId": 130,
         "points": 5
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47718,6 +48167,10 @@
       {
         "skillId": 45,
         "points": 10
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47730,6 +48183,10 @@
       {
         "skillId": 122,
         "points": 10
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47742,6 +48199,10 @@
       {
         "skillId": 161,
         "points": 6
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47754,6 +48215,10 @@
       {
         "skillId": 121,
         "points": 10
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47766,6 +48231,10 @@
       {
         "skillId": 141,
         "points": 5
+      },
+      {
+        "skillId": 1000005,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47778,6 +48247,10 @@
       {
         "skillId": 125,
         "points": 5
+      },
+      {
+        "skillId": 1000005,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47790,6 +48263,10 @@
       {
         "skillId": 111,
         "points": 5
+      },
+      {
+        "skillId": 1000005,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47802,6 +48279,10 @@
       {
         "skillId": 174,
         "points": 5
+      },
+      {
+        "skillId": 1000005,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47814,6 +48295,10 @@
       {
         "skillId": 186,
         "points": 5
+      },
+      {
+        "skillId": 1000005,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47826,6 +48311,10 @@
       {
         "skillId": 41,
         "points": 10
+      },
+      {
+        "skillId": 1000005,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47838,6 +48327,10 @@
       {
         "skillId": 80,
         "points": 5
+      },
+      {
+        "skillId": 1000005,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47850,6 +48343,10 @@
       {
         "skillId": 141,
         "points": 5
+      },
+      {
+        "skillId": 1000006,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47862,6 +48359,10 @@
       {
         "skillId": 125,
         "points": 5
+      },
+      {
+        "skillId": 1000006,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47874,6 +48375,10 @@
       {
         "skillId": 111,
         "points": 5
+      },
+      {
+        "skillId": 1000006,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47886,6 +48391,10 @@
       {
         "skillId": 166,
         "points": 5
+      },
+      {
+        "skillId": 1000006,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47898,6 +48407,10 @@
       {
         "skillId": 184,
         "points": 6
+      },
+      {
+        "skillId": 1000006,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47910,6 +48423,10 @@
       {
         "skillId": 187,
         "points": 6
+      },
+      {
+        "skillId": 1000006,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47922,6 +48439,10 @@
       {
         "skillId": 119,
         "points": 10
+      },
+      {
+        "skillId": 1000006,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47934,6 +48455,10 @@
       {
         "skillId": 141,
         "points": 5
+      },
+      {
+        "skillId": 1000004,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47946,6 +48471,10 @@
       {
         "skillId": 125,
         "points": 5
+      },
+      {
+        "skillId": 1000004,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47958,6 +48487,10 @@
       {
         "skillId": 111,
         "points": 5
+      },
+      {
+        "skillId": 1000004,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47970,6 +48503,10 @@
       {
         "skillId": 173,
         "points": 5
+      },
+      {
+        "skillId": 1000004,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47982,6 +48519,10 @@
       {
         "skillId": 164,
         "points": 5
+      },
+      {
+        "skillId": 1000004,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -47994,6 +48535,10 @@
       {
         "skillId": 163,
         "points": 6
+      },
+      {
+        "skillId": 1000004,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48006,6 +48551,10 @@
       {
         "skillId": 141,
         "points": 5
+      },
+      {
+        "skillId": 1000002,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48018,6 +48567,10 @@
       {
         "skillId": 125,
         "points": 5
+      },
+      {
+        "skillId": 1000002,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48030,6 +48583,10 @@
       {
         "skillId": 111,
         "points": 5
+      },
+      {
+        "skillId": 1000002,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48042,6 +48599,10 @@
       {
         "skillId": 154,
         "points": 5
+      },
+      {
+        "skillId": 1000002,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48054,6 +48615,10 @@
       {
         "skillId": 184,
         "points": 6
+      },
+      {
+        "skillId": 1000002,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48066,6 +48631,10 @@
       {
         "skillId": 166,
         "points": 5
+      },
+      {
+        "skillId": 1000002,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48078,6 +48647,10 @@
       {
         "skillId": 141,
         "points": 5
+      },
+      {
+        "skillId": 1000008,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48090,6 +48663,10 @@
       {
         "skillId": 125,
         "points": 5
+      },
+      {
+        "skillId": 1000008,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48102,6 +48679,10 @@
       {
         "skillId": 111,
         "points": 5
+      },
+      {
+        "skillId": 1000008,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48114,6 +48695,10 @@
       {
         "skillId": 169,
         "points": 5
+      },
+      {
+        "skillId": 1000008,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48126,6 +48711,10 @@
       {
         "skillId": 12,
         "points": 10
+      },
+      {
+        "skillId": 1000008,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48138,6 +48727,10 @@
       {
         "skillId": 114,
         "points": 5
+      },
+      {
+        "skillId": 1000008,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48150,6 +48743,10 @@
       {
         "skillId": 141,
         "points": 5
+      },
+      {
+        "skillId": 1000007,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48162,6 +48759,10 @@
       {
         "skillId": 125,
         "points": 5
+      },
+      {
+        "skillId": 1000007,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48174,6 +48775,10 @@
       {
         "skillId": 111,
         "points": 5
+      },
+      {
+        "skillId": 1000007,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48186,6 +48791,10 @@
       {
         "skillId": 177,
         "points": 5
+      },
+      {
+        "skillId": 1000007,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48198,6 +48807,10 @@
       {
         "skillId": 124,
         "points": 5
+      },
+      {
+        "skillId": 1000007,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48210,6 +48823,10 @@
       {
         "skillId": 187,
         "points": 6
+      },
+      {
+        "skillId": 1000007,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48222,6 +48839,10 @@
       {
         "skillId": 141,
         "points": 5
+      },
+      {
+        "skillId": 1000019,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48234,6 +48855,10 @@
       {
         "skillId": 125,
         "points": 5
+      },
+      {
+        "skillId": 1000019,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48246,6 +48871,10 @@
       {
         "skillId": 111,
         "points": 5
+      },
+      {
+        "skillId": 1000019,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48258,6 +48887,10 @@
       {
         "skillId": 189,
         "points": 5
+      },
+      {
+        "skillId": 1000019,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48270,6 +48903,10 @@
       {
         "skillId": 185,
         "points": 5
+      },
+      {
+        "skillId": 1000019,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48282,6 +48919,10 @@
       {
         "skillId": 164,
         "points": 5
+      },
+      {
+        "skillId": 1000019,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48294,6 +48935,10 @@
       {
         "skillId": 141,
         "points": 5
+      },
+      {
+        "skillId": 1000010,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48306,6 +48951,10 @@
       {
         "skillId": 125,
         "points": 5
+      },
+      {
+        "skillId": 1000010,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48318,6 +48967,10 @@
       {
         "skillId": 111,
         "points": 5
+      },
+      {
+        "skillId": 1000010,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48330,6 +48983,10 @@
       {
         "skillId": 162,
         "points": 5
+      },
+      {
+        "skillId": 1000010,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48342,6 +48999,10 @@
       {
         "skillId": 187,
         "points": 6
+      },
+      {
+        "skillId": 1000010,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48354,6 +49015,10 @@
       {
         "skillId": 73,
         "points": 10
+      },
+      {
+        "skillId": 1000010,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48366,6 +49031,10 @@
       {
         "skillId": 141,
         "points": 5
+      },
+      {
+        "skillId": 1000025,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48378,6 +49047,10 @@
       {
         "skillId": 125,
         "points": 5
+      },
+      {
+        "skillId": 1000025,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48390,6 +49063,10 @@
       {
         "skillId": 111,
         "points": 5
+      },
+      {
+        "skillId": 1000025,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48402,6 +49079,10 @@
       {
         "skillId": 185,
         "points": 5
+      },
+      {
+        "skillId": 1000025,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48414,6 +49095,10 @@
       {
         "skillId": 186,
         "points": 5
+      },
+      {
+        "skillId": 1000025,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48426,6 +49111,10 @@
       {
         "skillId": 166,
         "points": 5
+      },
+      {
+        "skillId": 1000025,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48438,6 +49127,10 @@
       {
         "skillId": 170,
         "points": 5
+      },
+      {
+        "skillId": 1000025,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48450,6 +49143,10 @@
       {
         "skillId": 141,
         "points": 5
+      },
+      {
+        "skillId": 1000012,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48462,6 +49159,10 @@
       {
         "skillId": 125,
         "points": 5
+      },
+      {
+        "skillId": 1000012,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48474,6 +49175,10 @@
       {
         "skillId": 111,
         "points": 5
+      },
+      {
+        "skillId": 1000012,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48486,6 +49191,10 @@
       {
         "skillId": 155,
         "points": 5
+      },
+      {
+        "skillId": 1000012,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48498,6 +49207,10 @@
       {
         "skillId": 172,
         "points": 6
+      },
+      {
+        "skillId": 1000012,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48510,6 +49223,10 @@
       {
         "skillId": 171,
         "points": 5
+      },
+      {
+        "skillId": 1000012,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48522,6 +49239,10 @@
       {
         "skillId": 141,
         "points": 5
+      },
+      {
+        "skillId": 1000013,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48534,6 +49255,10 @@
       {
         "skillId": 125,
         "points": 5
+      },
+      {
+        "skillId": 1000013,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48546,6 +49271,10 @@
       {
         "skillId": 111,
         "points": 5
+      },
+      {
+        "skillId": 1000013,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48558,6 +49287,10 @@
       {
         "skillId": 124,
         "points": 5
+      },
+      {
+        "skillId": 1000013,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48570,6 +49303,10 @@
       {
         "skillId": 162,
         "points": 5
+      },
+      {
+        "skillId": 1000013,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48582,6 +49319,10 @@
       {
         "skillId": 187,
         "points": 6
+      },
+      {
+        "skillId": 1000013,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48594,6 +49335,10 @@
       {
         "skillId": 141,
         "points": 5
+      },
+      {
+        "skillId": 1000016,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48606,6 +49351,10 @@
       {
         "skillId": 125,
         "points": 5
+      },
+      {
+        "skillId": 1000016,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48618,6 +49367,10 @@
       {
         "skillId": 111,
         "points": 5
+      },
+      {
+        "skillId": 1000016,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48630,6 +49383,10 @@
       {
         "skillId": 130,
         "points": 5
+      },
+      {
+        "skillId": 1000016,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48642,6 +49399,10 @@
       {
         "skillId": 180,
         "points": 5
+      },
+      {
+        "skillId": 1000016,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48654,6 +49415,10 @@
       {
         "skillId": 154,
         "points": 5
+      },
+      {
+        "skillId": 1000016,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48666,6 +49431,10 @@
       {
         "skillId": 141,
         "points": 5
+      },
+      {
+        "skillId": 1000020,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48678,6 +49447,10 @@
       {
         "skillId": 125,
         "points": 5
+      },
+      {
+        "skillId": 1000020,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48690,6 +49463,10 @@
       {
         "skillId": 111,
         "points": 5
+      },
+      {
+        "skillId": 1000020,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48702,6 +49479,10 @@
       {
         "skillId": 163,
         "points": 6
+      },
+      {
+        "skillId": 1000020,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48714,6 +49495,10 @@
       {
         "skillId": 173,
         "points": 5
+      },
+      {
+        "skillId": 1000020,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48726,6 +49511,10 @@
       {
         "skillId": 164,
         "points": 5
+      },
+      {
+        "skillId": 1000020,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48738,6 +49527,10 @@
       {
         "skillId": 141,
         "points": 5
+      },
+      {
+        "skillId": 1000021,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48750,6 +49543,10 @@
       {
         "skillId": 125,
         "points": 5
+      },
+      {
+        "skillId": 1000021,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48762,6 +49559,10 @@
       {
         "skillId": 111,
         "points": 5
+      },
+      {
+        "skillId": 1000021,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48774,6 +49575,10 @@
       {
         "skillId": 171,
         "points": 5
+      },
+      {
+        "skillId": 1000021,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48786,6 +49591,10 @@
       {
         "skillId": 185,
         "points": 5
+      },
+      {
+        "skillId": 1000021,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48798,6 +49607,10 @@
       {
         "skillId": 155,
         "points": 5
+      },
+      {
+        "skillId": 1000021,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48810,6 +49623,10 @@
       {
         "skillId": 141,
         "points": 5
+      },
+      {
+        "skillId": 1000023,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48822,6 +49639,10 @@
       {
         "skillId": 125,
         "points": 5
+      },
+      {
+        "skillId": 1000023,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48834,6 +49655,10 @@
       {
         "skillId": 111,
         "points": 5
+      },
+      {
+        "skillId": 1000023,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48846,6 +49671,10 @@
       {
         "skillId": 182,
         "points": 5
+      },
+      {
+        "skillId": 1000023,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48858,6 +49687,10 @@
       {
         "skillId": 180,
         "points": 5
+      },
+      {
+        "skillId": 1000023,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48870,6 +49703,10 @@
       {
         "skillId": 164,
         "points": 5
+      },
+      {
+        "skillId": 1000023,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48882,6 +49719,10 @@
       {
         "skillId": 141,
         "points": 5
+      },
+      {
+        "skillId": 1000024,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48894,6 +49735,10 @@
       {
         "skillId": 125,
         "points": 5
+      },
+      {
+        "skillId": 1000024,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48906,6 +49751,10 @@
       {
         "skillId": 111,
         "points": 5
+      },
+      {
+        "skillId": 1000024,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48918,6 +49767,10 @@
       {
         "skillId": 146,
         "points": 10
+      },
+      {
+        "skillId": 1000024,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48930,6 +49783,10 @@
       {
         "skillId": 146,
         "points": -10
+      },
+      {
+        "skillId": 1000024,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48942,6 +49799,10 @@
       {
         "skillId": 124,
         "points": 5
+      },
+      {
+        "skillId": 1000024,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48954,6 +49815,10 @@
       {
         "skillId": 162,
         "points": 5
+      },
+      {
+        "skillId": 1000024,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48966,6 +49831,10 @@
       {
         "skillId": 141,
         "points": 5
+      },
+      {
+        "skillId": 1000009,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48978,6 +49847,10 @@
       {
         "skillId": 125,
         "points": 5
+      },
+      {
+        "skillId": 1000009,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -48990,6 +49863,10 @@
       {
         "skillId": 111,
         "points": 5
+      },
+      {
+        "skillId": 1000009,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49002,6 +49879,10 @@
       {
         "skillId": 187,
         "points": 6
+      },
+      {
+        "skillId": 1000009,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49014,6 +49895,10 @@
       {
         "skillId": 166,
         "points": 5
+      },
+      {
+        "skillId": 1000009,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49026,6 +49911,10 @@
       {
         "skillId": 141,
         "points": 5
+      },
+      {
+        "skillId": 1000015,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49038,6 +49927,10 @@
       {
         "skillId": 125,
         "points": 5
+      },
+      {
+        "skillId": 1000015,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49050,6 +49943,10 @@
       {
         "skillId": 111,
         "points": 5
+      },
+      {
+        "skillId": 1000015,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49062,6 +49959,10 @@
       {
         "skillId": 187,
         "points": 6
+      },
+      {
+        "skillId": 1000015,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49074,6 +49975,10 @@
       {
         "skillId": 166,
         "points": 5
+      },
+      {
+        "skillId": 1000015,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49086,6 +49991,10 @@
       {
         "skillId": 141,
         "points": 5
+      },
+      {
+        "skillId": 1000003,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49098,6 +50007,10 @@
       {
         "skillId": 125,
         "points": 5
+      },
+      {
+        "skillId": 1000003,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49110,6 +50023,10 @@
       {
         "skillId": 111,
         "points": 5
+      },
+      {
+        "skillId": 1000003,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49122,6 +50039,10 @@
       {
         "skillId": 187,
         "points": 6
+      },
+      {
+        "skillId": 1000003,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49134,6 +50055,10 @@
       {
         "skillId": 166,
         "points": 5
+      },
+      {
+        "skillId": 1000003,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49146,6 +50071,10 @@
       {
         "skillId": 141,
         "points": 5
+      },
+      {
+        "skillId": 1000018,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49158,6 +50087,10 @@
       {
         "skillId": 125,
         "points": 5
+      },
+      {
+        "skillId": 1000018,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49170,6 +50103,10 @@
       {
         "skillId": 111,
         "points": 5
+      },
+      {
+        "skillId": 1000018,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49182,6 +50119,10 @@
       {
         "skillId": 18,
         "points": 20
+      },
+      {
+        "skillId": 1000018,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49194,6 +50135,10 @@
       {
         "skillId": 121,
         "points": 10
+      },
+      {
+        "skillId": 1000018,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49206,6 +50151,10 @@
       {
         "skillId": 187,
         "points": 6
+      },
+      {
+        "skillId": 1000018,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49218,6 +50167,10 @@
       {
         "skillId": 141,
         "points": 5
+      },
+      {
+        "skillId": 1000017,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49230,6 +50183,10 @@
       {
         "skillId": 125,
         "points": 5
+      },
+      {
+        "skillId": 1000017,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49242,6 +50199,10 @@
       {
         "skillId": 111,
         "points": 5
+      },
+      {
+        "skillId": 1000017,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49254,6 +50215,10 @@
       {
         "skillId": 9,
         "points": 20
+      },
+      {
+        "skillId": 1000017,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49266,6 +50231,10 @@
       {
         "skillId": 121,
         "points": 10
+      },
+      {
+        "skillId": 1000017,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49278,6 +50247,10 @@
       {
         "skillId": 187,
         "points": 6
+      },
+      {
+        "skillId": 1000017,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49290,6 +50263,10 @@
       {
         "skillId": 141,
         "points": 5
+      },
+      {
+        "skillId": 1000022,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49302,6 +50279,10 @@
       {
         "skillId": 125,
         "points": 5
+      },
+      {
+        "skillId": 1000022,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49314,6 +50295,10 @@
       {
         "skillId": 111,
         "points": 5
+      },
+      {
+        "skillId": 1000022,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49326,6 +50311,10 @@
       {
         "skillId": 6,
         "points": 20
+      },
+      {
+        "skillId": 1000022,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49338,6 +50327,10 @@
       {
         "skillId": 121,
         "points": 10
+      },
+      {
+        "skillId": 1000022,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49350,6 +50343,10 @@
       {
         "skillId": 187,
         "points": 6
+      },
+      {
+        "skillId": 1000022,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49362,6 +50359,10 @@
       {
         "skillId": 141,
         "points": 5
+      },
+      {
+        "skillId": 1000011,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49374,6 +50375,10 @@
       {
         "skillId": 125,
         "points": 5
+      },
+      {
+        "skillId": 1000011,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49386,6 +50391,10 @@
       {
         "skillId": 111,
         "points": 5
+      },
+      {
+        "skillId": 1000011,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49398,6 +50407,10 @@
       {
         "skillId": 180,
         "points": 5
+      },
+      {
+        "skillId": 1000011,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49410,6 +50423,10 @@
       {
         "skillId": 24,
         "points": 10
+      },
+      {
+        "skillId": 1000011,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49422,6 +50439,10 @@
       {
         "skillId": 164,
         "points": 5
+      },
+      {
+        "skillId": 1000011,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49434,6 +50455,10 @@
       {
         "skillId": 141,
         "points": 5
+      },
+      {
+        "skillId": 1000014,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49446,6 +50471,10 @@
       {
         "skillId": 125,
         "points": 5
+      },
+      {
+        "skillId": 1000014,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49458,6 +50487,10 @@
       {
         "skillId": 111,
         "points": 5
+      },
+      {
+        "skillId": 1000014,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49470,6 +50503,10 @@
       {
         "skillId": 143,
         "points": 5
+      },
+      {
+        "skillId": 1000014,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49482,6 +50519,10 @@
       {
         "skillId": 190,
         "points": 5
+      },
+      {
+        "skillId": 1000014,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49494,6 +50535,10 @@
       {
         "skillId": 167,
         "points": 5
+      },
+      {
+        "skillId": 1000014,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49502,7 +50547,12 @@
     "id": "cuff:3D97",
     "name": "Rush Up Sigil",
     "slotSize": 1,
-    "skills": [],
+    "skills": [
+      {
+        "skillId": 1000025,
+        "points": 1
+      }
+    ],
     "category": "cuff_standard_zenith"
   },
   {
@@ -49513,6 +50563,10 @@
       {
         "skillId": 141,
         "points": 5
+      },
+      {
+        "skillId": 1000026,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49525,6 +50579,10 @@
       {
         "skillId": 125,
         "points": 5
+      },
+      {
+        "skillId": 1000026,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49537,6 +50595,10 @@
       {
         "skillId": 111,
         "points": 5
+      },
+      {
+        "skillId": 1000026,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49549,6 +50611,10 @@
       {
         "skillId": 186,
         "points": 5
+      },
+      {
+        "skillId": 1000026,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49561,6 +50627,10 @@
       {
         "skillId": 185,
         "points": 5
+      },
+      {
+        "skillId": 1000026,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49573,6 +50643,10 @@
       {
         "skillId": 166,
         "points": 5
+      },
+      {
+        "skillId": 1000026,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49585,6 +50659,10 @@
       {
         "skillId": 191,
         "points": 5
+      },
+      {
+        "skillId": 1000026,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49597,6 +50675,10 @@
       {
         "skillId": 191,
         "points": 5
+      },
+      {
+        "skillId": 1000005,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49609,6 +50691,10 @@
       {
         "skillId": 193,
         "points": 6
+      },
+      {
+        "skillId": 1000005,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49621,6 +50707,10 @@
       {
         "skillId": 191,
         "points": 5
+      },
+      {
+        "skillId": 1000006,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49633,6 +50723,10 @@
       {
         "skillId": 193,
         "points": 6
+      },
+      {
+        "skillId": 1000006,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49645,6 +50739,10 @@
       {
         "skillId": 191,
         "points": 5
+      },
+      {
+        "skillId": 1000004,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49657,6 +50755,10 @@
       {
         "skillId": 193,
         "points": 6
+      },
+      {
+        "skillId": 1000004,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49669,6 +50771,10 @@
       {
         "skillId": 191,
         "points": 5
+      },
+      {
+        "skillId": 1000002,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49681,6 +50787,10 @@
       {
         "skillId": 193,
         "points": 6
+      },
+      {
+        "skillId": 1000002,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49693,6 +50803,10 @@
       {
         "skillId": 191,
         "points": 5
+      },
+      {
+        "skillId": 1000008,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49705,6 +50819,10 @@
       {
         "skillId": 191,
         "points": 5
+      },
+      {
+        "skillId": 1000007,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49717,6 +50835,10 @@
       {
         "skillId": 191,
         "points": 5
+      },
+      {
+        "skillId": 1000019,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49729,6 +50851,10 @@
       {
         "skillId": 191,
         "points": 5
+      },
+      {
+        "skillId": 1000010,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49741,6 +50867,10 @@
       {
         "skillId": 124,
         "points": 5
+      },
+      {
+        "skillId": 1000010,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49753,6 +50883,10 @@
       {
         "skillId": 191,
         "points": 5
+      },
+      {
+        "skillId": 1000025,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49765,6 +50899,10 @@
       {
         "skillId": 193,
         "points": 6
+      },
+      {
+        "skillId": 1000025,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49777,6 +50915,10 @@
       {
         "skillId": 191,
         "points": 5
+      },
+      {
+        "skillId": 1000012,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49789,6 +50931,10 @@
       {
         "skillId": 193,
         "points": 6
+      },
+      {
+        "skillId": 1000012,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49801,6 +50947,10 @@
       {
         "skillId": 191,
         "points": 5
+      },
+      {
+        "skillId": 1000013,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49813,6 +50963,10 @@
       {
         "skillId": 191,
         "points": 5
+      },
+      {
+        "skillId": 1000016,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49825,6 +50979,10 @@
       {
         "skillId": 191,
         "points": 5
+      },
+      {
+        "skillId": 1000020,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49837,6 +50995,10 @@
       {
         "skillId": 193,
         "points": 6
+      },
+      {
+        "skillId": 1000020,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49849,6 +51011,10 @@
       {
         "skillId": 191,
         "points": 5
+      },
+      {
+        "skillId": 1000021,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49861,6 +51027,10 @@
       {
         "skillId": 193,
         "points": 6
+      },
+      {
+        "skillId": 1000021,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49873,6 +51043,10 @@
       {
         "skillId": 191,
         "points": 5
+      },
+      {
+        "skillId": 1000023,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49885,6 +51059,10 @@
       {
         "skillId": 186,
         "points": 5
+      },
+      {
+        "skillId": 1000023,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49897,6 +51075,10 @@
       {
         "skillId": 191,
         "points": 5
+      },
+      {
+        "skillId": 1000024,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49909,6 +51091,10 @@
       {
         "skillId": 191,
         "points": 5
+      },
+      {
+        "skillId": 1000009,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49921,6 +51107,10 @@
       {
         "skillId": 191,
         "points": 5
+      },
+      {
+        "skillId": 1000015,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49933,6 +51123,10 @@
       {
         "skillId": 191,
         "points": 5
+      },
+      {
+        "skillId": 1000003,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49945,6 +51139,10 @@
       {
         "skillId": 191,
         "points": 5
+      },
+      {
+        "skillId": 1000018,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49957,6 +51155,10 @@
       {
         "skillId": 191,
         "points": 5
+      },
+      {
+        "skillId": 1000017,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49969,6 +51171,10 @@
       {
         "skillId": 191,
         "points": 5
+      },
+      {
+        "skillId": 1000022,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49981,6 +51187,10 @@
       {
         "skillId": 182,
         "points": 5
+      },
+      {
+        "skillId": 1000011,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -49993,6 +51203,10 @@
       {
         "skillId": 163,
         "points": 6
+      },
+      {
+        "skillId": 1000011,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -50005,6 +51219,10 @@
       {
         "skillId": 191,
         "points": 5
+      },
+      {
+        "skillId": 1000011,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -50017,6 +51235,10 @@
       {
         "skillId": 193,
         "points": 6
+      },
+      {
+        "skillId": 1000011,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -50029,6 +51251,10 @@
       {
         "skillId": 188,
         "points": 5
+      },
+      {
+        "skillId": 1000014,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -50041,6 +51267,10 @@
       {
         "skillId": 154,
         "points": 5
+      },
+      {
+        "skillId": 1000014,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -50053,6 +51283,10 @@
       {
         "skillId": 148,
         "points": 5
+      },
+      {
+        "skillId": 1000014,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -50065,6 +51299,10 @@
       {
         "skillId": 138,
         "points": 5
+      },
+      {
+        "skillId": 1000014,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -50077,6 +51315,10 @@
       {
         "skillId": 191,
         "points": 5
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -50089,6 +51331,10 @@
       {
         "skillId": 193,
         "points": 6
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -50101,6 +51347,10 @@
       {
         "skillId": 128,
         "points": 6
+      },
+      {
+        "skillId": 1000001,
+        "points": 1
       }
     ],
     "category": "cuff_premium_zenith"
@@ -50125,7 +51375,12 @@
     "id": "cuff:3E62",
     "name": "Ceaseless Up SZ",
     "slotSize": 2,
-    "skills": [],
+    "skills": [
+      {
+        "skillId": 1000026,
+        "points": 1
+      }
+    ],
     "category": "cuff_standard_zenith"
   },
   {
@@ -52260,7 +53515,12 @@
     "id": "cuff:4086",
     "name": "Ceaseless Up Sigil",
     "slotSize": 1,
-    "skills": [],
+    "skills": [
+      {
+        "skillId": 1000026,
+        "points": 1
+      }
+    ],
     "category": "cuff_standard_zenith"
   }
 ]

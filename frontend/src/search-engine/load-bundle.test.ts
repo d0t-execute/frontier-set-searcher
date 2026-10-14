@@ -23,6 +23,7 @@ const cuffs = [
     category: 'cuff_premium_tier1',
   },
 ]
+const zenithSkills = [{ id: 1000001, name: 'Dissolver Up', category: null, tiers: [] }]
 const headEquipment = [
   {
     id: 'head:0001',
@@ -55,6 +56,7 @@ function fakeFetch(files: Record<string, unknown>): FetchLike {
 const allFiles = {
   'manifest.json': manifest,
   'skills.json': skills,
+  'zenith-skills.json': zenithSkills,
   'decorations.json': decorations,
   'cuffs.json': cuffs,
   'equipment/head.json': headEquipment,
@@ -82,16 +84,23 @@ describe('loadBundle', () => {
     expect(bundle.cuffs).toEqual(cuffs)
   })
 
-  it('builds a skill id -> name lookup', async () => {
+  it('builds a skill id -> name lookup spanning both normal and Zenith skills', async () => {
     const bundle = await loadBundle('/data', fakeFetch(allFiles))
 
     expect(bundle.skillNames.get(1)).toBe('Attack Up (Small)')
+    expect(bundle.skillNames.get(1000001)).toBe('Dissolver Up')
   })
 
   it('exposes the full skill catalog, including category and tiers', async () => {
     const bundle = await loadBundle('/data', fakeFetch(allFiles))
 
     expect(bundle.skills).toEqual(skills)
+  })
+
+  it('exposes the Zenith skill catalog as-is', async () => {
+    const bundle = await loadBundle('/data', fakeFetch(allFiles))
+
+    expect(bundle.zenithSkills).toEqual(zenithSkills)
   })
 
   it('rejects a bundle whose format version this build does not understand', async () => {

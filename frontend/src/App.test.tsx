@@ -39,7 +39,11 @@ const BUNDLE = {
     },
   ],
   skills: [{ id: 1, name: 'Attack', category: null, tiers: [] }],
-  skillNames: new Map([[1, 'Attack']]),
+  zenithSkills: [{ id: 1000001, name: 'Dissolver Up', category: null, tiers: [] }],
+  skillNames: new Map([
+    [1, 'Attack'],
+    [1000001, 'Dissolver Up'],
+  ]),
 }
 
 function makeWorker() {
@@ -118,7 +122,13 @@ describe('App', () => {
         onDone: expect.any(Function),
         onError: expect.any(Function),
       }),
-      { preferExactMatches: false, skillTiers: [{ skillId: 1, tierThresholds: [] }] },
+      {
+        preferExactMatches: false,
+        skillTiers: [
+          { skillId: 1, tierThresholds: [] },
+          { skillId: 1000001, tierThresholds: [] },
+        ],
+      },
       BUNDLE.cuffs,
     )
   })
@@ -138,7 +148,13 @@ describe('App', () => {
       [{ skillId: 1, minPoints: 1 }],
       BUNDLE.decorations,
       expect.anything(),
-      { preferExactMatches: true, skillTiers: [{ skillId: 1, tierThresholds: [] }] },
+      {
+        preferExactMatches: true,
+        skillTiers: [
+          { skillId: 1, tierThresholds: [] },
+          { skillId: 1000001, tierThresholds: [] },
+        ],
+      },
       BUNDLE.cuffs,
     )
   })
@@ -180,6 +196,46 @@ describe('App', () => {
       expect.anything(),
       expect.anything(),
       [BUNDLE.cuffs[1]],
+    )
+  })
+
+  it('enables the search button once a Zenith skill alone is picked', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    expect(screen.getByRole('button', { name: /search/i })).toBeDisabled()
+
+    await user.selectOptions(
+      screen.getByRole('combobox', { name: /add a zenith skill/i }),
+      'Dissolver Up',
+    )
+
+    expect(screen.getByRole('button', { name: /search/i })).toBeEnabled()
+  })
+
+  it('combines normal and Zenith skill requirements into one search query', async () => {
+    const worker = makeWorker()
+    mockUseSearchWorker.mockReturnValue(worker as unknown as ReturnType<typeof useSearchWorker>)
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.selectOptions(screen.getByRole('combobox', { name: /add a skill/i }), 'Attack')
+    await user.selectOptions(
+      screen.getByRole('combobox', { name: /add a zenith skill/i }),
+      'Dissolver Up',
+    )
+    await user.click(screen.getByRole('button', { name: /search/i }))
+
+    expect(worker.search).toHaveBeenCalledWith(
+      BUNDLE.slots,
+      [
+        { skillId: 1, minPoints: 1 },
+        { skillId: 1000001, minPoints: 1 },
+      ],
+      BUNDLE.decorations,
+      expect.anything(),
+      expect.anything(),
+      BUNDLE.cuffs,
     )
   })
 
