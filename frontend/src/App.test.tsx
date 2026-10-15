@@ -484,8 +484,16 @@ describe('App', () => {
     window.location.hash = new URL(url).hash
     const decoded = await decodeSharedState(encodedResultFromLocation()!)
     expect(decoded?.requirements).toEqual([{ skillId: 1, minPoints: 1 }])
-    expect(decoded?.resultIndex).toBe(0)
     expect(decoded?.preferExactMatches).toBe(true)
+    expect(decoded?.result.picks).toEqual([
+      {
+        slotId: 'head',
+        id: 'head:0001',
+        name: 'Leather Helm',
+        openSlotCount: null,
+        grankOrLater: null,
+      },
+    ])
   })
 
   it('stops the search and reports a capped result set once enough results have streamed in', async () => {

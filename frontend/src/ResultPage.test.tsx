@@ -1,17 +1,14 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ResultPage } from './ResultPage'
 import { useDataBundle } from './data/useDataBundle'
-import { useSearchWorker } from './search/useSearchWorker'
 import { encodeSharedState } from './search-engine/shared-state'
 import type { SharedSearchState } from './search-engine/shared-state'
 
 vi.mock('./data/useDataBundle')
-vi.mock('./search/useSearchWorker')
 
 const mockUseDataBundle = vi.mocked(useDataBundle)
-const mockUseSearchWorker = vi.mocked(useSearchWorker)
 
 const BUNDLE = {
   slots: [
@@ -44,18 +41,21 @@ const STATE: SharedSearchState = {
   excludedDecorationCategories: [],
   excludedWeaponZenithSkillIds: null,
   weaponSlotCount: 0,
-  pinnedArmor: [],
-  pinnedCuffIds: [],
-  pinnedSlotDecorationIds: [],
   preferExactMatches: true,
-  resultIndex: 0,
-}
-
-function makeWorker() {
-  return {
-    search: vi.fn(() => 'req-1'),
-    cancel: vi.fn(),
-  }
+  result: {
+    picks: [
+      {
+        slotId: 'head',
+        id: 'head:0001',
+        name: 'Leather Helm',
+        openSlotCount: null,
+        grankOrLater: false,
+      },
+    ],
+    decorations: [],
+    cuffs: [],
+    skillTotals: [[1, 5]],
+  },
 }
 
 beforeEach(() => {
@@ -67,33 +67,14 @@ beforeEach(() => {
 })
 
 describe('ResultPage', () => {
-  it('shows a loading state until the solver yields the requested result index', async () => {
-    const worker = makeWorker()
-    mockUseSearchWorker.mockReturnValue(worker as unknown as ReturnType<typeof useSearchWorker>)
+  it('shows a loading state while the link decodes', async () => {
     const encoded = await encodeSharedState(STATE)
     render(<ResultPage encoded={encoded} onUseAsBase={() => {}} onBackToSearch={() => {}} />)
 
     expect(screen.getByText(/loading/i)).toBeInTheDocument()
   })
 
-  it('renders the reconstructed result once the solver streams it', async () => {
-    const worker = makeWorker()
-    worker.search.mockImplementation((...args: unknown[]) => {
-      const callbacks = args[3] as { onResult: (result: unknown) => void }
-      // Deferred, like the real worker's postMessage-based callbacks (never
-      // synchronous) -- the component reads its own returned request id
-      // before any callback can fire, same convention as App.test.tsx.
-      queueMicrotask(() =>
-        callbacks.onResult({
-          picks: new Map([['head', { id: 'head:0001', name: 'Leather Helm', skills: [] }]]),
-          decorations: new Map(),
-          cuffs: [],
-          skillTotals: new Map([[1, 5]]),
-        }),
-      )
-      return 'req-1'
-    })
-    mockUseSearchWorker.mockReturnValue(worker as unknown as ReturnType<typeof useSearchWorker>)
+  it("renders the link's own embedded result with no solver involved", async () => {
     const encoded = await encodeSharedState(STATE)
     render(<ResultPage encoded={encoded} onUseAsBase={() => {}} onBackToSearch={() => {}} />)
 
@@ -103,39 +84,16 @@ describe('ResultPage', () => {
     ).toBeInTheDocument()
   })
 
-  it('reports not-found once the solver finishes without reaching the requested index', async () => {
-    const worker = makeWorker()
-    worker.search.mockImplementation(() => 'req-1')
-    mockUseSearchWorker.mockReturnValue(worker as unknown as ReturnType<typeof useSearchWorker>)
-    const encoded = await encodeSharedState({ ...STATE, resultIndex: 3 })
-    render(<ResultPage encoded={encoded} onUseAsBase={() => {}} onBackToSearch={() => {}} />)
-
-    await waitFor(() => expect(worker.search).toHaveBeenCalled())
-    const args = worker.search.mock.calls[0] as unknown[]
-    const callbacks = args[3] as { onDone: () => void }
-    callbacks.onDone()
-
-    expect(await screen.findByRole('alert')).toHaveTextContent(/no longer be found/i)
-  })
-
   it("hands every part of the result back via onUseAsBase when 'Use as a base' is clicked", async () => {
-    const worker = makeWorker()
-    worker.search.mockImplementation((...args: unknown[]) => {
-      const callbacks = args[3] as { onResult: (result: unknown) => void }
-      queueMicrotask(() =>
-        callbacks.onResult({
-          picks: new Map([['head', { id: 'head:0001', name: 'Leather Helm', skills: [] }]]),
-          decorations: new Map(),
-          cuffs: [{ id: 'cuff:C001', name: 'Sharpening PC1', slotSize: 1, skills: [] }],
-          skillTotals: new Map([[1, 5]]),
-        }),
-      )
-      return 'req-1'
-    })
-    mockUseSearchWorker.mockReturnValue(worker as unknown as ReturnType<typeof useSearchWorker>)
     const onUseAsBase = vi.fn()
     const user = userEvent.setup()
-    const encoded = await encodeSharedState(STATE)
+    const encoded = await encodeSharedState({
+      ...STATE,
+      result: {
+        ...STATE.result,
+        cuffs: [{ id: 'cuff:C001', name: 'Sharpening PC1', skills: [] }],
+      },
+    })
     render(<ResultPage encoded={encoded} onUseAsBase={onUseAsBase} onBackToSearch={() => {}} />)
 
     await screen.findByText(/leather helm/i)
@@ -152,8 +110,6 @@ describe('ResultPage', () => {
   })
 
   it('calls onBackToSearch when the back link is clicked', async () => {
-    const worker = makeWorker()
-    mockUseSearchWorker.mockReturnValue(worker as unknown as ReturnType<typeof useSearchWorker>)
     const onBackToSearch = vi.fn()
     const user = userEvent.setup()
     const encoded = await encodeSharedState(STATE)
@@ -165,8 +121,6 @@ describe('ResultPage', () => {
   })
 
   it('shows an error for a link that fails to decode', async () => {
-    const worker = makeWorker()
-    mockUseSearchWorker.mockReturnValue(worker as unknown as ReturnType<typeof useSearchWorker>)
     render(
       <ResultPage encoded="not-a-valid-encoded-payload" onUseAsBase={() => {}} onBackToSearch={() => {}} />,
     )

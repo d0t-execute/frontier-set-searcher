@@ -253,6 +253,44 @@ describe('ResultsList', () => {
     expect(screen.getByText(/8/)).toBeInTheDocument()
   })
 
+  it('shows Zenith skills under their own heading, separate from regular skills', () => {
+    const zenithSkillsWithOne: readonly NamedSkill[] = [
+      { id: 1000001, name: 'Skill Slots Up', category: null, priorityRank: null, tiers: [] },
+    ]
+    render(
+      <ResultsList
+        results={[
+          result({
+            skillTotals: new Map([
+              [1, 20],
+              [1000001, 3],
+            ]),
+          }),
+        ]}
+        skillNames={new Map([...skillNames, [1000001, 'Skill Slots Up']])}
+        skills={skills}
+        zenithSkills={zenithSkillsWithOne}
+      />,
+    )
+
+    const zenithLine = screen.getByText(/zenith skills:/i).closest('div')
+    expect(zenithLine).toHaveTextContent('Skill Slots Up: 3')
+    expect(zenithLine).not.toHaveTextContent('Attack: 20')
+  })
+
+  it('shows nothing about Zenith skills when the build has none', () => {
+    render(
+      <ResultsList
+        results={[result()]}
+        skillNames={skillNames}
+        skills={skills}
+        zenithSkills={zenithSkills}
+      />,
+    )
+
+    expect(screen.queryByText(/zenith skills:/i)).not.toBeInTheDocument()
+  })
+
   it('shows the active skill cap and flags skills disabled by exceeding it', () => {
     const manySkills: readonly NamedSkill[] = Array.from({ length: 11 }, (_, i) => ({
       id: i + 1,

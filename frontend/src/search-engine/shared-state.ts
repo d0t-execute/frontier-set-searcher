@@ -1,23 +1,30 @@
 /**
- * Encodes/decodes everything a shared build-result link needs to reproduce
- * one exact result, into a compact string fit for a URL hash fragment -- see
- * docs/skill-system-roadmap.md TODO #9. This is a client-only app (static
- * `frontend/public/data/*.json`, no backend -- see TODO #9's own research
- * note), so "generated link" means a self-contained URL that encodes the
- * query inputs directly, not a server-issued id pointing at stored state.
+ * Encodes/decodes everything a shared build-result link needs, into a
+ * compact string fit for a URL hash fragment -- see
+ * docs/skill-system-roadmap.md TODO #9 (and TODO #15 for why this no longer
+ * re-derives the result by re-solving).
  *
- * Deliberately encodes the *query* (every `QueryFormState` field, the skill
- * requirements, `preferExactMatches`, and which ranked result index to take)
- * rather than the solved `BuildResult` itself: the link already has to carry
- * the full query anyway for the result page's "use as a base for a new
- * search" button (TODO #9's other half), so re-running the solver for just
- * that one index on load is free -- no second, heavier encoding of the
- * result data itself is needed. Trade-off, accepted per TODO #9's own open
- * note: a result index isn't stable across a future data re-export (ids or
- * ranking could shift), so an old link could resolve to a different ranked
- * result index, or none, if opened long after the bundle changed -- no worse
- * than this app's existing lack of any cross-session stability guarantee
- * elsewhere (e.g. pinned armor/cuff ids already carry the same risk).
+ * **Encodes the solved `BuildResult` directly** (`result` below), not just
+ * the query that produced it. This is a deliberate reversal of this module's
+ * original design (which encoded the query plus a `resultIndex` and had
+ * `ResultPage.tsx` re-run the solver to reconstruct it) -- see TODO #15's
+ * investigation write-up for why: opening a link always re-solved against
+ * *today's* data bundle and *today's* default category exclusions, so any
+ * bundle re-export or default-exclusion change between sharing and opening
+ * (both routine during this project's active development -- this same
+ * session changed both more than once) could silently change which build a
+ * link resolved to, or whether it resolved at all. Encoding the result
+ * itself makes a link's display immune to all of that: nothing about it
+ * depends on the solver, the current bundle, or today's defaults ever
+ * running again.
+ *
+ * Still separately encodes `requirements`/`zenithRequirements`/
+ * `excludedCategories`/`excludedCuffCategories`/`excludedDecorationCategories`/
+ * `excludedWeaponZenithSkillIds`/`weaponSlotCount`/`preferExactMatches` --
+ * not needed to *display* the result anymore, but kept so the result page's
+ * "use as a base for a new search" button can still restore the original
+ * search's own category filters and preferences, not just the result's own
+ * picks (which it derives straight from `result`, not from any of these).
  *
  * Encoding (docs/skill-system-roadmap.md TODO #14): the project owner
  * reported real links coming out longer than Discord allows a non-Nitro user
@@ -27,24 +34,58 @@
  * `JSON.stringify`ing `SharedSearchState` verbatim (see `toWireFormat`/
  * `fromWireFormat`), and gzip compression of the resulting JSON via the
  * browser's native `CompressionStream`/`DecompressionStream` (no new
- * dependency; supported in every current evergreen browser). A disposable
- * size-check script comparing both against the previous plain-base64
- * encoding showed short-keys-alone roughly halving link size, and adding
- * gzip on top roughly halving it again. Compression makes encode/decode
- * inherently `async` (`DecompressionStream` is a streams API) -- this
- * ripples into `buildResultUrl`/`readSharedStateFromLocation`'s own callers
- * (`AppRoot.tsx` now only checks the hash prefix synchronously and hands the
- * still-encoded string to `ResultPage.tsx`, which decodes it itself
- * alongside its own already-async solver reconstruction; `App.tsx`'s
- * "Get shareable link" button awaits the encode before showing the link).
+ * dependency; supported in every current evergreen browser). Encoding the
+ * full result (this module's TODO #15 change) makes a link heavier than the
+ * query-only encoding it replaces -- accepted, since there's no way to
+ * guarantee exact reproducibility without carrying the result itself, and
+ * these same two compression wins still apply on top of it.
  *
- * Breaking change, not versioned: a link encoded before this change cannot
- * be decoded afterwards (same as any other `SharedSearchState` shape change
- * -- see TODO #11's own note on this; no migration attempted).
+ * Breaking change, not versioned: a link encoded before this change (or any
+ * other `SharedSearchState` shape change -- see TODO #11's own note) cannot
+ * be decoded afterwards; no migration attempted.
  */
 
-import type { PinnedSlot } from './pinned-armor'
-import type { SkillRequirement } from './types'
+import type { SkillContribution, SkillRequirement } from './types'
+
+/** One of a result's armor/weapon-slot picks -- just enough of `NamedCandidate`
+ * to render `ResultCard` and feed `active-skill-cap.ts`'s piece-counting rule
+ * (`grankOrLater`) without resolving anything against the live data bundle.
+ * `category` is deliberately left out -- nothing on the display path (nor
+ * `determineActiveSkills`) reads a pick's category, only `grankOrLater`. */
+export interface SharedPick {
+  readonly slotId: string
+  readonly id: string
+  readonly name: string
+  readonly openSlotCount: number | null
+  readonly grankOrLater: boolean
+}
+
+export interface SharedDecoration {
+  readonly id: string
+  readonly name: string
+  readonly slotSize: number
+}
+
+export interface SharedSlotDecorations {
+  readonly slotId: string
+  readonly decorations: readonly SharedDecoration[]
+}
+
+/** `skills` is kept (unlike a pick's) because `active-skill-cap.ts`'s
+ * Hiden/cuff-exemption rule reads a cuff's own skill contributions
+ * directly. */
+export interface SharedCuff {
+  readonly id: string
+  readonly name: string
+  readonly skills: readonly SkillContribution[]
+}
+
+export interface SharedBuildResult {
+  readonly picks: readonly SharedPick[]
+  readonly decorations: readonly SharedSlotDecorations[]
+  readonly cuffs: readonly SharedCuff[]
+  readonly skillTotals: readonly (readonly [number, number])[]
+}
 
 export interface SharedSearchState {
   readonly requirements: readonly SkillRequirement[]
@@ -55,19 +96,13 @@ export interface SharedSearchState {
   /** `null` means "use the app's own default" (the user never touched the
    * weapon Zenith-skill checklist) -- mirrors `App.tsx`'s own
    * `excludedWeaponZenithSkillIds` state, so a shared link doesn't have to
-   * freeze in a default that might later change. */
+   * freeze in a default that might later change. Only read by "use as a base
+   * for a new search" -- the result's own weapon pick is what the display
+   * itself shows. */
   readonly excludedWeaponZenithSkillIds: readonly string[] | null
   readonly weaponSlotCount: number
-  readonly pinnedArmor: readonly (readonly [string, PinnedSlot])[]
-  readonly pinnedCuffIds: readonly string[]
-  /** Decorations forced into a slot without a piece pin
-   * (docs/skill-system-roadmap.md TODO #12) -- keyed by `slotId`, a flat
-   * list of decoration ids with duplicates allowed for multiple copies. */
-  readonly pinnedSlotDecorationIds: readonly (readonly [string, readonly string[]])[]
   readonly preferExactMatches: boolean
-  /** Which of the (possibly several) ranked results a plain re-run of this
-   * exact query would yield is the one this link points at -- 0-based. */
-  readonly resultIndex: number
+  readonly result: SharedBuildResult
 }
 
 /** The on-the-wire shape `SharedSearchState` is transcoded to/from --
@@ -84,11 +119,11 @@ interface WireFormat {
   readonly edc: readonly string[]
   readonly ewz: readonly string[] | null
   readonly wsc: number
-  readonly pa: readonly (readonly [string, string, readonly string[]])[]
-  readonly pc: readonly string[]
-  readonly psd: readonly (readonly [string, readonly string[]])[]
   readonly pem: boolean
-  readonly ri: number
+  readonly rp: readonly (readonly [string, string, string, number | null, boolean])[]
+  readonly rd: readonly (readonly [string, readonly (readonly [string, string, number])[]])[]
+  readonly rc: readonly (readonly [string, string, readonly (readonly [number, number])[]])[]
+  readonly rt: readonly (readonly [number, number])[]
 }
 
 function toWireFormat(state: SharedSearchState): WireFormat {
@@ -100,11 +135,18 @@ function toWireFormat(state: SharedSearchState): WireFormat {
     edc: state.excludedDecorationCategories,
     ewz: state.excludedWeaponZenithSkillIds,
     wsc: state.weaponSlotCount,
-    pa: state.pinnedArmor.map(([slotId, pin]) => [slotId, pin.candidateId, pin.decorationIds]),
-    pc: state.pinnedCuffIds,
-    psd: state.pinnedSlotDecorationIds,
     pem: state.preferExactMatches,
-    ri: state.resultIndex,
+    rp: state.result.picks.map((p) => [p.slotId, p.id, p.name, p.openSlotCount, p.grankOrLater]),
+    rd: state.result.decorations.map((d) => [
+      d.slotId,
+      d.decorations.map((dec) => [dec.id, dec.name, dec.slotSize]),
+    ]),
+    rc: state.result.cuffs.map((c) => [
+      c.id,
+      c.name,
+      c.skills.map((s) => [s.skillId, s.points]),
+    ]),
+    rt: state.result.skillTotals,
   }
 }
 
@@ -126,11 +168,11 @@ function fromWireFormat(parsed: unknown): SharedSearchState | null {
     !Array.isArray(p.edc) ||
     (p.ewz !== null && !Array.isArray(p.ewz)) ||
     typeof p.wsc !== 'number' ||
-    !Array.isArray(p.pa) ||
-    !Array.isArray(p.pc) ||
-    !Array.isArray(p.psd) ||
     typeof p.pem !== 'boolean' ||
-    typeof p.ri !== 'number'
+    !Array.isArray(p.rp) ||
+    !Array.isArray(p.rd) ||
+    !Array.isArray(p.rc) ||
+    !Array.isArray(p.rt)
   ) {
     return null
   }
@@ -144,14 +186,26 @@ function fromWireFormat(parsed: unknown): SharedSearchState | null {
     excludedDecorationCategories: w.edc,
     excludedWeaponZenithSkillIds: w.ewz,
     weaponSlotCount: w.wsc,
-    pinnedArmor: w.pa.map(([slotId, candidateId, decorationIds]) => [
-      slotId,
-      { candidateId, decorationIds },
-    ]),
-    pinnedCuffIds: w.pc,
-    pinnedSlotDecorationIds: w.psd,
     preferExactMatches: w.pem,
-    resultIndex: w.ri,
+    result: {
+      picks: w.rp.map(([slotId, id, name, openSlotCount, grankOrLater]) => ({
+        slotId,
+        id,
+        name,
+        openSlotCount,
+        grankOrLater,
+      })),
+      decorations: w.rd.map(([slotId, decorations]) => ({
+        slotId,
+        decorations: decorations.map(([id, name, slotSize]) => ({ id, name, slotSize })),
+      })),
+      cuffs: w.rc.map(([id, name, skills]) => ({
+        id,
+        name,
+        skills: skills.map(([skillId, points]) => ({ skillId, points })),
+      })),
+      skillTotals: w.rt,
+    },
   }
 }
 

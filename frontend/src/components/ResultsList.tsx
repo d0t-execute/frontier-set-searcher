@@ -83,6 +83,14 @@ export function ResultCard({
     result.cuffs,
   )
   const disabledIds = new Set(disabled)
+  const zenithSkillIds = new Set(zenithSkills.map((s) => s.id))
+  const skillEntries = [...result.skillTotals.entries()]
+  const regularSkillEntries = skillEntries.filter(([skillId]) => !zenithSkillIds.has(skillId))
+  const zenithSkillEntries = skillEntries.filter(([skillId]) => zenithSkillIds.has(skillId))
+  const formatSkillEntry = ([skillId, points]: readonly [SkillId, number]): string => {
+    const name = skillNames.get(skillId) ?? `Skill ${skillId}`
+    return disabledIds.has(skillId) ? `${name}: ${points} (disabled)` : `${name}: ${points}`
+  }
   return (
     <div>
       <dl className="row mb-2">
@@ -129,14 +137,13 @@ export function ResultCard({
           </span>
         )}
       </div>
-      <div className="small text-muted">
-        {[...result.skillTotals.entries()]
-          .map(([skillId, points]) => {
-            const name = skillNames.get(skillId) ?? `Skill ${skillId}`
-            return disabledIds.has(skillId) ? `${name}: ${points} (disabled)` : `${name}: ${points}`
-          })
-          .join(', ')}
-      </div>
+      <div className="small text-muted">{regularSkillEntries.map(formatSkillEntry).join(', ')}</div>
+      {zenithSkillEntries.length > 0 && (
+        <div className="small text-muted">
+          <span className="fw-bold">Zenith skills:</span>{' '}
+          {zenithSkillEntries.map(formatSkillEntry).join(', ')}
+        </div>
+      )}
 
       {getShareUrl && (
         <div className="mt-2">

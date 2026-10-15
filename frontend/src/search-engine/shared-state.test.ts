@@ -16,11 +16,23 @@ const state: SharedSearchState = {
   excludedDecorationCategories: ['tower'],
   excludedWeaponZenithSkillIds: null,
   weaponSlotCount: 2,
-  pinnedArmor: [['head', { candidateId: 'head:0001', decorationIds: ['D001'] }]],
-  pinnedCuffIds: ['cuff:C001', 'cuff:C001'],
-  pinnedSlotDecorationIds: [['chest', ['D002', 'D002']]],
   preferExactMatches: true,
-  resultIndex: 2,
+  result: {
+    picks: [
+      {
+        slotId: 'head',
+        id: 'head:0001',
+        name: 'Leather Helm',
+        openSlotCount: 3,
+        grankOrLater: false,
+      },
+    ],
+    decorations: [
+      { slotId: 'head', decorations: [{ id: 'D001', name: 'Attack Jewel', slotSize: 1 }] },
+    ],
+    cuffs: [{ id: 'cuff:C001', name: 'Sharpening PC1', skills: [{ skillId: 4, points: 3 }] }],
+    skillTotals: [[1, 15]],
+  },
 }
 
 describe('encodeSharedState / decodeSharedState', () => {
@@ -36,6 +48,22 @@ describe('encodeSharedState / decodeSharedState', () => {
     }
     const encoded = await encodeSharedState(withWeaponExclusions)
     expect(await decodeSharedState(encoded)).toEqual(withWeaponExclusions)
+  })
+
+  it('round-trips a null openSlotCount and an empty decorations/cuffs result', async () => {
+    const minimal: SharedSearchState = {
+      ...state,
+      result: {
+        picks: [
+          { slotId: 'head', id: 'head:0001', name: 'Leather Helm', openSlotCount: null, grankOrLater: false },
+        ],
+        decorations: [],
+        cuffs: [],
+        skillTotals: [],
+      },
+    }
+    const encoded = await encodeSharedState(minimal)
+    expect(await decodeSharedState(encoded)).toEqual(minimal)
   })
 
   it('is URL-safe (no +, /, or = characters)', async () => {

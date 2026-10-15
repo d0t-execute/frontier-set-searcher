@@ -1006,3 +1006,144 @@ Discord's 2000-character non-Nitro limit.
   oxlint clean. Live-browser end-to-end: generated a real link from an actual search (243
   characters total), confirmed it reconstructs the exact same build on open, and confirmed a
   corrupted/garbage link shows the new error message instead of crashing.
+
+## 15. Shareable link reconstruction isn't reliably showing the same build
+
+**Status: COMPLETE and verified (2026-10-15).** User report: "the build it shows is not
+consistent" -- opening a shared link doesn't reliably reproduce the exact build that was shared.
+
+- By design (TODO #9's "Implementation" above), a shared link does NOT encode the solved
+  `BuildResult` itself -- it encodes the *query* (requirements, exclusions, pinned armor/cuffs/weapon)
+  plus a `resultIndex`, and `ResultPage.tsx` re-runs the real solver against that query, collecting
+  streamed results until `resultIndex` is reached. The known, already-documented trade-off for this
+  approach: "a link can resolve to a different result (or none) if the data bundle changes
+  significantly between sharing and opening" (`shared-state.ts`'s own docstring). That alone doesn't
+  explain inconsistency within a single, unchanged data bundle -- worth confirming whether that's
+  actually what the user is seeing (e.g. after a `frontend/public/data/*.json` re-export, like the
+  one this same session did for the decoration-category work) or something else.
+- A second, more concerning candidate: solver non-determinism. If the ILP solver (`ilp-model.ts`/
+  `engine.ts`) can return a *different* optimal solution for the exact same inputs across separate
+  runs (e.g. due to tie-breaking order depending on `Map`/object iteration order, or any
+  non-reproducible randomness), then re-running the solver to reconstruct "the result at
+  `resultIndex`" would be fundamentally unreliable even with an unchanged data bundle and an
+  unchanged query -- the same link could show a different build than the one originally shared, or
+  even than the one shown moments earlier on the same machine. This would need to be ruled in/out
+  first, since it'd affect more than just sharing (e.g. would also mean the *live* search's own
+  result list isn't stable across re-searches with identical inputs).
+### Investigation (2026-10-15)
+
+- **Solver non-determinism, tested directly against the real data bundle: did NOT reproduce.** Ran
+  `engine.ts`'s `search()` twice back-to-back against the exact real, user-supplied 17-skill
+  "exceptionally tight sword-build" query already on file in
+  `engine.real-data.performance.test.ts` as the one query known to sometimes need the per-round time
+  box's retry (`TIME_BOX_SECONDS` / `MAX_TIME_BOX_ATTEMPTS` in `engine.ts`) -- the single most
+  plausible non-determinism source, since that time box is wall-clock-based (`mipInterrupt`'s
+  `running_time`), so if a round is ever genuinely interrupted before reaching a proven-optimal
+  answer, the "best incumbent so far" it returns could in principle depend on exactly how much of
+  the search tree got explored before the wall-clock cutoff -- different machine load, different
+  run. Both runs (a disposable scratch test, not committed) finished in ~30s each (no retry needed
+  this time) and returned **byte-identical** results: same 5 armor picks and the same decoration
+  ids in every slot. This doesn't rule out non-determinism in the rarer case where a round actually
+  hits the time box and returns a merely-feasible (not proven-optimal) incumbent -- that specific
+  case wasn't forced or observed directly, since this query happened not to need the box's retry on
+  either run -- but it does mean "the solver just disagrees with itself sometimes" isn't a
+  reflexive, easy-to-trigger bug; it would have to be narrowly confined to that one edge case.
+- **The far more likely real explanation, given today's own session history: the already-documented
+  data-bundle-change trade-off.** This very session re-exported the full data bundle and changed
+  default category exclusions multiple times today alone -- the decoration-category taxonomy
+  rebuild ([[project_decoration_category_taxonomy]]), Tower Gems going from togglable to
+  unconditionally excluded, and Lottery Hiden Decorations becoming newly default-excluded. A link
+  shared before any of today's changes and opened after would very plausibly resolve to a different
+  build: not because the solver disagreed with itself, but because `ResultPage.tsx` reconstructs a
+  link's `excludedWeaponZenithSkillIds` (and would, by the same logic, reconstruct any other
+  "app's own default" field) from *today's* defaults when the link didn't pin one explicitly, and
+  separately resolves `pinnedArmor`/`pinnedCuffIds`/`pinnedSlotDecorationIds` against *today's*
+  catalog ids and `buildSearchQuery` against *today's* candidate/decoration pools -- all of which
+  shifted today. `shared-state.ts`'s own docstring already names this exact trade-off; this session's
+  own activity is a concrete, textbook case of it, not a hypothetical. This reframes the report: not
+  a new bug to fix, but the known trade-off actually firing, on a day with unusually heavy bundle
+  churn.
+- Asked the project owner directly whether the inconsistency was across a bundle rebuild (e.g. a
+  link from before today's decoration-category rebuild vs. opened after) or within one unchanged
+  session. **Answer: within one unchanged session** -- ruling out the data-bundle-change explanation
+  above as the actual cause the owner hit, even though it remains a real, separately-documented risk
+  of the old query-and-`resultIndex` design. With the bundle-drift theory ruled out and the solver
+  non-determinism theory unconfirmed either way (see above), the owner chose to fix the design itself
+  rather than chase down which exact edge case was firing: **encode the solved `BuildResult`
+  directly in the link**, so a link's display can never again depend on anything that might have
+  changed since it was shared -- not the bundle, not today's default exclusions, not a re-solve's
+  own timing.
+
+### Implementation (2026-10-15)
+
+- `frontend/src/search-engine/shared-state.ts`: `SharedSearchState` no longer carries `pinnedArmor`/
+  `pinnedCuffIds`/`pinnedSlotDecorationIds`/`resultIndex` -- replaced with a `result: SharedBuildResult`
+  field holding everything needed to render the build with zero bundle lookups: each pick's
+  `slotId`/`id`/`name`/`openSlotCount`/`grankOrLater` (the last for `active-skill-cap.ts`'s G-Rank
+  piece-count bonus), each slot's placed decorations (`id`/`name`/`slotSize`), each equipped cuff
+  (`id`/`name`/`skills` -- `skills` kept, unlike a pick's, since the Hiden/cuff cap exemption reads a
+  cuff's own contributions directly), and the full `skillTotals` array. `requirements`/
+  `zenithRequirements`/`excludedCategories`/`excludedCuffCategories`/`excludedDecorationCategories`/
+  `excludedWeaponZenithSkillIds`/`weaponSlotCount`/`preferExactMatches` are all kept (cheap, small
+  arrays) purely so "use as a base for a new search" can still restore the original search's own
+  category filters and preferences -- not needed for display anymore, since display no longer
+  re-derives anything from them.
+- `frontend/src/ResultPage.tsx`: no longer imports `useSearchWorker`/`buildSearchQuery` at all --
+  decodes the link, converts its embedded `SharedBuildResult` straight into a `NamedBuildResult`
+  (`toNamedBuildResult`, a pure, synchronous mapping with no bundle lookup), and renders it through
+  the same `ResultCard` immediately. The data bundle is still loaded, but only for `skillNames`/
+  `skills`/`zenithSkills` (display names + the active-skill-cap catalog) and `weaponZenithSkillIds`
+  (still needed by "use as a base"'s `pinnedWeaponExclusion`) -- never to resolve a pick/decoration/
+  cuff id against the live catalog. `category` is left as an empty placeholder string on every
+  reconstructed pick/decoration/cuff (confirmed unread anywhere on this display path, including
+  `determineActiveSkills`, which only reads `grankOrLater`), avoiding the need to carry a field
+  nothing here actually uses. The `reconstructStatus`/"not found"/solver-error states are gone
+  entirely -- there's no re-solve left to fail; only `decodeStatus` (`loading`/`found`/
+  `invalid-link`) remains.
+- `frontend/src/App.tsx`'s `buildShareUrl` now reads the actual `NamedBuildResult` straight out of
+  its own `results[resultIndex]` state (already held in memory from the live search that produced
+  it) and serializes it directly, instead of encoding `resultIndex` for the result page to later
+  re-derive.
+- Verification: `shared-state.test.ts` rewritten for the new shape (full round-trip, a
+  null-`openSlotCount`-and-empty-decorations/cuffs edge case, every existing malformed-input/
+  URL-safety/compression-size test kept), `ResultPage.test.tsx` rewritten (no more worker mock at
+  all -- a decoded link renders synchronously with nothing to stream), `App.test.tsx`'s shareable-link
+  test updated to assert the embedded `result.picks` round-trips instead of a `resultIndex`,
+  `AppRoot.test.tsx`'s fixture updated to the new shape. Full suite: 251/251 tests pass, `tsc -b
+  --force` and `oxlint` both clean. Live-browser-verified end to end: ran a real search, grabbed its
+  "Get shareable link" URL, opened it in a second tab, and confirmed the shared page rendered the
+  *exact* same build (same 5 armor picks, same skill totals down to the exact point values) with no
+  console errors and no visible load/re-solve delay -- then clicked "Use as a base for a new search"
+  and confirmed all 5 armor slots came back correctly pinned on the main search page from the link's
+  own embedded data, with the original skill requirement ("Attack") still present.
+
+## 16. Separate Zenith skills from regular skills in result cards
+
+**Status: COMPLETE and verified (2026-10-15).** User ask: split Zenith skills out from regular
+skills in the result-card display, rather than showing them mixed together in one list.
+
+- Confirmed root cause: `frontend/src/search-engine/load-bundle.ts`'s `skillNames` is a single flat
+  `Map<number, string>` built from `[...skills, ...zenithSkills]` combined -- every regular and
+  Zenith skill name lookup goes through the same map. `ResultCard` (`components/ResultsList.tsx`)
+  renders `result.skillTotals` (also one flat `Map<number, points>`) as a single comma-joined line
+  (`{name}: {points}`, optionally `(disabled)`), with no distinction between a regular skill
+  contribution and a Zenith one.
+- **Implementation chose catalog membership over the id-offset threshold**: rather than a
+  `skillId >= 1_000_000` numeric check, `ResultCard` builds `zenithSkillIds = new Set(zenithSkills.map(s
+  => s.id))` from its existing `zenithSkills` prop and partitions `[...result.skillTotals.entries()]`
+  into `regularSkillEntries`/`zenithSkillEntries` by membership in that set -- the same convention
+  `active-skill-cap.ts`'s `determineActiveSkills` already uses to tell normal and Zenith skill ids
+  apart, rather than introducing a second, parallel magic-number check that could drift from it.
+- Presentation: mirrors the existing conditional "Cuffs: ..." line pattern already in this
+  component. Regular skills keep rendering on their existing plain `<div>` line (unlabeled, as
+  before); a second `<div>` with a bold "Zenith skills:" label renders only when
+  `zenithSkillEntries.length > 0`, immediately below it.
+- Touched only `ResultCard` in `components/ResultsList.tsx` and its tests, as expected --
+  `skillTotals` itself, `determineActiveSkills`, and the solver are unchanged.
+- Verification: 2 new `ResultsList.test.tsx` cases (Zenith skills render under their own heading,
+  separate from regular skills; nothing Zenith-related renders when the build has none) pass, all
+  13 tests in that file green. `tsc -b --force` and `oxlint` both clean. Full frontend suite:
+  251/251 tests pass. Live-browser-verified: added "Attack" as a regular skill requirement and
+  "Skill Slots Up" as a Zenith one, ran a real search, and confirmed every result card rendered
+  the regular skill totals (`Attack: 11, ...`) on one line with a separate `Zenith skills: Skill
+  Slots Up: 1` line beneath it; no console errors.

@@ -339,12 +339,13 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
   }
 
   // Builds a link to this exact result (docs/skill-system-roadmap.md TODO
-  // #9) -- encodes the query that produced it (not the solved result data
-  // itself, see shared-state.ts's own docstring for why) plus which ranked
-  // index to take, so the result page can reconstruct it with one re-run of
-  // the solver. Returns a Promise because encoding now compresses the
-  // payload (TODO #14) -- see shared-state.ts's own docstring.
+  // #9) -- encodes the solved result itself (not just the query that
+  // produced it, see shared-state.ts's own docstring for why TODO #15
+  // changed this), so the result page never has to re-run the solver to
+  // reconstruct what to show. Returns a Promise because encoding compresses
+  // the payload (TODO #14) -- see shared-state.ts's own docstring.
   function buildShareUrl(resultIndex: number): Promise<string> {
+    const result = results[resultIndex]
     const state: SharedSearchState = {
       requirements,
       zenithRequirements,
@@ -355,11 +356,22 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
         ? [...excludedWeaponZenithSkillIds]
         : null,
       weaponSlotCount,
-      pinnedArmor: [...pinnedArmor],
-      pinnedCuffIds,
-      pinnedSlotDecorationIds: [...pinnedSlotDecorationIds],
       preferExactMatches,
-      resultIndex,
+      result: {
+        picks: [...result.picks.entries()].map(([slotId, c]) => ({
+          slotId,
+          id: c.id,
+          name: c.name,
+          openSlotCount: c.openSlotCount ?? null,
+          grankOrLater: c.grankOrLater,
+        })),
+        decorations: [...result.decorations.entries()].map(([slotId, decorations]) => ({
+          slotId,
+          decorations: decorations.map((d) => ({ id: d.id, name: d.name, slotSize: d.slotSize })),
+        })),
+        cuffs: result.cuffs.map((c) => ({ id: c.id, name: c.name, skills: c.skills })),
+        skillTotals: [...result.skillTotals.entries()],
+      },
     }
     return buildResultUrl(state)
   }

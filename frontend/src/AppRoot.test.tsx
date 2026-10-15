@@ -30,11 +30,13 @@ const STATE: SharedSearchState = {
   excludedDecorationCategories: [],
   excludedWeaponZenithSkillIds: null,
   weaponSlotCount: 0,
-  pinnedArmor: [],
-  pinnedCuffIds: [],
-  pinnedSlotDecorationIds: [],
   preferExactMatches: true,
-  resultIndex: 0,
+  result: {
+    picks: [],
+    decorations: [],
+    cuffs: [],
+    skillTotals: [],
+  },
 }
 
 beforeEach(() => {
