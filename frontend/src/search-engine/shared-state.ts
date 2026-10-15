@@ -45,19 +45,24 @@
  * be decoded afterwards; no migration attempted.
  */
 
+import type { HunterTypeFilter } from './build-query'
 import type { SkillContribution, SkillRequirement } from './types'
 
 /** One of a result's armor/weapon-slot picks -- just enough of `NamedCandidate`
  * to render `ResultCard` and feed `active-skill-cap.ts`'s piece-counting rule
- * (`grankOrLater`) without resolving anything against the live data bundle.
- * `category` is deliberately left out -- nothing on the display path (nor
- * `determineActiveSkills`) reads a pick's category, only `grankOrLater`. */
+ * (`grankOrLater`) and its Exotic-armor cap exemption (`exoticSkillId`)
+ * without resolving anything against the live data bundle. `category` is
+ * deliberately left out -- nothing on the display path (nor
+ * `determineActiveSkills`) reads a pick's category. `hunterType` is also left
+ * out -- it only matters pre-solve (`slotsAfterHunterTypeFilter`), never on
+ * an already-solved result's own display or cap logic. */
 export interface SharedPick {
   readonly slotId: string
   readonly id: string
   readonly name: string
   readonly openSlotCount: number | null
   readonly grankOrLater: boolean
+  readonly exoticSkillId: number | null
 }
 
 export interface SharedDecoration {
@@ -101,6 +106,7 @@ export interface SharedSearchState {
    * itself shows. */
   readonly excludedWeaponZenithSkillIds: readonly string[] | null
   readonly weaponSlotCount: number
+  readonly hunterTypeFilter: HunterTypeFilter
   readonly preferExactMatches: boolean
   readonly result: SharedBuildResult
 }
@@ -119,8 +125,9 @@ interface WireFormat {
   readonly edc: readonly string[]
   readonly ewz: readonly string[] | null
   readonly wsc: number
+  readonly htf: HunterTypeFilter
   readonly pem: boolean
-  readonly rp: readonly (readonly [string, string, string, number | null, boolean])[]
+  readonly rp: readonly (readonly [string, string, string, number | null, boolean, number | null])[]
   readonly rd: readonly (readonly [string, readonly (readonly [string, string, number])[]])[]
   readonly rc: readonly (readonly [string, string, readonly (readonly [number, number])[]])[]
   readonly rt: readonly (readonly [number, number])[]
@@ -135,8 +142,16 @@ function toWireFormat(state: SharedSearchState): WireFormat {
     edc: state.excludedDecorationCategories,
     ewz: state.excludedWeaponZenithSkillIds,
     wsc: state.weaponSlotCount,
+    htf: state.hunterTypeFilter,
     pem: state.preferExactMatches,
-    rp: state.result.picks.map((p) => [p.slotId, p.id, p.name, p.openSlotCount, p.grankOrLater]),
+    rp: state.result.picks.map((p) => [
+      p.slotId,
+      p.id,
+      p.name,
+      p.openSlotCount,
+      p.grankOrLater,
+      p.exoticSkillId,
+    ]),
     rd: state.result.decorations.map((d) => [
       d.slotId,
       d.decorations.map((dec) => [dec.id, dec.name, dec.slotSize]),
@@ -168,6 +183,7 @@ function fromWireFormat(parsed: unknown): SharedSearchState | null {
     !Array.isArray(p.edc) ||
     (p.ewz !== null && !Array.isArray(p.ewz)) ||
     typeof p.wsc !== 'number' ||
+    (p.htf !== 'blademaster' && p.htf !== 'gunner') ||
     typeof p.pem !== 'boolean' ||
     !Array.isArray(p.rp) ||
     !Array.isArray(p.rd) ||
@@ -186,14 +202,16 @@ function fromWireFormat(parsed: unknown): SharedSearchState | null {
     excludedDecorationCategories: w.edc,
     excludedWeaponZenithSkillIds: w.ewz,
     weaponSlotCount: w.wsc,
+    hunterTypeFilter: w.htf,
     preferExactMatches: w.pem,
     result: {
-      picks: w.rp.map(([slotId, id, name, openSlotCount, grankOrLater]) => ({
+      picks: w.rp.map(([slotId, id, name, openSlotCount, grankOrLater, exoticSkillId]) => ({
         slotId,
         id,
         name,
         openSlotCount,
         grankOrLater,
+        exoticSkillId,
       })),
       decorations: w.rd.map(([slotId, decorations]) => ({
         slotId,

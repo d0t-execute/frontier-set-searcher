@@ -78,6 +78,24 @@ CREATE TABLE IF NOT EXISTS equipment (
     -- mix below-G-rank and G-rank-or-later pieces and can't be used for this
     -- on their own -- see etl.parse.gear_category.is_grank_or_later_equipment.
     grank_or_later INTEGER NOT NULL DEFAULT 0,
+    -- Which skill (if any) this piece's own Exotic-armor marker grants a
+    -- fixed bonus to (see docs/data-format-notes.md "Exotic armor") -- a
+    -- plain marker column, separate from the merged points already present
+    -- in `equipment_skill` for this same skill_id, so the search engine can
+    -- tell "this skill is active because of an Exotic grant" apart from a
+    -- piece's own normal skill contributions (needed for the active-skill-
+    -- cap exemption -- confirmed by the project owner that an Exotic-granted
+    -- skill never counts against the cap, mirroring the existing Hiden/cuff
+    -- exemption).
+    exotic_skill_id INTEGER REFERENCES skill (id) ON DELETE RESTRICT,
+    -- "Hunter type" (TYPE field, index 2) -- an armor piece restricted to
+    -- Blademaster or Gunner can't be combined with the opposite restriction
+    -- in the same build (confirmed by the project owner: these can't be
+    -- mixed and matched). 'common' pieces (the large majority of head
+    -- pieces, a small minority elsewhere) have no restriction either way.
+    hunter_type TEXT NOT NULL DEFAULT 'common' CHECK (
+        hunter_type IN ('common', 'blademaster', 'gunner')
+    ),
     source_url TEXT
 );
 
@@ -177,6 +195,8 @@ CREATE INDEX IF NOT EXISTS idx_equipment_skill_skill_id ON equipment_skill (skil
 CREATE INDEX IF NOT EXISTS idx_decoration_skill_skill_id ON decoration_skill (skill_id);
 CREATE INDEX IF NOT EXISTS idx_cuff_skill_skill_id ON cuff_skill (skill_id);
 CREATE INDEX IF NOT EXISTS idx_equipment_zenith_skill_id ON equipment (zenith_skill_id);
+CREATE INDEX IF NOT EXISTS idx_equipment_exotic_skill_id ON equipment (exotic_skill_id);
+CREATE INDEX IF NOT EXISTS idx_equipment_hunter_type ON equipment (hunter_type);
 CREATE INDEX IF NOT EXISTS idx_cuff_zenith_skill_id ON cuff (zenith_skill_id);
 CREATE INDEX IF NOT EXISTS idx_weapon_weapon_type ON weapon (weapon_type);
 CREATE INDEX IF NOT EXISTS idx_weapon_zenith_skill_id ON weapon (zenith_skill_id);

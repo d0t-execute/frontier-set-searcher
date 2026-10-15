@@ -151,6 +151,11 @@ def load_equipment(
         return resolved_exotic_skills[name], points
 
     for row in parsed.equipment:
+        exotic_grant = (
+            resolve_exotic_grant(row.exotic_skill_marker)
+            if row.exotic_skill_marker is not None
+            else None
+        )
         equipment = insert_equipment(
             conn,
             external_id=row.external_id,
@@ -170,6 +175,8 @@ def load_equipment(
             ),
             category=row.category,
             grank_or_later=row.grank_or_later,
+            exotic_skill_id=exotic_grant[0] if exotic_grant is not None else None,
+            hunter_type=row.hunter_type,
             source_url=source_url,
         )
         # Summed into one dict (keyed by the already-resolved skill id) rather
@@ -182,12 +189,10 @@ def load_equipment(
         for skill_id, points in row.skills:
             resolved_id = resolve_skill(skill_id)
             skill_totals[resolved_id] = skill_totals.get(resolved_id, 0) + points
-        if row.exotic_skill_marker is not None:
-            grant = resolve_exotic_grant(row.exotic_skill_marker)
-            if grant is not None:
-                exotic_skill_id, exotic_points = grant
-                skill_totals[exotic_skill_id] = skill_totals.get(exotic_skill_id, 0) + exotic_points
-                exotic_grant_count += 1
+        if exotic_grant is not None:
+            exotic_skill_id, exotic_points = exotic_grant
+            skill_totals[exotic_skill_id] = skill_totals.get(exotic_skill_id, 0) + exotic_points
+            exotic_grant_count += 1
         for skill_id, points in skill_totals.items():
             add_equipment_skill(conn, equipment_id=equipment.id, skill_id=skill_id, points=points)
 

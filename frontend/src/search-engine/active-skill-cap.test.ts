@@ -6,8 +6,20 @@ import {
 } from './active-skill-cap'
 import type { NamedCandidate, NamedCuff, NamedSkill } from './load-bundle'
 
-function candidate(category: string, grankOrLater = false): NamedCandidate {
-  return { id: `c:${category}`, name: category, category, grankOrLater, skills: [] }
+function candidate(
+  category: string,
+  grankOrLater = false,
+  exoticSkillId: number | null = null,
+): NamedCandidate {
+  return {
+    id: `c:${category}`,
+    name: category,
+    category,
+    grankOrLater,
+    hunterType: 'common',
+    exoticSkillId,
+    skills: [],
+  }
 }
 
 function cuff(id: string, skillId: number, points: number): NamedCuff {
@@ -206,6 +218,36 @@ describe('determineActiveSkills', () => {
     const cuffs = [cuff('cuff:1', attackId, 5)]
 
     const result = determineActiveSkills(picks, skillTotals, skills, ZENITH_SKILLS, cuffs)
+
+    expect(result.disabled).toEqual([attackId])
+  })
+
+  it('exempts an Exotic-armor-granted skill from the cap regardless of category', () => {
+    const iceAttackId = 999
+    const normalSkills = Array.from({ length: 10 }, (_, i) => skill(i + 1, { priorityRank: i + 1 }))
+    const skills = [
+      ...normalSkills,
+      skill(iceAttackId, { category: 'Attack Skills', priorityRank: 11 }),
+    ]
+    const skillTotals = new Map([...normalSkills.map((s) => [s.id, 3] as const), [iceAttackId, 20]])
+    const exoticPicks = new Map([
+      ['head', candidate('grank_g', false, iceAttackId)],
+    ])
+
+    const result = determineActiveSkills(exoticPicks, skillTotals, skills, ZENITH_SKILLS)
+
+    expect(result.cap).toBe(10)
+    expect(result.rankedActive).toHaveLength(11)
+    expect(result.disabled).toEqual([])
+  })
+
+  it("doesn't exempt a skill just because it's active, when no pick's Exotic grant targets it", () => {
+    const attackId = 999
+    const normalSkills = Array.from({ length: 10 }, (_, i) => skill(i + 1, { priorityRank: i + 1 }))
+    const skills = [...normalSkills, skill(attackId, { category: 'Attack Skills', priorityRank: 11 })]
+    const skillTotals = new Map([...normalSkills.map((s) => [s.id, 3] as const), [attackId, 5]])
+
+    const result = determineActiveSkills(picks, skillTotals, skills, ZENITH_SKILLS)
 
     expect(result.disabled).toEqual([attackId])
   })

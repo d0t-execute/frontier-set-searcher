@@ -246,6 +246,33 @@ research was specifically checking for and correctly found nothing of).
   Barioth Helm variant (8 pieces, every forge tier) now lists `"Ice Attack": 20` alongside its own
   normal skills, exactly matching the project owner's own example.
 
+**Follow-up (2026-10-15): Exotic-granted skills are exempt from the active-skill cap.** The project
+owner: "exotic skills should also not count towards the skill cap." Mirrors TODO #1's existing
+Hiden/cuff cap exemption (`active-skill-cap.ts`'s `isCapExempt`), but unconditional -- not gated by
+category, since an Exotic grant (e.g. Barioth's "Ice Attack") is never itself a Hiden/Tech skill.
+
+- A piece's Exotic grant needed its own column separate from the merged skill points added for TODO
+  #3 above, since the merged-points representation made it structurally impossible to tell an
+  Exotic-granted skill id apart from the piece's own normal contributions after the fact -- needed to
+  know *which* skill id to exempt, not just that the piece has *some* bonus. Added `equipment.
+  exotic_skill_id` (nullable FK to `skill`, schema.sql/models.py/repository.py) alongside the
+  existing merged-points entry in `equipment_skill` -- both now set from the same resolved grant in
+  `pipeline.py`'s `load_equipment`, not a second lookup.
+- `export.py`'s `_export_equipment` gained `exoticSkillId`; `load-bundle.ts`'s `NamedCandidate`
+  gained the matching `exoticSkillId: number | null` field.
+- `active-skill-cap.ts`: new `exoticGrantedSkillIds(picks)` (mirrors the existing
+  `cuffContributedSkillIds`), and `isCapExempt` now also exempts any skill id in that set,
+  unconditionally -- independent of the existing Hiden/cuff category check.
+- `shared-state.ts`'s `SharedPick` gained `exoticSkillId` (carried through the wire format) so a
+  shared link's reconstructed result still shows the exemption correctly, without re-resolving
+  anything against the live bundle (same TODO #15 constraint as every other field on `SharedPick`).
+- Verification: new `active-skill-cap.test.ts` cases (exempts an Exotic-granted skill regardless of
+  category; doesn't exempt an otherwise-identical skill when no pick's Exotic grant targets it).
+  ETL: new `test_load_equipment_sets_exotic_skill_id_separately_from_the_merged_points` pipeline test.
+  Real DB rebuilt a second time to pick up the new column (688 grants still applied, 0 unmatched);
+  bundle re-exported and confirmed Barioth pieces now carry `"exoticSkillId": 83` ("Ice Attack")
+  alongside their already-merged points.
+
 ## 4. "Go Skill Boost"
 
 Not found anywhere in docs or scraped data -- needs fresh research; may not be scraped/parsed/
@@ -1225,3 +1252,62 @@ skills in the result-card display, rather than showing them mixed together in on
   "Skill Slots Up" as a Zenith one, ran a real search, and confirmed every result card rendered
   the regular skill totals (`Attack: 11, ...`) on one line with a separate `Zenith skills: Skill
   Slots Up: 1` line beneath it; no console errors.
+
+## 17. Blademaster/Gunner Hunter Type exclusivity
+
+**Status: COMPLETE and verified (2026-10-15).** The project owner: "there needs to be a distinction
+made between blade master pieces and gunner pieces. They can't just be mixed and matched." In-game,
+Hunter Type is fixed by weapon choice (a Blademaster weapon vs. a Gunner one), not a per-piece trait
+the solver gets to decide freely -- a build can use Blademaster-restricted and Gunner-restricted
+armor together only if it never equips one of each at once, which until now this engine had no
+concept of at all.
+
+- Investigated the raw data directly: `equip.js` rows carry a `TYPE` field (raw index 2, values
+  `0`=Common/`1`=Blademaster/`2`=Gunner) already documented in `data-format-notes.md`'s column-layout
+  table but never parsed before. Confirmed via direct inspection of the real cached data: head
+  pieces are ~100% Common (1 Type=2 outlier among 12947); body/arm/waist/leg pieces split roughly
+  evenly Blademaster/Gunner (~6200-6240 / ~5650-5670 each) with a small Common minority (~300-360
+  each); the `deco` bucket (decorations+cuffs) has a small minority too (18 Gunner, 1 Blademaster, of
+  6040) but is out of scope here (decorations/cuffs aren't restricted by Hunter Type in-game).
+- **Chosen fix: a required pre-solve filter, not a new ILP constraint.** Modeling "no mixing" as a
+  true cross-slot disjunctive constraint inside the solver (`ilp-model.ts`) would need new binary
+  decision variables threaded through `Candidate`/`buildModel` for what's otherwise a UI-level
+  concept the solver's core types know nothing about. Since Hunter Type is a single choice the
+  player already makes via their weapon (outside this tool's scope, same as the weapon's own
+  identity), filtering candidates by it *before* the solve -- same architecture as the existing
+  gear-level/cuff-category/decoration-category filters in `build-query.ts` -- is both simpler and
+  more faithful to the actual game mechanic than optimizing over it.
+- `etl/src/etl/parse/equipment.py`: new `HunterType` literal (`db/models.py`), `_parse_hunter_type`
+  (raw TYPE code -> `HunterType`, defaulting to `"common"`), `ParsedEquipmentRow.hunter_type`.
+  `equipment.hunter_type` column (schema.sql, `NOT NULL DEFAULT 'common'`, CHECK-constrained) set
+  directly from the parsed row in `pipeline.py`'s `load_equipment` (no resolution step needed, unlike
+  the Exotic grant). `export.py`'s `_export_equipment` gained `hunterType`.
+- `load-bundle.ts`: new exported `HunterType` type; `NamedCandidate` gained `hunterType: HunterType`.
+- `build-query.ts`: new `HunterTypeFilter = 'blademaster' | 'gunner'` (no third "either" option --
+  there's no legitimate in-game state that isn't one or the other), new
+  `slotsAfterHunterTypeFilter(slots, hunterTypeFilter)` (drops every candidate whose `hunterType` is
+  the *opposite* restricted type; a `"common"` piece is never filtered), wired into
+  `buildSearchQuery` between the gear-level category filter and pinning (a pinned slot still
+  overrides it entirely, same precedent as the existing category filter). The synthesized weapon
+  slot and pinned-slot candidates both carry `hunterType: 'common'` (a weapon/its Zenith skill has no
+  Hunter Type restriction of its own).
+- `App.tsx`: new required `hunterTypeFilter` state (default `'blademaster'`, arbitrary but needing
+  *some* default since this is a required choice, not an optional filter), new "Hunter type" `<select>`
+  in the existing "Weapon" disclosure section (thematically paired with the weapon controls, since
+  in-game your weapon determines it), threaded into `AppInitialState`/`QueryFormState`.
+- `shared-state.ts`'s `SharedSearchState` gained `hunterTypeFilter` (carried for "use as a base for a
+  new search" reconstruction, same as `weaponSlotCount` -- not needed to *display* an already-solved
+  result, only to resume the same search).
+- Verification: new `build-query.test.ts` cases (`slotsAfterHunterTypeFilter` keeps common pieces
+  plus only the matching type, for both values; `buildSearchQuery` end-to-end drops the opposing
+  type's candidates from a slot's solver pool). ETL: new `test_load_equipment_persists_hunter_type`
+  (real fixture rows "Steno GS Vest・Peach" = Gunner, "Steno HS Mail・Blue" = Blademaster, already
+  present in `equip_sample.js` -- discovered rather than added, avoiding another `equipment_count`
+  bump) plus two parse-layer tests (`test_parses_hunter_type_restriction` against the real
+  "Hunter's Mail"/"Hunter's Vest" rows, `test_hunter_type_defaults_to_common`). Full ETL suite:
+  293/293 tests pass, ruff clean. Real DB rebuilt a second time alongside TODO #3's follow-up above
+  (same rebuild picked up both new columns at once); bundle re-exported and confirmed directly:
+  Barioth arm pieces show `"hunterType": "blademaster"`, Barioth Guard (head) coexists with a
+  `"gunner"`-typed Barioth piece, and the real dataset's `hunterType` distribution across all
+  exported equipment (22650 gunner / 24944 blademaster / 14223 common) matches the raw-data
+  investigation above.

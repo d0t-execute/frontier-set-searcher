@@ -3,12 +3,17 @@ import {
   buildSearchQuery,
   decorationsAfterCategoryFilter,
   resolvePinnedSlotDecorations,
+  slotsAfterHunterTypeFilter,
 } from './build-query'
 import type { QueryFormState } from './build-query'
-import type { DataBundle, NamedDecoration } from './load-bundle'
+import type { DataBundle, HunterType, NamedCandidate, NamedDecoration, NamedSlotQuery } from './load-bundle'
 
 function deco(id: string, isTower: boolean, category = 'deco_standard'): NamedDecoration {
   return { id, name: id, slotSize: 1, skills: [], isTower, category }
+}
+
+function candidate(id: string, hunterType: HunterType): NamedCandidate {
+  return { id, name: id, category: 'standard_plain', grankOrLater: false, hunterType, exoticSkillId: null, skills: [] }
 }
 
 const EMPTY_FORM_STATE: QueryFormState = {
@@ -17,6 +22,7 @@ const EMPTY_FORM_STATE: QueryFormState = {
   excludedDecorationCategories: new Set(),
   excludedWeaponZenithSkillIds: new Set(),
   weaponSlotCount: 0,
+  hunterTypeFilter: 'blademaster',
   pinnedArmor: new Map(),
   pinnedCuffIds: [],
   pinnedSlotDecorationIds: new Map(),
@@ -73,11 +79,58 @@ describe('decorationsAfterCategoryFilter', () => {
   })
 })
 
+describe('slotsAfterHunterTypeFilter', () => {
+  const slots: readonly NamedSlotQuery[] = [
+    {
+      slotId: 'body',
+      candidates: [
+        candidate('common', 'common'),
+        candidate('blade', 'blademaster'),
+        candidate('gun', 'gunner'),
+      ],
+    },
+  ]
+
+  it('keeps common pieces plus only the matching Hunter Type, for blademaster', () => {
+    const result = slotsAfterHunterTypeFilter(slots, 'blademaster')
+    expect(result[0].candidates.map((c) => c.id)).toEqual(['common', 'blade'])
+  })
+
+  it('keeps common pieces plus only the matching Hunter Type, for gunner', () => {
+    const result = slotsAfterHunterTypeFilter(slots, 'gunner')
+    expect(result[0].candidates.map((c) => c.id)).toEqual(['common', 'gun'])
+  })
+})
+
 describe('buildSearchQuery', () => {
   it("excludes Tower Gems from the decorations it hands to the solver, even though they're in the bundle", () => {
     const query = buildSearchQuery(BUNDLE, EMPTY_FORM_STATE)
 
     expect(query.decorations.map((d) => d.id)).toEqual(['regular'])
+  })
+
+  it('drops candidates of the opposing Hunter Type from the solver pool', () => {
+    const bundleWithTypes: DataBundle = {
+      ...BUNDLE,
+      slots: [
+        {
+          slotId: 'body',
+          candidates: [
+            candidate('common', 'common'),
+            candidate('blade', 'blademaster'),
+            candidate('gun', 'gunner'),
+          ],
+        },
+      ],
+    }
+
+    const query = buildSearchQuery(bundleWithTypes, {
+      ...EMPTY_FORM_STATE,
+      hunterTypeFilter: 'gunner',
+    })
+
+    const bodySlot = query.slots.find((s) => s.slotId === 'body')
+    expect(bodySlot?.candidates.map((c) => c.id)).toEqual(['common', 'gun'])
   })
 
   it('resolves pinnedSlotDecorationIds into the pinnedSlotDecorations option', () => {

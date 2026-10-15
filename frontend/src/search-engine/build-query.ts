@@ -13,6 +13,15 @@
 import type { DataBundle, NamedCandidate, NamedCuff, NamedDecoration, NamedSlotQuery } from './load-bundle'
 import type { PinnedSlot } from './pinned-armor'
 
+/** Which Hunter Type the solver is allowed to equip (confirmed by the
+ * project owner, 2026-10-15): Blademaster- and Gunner-restricted armor
+ * can't be mixed in the same build at all, since in-game Hunter Type is
+ * fixed by weapon choice, not per-piece -- there's no "either" option that
+ * stays correct, only a required choice between the two. A "common"-
+ * restricted piece (nearly all head pieces, plus a minority of other slots)
+ * fits either and is never filtered out. */
+export type HunterTypeFilter = 'blademaster' | 'gunner'
+
 /** Key used for the weapon Zenith-skill checklist's "carries no Zenith skill
  * at all" leaf -- every real Zenith skill id is a positive number (see
  * etl/src/etl/export.py's `ZENITH_SKILL_ID_OFFSET`), so this string can never
@@ -28,6 +37,7 @@ export interface QueryFormState {
   readonly excludedDecorationCategories: ReadonlySet<string>
   readonly excludedWeaponZenithSkillIds: ReadonlySet<string>
   readonly weaponSlotCount: number
+  readonly hunterTypeFilter: HunterTypeFilter
   readonly pinnedArmor: ReadonlyMap<string, PinnedSlot>
   /** Up to `MAX_EQUIPPED_CUFFS` cuff ids, index 0 = cuff slot 1 -- see
    * `CuffPicker.tsx`'s own docstring. */
@@ -57,6 +67,8 @@ export function buildWeaponSlot(bundle: DataBundle, state: QueryFormState): Name
       name: 'Plain weapon (no Zenith skill)',
       category: 'weapon',
       grankOrLater: false,
+      hunterType: 'common',
+      exoticSkillId: null,
       skills: [],
       openSlotCount: state.weaponSlotCount,
     })
@@ -69,6 +81,8 @@ export function buildWeaponSlot(bundle: DataBundle, state: QueryFormState): Name
       name: `Zenith weapon (${name})`,
       category: 'weapon',
       grankOrLater: false,
+      hunterType: 'common',
+      exoticSkillId: null,
       skills: [{ skillId: id, points: 1 }],
       openSlotCount: state.weaponSlotCount,
     })
@@ -79,6 +93,8 @@ export function buildWeaponSlot(bundle: DataBundle, state: QueryFormState): Name
       name: 'Plain weapon (no Zenith skill)',
       category: 'weapon',
       grankOrLater: false,
+      hunterType: 'common',
+      exoticSkillId: null,
       skills: [],
       openSlotCount: state.weaponSlotCount,
     })
@@ -94,6 +110,24 @@ export function slotsAfterCategoryFilter(
   return slots.map((slot) => ({
     ...slot,
     candidates: slot.candidates.filter((c) => !excludedCategories.has(c.category)),
+  }))
+}
+
+/** Drops every candidate restricted to the Hunter Type the build isn't using
+ * (see `HunterTypeFilter`'s own docstring) -- a "common" piece is never
+ * filtered, and a pinned slot (`slotsAfterPinning`, applied after this)
+ * overrides this entirely the same way it overrides the gear-level filter,
+ * since a piece the player explicitly pinned shouldn't be silently blocked
+ * by it. */
+export function slotsAfterHunterTypeFilter(
+  slots: readonly NamedSlotQuery[],
+  hunterTypeFilter: HunterTypeFilter,
+): NamedSlotQuery[] {
+  return slots.map((slot) => ({
+    ...slot,
+    candidates: slot.candidates.filter(
+      (c) => c.hunterType === 'common' || c.hunterType === hunterTypeFilter,
+    ),
   }))
 }
 
@@ -143,6 +177,8 @@ export function slotsAfterPinning(
       name,
       category: original.category,
       grankOrLater: original.grankOrLater,
+      hunterType: original.hunterType,
+      exoticSkillId: original.exoticSkillId,
       skills: [...skillTotals.entries()].map(([skillId, points]) => ({ skillId, points })),
       openSlotCount: (original.openSlotCount ?? 0) - usedSlots,
     }
@@ -290,7 +326,10 @@ export function buildSearchQuery(bundle: DataBundle, state: QueryFormState): Bui
   )
   const slots = [
     ...slotsAfterPinning(
-      slotsAfterCategoryFilter(bundle.slots, state.excludedCategories),
+      slotsAfterHunterTypeFilter(
+        slotsAfterCategoryFilter(bundle.slots, state.excludedCategories),
+        state.hunterTypeFilter,
+      ),
       decorations,
       bundle.slots,
       state.pinnedArmor,

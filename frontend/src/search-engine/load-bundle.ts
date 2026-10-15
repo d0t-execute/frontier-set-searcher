@@ -50,10 +50,24 @@ export interface NamedSkill {
  * alone can't answer the latter -- several display categories (every "Paid
  * and Premium" one, plus a few route-level "plain"/Festival/Event buckets)
  * mix below-G-rank and G-Rank-or-later pieces together. */
+/** A piece's Hunter Type restriction (etl's `hunter_type`, from the raw
+ * TYPE field) -- "blademaster" and "gunner" pieces can't be mixed in the
+ * same build (confirmed by the project owner, 2026-10-15); "common" pieces
+ * (nearly all head pieces, plus a minority of other slots) fit either. */
+export type HunterType = 'common' | 'blademaster' | 'gunner'
+
 export interface NamedCandidate extends Candidate {
   readonly name: string
   readonly category: string
   readonly grankOrLater: boolean
+  readonly hunterType: HunterType
+  /** The normal-skill id this piece's Exotic-armor bonus grant targets (see
+   * docs/skill-system-roadmap.md TODO #3), if any -- `null` for a non-Exotic
+   * piece. Kept separate from this piece's own `skills` entries (which
+   * already include the grant's points, merged in at ETL time) so the
+   * active-skill-cap exemption (active-skill-cap.ts) can tell an
+   * Exotic-granted skill apart from the piece's normal contributions. */
+  readonly exoticSkillId: number | null
 }
 
 export interface NamedDecoration extends Decoration {

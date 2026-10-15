@@ -16,6 +16,7 @@ const state: SharedSearchState = {
   excludedDecorationCategories: ['tower'],
   excludedWeaponZenithSkillIds: null,
   weaponSlotCount: 2,
+  hunterTypeFilter: 'blademaster',
   preferExactMatches: true,
   result: {
     picks: [
@@ -25,6 +26,7 @@ const state: SharedSearchState = {
         name: 'Leather Helm',
         openSlotCount: 3,
         grankOrLater: false,
+        exoticSkillId: 83,
       },
     ],
     decorations: [
@@ -55,7 +57,14 @@ describe('encodeSharedState / decodeSharedState', () => {
       ...state,
       result: {
         picks: [
-          { slotId: 'head', id: 'head:0001', name: 'Leather Helm', openSlotCount: null, grankOrLater: false },
+          {
+            slotId: 'head',
+            id: 'head:0001',
+            name: 'Leather Helm',
+            openSlotCount: null,
+            grankOrLater: false,
+            exoticSkillId: null,
+          },
         ],
         decorations: [],
         cuffs: [],

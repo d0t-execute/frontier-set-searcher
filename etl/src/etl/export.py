@@ -290,6 +290,8 @@ def _export_equipment(
             "openSlotCount": equipment.slot_count_max,
             "category": equipment.category,
             "grankOrLater": equipment.grank_or_later,
+            "exoticSkillId": equipment.exotic_skill_id,
+            "hunterType": equipment.hunter_type,
         }
         for equipment in list_equipment(conn, slot_type=slot_type)
     ]

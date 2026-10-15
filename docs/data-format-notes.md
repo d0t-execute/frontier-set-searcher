@@ -42,7 +42,7 @@ length.
 |---|---|---|
 | 0 | NAME | Item name |
 | 1 | SEX | 0=All, 1=Male, 2=Female |
-| 2 | TYPE | 0=Common, 1=Blademaster, 2=Gunner |
+| 2 | TYPE | 0=Common, 1=Blademaster, 2=Gunner -- parsed as `hunter_type`/`hunterType` (docs/skill-system-roadmap.md TODO #17): Blademaster- and Gunner-restricted armor can't be mixed in one build, enforced as a pre-solve filter |
 | 3 | RARE | Rarity |
 | 4 | GR | G-Rank tier marker |
 | 5–9 | F, W, T, D, I | Fire/Water/Thunder/Dragon/Ice resistance |

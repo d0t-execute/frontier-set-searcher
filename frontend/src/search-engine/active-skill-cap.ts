@@ -16,6 +16,12 @@
  * for being force-disabled -- when a cuff is what's contributing to it. A
  * Hiden skill reached purely through armor/decorations has no such
  * exemption and is capped normally.
+ *
+ * A second, unconditional exemption (confirmed by the project owner,
+ * 2026-10-15): a skill granted by an Exotic-armor piece (see
+ * docs/skill-system-roadmap.md TODO #3) never counts against the cap
+ * either, regardless of category -- equipping e.g. any Barioth piece always
+ * grants "Ice Attack" on top of the cap.
  */
 
 import type { NamedCandidate, NamedCuff, NamedSkill } from './load-bundle'
@@ -125,6 +131,17 @@ function cuffContributedSkillIds(cuffs: readonly NamedCuff[]): ReadonlySet<Skill
   return ids
 }
 
+/** Every normal skill id at least one of a build's picks grants via its
+ * Exotic-armor bonus (`NamedCandidate.exoticSkillId`) -- used only to find
+ * this module's own Exotic-skill cap exemption (see its docstring). */
+function exoticGrantedSkillIds(picks: ReadonlyMap<string, NamedCandidate>): ReadonlySet<SkillId> {
+  const ids = new Set<SkillId>()
+  for (const candidate of picks.values()) {
+    if (candidate.exoticSkillId !== null) ids.add(candidate.exoticSkillId)
+  }
+  return ids
+}
+
 /** Determines which of a build's active normal skills survive its
  * active-skill cap, and which get force-disabled -- see this module's own
  * docstring, including the Hiden/cuff exemption. `skillTotals` is the
@@ -145,13 +162,15 @@ export function determineActiveSkills(
   const skillsById = new Map(skills.map((s) => [s.id, s]))
   const cap = computeActiveSkillCap(picks, skillTotals, zenithSkills)
   const cuffSkillIds = cuffContributedSkillIds(cuffs)
+  const exoticSkillIds = exoticGrantedSkillIds(picks)
 
   const active = [...skillTotals.entries()]
     .filter(([skillId]) => skillsById.has(skillId))
     .filter(([skillId, points]) => isSkillActive(points, skillsById.get(skillId)))
 
   const isCapExempt = (skillId: SkillId): boolean =>
-    skillsById.get(skillId)?.category === HIDEN_SKILL_CATEGORY && cuffSkillIds.has(skillId)
+    (skillsById.get(skillId)?.category === HIDEN_SKILL_CATEGORY && cuffSkillIds.has(skillId)) ||
+    exoticSkillIds.has(skillId)
 
   const exempt = active.map(([skillId]) => skillId).filter(isCapExempt)
   const rankedCapped = active

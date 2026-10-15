@@ -13,7 +13,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import IntEnum
 
-from etl.db.models import EquipmentType
+from etl.db.models import EquipmentType, HunterType
 from etl.parse.gear_category import (
     classify_cuff_category,
     classify_decoration_category,
@@ -40,6 +40,16 @@ _PLACEHOLDER_EXTERNAL_ID = "0000"
 # CLASS codes for the categories this module cares about -- see
 # docs/data-format-notes.md "Equipment taxonomy" for the full decode table.
 _TOWER_CLASS = "N"
+
+# TYPE field (index 2) decode -- confirmed by the project owner: a
+# Blademaster- or Gunner-restricted armor piece can't share a build with the
+# opposite restriction. See docs/data-format-notes.md's column layout table
+# and `HunterType`'s own docstring.
+_HUNTER_TYPE_BY_CODE: dict[str, HunterType] = {
+    "0": "common",
+    "1": "blademaster",
+    "2": "gunner",
+}
 
 
 class Field(IntEnum):
@@ -117,6 +127,8 @@ class ParsedEquipmentRow:
     # `_extract_exotic_skill_marker`); resolution happens in pipeline.py,
     # which has DB access to get-or-create the granted skill by name.
     exotic_skill_marker: str | None = None
+    # TYPE field decode -- see `HunterType`'s own docstring.
+    hunter_type: HunterType = "common"
 
 
 @dataclass(frozen=True, slots=True)
@@ -214,6 +226,10 @@ def _extract_exotic_skill_marker(fields: list[str]) -> str | None:
     return match.group(1) if match else None
 
 
+def _parse_hunter_type(fields: list[str]) -> HunterType:
+    return _HUNTER_TYPE_BY_CODE.get(_field(fields, Field.TYPE), "common")
+
+
 def _extract_skills(fields: list[str]) -> tuple[tuple[int, int], ...]:
     """Collect (skill_id, points) across the 5 SN/SP slots, summing duplicates.
 
@@ -273,6 +289,7 @@ def parse_equipment_bucket(
                 category=classify_equipment_category(fields),
                 grank_or_later=is_grank_or_later_equipment(fields),
                 exotic_skill_marker=_extract_exotic_skill_marker(fields),
+                hunter_type=_parse_hunter_type(fields),
             )
         )
     return parsed

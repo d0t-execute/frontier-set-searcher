@@ -296,6 +296,38 @@ def test_exotic_skill_marker_is_none_for_a_non_exotic_row() -> None:
     assert rows[0].exotic_skill_marker is None
 
 
+def test_parses_hunter_type_restriction() -> None:
+    # Real "Hunter's Mail"/"Hunter's Vest" rows (TYPE field, index 2):
+    # Blademaster- and Gunner-restricted pieces respectively, confirmed by
+    # the project owner that the two can't be combined in one build.
+    bucket_json = (
+        '{"0003":"Hunter\'s Mail,0,1,1,,0,0,0,0,0,22,3,40,3,3,3,46,-5,,,,'
+        "00D83R 014D1,1,0006,7,400,9,0,2,01,03,03,0,1-,,,,,"
+        'ハンター用に作られた胴用装備。数多くのハンターが着用する代表的な防具。,69"'
+        ',"0004":"Hunter\'s Vest,0,2,1,,0,0,0,0,0,22,3,35,3,3,3,46,-5,,,,'
+        "00D83R 014D1,1,0006,7,400,5,0,2,01,03,03,0,1-,,,,,"
+        'ハンター用に作られた胴用装備。急所の喉を守る大型パーツが印象的。,68"}'
+    )
+
+    def_patterns = ["100,100,100,100,100,100,100"] * 4  # DEFPTN "03" -> index 3
+    rows = parse_equipment_bucket("body", bucket_json, def_patterns=def_patterns)
+
+    by_id = {row.external_id: row for row in rows}
+    assert by_id["body:0003"].hunter_type == "blademaster"
+    assert by_id["body:0004"].hunter_type == "gunner"
+
+
+def test_hunter_type_defaults_to_common() -> None:
+    bucket_json = (
+        '{"0001":"Leather Helm,0,0,1,,0,0,0,0,0,22,3,63,3,80,3,,,,,,'
+        '01521R,1,0000,7,100,2,0,1,01,00,0B,0,1-,,,,,軽い素材で作られた頭用装備。,0"}'
+    )
+
+    rows = parse_equipment_bucket("head", bucket_json, def_patterns=["100,120,120,120,120,120,120"])
+
+    assert rows[0].hunter_type == "common"
+
+
 def test_parses_a_decoration_row() -> None:
     bucket_json = (
         '{"031F":"Paralysis 1 Deco,0,0,4,,,,,,,57,2,46,-2,,,,,,,,'

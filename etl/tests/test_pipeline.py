@@ -97,6 +97,52 @@ def test_load_equipment_reports_an_exotic_marker_not_in_the_grants_dict(tmp_path
     assert summary.unmatched_exotic_markers == ("Totally Unknown Skill",)
 
 
+def test_load_equipment_sets_exotic_skill_id_separately_from_the_merged_points(
+    tmp_path: Path,
+) -> None:
+    # The Barioth Helm's own `exotic_skill_id` column must point at "Ice
+    # Attack" (not merely contribute points to it) -- this is what the
+    # active-skill-cap exemption reads to tell an Exotic grant apart from a
+    # piece's normal skill contributions.
+    conn = _conn(tmp_path)
+
+    load_equipment(
+        conn,
+        skillform_source=_skillform_source(),
+        equip_source=_combined_equip_source(),
+        source_url="https://example.test/equip.js",
+    )
+
+    equipment = repo.get_equipment_by_external_id(conn, "head:2821")
+    assert equipment is not None
+    assert equipment.exotic_skill_id is not None
+    ice_attack = repo.get_skill_by_name(conn, "Ice Attack")
+    assert ice_attack is not None
+    assert equipment.exotic_skill_id == ice_attack.id
+
+
+def test_load_equipment_persists_hunter_type(tmp_path: Path) -> None:
+    # "Steno GS Vest・Peach" (body:1000) and "Steno HS Mail・Blue" (body:1001)
+    # are real fixture rows whose own raw TYPE field is already "2" (Gunner)
+    # and "1" (Blademaster) respectively -- confirmed by direct inspection,
+    # not added for this test.
+    conn = _conn(tmp_path)
+
+    load_equipment(
+        conn,
+        skillform_source=_skillform_source(),
+        equip_source=_combined_equip_source(),
+        source_url="https://example.test/equip.js",
+    )
+
+    gunner_piece = repo.get_equipment_by_external_id(conn, "body:1000")
+    blademaster_piece = repo.get_equipment_by_external_id(conn, "body:1001")
+    assert gunner_piece is not None
+    assert blademaster_piece is not None
+    assert gunner_piece.hunter_type == "gunner"
+    assert blademaster_piece.hunter_type == "blademaster"
+
+
 def test_load_equipment_resolves_real_skill_names_when_known(tmp_path: Path) -> None:
     conn = _conn(tmp_path)
 

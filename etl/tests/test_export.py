@@ -68,6 +68,8 @@ def test_exports_equipment_shaped_for_the_search_engine(tmp_path: Path) -> None:
             "openSlotCount": 2,
             "category": "standard_plain",
             "grankOrLater": False,
+            "exoticSkillId": None,
+            "hunterType": "common",
         }
     ]
 

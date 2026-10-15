@@ -53,6 +53,11 @@ WEAPON_TYPES: tuple[WeaponType, ...] = (
 
 RankType = Literal["HR", "SR", "GR", "GSR"]
 
+# An armor piece's own TYPE field (index 2) -- a piece restricted to
+# Blademaster or Gunner can't share a build with the opposite restriction
+# (confirmed by the project owner). 'common' has no restriction either way.
+HunterType = Literal["common", "blademaster", "gunner"]
+
 
 @dataclass(frozen=True, slots=True)
 class Skill:
@@ -99,6 +104,14 @@ class Equipment:
     # Independent of `category`: several display categories mix below-G-rank
     # and G-rank-or-later pieces and can't be used for this on their own.
     grank_or_later: bool = False
+    # Which skill (if any) this piece's own Exotic-armor marker grants a
+    # fixed bonus to -- see docs/data-format-notes.md "Exotic armor". Kept
+    # separate from the merged points in `equipment_skill`/`skills` so the
+    # active-skill-cap exemption can tell an Exotic grant apart from a
+    # piece's normal skill contributions.
+    exotic_skill_id: int | None = None
+    # See `HunterType`'s own docstring.
+    hunter_type: HunterType = "common"
     source_url: str | None = None
 
 

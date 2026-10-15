@@ -17,6 +17,7 @@ from etl.db.models import (
     Decoration,
     Equipment,
     EquipmentType,
+    HunterType,
     RankType,
     Skill,
     SkillPoints,
@@ -171,6 +172,8 @@ def insert_equipment(
     zenith_skill_id: int | None = None,
     category: str = "standard_plain",
     grank_or_later: bool = False,
+    exotic_skill_id: int | None = None,
+    hunter_type: HunterType = "common",
     source_url: str | None = None,
 ) -> Equipment:
     """Insert a new equipment row.
@@ -184,8 +187,9 @@ def insert_equipment(
         INSERT INTO equipment (
             external_id, name, slot_type, rarity, defense_base, defense_max,
             slot_count_base, slot_count_max, min_hr, min_gr, is_tower,
-            zenith_skill_id, category, grank_or_later, source_url
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            zenith_skill_id, category, grank_or_later, exotic_skill_id,
+            hunter_type, source_url
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             external_id,
@@ -202,6 +206,8 @@ def insert_equipment(
             zenith_skill_id,
             category,
             grank_or_later,
+            exotic_skill_id,
+            hunter_type,
             source_url,
         ),
     )
@@ -223,6 +229,8 @@ def insert_equipment(
         zenith_skill_id=zenith_skill_id,
         category=category,
         grank_or_later=grank_or_later,
+        exotic_skill_id=exotic_skill_id,
+        hunter_type=hunter_type,
         source_url=source_url,
     )
 
@@ -517,6 +525,8 @@ def _equipment_from_row(row: sqlite3.Row) -> Equipment:
         zenith_skill_id=row["zenith_skill_id"],
         category=row["category"],
         grank_or_later=bool(row["grank_or_later"]),
+        exotic_skill_id=row["exotic_skill_id"],
+        hunter_type=row["hunter_type"],
         source_url=row["source_url"],
     )
 

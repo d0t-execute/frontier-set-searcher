@@ -14,7 +14,7 @@ import {
   decorationsAfterCategoryFilter,
   WEAPON_NO_ZENITH_SKILL_KEY,
 } from './search-engine/build-query'
-import type { QueryFormState } from './search-engine/build-query'
+import type { HunterTypeFilter, QueryFormState } from './search-engine/build-query'
 import { CUFF_CATEGORY_GROUPS } from './search-engine/cuff-categories'
 import { DECORATION_CATEGORY_GROUPS } from './search-engine/decoration-categories'
 import { GEAR_CATEGORY_GROUPS } from './search-engine/gear-categories'
@@ -32,6 +32,11 @@ import type { SkillRequirement, SkillTierThresholds } from './search-engine/type
  * assuming the solver can freely claim all of them would silently assume
  * away the player's own use for them. */
 const WEAPON_SLOT_COUNT_OPTIONS = [0, 1, 2, 3] as const
+
+const HUNTER_TYPE_FILTER_OPTIONS: readonly { readonly value: HunterTypeFilter; readonly label: string }[] = [
+  { value: 'blademaster', label: 'Blademaster' },
+  { value: 'gunner', label: 'Gunner' },
+]
 
 type SearchStatus = 'idle' | 'searching' | 'done' | 'error'
 
@@ -109,6 +114,7 @@ export interface AppInitialState {
   readonly excludedDecorationCategories: ReadonlySet<string>
   readonly excludedWeaponZenithSkillIds: ReadonlySet<string> | null
   readonly weaponSlotCount: number
+  readonly hunterTypeFilter?: HunterTypeFilter
   readonly pinnedArmor: ReadonlyMap<string, PinnedSlot>
   readonly pinnedCuffIds: readonly string[]
   readonly pinnedSlotDecorationIds?: ReadonlyMap<string, readonly string[]>
@@ -150,6 +156,14 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
       : null,
   )
   const [weaponSlotCount, setWeaponSlotCount] = useState(() => initialState?.weaponSlotCount ?? 0)
+  // Defaults to Blademaster (2026-10-15, per the project owner): Hunter Type
+  // is fixed by weapon choice in-game, not a per-piece trait -- Blademaster-
+  // and Gunner-restricted armor can never be mixed in the same build, so
+  // this is a required choice, not an optional filter like the category
+  // checklists above it.
+  const [hunterTypeFilter, setHunterTypeFilter] = useState<HunterTypeFilter>(
+    () => initialState?.hunterTypeFilter ?? 'blademaster',
+  )
   const [pinnedArmor, setPinnedArmor] = useState<ReadonlyMap<string, PinnedSlot>>(
     () => new Map(initialState?.pinnedArmor ?? []),
   )
@@ -272,7 +286,10 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
     ).length
     const allowed = total - excludedRealSkills
     const slots = pluralize(weaponSlotCount, 'slot')
-    return `${allowed} of ${total} Zenith skills allowed, ${slots} reserved`
+    const hunterTypeLabel =
+      HUNTER_TYPE_FILTER_OPTIONS.find((o) => o.value === hunterTypeFilter)?.label ??
+      hunterTypeFilter
+    return `${hunterTypeLabel}, ${allowed} of ${total} Zenith skills allowed, ${slots} reserved`
   })()
 
   const queryFormState: QueryFormState = {
@@ -281,6 +298,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
     excludedDecorationCategories,
     excludedWeaponZenithSkillIds: effectiveExcludedWeaponZenithSkillIds,
     weaponSlotCount,
+    hunterTypeFilter,
     pinnedArmor,
     pinnedCuffIds,
     pinnedSlotDecorationIds,
@@ -356,6 +374,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
         ? [...excludedWeaponZenithSkillIds]
         : null,
       weaponSlotCount,
+      hunterTypeFilter,
       preferExactMatches,
       result: {
         picks: [...result.picks.entries()].map(([slotId, c]) => ({
@@ -364,6 +383,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
           name: c.name,
           openSlotCount: c.openSlotCount ?? null,
           grankOrLater: c.grankOrLater,
+          exoticSkillId: c.exoticSkillId,
         })),
         decorations: [...result.decorations.entries()].map(([slotId, decorations]) => ({
           slotId,
@@ -464,6 +484,27 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
             </Disclosure>
 
             <Disclosure title="Weapon" summary={weaponSummary}>
+              <div className="mb-2">
+                <label className="form-label" htmlFor="hunter-type-filter">
+                  Hunter type
+                </label>
+                <select
+                  id="hunter-type-filter"
+                  className="form-select w-auto"
+                  value={hunterTypeFilter}
+                  onChange={(e) => setHunterTypeFilter(e.target.value as HunterTypeFilter)}
+                >
+                  {HUNTER_TYPE_FILTER_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                <div className="form-text">
+                  Blademaster and Gunner armor can't be mixed in one build -- this restricts the
+                  search to your Hunter Type's own pieces (plus every piece that fits either).
+                </div>
+              </div>
               <CategoryFilter
                 groups={weaponZenithSkillGroups}
                 excludedCategories={effectiveExcludedWeaponZenithSkillIds}

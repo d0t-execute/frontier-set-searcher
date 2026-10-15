@@ -42,8 +42,10 @@ type DecodeStatus = 'loading' | 'found' | 'invalid-link'
 
 /** `category` is left empty on every reconstructed pick/decoration/cuff --
  * nothing on this page's display path (`ResultCard`, `active-skill-cap.ts`)
- * ever reads it, only `grankOrLater` (kept, from the link itself) -- see
- * `shared-state.ts`'s own `SharedPick` docstring. */
+ * ever reads it, only `grankOrLater` and `exoticSkillId` (both kept, from the
+ * link itself) -- see `shared-state.ts`'s own `SharedPick` docstring.
+ * `hunterType` is a placeholder ('common') -- it only matters pre-solve,
+ * never on an already-solved result's own display or cap logic. */
 function toNamedBuildResult(result: SharedBuildResult): NamedBuildResult {
   const picks = new Map<string, NamedCandidate>(
     result.picks.map((p) => [
@@ -55,6 +57,8 @@ function toNamedBuildResult(result: SharedBuildResult): NamedBuildResult {
         openSlotCount: p.openSlotCount ?? undefined,
         category: '',
         grankOrLater: p.grankOrLater,
+        hunterType: 'common',
+        exoticSkillId: p.exoticSkillId,
       },
     ]),
   )
@@ -123,6 +127,7 @@ export function ResultPage({ encoded, onUseAsBase, onBackToSearch }: ResultPageP
         ? pinnedWeaponExclusion(bundle.weaponZenithSkillIds, weaponCandidate.id)
         : new Set(state.excludedWeaponZenithSkillIds ?? []),
       weaponSlotCount: state.weaponSlotCount,
+      hunterTypeFilter: state.hunterTypeFilter,
       pinnedArmor: pinnedArmorFromResult(result.picks, result.decorations),
       pinnedCuffIds: result.cuffs.map((c) => c.id),
       preferExactMatches: state.preferExactMatches,
