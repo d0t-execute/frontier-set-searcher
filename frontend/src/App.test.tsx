@@ -24,6 +24,8 @@ const BUNDLE = {
           grankOrLater: false,
           hunterType: 'common',
           exoticSkillId: null,
+          defenseMax: null,
+          resistances: { fire: 0, water: 0, thunder: 0, ice: 0, dragon: 0 },
         },
         {
           id: 'head:0002',
@@ -33,6 +35,8 @@ const BUNDLE = {
           grankOrLater: false,
           hunterType: 'common',
           exoticSkillId: null,
+          defenseMax: null,
+          resistances: { fire: 0, water: 0, thunder: 0, ice: 0, dragon: 0 },
         },
       ],
     },
@@ -88,6 +92,8 @@ const DEFAULT_WEAPON_SLOT = {
       grankOrLater: false,
       hunterType: 'common',
       exoticSkillId: null,
+      defenseMax: null,
+      resistances: { fire: 0, water: 0, thunder: 0, ice: 0, dragon: 0 },
       skills: [],
       openSlotCount: 0,
     },
@@ -376,6 +382,8 @@ describe('App', () => {
               grankOrLater: false,
               hunterType: 'common',
               exoticSkillId: null,
+              defenseMax: null,
+              resistances: { fire: 0, water: 0, thunder: 0, ice: 0, dragon: 0 },
               skills: [],
               openSlotCount: 2,
             },
@@ -386,6 +394,8 @@ describe('App', () => {
               grankOrLater: false,
               hunterType: 'common',
               exoticSkillId: null,
+              defenseMax: null,
+              resistances: { fire: 0, water: 0, thunder: 0, ice: 0, dragon: 0 },
               skills: [{ skillId: 1000001, points: 1 }],
               openSlotCount: 2,
             },
@@ -439,7 +449,18 @@ describe('App', () => {
     worker.search.mockImplementation((...args: unknown[]) => {
       const callbacks = args[3] as { onResult: (result: unknown) => void }
       callbacks.onResult({
-        picks: new Map([['head', { id: 'head:0001', name: 'Leather Helm', skills: [] }]]),
+        picks: new Map([
+          [
+            'head',
+            {
+              id: 'head:0001',
+              name: 'Leather Helm',
+              skills: [],
+              defenseMax: null,
+              resistances: { fire: 0, water: 0, thunder: 0, ice: 0, dragon: 0 },
+            },
+          ],
+        ]),
         decorations: new Map(),
         cuffs: [],
         skillTotals: new Map([[1, 15]]),
@@ -462,7 +483,18 @@ describe('App', () => {
     worker.search.mockImplementation((...args: unknown[]) => {
       const callbacks = args[3] as { onResult: (result: unknown) => void }
       callbacks.onResult({
-        picks: new Map([['head', { id: 'head:0001', name: 'Leather Helm', skills: [] }]]),
+        picks: new Map([
+          [
+            'head',
+            {
+              id: 'head:0001',
+              name: 'Leather Helm',
+              skills: [],
+              defenseMax: 10,
+              resistances: { fire: 4, water: -1, thunder: 0, ice: 3, dragon: 2 },
+            },
+          ],
+        ]),
         decorations: new Map(),
         cuffs: [],
         skillTotals: new Map([[1, 15]]),
@@ -496,6 +528,8 @@ describe('App', () => {
         openSlotCount: null,
         grankOrLater: null,
         exoticSkillId: null,
+        defenseMax: 10,
+        resistances: { fire: 4, water: -1, thunder: 0, ice: 3, dragon: 2 },
       },
     ])
   })
@@ -510,7 +544,18 @@ describe('App', () => {
       queueMicrotask(() => {
         for (let i = 0; i < 25; i++) {
           callbacks.onResult({
-            picks: new Map([['head', { id: `head:${i}`, name: `Helm ${i}`, skills: [] }]]),
+            picks: new Map([
+              [
+                'head',
+                {
+                  id: `head:${i}`,
+                  name: `Helm ${i}`,
+                  skills: [],
+                  defenseMax: null,
+                  resistances: { fire: 0, water: 0, thunder: 0, ice: 0, dragon: 0 },
+                },
+              ],
+            ]),
             decorations: new Map(),
             cuffs: [],
             skillTotals: new Map([[1, 15]]),

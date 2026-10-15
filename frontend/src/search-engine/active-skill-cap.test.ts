@@ -18,6 +18,8 @@ function candidate(
     grankOrLater,
     hunterType: 'common',
     exoticSkillId,
+    defenseMax: null,
+    resistances: { fire: 0, water: 0, thunder: 0, ice: 0, dragon: 0 },
     skills: [],
   }
 }

@@ -10,8 +10,22 @@
  * logic.
  */
 
-import type { DataBundle, NamedCandidate, NamedCuff, NamedDecoration, NamedSlotQuery } from './load-bundle'
+import type {
+  DataBundle,
+  NamedCandidate,
+  NamedCuff,
+  NamedDecoration,
+  NamedResistances,
+  NamedSlotQuery,
+} from './load-bundle'
 import type { PinnedSlot } from './pinned-armor'
+
+// The weapon slot is virtual and carries no defense/resistance data of its
+// own (confirmed against the raw data -- see docs/data-format-notes.md: the
+// `equip.js` weapon buckets have no F/W/T/D/I/DEF columns at all, a wholly
+// different row shape from armor), so every synthesized weapon candidate
+// gets these placeholder zero values.
+const NO_RESISTANCES: NamedResistances = { fire: 0, water: 0, thunder: 0, ice: 0, dragon: 0 }
 
 /** Which Hunter Type the solver is allowed to equip (confirmed by the
  * project owner, 2026-10-15): Blademaster- and Gunner-restricted armor
@@ -69,6 +83,8 @@ export function buildWeaponSlot(bundle: DataBundle, state: QueryFormState): Name
       grankOrLater: false,
       hunterType: 'common',
       exoticSkillId: null,
+      defenseMax: null,
+      resistances: NO_RESISTANCES,
       skills: [],
       openSlotCount: state.weaponSlotCount,
     })
@@ -83,6 +99,8 @@ export function buildWeaponSlot(bundle: DataBundle, state: QueryFormState): Name
       grankOrLater: false,
       hunterType: 'common',
       exoticSkillId: null,
+      defenseMax: null,
+      resistances: NO_RESISTANCES,
       skills: [{ skillId: id, points: 1 }],
       openSlotCount: state.weaponSlotCount,
     })
@@ -95,6 +113,8 @@ export function buildWeaponSlot(bundle: DataBundle, state: QueryFormState): Name
       grankOrLater: false,
       hunterType: 'common',
       exoticSkillId: null,
+      defenseMax: null,
+      resistances: NO_RESISTANCES,
       skills: [],
       openSlotCount: state.weaponSlotCount,
     })
@@ -179,6 +199,8 @@ export function slotsAfterPinning(
       grankOrLater: original.grankOrLater,
       hunterType: original.hunterType,
       exoticSkillId: original.exoticSkillId,
+      defenseMax: original.defenseMax,
+      resistances: original.resistances,
       skills: [...skillTotals.entries()].map(([skillId, points]) => ({ skillId, points })),
       openSlotCount: (original.openSlotCount ?? 0) - usedSlots,
     }

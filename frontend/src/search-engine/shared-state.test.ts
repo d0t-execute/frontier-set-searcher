@@ -27,6 +27,8 @@ const state: SharedSearchState = {
         openSlotCount: 3,
         grankOrLater: false,
         exoticSkillId: 83,
+        defenseMax: 10,
+        resistances: { fire: 4, water: -1, thunder: 0, ice: 3, dragon: 2 },
       },
     ],
     decorations: [
@@ -64,6 +66,8 @@ describe('encodeSharedState / decodeSharedState', () => {
             openSlotCount: null,
             grankOrLater: false,
             exoticSkillId: null,
+            defenseMax: null,
+            resistances: { fire: 0, water: 0, thunder: 0, ice: 0, dragon: 0 },
           },
         ],
         decorations: [],

@@ -52,6 +52,8 @@ const STATE: SharedSearchState = {
         openSlotCount: null,
         grankOrLater: false,
         exoticSkillId: null,
+        defenseMax: 10,
+        resistances: { fire: 4, water: -1, thunder: 0, ice: 3, dragon: 2 },
       },
     ],
     decorations: [],

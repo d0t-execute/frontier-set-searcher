@@ -61,6 +61,13 @@ CREATE TABLE IF NOT EXISTS equipment (
     defense_max INTEGER,
     slot_count_base INTEGER NOT NULL DEFAULT 0,
     slot_count_max INTEGER NOT NULL DEFAULT 0,
+    -- Elemental resistances (F/W/T/D/I fields) -- flat per piece, not scaled
+    -- by forge level like defense is. See docs/data-format-notes.md.
+    resistance_fire INTEGER NOT NULL DEFAULT 0,
+    resistance_water INTEGER NOT NULL DEFAULT 0,
+    resistance_thunder INTEGER NOT NULL DEFAULT 0,
+    resistance_dragon INTEGER NOT NULL DEFAULT 0,
+    resistance_ice INTEGER NOT NULL DEFAULT 0,
     min_hr INTEGER,
     min_gr INTEGER,
     -- Tower armor (CLASS "N") can only take Tower Gems in its slots, and

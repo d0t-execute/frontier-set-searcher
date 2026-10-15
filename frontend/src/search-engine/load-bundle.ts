@@ -56,6 +56,19 @@ export interface NamedSkill {
  * (nearly all head pieces, plus a minority of other slots) fit either. */
 export type HunterType = 'common' | 'blademaster' | 'gunner'
 
+/** A piece's elemental resistances (etl's `resistance_*` columns, from the
+ * raw F/W/T/D/I fields) -- flat per piece, not forge-level scaled (see
+ * docs/data-format-notes.md's column table). Display-only, like
+ * `defenseMax` on `NamedCandidate` -- the search engine has no concept of
+ * either. */
+export interface NamedResistances {
+  readonly fire: number
+  readonly water: number
+  readonly thunder: number
+  readonly ice: number
+  readonly dragon: number
+}
+
 export interface NamedCandidate extends Candidate {
   readonly name: string
   readonly category: string
@@ -68,6 +81,13 @@ export interface NamedCandidate extends Candidate {
    * active-skill-cap exemption (active-skill-cap.ts) can tell an
    * Exotic-granted skill apart from the piece's normal contributions. */
   readonly exoticSkillId: number | null
+  /** Fully-forged defense (etl/src/etl/export.py's `_export_equipment`) --
+   * display-only, for the result card's Stats column (docs/skill-system-
+   * roadmap.md's result-card-redesign spec). `null` for a piece with no
+   * defense progression (shouldn't happen for real armor, but the ETL
+   * column itself is nullable). */
+  readonly defenseMax: number | null
+  readonly resistances: NamedResistances
 }
 
 export interface NamedDecoration extends Decoration {

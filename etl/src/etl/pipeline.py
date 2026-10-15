@@ -166,6 +166,11 @@ def load_equipment(
             defense_max=row.defense_max,
             slot_count_base=row.slot_count_base,
             slot_count_max=row.slot_count_max,
+            resistance_fire=row.resistance_fire,
+            resistance_water=row.resistance_water,
+            resistance_thunder=row.resistance_thunder,
+            resistance_dragon=row.resistance_dragon,
+            resistance_ice=row.resistance_ice,
             min_hr=row.min_hr,
             is_tower=row.is_tower,
             zenith_skill_id=(
