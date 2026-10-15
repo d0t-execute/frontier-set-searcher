@@ -236,7 +236,7 @@ function ArmorSlotPicker({
             <div className="mt-1">
               <input
                 type="text"
-                className="form-control form-control-sm w-auto d-inline-block"
+                className="form-control form-control-sm decoration-search-input d-inline-block"
                 aria-label={`Search decorations for ${slotId}`}
                 placeholder="Type to search decorations…"
                 value={decorationSearch}
@@ -330,7 +330,7 @@ function SlotDecorationOnlyPicker({
         <div className="mt-1">
           <input
             type="text"
-            className="form-control form-control-sm w-auto d-inline-block"
+            className="form-control form-control-sm decoration-search-input d-inline-block"
             aria-label={`Search decorations to force into ${slotId}`}
             placeholder="Type to search decorations…"
             value={search}

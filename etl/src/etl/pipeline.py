@@ -33,7 +33,7 @@ from etl.db.repository import (
 from etl.fetch import CachingFetcher
 from etl.parse.equipment import parse_equip_js
 from etl.parse.skill_priority import parse_skill_priority_table
-from etl.parse.skill_tiers import parse_skill_tier_table
+from etl.parse.skill_tiers import ParsedSkillGroup, ParsedSkillTier, parse_skill_tier_table
 from etl.parse.skills import parse_skill_names, parse_zenith_skill_names
 from etl.parse.weapon import WEAPON_PAGE_TO_TYPE, parse_weapon_page
 
@@ -313,6 +313,29 @@ SKILL_TIER_NAME_ALIASES: dict[str, str] = {
 }
 
 
+# Known parser gap, not a name mismatch like `SKILL_TIER_NAME_ALIASES` above:
+# the tier site renders every one of "Adrenaline"'s rows (including its
+# un-tiered baseline) as a <br>-separated pair of alternative values (e.g.
+# "15<br>∥<br>20"), which `parse_skill_tier_table` deliberately refuses to
+# pick between (see its own module docstring) -- so the group comes back with
+# no tiers at all. Filled in by hand from the project owner's own knowledge of
+# the skill instead of guessing at the ambiguous pair (2026-10-16).
+MANUAL_SKILL_TIER_OVERRIDES: dict[str, tuple[ParsedSkillTier, ...]] = {
+    "Adrenaline": (
+        ParsedSkillTier(label="Adrenaline+2", threshold=15, description=""),
+        ParsedSkillTier(label="Adrenaline+1", threshold=10, description=""),
+        ParsedSkillTier(label="Worry", threshold=-15, description=""),
+    ),
+}
+
+
+def _apply_skill_tier_override(group: ParsedSkillGroup) -> ParsedSkillGroup:
+    override = MANUAL_SKILL_TIER_OVERRIDES.get(group.name)
+    if override is None:
+        return group
+    return ParsedSkillGroup(name=group.name, section=group.section, tiers=override)
+
+
 @dataclass(frozen=True, slots=True)
 class SkillTierLoadSummary:
     matched_group_count: int
@@ -339,7 +362,7 @@ def load_skill_tiers(conn: sqlite3.Connection, *, html: str) -> SkillTierLoadSum
     not appended to, so re-running against a re-crawled page can't violate
     `skill_tier`'s (skill_id, tier_order) uniqueness constraint.
     """
-    groups = parse_skill_tier_table(html)
+    groups = [_apply_skill_tier_override(g) for g in parse_skill_tier_table(html)]
     matched_names: set[str] = set()
     unmatched_group_names: list[str] = []
 

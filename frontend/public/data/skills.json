@@ -1114,7 +1114,23 @@
     "name": "Adrenaline",
     "category": "Attack Skills",
     "priorityRank": 155,
-    "tiers": []
+    "tiers": [
+      {
+        "label": "Adrenaline+2",
+        "minPoints": 15,
+        "description": ""
+      },
+      {
+        "label": "Adrenaline+1",
+        "minPoints": 10,
+        "description": ""
+      },
+      {
+        "label": "Worry",
+        "minPoints": -15,
+        "description": ""
+      }
+    ]
   },
   {
     "id": 47,

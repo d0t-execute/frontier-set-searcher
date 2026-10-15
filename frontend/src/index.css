@@ -440,6 +440,13 @@ code {
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%236b6375' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
 }
 
+/* ArmorPicker's own decoration search boxes (`w-auto` alone left them at the
+ * browser's intrinsic text-input width, ~183px) -- widened to a fixed 200px
+ * (2026-10-15, per the project owner). */
+.decoration-search-input {
+  width: 200px;
+}
+
 @media (prefers-color-scheme: dark) {
   .form-select {
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
@@ -570,8 +577,13 @@ code {
   margin: 0 0 8px;
 }
 
+/* Reuses `.category-group-children`/`.category-leaf`'s own branch-line
+ * styling (see this file's "Category filter tree" rules above) so a pick's
+ * decorations read the same way as every other group/leaf structure on the
+ * page -- attached to, and visibly branching from, the piece they're socketed
+ * into (2026-10-16, per the project owner). */
 .result-decoration-list {
-  margin: 2px 0 6px 20px;
+  margin-bottom: 6px;
   color: var(--text);
   font-size: 0.875em;
 }
