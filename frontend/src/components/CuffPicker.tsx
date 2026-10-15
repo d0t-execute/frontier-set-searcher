@@ -38,7 +38,7 @@ export function CuffPicker({ cuffs, pinned, onChange }: CuffPickerProps) {
   }
 
   return (
-    <div>
+    <div className="d-flex flex-column gap-3">
       {Array.from({ length: MAX_EQUIPPED_CUFFS }, (_, i) => (
         <CuffSlotPicker
           key={i}
@@ -68,8 +68,8 @@ function CuffSlotPicker({
   const cuff = cuffId ? cuffs.find((c) => c.id === cuffId) : undefined
 
   return (
-    <div className="mb-2">
-      <div className="fw-bold">{label}</div>
+    <div>
+      <div className="fw-bold mb-1">{label}</div>
 
       {cuff && !picking ? (
         <div className="d-flex align-items-center gap-2">
@@ -90,7 +90,7 @@ function CuffSlotPicker({
           </button>
         </div>
       ) : (
-        <div>
+        <div className="d-flex flex-column gap-1">
           <input
             type="text"
             className="form-control"
@@ -112,7 +112,7 @@ function CuffSlotPicker({
           {cuff && (
             <button
               type="button"
-              className="btn btn-sm btn-outline-secondary mt-1"
+              className="btn btn-sm btn-outline-secondary align-self-start"
               onClick={() => {
                 setPicking(false)
                 setSearch('')

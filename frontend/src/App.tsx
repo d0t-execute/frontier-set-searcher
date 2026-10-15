@@ -42,6 +42,51 @@ const HUNTER_TYPE_FILTER_OPTIONS: readonly {
   { value: 'gunner', label: 'Gunner' },
 ]
 
+/** A two-position slider standing in for a plain `<select>` (2026-10-15, per
+ * the project owner: Hunter Type is a required, build-defining choice -- not
+ * an optional filter -- so it got pulled out of the collapsible Weapon
+ * section into its own always-visible control, styled as an on/off-style
+ * switch except each side is labeled with the option it picks rather than
+ * generic "on"/"off"). Sits directly above the Weapon section it used to live
+ * inside (2026-10-15, per the project owner) -- it's a weapon-driven choice,
+ * so it reads naturally right next to that section without needing its own
+ * explanatory text (also dropped per the project owner: what it does is
+ * self-evident from the two labeled halves of the switch itself). */
+function HunterTypeToggle({
+  value,
+  onChange,
+}: {
+  readonly value: HunterTypeFilter
+  readonly onChange: (next: HunterTypeFilter) => void
+}) {
+  return (
+    <div className="app-field-group app-hunter-type-field">
+      <span className="form-label" id="hunter-type-label">
+        Hunter type
+      </span>
+      <div
+        className="hunter-type-toggle"
+        role="group"
+        aria-labelledby="hunter-type-label"
+        data-selected={value}
+      >
+        <div className="hunter-type-toggle-thumb" aria-hidden="true" />
+        {HUNTER_TYPE_FILTER_OPTIONS.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            className="hunter-type-toggle-option"
+            aria-pressed={value === option.value}
+            onClick={() => onChange(option.value)}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 type SearchStatus = 'idle' | 'searching' | 'done' | 'error'
 
 // The search engine formulates each query as a mixed-integer program and
@@ -310,11 +355,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
       (key) => key !== WEAPON_NO_ZENITH_SKILL_KEY,
     ).length
     const allowed = total - excludedRealSkills
-    const slots = pluralize(weaponSlotCount, 'slot')
-    const hunterTypeLabel =
-      HUNTER_TYPE_FILTER_OPTIONS.find((o) => o.value === hunterTypeFilter)?.label ??
-      hunterTypeFilter
-    return `${hunterTypeLabel}, ${allowed} of ${total} Zenith skills allowed, ${slots} reserved`
+    return `${allowed} of ${total} Zenith skills allowed, ${weaponSlotCount} of 3 slots used for decorations`
   })()
 
   const queryFormState: QueryFormState = {
@@ -500,9 +541,8 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
             <div className="app-column">
               <Disclosure title="Pin specific armor" summary={pinnedArmorSummary}>
                 <p className="form-text">
-                  Force a specific piece (and its decorations) into a slot instead of letting the
-                  solver choose -- useful for optimizing around gear you already own, or pinning
-                  part of a build while exploring the rest. Unpinned slots stay solver-optimized.
+                  Pins a specific piece or decoration to force the solver to use it. Type at least
+                  2 characters to search.
                 </p>
                 <ArmorPicker
                   slots={bundle.slots}
@@ -545,9 +585,8 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
 
               <Disclosure title="Pin specific cuffs" summary={pinnedCuffsSummary}>
                 <p className="form-text">
-                  Force a specific cuff into one or both cuff slots instead of letting the solver
-                  choose -- same idea as pinning an armor piece. The same cuff can fill both slots
-                  at once.
+                  Pins a specific cuff to force the solver to use it. Type at least 2 characters to
+                  search.
                 </p>
                 <CuffPicker
                   cuffs={bundle.cuffs}
@@ -558,28 +597,9 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
             </div>
 
             <div className="app-column">
+              <HunterTypeToggle value={hunterTypeFilter} onChange={setHunterTypeFilter} />
+
               <Disclosure title="Weapon" summary={weaponSummary}>
-                <div className="app-field-group">
-                  <label className="form-label" htmlFor="hunter-type-filter">
-                    Hunter type
-                  </label>
-                  <select
-                    id="hunter-type-filter"
-                    className="form-select w-auto"
-                    value={hunterTypeFilter}
-                    onChange={(e) => setHunterTypeFilter(e.target.value as HunterTypeFilter)}
-                  >
-                    {HUNTER_TYPE_FILTER_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="form-text">
-                    Blademaster and Gunner armor can't be mixed in one build -- this restricts the
-                    search to your Hunter Type's own pieces (plus every piece that fits either).
-                  </div>
-                </div>
                 <div className="app-field-group">
                   <CategoryFilter
                     groups={weaponZenithSkillGroups}
@@ -672,14 +692,18 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
             </div>
           </div>
 
-          {status === 'error' && errorMessage && <p role="alert">{errorMessage}</p>}
-          {status === 'searching' && results.length === 0 && <p>Searching…</p>}
-          {status === 'done' && results.length === 0 && <p>No matching builds found.</p>}
-          {status === 'done' && reachedCap && (
-            <p>
-              Showing the top {maxResults} {maxResults === 1 ? 'result' : 'results'}. Narrow your
-              requirements or raise the result count above to see more.
-            </p>
+          {status !== 'idle' && (
+            <div className="app-status">
+              {status === 'error' && errorMessage && <p role="alert">{errorMessage}</p>}
+              {status === 'searching' && results.length === 0 && <p>Searching…</p>}
+              {status === 'done' && results.length === 0 && <p>No matching builds found.</p>}
+              {status === 'done' && reachedCap && (
+                <p>
+                  Showing the top {maxResults} {maxResults === 1 ? 'result' : 'results'}. Narrow
+                  your requirements or raise the result count above to see more.
+                </p>
+              )}
+            </div>
           )}
 
           <div className="app-results">

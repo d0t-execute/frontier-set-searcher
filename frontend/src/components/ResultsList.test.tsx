@@ -283,8 +283,8 @@ describe('ResultsList', () => {
     )
 
     const zenithLine = screen.getByText(/zenith skills:/i).closest('div')
-    expect(zenithLine).toHaveTextContent('Skill Slots Up: 3')
-    expect(zenithLine).not.toHaveTextContent('Attack: 20')
+    expect(zenithLine).toHaveTextContent('Skill Slots Up (3)')
+    expect(zenithLine).not.toHaveTextContent('Attack (20)')
   })
 
   it('shows nothing about Zenith skills when the build has none', () => {
@@ -321,7 +321,163 @@ describe('ResultsList', () => {
 
     expect(screen.getByText(/active skill cap: 10/i)).toBeInTheDocument()
     expect(screen.getByText(/1 skill disabled/i)).toBeInTheDocument()
-    expect(screen.getByText(/skill 11: 3 \(disabled\)/i)).toBeInTheDocument()
+    // The level/value split across two spans (so the level can be styled
+    // bigger) means the full "Skill 11 (3) (disabled)" text is never any one
+    // element's own text node -- `toHaveTextContent` aggregates descendants
+    // the way `getByText` deliberately doesn't, so it's used here instead.
+    expect(screen.getByText('Skill 11').closest('div')).toHaveTextContent(
+      'Skill 11 (3) (disabled)',
+    )
+  })
+
+  it('shows a tiered skill as its crossed tier label plus points over threshold', () => {
+    const tieredSkills: readonly NamedSkill[] = [
+      {
+        id: 1,
+        name: 'Stylish',
+        category: null,
+        priorityRank: null,
+        tiers: [
+          { label: 'Stylish +2', minPoints: 20, description: null },
+          { label: 'Stylish +1', minPoints: 15, description: null },
+        ],
+      },
+    ]
+    render(
+      <ResultsList
+        results={[result({ skillTotals: new Map([[1, 17]]) })]}
+        skillNames={new Map([[1, 'Stylish']])}
+        skills={tieredSkills}
+        zenithSkills={zenithSkills}
+      />,
+    )
+
+    expect(screen.getByText('Stylish +1').closest('div')).toHaveTextContent('Stylish +1 (17/15)')
+  })
+
+  it("puts the skill's own name back in front of a bare-increment tier label", () => {
+    // Most Zenith skills' own tiers read this way -- just "+1"/"+2", with
+    // nothing in the label itself naming which skill it belongs to.
+    const zenithSkillsWithOne: readonly NamedSkill[] = [
+      {
+        id: 1000001,
+        name: 'Poison Res Up',
+        category: null,
+        priorityRank: null,
+        tiers: [
+          { label: '+2', minPoints: 2, description: null },
+          { label: '+1', minPoints: 1, description: null },
+        ],
+      },
+    ]
+    render(
+      <ResultsList
+        results={[result({ skillTotals: new Map([[1000001, 1]]) })]}
+        skillNames={new Map([[1000001, 'Poison Res Up']])}
+        skills={skills}
+        zenithSkills={zenithSkillsWithOne}
+      />,
+    )
+
+    expect(screen.getByText('Poison Res Up +1').closest('div')).toHaveTextContent(
+      'Poison Res Up +1 (1/1)',
+    )
+  })
+
+  it('shows plain progress toward the weakest tier when none has been crossed yet', () => {
+    const tieredSkills: readonly NamedSkill[] = [
+      {
+        id: 1,
+        name: 'Vampirism',
+        category: null,
+        priorityRank: null,
+        tiers: [{ label: 'Vampirism+1', minPoints: 10, description: null }],
+      },
+    ]
+    render(
+      <ResultsList
+        results={[result({ skillTotals: new Map([[1, 8]]) })]}
+        skillNames={new Map([[1, 'Vampirism']])}
+        skills={tieredSkills}
+        zenithSkills={zenithSkills}
+      />,
+    )
+
+    expect(screen.getByText('Vampirism').closest('div')).toHaveTextContent('Vampirism (8/10)')
+  })
+
+  it('sorts skills by points descending, with disabled ones after active and uncrossed ones last', () => {
+    const manySkills: readonly NamedSkill[] = Array.from({ length: 11 }, (_, i) => ({
+      id: i + 1,
+      name: `Skill ${i + 1}`,
+      category: null,
+      priorityRank: i + 1,
+      tiers: [],
+    }))
+    // Skills 1-10 are active (priority order keeps #11 the one disabled by
+    // the cap); #1 has the fewest points of the active ones, #10 the most,
+    // and #11 (disabled) still has more points than any of them.
+    const skillTotals = new Map([
+      ...manySkills.slice(0, 10).map((s, i): [number, number] => [s.id, i + 1]),
+      [11, 99],
+    ])
+
+    render(
+      <ResultsList
+        results={[result({ skillTotals })]}
+        skillNames={new Map(manySkills.map((s) => [s.id, s.name]))}
+        skills={manySkills}
+        zenithSkills={zenithSkills}
+      />,
+    )
+
+    const names = screen
+      .getAllByText(/^Skill \d+$/)
+      .map((el) => el.textContent)
+    expect(names[0]).toBe('Skill 10')
+    expect(names[names.length - 1]).toBe('Skill 11')
+  })
+
+  it('shows each placed decoration as its own line under its piece', () => {
+    render(
+      <ResultsList
+        results={[
+          result({
+            decorations: new Map([
+              [
+                'head',
+                [
+                  {
+                    id: 'D001',
+                    name: 'Attack Jewel',
+                    slotSize: 1,
+                    skills: [{ skillId: 1, points: 3 }],
+                    isTower: false,
+                    category: 'deco_standard',
+                  },
+                  {
+                    id: 'D002',
+                    name: 'Defense Jewel',
+                    slotSize: 1,
+                    skills: [],
+                    isTower: false,
+                    category: 'deco_standard',
+                  },
+                ],
+              ],
+            ]),
+          }),
+        ]}
+        skillNames={skillNames}
+        skills={skills}
+        zenithSkills={zenithSkills}
+      />,
+    )
+
+    const attackJewel = screen.getByText('Attack Jewel')
+    expect(attackJewel).toBeInTheDocument()
+    expect(screen.getByText('Defense Jewel')).toBeInTheDocument()
+    expect(attackJewel).toHaveAttribute('title', 'Attack: 3')
   })
 
   it('renders nothing when there are no results', () => {
