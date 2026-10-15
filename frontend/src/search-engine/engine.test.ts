@@ -330,4 +330,70 @@ describe('search with cuffs', () => {
 
     expect(results).toHaveLength(0)
   })
+
+  it('includes a pinned cuff in every result and credits its skills, leaving the free pool untouched', async () => {
+    const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Helm', { 1: 3 })] }]
+    const pinned = cuff('Sharpening PC1', 1, { 2: 10 })
+
+    const results = await collect(
+      search(
+        slots,
+        [
+          { skillId: 1, minPoints: 3 },
+          { skillId: 2, minPoints: 10 },
+        ],
+        [],
+        { pinnedCuffs: [pinned] },
+      ),
+    )
+
+    expect(results).toHaveLength(1)
+    expect(results[0].cuffs).toEqual([pinned])
+    expect(results[0].skillTotals.get(2)).toBe(10)
+  })
+
+  it('lets a pinned cuff and a solver-chosen cuff coexist within the shared budget', async () => {
+    const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Helm', { 1: 3 })] }]
+    const pinned = cuff('Skill Slots Up SZ', 2, { 2: 5 })
+    const free = cuff('SnS - Basic', 0, { 3: 5 })
+
+    const results = await collect(
+      search(
+        slots,
+        [
+          { skillId: 1, minPoints: 3 },
+          { skillId: 2, minPoints: 5 },
+          { skillId: 3, minPoints: 5 },
+        ],
+        [],
+        { pinnedCuffs: [pinned] },
+        [free],
+      ),
+    )
+
+    expect(results).toHaveLength(1)
+    expect(results[0].cuffs).toEqual([pinned, free])
+  })
+
+  it('rejects a free cuff that would exceed the budget a pin already spent', async () => {
+    const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Helm', { 1: 3 })] }]
+    const pinned = cuff('Skill Slots Up SZ', 2, { 2: 5 })
+    const free = cuff('Guard Up SZ', 2, { 3: 5 })
+
+    const results = await collect(
+      search(
+        slots,
+        [
+          { skillId: 1, minPoints: 3 },
+          { skillId: 2, minPoints: 5 },
+          { skillId: 3, minPoints: 5 },
+        ],
+        [],
+        { pinnedCuffs: [pinned] },
+        [free],
+      ),
+    )
+
+    expect(results).toHaveLength(0)
+  })
 })

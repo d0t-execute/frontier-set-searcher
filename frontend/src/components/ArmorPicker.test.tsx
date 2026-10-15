@@ -12,6 +12,7 @@ const slots = [
         id: 'head:0001',
         name: 'Leather Helm',
         category: 'standard_plain',
+        grankOrLater: false,
         skills: [{ skillId: 1, points: 5 }],
         openSlotCount: 2,
       },
@@ -19,6 +20,7 @@ const slots = [
         id: 'head:0002',
         name: 'Iron Helm',
         category: 'standard_plain',
+        grankOrLater: false,
         skills: [],
       },
     ] as NamedCandidate[],
@@ -26,7 +28,13 @@ const slots = [
   {
     slotId: 'chest',
     candidates: [
-      { id: 'body:0001', name: 'Leather Vest', category: 'standard_plain', skills: [] },
+      {
+        id: 'body:0001',
+        name: 'Leather Vest',
+        category: 'standard_plain',
+        grankOrLater: false,
+        skills: [],
+      },
     ] as NamedCandidate[],
   },
 ]

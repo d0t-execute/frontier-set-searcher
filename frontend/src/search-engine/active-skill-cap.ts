@@ -18,43 +18,24 @@ const BASE_ACTIVE_SKILL_CAP = 10
 const SKILL_SLOTS_UP_ZENITH_SKILL_NAME = 'Skill Slots Up'
 const MAX_SKILL_SLOTS_UP_BONUS = 7
 
-/** This tool's best-effort mapping of the in-game "3/5 standard G Rank
- * pieces (including Z, ZF, ZY, ZP and ZX)" piece-counting rule onto this
- * project's existing gear-category taxonomy (see gear-categories.ts). Covers
- * 4 of the 5 named suffixes -- Z/ZF via `zenith_plain`, ZY, ZX -- but
- * **not** "ZP" pieces: this project's category classifier
- * (etl/src/etl/parse/gear_category.py) sorts those under a
- * monetization-channel leaf (`paid_premium_kit`/`paid_gachapon`/
- * `paid_promotional`), not a Zenith-tier category, since CRE/CLASS alone
- * don't distinguish "paid G-Rank-or-later" from "paid but not G-Rank" at the
- * source. Documented here as a known open point (undercounts the
- * G-Rank-or-later piece total for a build using ZP armor) rather than
- * guessed away -- treating every paid piece as G-Rank-or-later would likely
- * overcount instead, since most paid pieces aren't. */
-const GRANK_OR_LATER_CATEGORIES: ReadonlySet<string> = new Set([
-  'grank_g',
-  'grank_gx',
-  'grank_g_hashu',
-  'grank_burst_species',
-  'grank_g_hiden',
-  'grank_origin',
-  'grank_exotic',
-  'grank_exotic_gx',
-  'zenith_plain',
-  'zenith_zy',
-  'zenith_zx',
-])
-
 function grankSetBonus(grankPieceCount: number): number {
   if (grankPieceCount >= 5) return 2
   if (grankPieceCount >= 3) return 1
   return 0
 }
 
+/** Counts how many of a build's picks are "G Rank or later" for the in-game
+ * "3/5 G-Rank-or-later pieces (including Z, ZF, ZY, ZP and ZX)" piece-
+ * counting rule -- see `NamedCandidate.grankOrLater`'s own docstring for why
+ * this can't be derived from `category` alone (several display categories,
+ * e.g. every "Paid and Premium" one, mix below-G-rank and G-Rank-or-later
+ * pieces together). The weapon slot's synthesized candidates are never
+ * G-Rank-or-later (a weapon has no such concept here), so they fall out of
+ * this count naturally. */
 export function countGrankOrLaterPieces(picks: ReadonlyMap<string, NamedCandidate>): number {
   let count = 0
   for (const candidate of picks.values()) {
-    if (GRANK_OR_LATER_CATEGORIES.has(candidate.category)) count++
+    if (candidate.grankOrLater) count++
   }
   return count
 }

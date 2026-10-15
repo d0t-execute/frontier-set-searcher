@@ -82,6 +82,17 @@ export interface SearchOptions {
    * here (or this left undefined entirely) is simply never penalized --
    * "unknown" defaults to "assume harmless," not "assume bad." */
   readonly skillTiers?: readonly SkillTierThresholds[]
+  /** Cuffs forced into the build instead of left to the solver -- 0-2
+   * entries, same "at most 2, duplicates allowed" rule as a normal result's
+   * `cuffs` (see `Cuff`). Their skill contributions count toward every
+   * requirement exactly like a solver-chosen cuff would, and they consume
+   * their share of `CUFF_SLOT_BUDGET`/`MAX_EQUIPPED_CUFFS` (`ilp-model.ts`)
+   * before the solver's own free cuff pool is allowed to use what's left --
+   * mirrors `App.tsx`'s armor-pinning feature (TODO #7's `PinnedSlot`), but
+   * cuffs have no per-slot cardinality row to narrow to a single candidate
+   * the way an armor slot does, so pinning them needs this explicit
+   * mechanism instead. */
+  readonly pinnedCuffs?: readonly Cuff[]
 }
 
 export interface BuildResult {

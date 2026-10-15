@@ -72,6 +72,12 @@ CREATE TABLE IF NOT EXISTS equipment (
     -- The reference set-searcher's gear-level category leaf (CRE + CLASS +
     -- name-suffix derived) -- see docs/gear-category-taxonomy.md.
     category TEXT NOT NULL DEFAULT 'standard_plain',
+    -- Whether this piece is "G Rank or later" for the active-skill-cap
+    -- piece-count bonus -- decided purely by CLASS (Tower: name-suffix
+    -- instead), independent of `category`/CRE. Several display categories
+    -- mix below-G-rank and G-rank-or-later pieces and can't be used for this
+    -- on their own -- see etl.parse.gear_category.is_grank_or_later_equipment.
+    grank_or_later INTEGER NOT NULL DEFAULT 0,
     source_url TEXT
 );
 

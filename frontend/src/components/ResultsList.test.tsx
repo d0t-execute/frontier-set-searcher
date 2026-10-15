@@ -16,7 +16,7 @@ const skills: readonly NamedSkill[] = [
 const zenithSkills: readonly NamedSkill[] = []
 
 function candidate(overrides: Partial<NamedCandidate> & Pick<NamedCandidate, 'id' | 'name'>) {
-  return { skills: [], category: 'standard_plain', ...overrides }
+  return { skills: [], category: 'standard_plain', grankOrLater: false, ...overrides }
 }
 
 function result(overrides: Partial<NamedBuildResult> = {}): NamedBuildResult {

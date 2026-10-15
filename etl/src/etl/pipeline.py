@@ -112,6 +112,7 @@ def load_equipment(
                 else None
             ),
             category=row.category,
+            grank_or_later=row.grank_or_later,
             source_url=source_url,
         )
         for skill_id, points in row.skills:

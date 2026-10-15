@@ -28,9 +28,11 @@ snapshot will go stale):
 | 3 | Exotic skills | Resolved 2026-10-15 -- does not exist, no implementation needed |
 | 4 | "Go Skill Boost" | Open point 2026-10-15 -- research inconclusive, needs owner input |
 | 5 | Cleaner UI + better skill categorization | Reviewed 2026-10-15, deliberately left undecided (see roadmap) |
-| 6 | Cuff equipment support | Complete (plus two follow-up correctness fixes) |
-| 7 | Exclude/force-include specific pieces (armor picker) | Armor picker complete 2026-10-15; cuff picker deferred (open point) |
+| 6 | Cuff equipment support | Complete (3 follow-up correctness fixes, incl. 2026-10-15 default-category revision) |
+| 7 | Exclude/force-include specific pieces (armor picker) | Complete 2026-10-15 -- armor and cuff pickers both done |
 | 8 | Weapon Zenith-skill slot support | Complete, fully verified 2026-10-15 |
+| 9 | Share a build result via a generated link | Complete, fully verified 2026-10-15 |
+| 10 | UI overhaul: decluttered, collapsible, modern | First pass complete 2026-10-15 (collapsible sections); deeper visual-identity pass still open |
 
 Work order: proceed through the "Not started" items in roadmap order unless one is clearly blocked,
 in which case skip to the next and leave a note explaining why. Per the project owner's explicit

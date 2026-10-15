@@ -107,3 +107,141 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+
+/* -- Collapsible sections (components/Disclosure.tsx) -----------------------
+ * Each of this app's filter/picker blocks is a closed-by-default card; see
+ * docs/skill-system-roadmap.md TODO #10 -- the page used to render every one
+ * of these permanently expanded, which was the actual "immensely cluttered"
+ * complaint that prompted this pass. */
+
+.disclosure {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  overflow: hidden;
+  text-align: left;
+}
+
+.disclosure + .disclosure {
+  margin-top: 10px;
+}
+
+.disclosure-header {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 14px 18px;
+  cursor: pointer;
+  color: var(--text-h);
+  font-weight: 500;
+}
+
+.disclosure-header:hover {
+  background: var(--accent-bg);
+}
+
+.disclosure-header:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.disclosure-chevron {
+  display: inline-flex;
+  transition: transform 0.18s ease;
+  color: var(--accent);
+  flex: none;
+}
+
+.disclosure-header[aria-expanded='true'] .disclosure-chevron {
+  transform: rotate(90deg);
+}
+
+.disclosure-title {
+  font-size: 17px;
+}
+
+.disclosure-summary {
+  margin-left: auto;
+  padding-left: 12px;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Animates to/from 0 height without ever measuring `auto` in JS -- the
+ * `grid-template-rows: 0fr -> 1fr` trick. Content stays mounted and
+ * un-hidden the whole time (see Disclosure.tsx's own docstring on why). */
+.disclosure-body {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.22s ease;
+}
+
+.disclosure-body[data-open='true'] {
+  grid-template-rows: 1fr;
+}
+
+.disclosure-body-inner {
+  overflow: hidden;
+  min-height: 0;
+  padding: 0 18px;
+}
+
+.disclosure-body[data-open='true'] .disclosure-body-inner {
+  padding: 2px 18px 18px;
+  border-top: 1px solid var(--border);
+}
+
+/* -- App shell ---------------------------------------------------------- */
+
+.app-shell {
+  text-align: left;
+  padding: 32px 24px 48px;
+}
+
+.app-intro {
+  color: var(--text);
+  margin: -8px 0 24px;
+  max-width: 60ch;
+}
+
+.app-section-stack > * + * {
+  margin-top: 10px;
+}
+
+.app-action-bar {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+  padding: 16px 18px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  box-shadow: var(--shadow);
+}
+
+.app-toggle {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.app-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.app-results {
+  margin-top: 24px;
+}

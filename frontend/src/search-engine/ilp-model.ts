@@ -347,6 +347,10 @@ interface TierMachinery {
  * independent rules -- see those constants' doc comments). Like decorations,
  * each cuff is expected to already be filtered to ones relevant to
  * `requirements` before this is called.
+ *
+ * `options.pinnedCuffs` are folded into the row bounds directly rather than
+ * modeled as columns -- see this function's own local comment above where
+ * they're read.
  */
 export function buildModel(
   highs: Highs,
@@ -359,6 +363,25 @@ export function buildModel(
   const requestedSkillIds = new Set(requirements.map((r) => r.skillId))
   const preferExactMatches = options.preferExactMatches ?? false
   const numSlots = slots.length
+
+  // Pinned cuffs (see `SearchOptions.pinnedCuffs`) are never modeled as
+  // columns at all -- they're fixed, not chosen -- so their contribution is
+  // folded directly into the rows a real cuff column would otherwise feed:
+  // each requirement's threshold is lowered by however much the pin already
+  // covers, and the free pool's shared budget/count rows (below) are
+  // tightened by however much the pin already spends. A pin's own
+  // skill points are therefore identical for every candidate solution the
+  // solver considers, so leaving them out of `preferExactMatches`'s tier
+  // machinery doesn't change which solution ranks best -- only a *varying*
+  // contribution needs to be modeled there.
+  const pinnedCuffs = options.pinnedCuffs ?? []
+  const pinnedCuffSlotCost = pinnedCuffs.reduce((sum, c) => sum + c.slotSize, 0)
+  const pinnedCuffCount = pinnedCuffs.length
+  function pinnedPointsTowards(skillId: SkillId): number {
+    let total = 0
+    for (const c of pinnedCuffs) total += pointsTowards(c.skills, skillId)
+    return total
+  }
 
   const slotMaxCapacity = slots.map((slot) =>
     slot.candidates.reduce((max, c) => Math.max(max, c.openSlotCount ?? 0), 0),
@@ -443,7 +466,7 @@ export function buildModel(
     }
   }
   requirements.forEach((req, r) => {
-    rowLower[skillRow(r)] = req.minPoints
+    rowLower[skillRow(r)] = req.minPoints - pinnedPointsTowards(req.skillId)
     rowUpper[skillRow(r)] = highs.infinity
   })
   for (const m of tierMachinery) {
@@ -464,9 +487,9 @@ export function buildModel(
   }
   if (cuffs.length > 0) {
     rowLower[cuffBudgetRow] = -highs.infinity
-    rowUpper[cuffBudgetRow] = CUFF_SLOT_BUDGET
+    rowUpper[cuffBudgetRow] = Math.max(0, CUFF_SLOT_BUDGET - pinnedCuffSlotCost)
     rowLower[cuffCountRow] = -highs.infinity
-    rowUpper[cuffCountRow] = MAX_EQUIPPED_CUFFS
+    rowUpper[cuffCountRow] = Math.max(0, MAX_EQUIPPED_CUFFS - pinnedCuffCount)
   }
 
   const columns: ColumnMeta[] = []

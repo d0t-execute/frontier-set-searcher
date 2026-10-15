@@ -91,6 +91,7 @@ from etl.parse.gear_category import (
     CATEGORY_ZENITH_ZY,
     classify_cuff_category,
     classify_equipment_category,
+    is_grank_or_later_equipment,
 )
 
 
@@ -551,6 +552,44 @@ def test_standard_plain() -> None:
 
 def test_standard_sp() -> None:
     assert classify_equipment_category(_row("SP Helm", clazz="A")) == CATEGORY_STANDARD_SP
+
+
+# == is_grank_or_later_equipment ===============================================
+# The active-skill-cap piece-count bonus (docs/skill-system-roadmap.md TODO #1)
+# needs a G-Rank-or-later signal independent of the display category above --
+# several categories (every "Paid and Premium" one, Guild Festival, Event, Road)
+# mix below-G-rank and G-Rank-or-later CLASS values together and can't answer
+# this question on their own. Confirmed directly against the real cached
+# dataset: e.g. paid_gachapon alone holds 1,056 CLASS "Q" (Zenith-Shugo/ZP-tier)
+# and 840 CLASS "L" (G-Hiden) rows among its 13,745.
+
+
+def test_grank_or_later_true_for_every_grank_or_zenith_class() -> None:
+    for clazz in ("G", "H", "I", "J", "L", "M", "O", "P", "Q"):
+        assert is_grank_or_later_equipment(_row("Some Piece", clazz=clazz)) is True
+
+
+def test_grank_or_later_false_for_every_below_grank_class() -> None:
+    for clazz in ("", "A", "B", "C", "D", "E", "F", "K"):
+        assert is_grank_or_later_equipment(_row("Some Piece", clazz=clazz)) is False
+
+
+def test_grank_or_later_ignores_cre_acquisition_route() -> None:
+    # Same CLASS "Q" (Zenith-Shugo/ZP), different CRE routes -- true either way,
+    # unlike classify_equipment_category, which sorts these into unrelated
+    # leaves (paid_gachapon vs tournament_zp) and loses the tier distinction
+    # for the "4g" one entirely.
+    assert is_grank_or_later_equipment(_row("Tandress ZP", cre="1i", clazz="Q")) is True
+    assert is_grank_or_later_equipment(_row("Ukon ZP Head", cre="4g", clazz="Q")) is True
+
+
+def test_grank_or_later_tower_keys_on_name_suffix_not_class() -> None:
+    # Tower armor is always CLASS "N" regardless of tier -- the G/GX
+    # distinction lives in the name suffix instead (see tower_g/tower_gx_custom).
+    assert is_grank_or_later_equipment(_row("Ranvuo Helm", cre="1t", clazz="N")) is False
+    assert is_grank_or_later_equipment(_row("Nyui HS Helm", cre="1t", clazz="N")) is False
+    assert is_grank_or_later_equipment(_row("Once G Helm", cre="1t", clazz="N")) is True
+    assert is_grank_or_later_equipment(_row("Cleora GX Cap", cre="1t", clazz="N")) is True
 
 
 # == Cuffs (Tree 2 in docs/gear-category-taxonomy.md) =========================

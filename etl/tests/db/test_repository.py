@@ -22,6 +22,26 @@ def test_insert_and_fetch_equipment_by_external_id(conn: sqlite3.Connection) -> 
     assert fetched == created
 
 
+def test_insert_equipment_round_trips_grank_or_later(conn: sqlite3.Connection) -> None:
+    created = repo.insert_equipment(
+        conn,
+        external_id="0001",
+        name="Zinogre Helm",
+        slot_type="head",
+        category="grank_exotic",
+        grank_or_later=True,
+    )
+
+    assert created.grank_or_later is True
+    assert repo.get_equipment_by_external_id(conn, "0001").grank_or_later is True
+
+
+def test_insert_equipment_defaults_grank_or_later_to_false(conn: sqlite3.Connection) -> None:
+    created = repo.insert_equipment(conn, external_id="0001", name="Leather Helm", slot_type="head")
+
+    assert created.grank_or_later is False
+
+
 def test_get_equipment_by_external_id_returns_none_when_missing(conn: sqlite3.Connection) -> None:
     assert repo.get_equipment_by_external_id(conn, "does-not-exist") is None
 

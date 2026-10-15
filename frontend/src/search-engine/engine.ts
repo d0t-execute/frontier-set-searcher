@@ -116,10 +116,16 @@ export async function* search(
     // only counts as a result if every requirement is trivially already met
     // (only possible when every requirement's minPoints is 0 or less),
     // matching the old engine's behavior for this edge case.
+    const pinnedCuffs = options.pinnedCuffs ?? []
     const skillTotals = new Map<SkillId, number>()
+    for (const c of pinnedCuffs) {
+      for (const { skillId, points } of c.skills) {
+        skillTotals.set(skillId, (skillTotals.get(skillId) ?? 0) + points)
+      }
+    }
     const meetsAll = requirements.every((r) => (skillTotals.get(r.skillId) ?? 0) >= r.minPoints)
     if (meetsAll) {
-      yield { picks: new Map(), decorations: new Map(), cuffs: [], skillTotals }
+      yield { picks: new Map(), decorations: new Map(), cuffs: [...pinnedCuffs], skillTotals }
     }
     return
   }
@@ -136,13 +142,25 @@ export async function* search(
     relevantCuffs,
   )
   const native = highs.createModel(model)
+  const pinnedCuffs = options.pinnedCuffs ?? []
 
   try {
     for (;;) {
       if (!runTimeBoxed(native, highs)) return
 
       const solution = native.getSolution()
-      yield decodeSolution(columns, solution.colValue)
+      const decoded = decodeSolution(columns, solution.colValue)
+      if (pinnedCuffs.length === 0) {
+        yield decoded
+      } else {
+        const skillTotals = new Map(decoded.skillTotals)
+        for (const c of pinnedCuffs) {
+          for (const { skillId, points } of c.skills) {
+            skillTotals.set(skillId, (skillTotals.get(skillId) ?? 0) + points)
+          }
+        }
+        yield { ...decoded, cuffs: [...pinnedCuffs, ...decoded.cuffs], skillTotals }
+      }
 
       const cut = exclusionRow(highs, columns, solution.colValue)
       native.addRow(cut.lower, cut.upper, { indices: cut.indices, values: cut.values })

@@ -67,8 +67,28 @@ def test_exports_equipment_shaped_for_the_search_engine(tmp_path: Path) -> None:
             "skills": [{"skillId": attack.id, "points": 3}],
             "openSlotCount": 2,
             "category": "standard_plain",
+            "grankOrLater": False,
         }
     ]
+
+
+def test_exports_a_grank_or_later_pieces_flag(tmp_path: Path) -> None:
+    conn = _conn(tmp_path)
+    repo.insert_equipment(
+        conn,
+        external_id="head:0002",
+        name="Zinogre Helm",
+        slot_type="head",
+        category="grank_exotic",
+        grank_or_later=True,
+    )
+    conn.commit()
+    out_dir = tmp_path / "bundle"
+
+    export_bundle(conn, out_dir)
+
+    heads = _load(out_dir / "equipment" / "head.json")
+    assert heads[0]["grankOrLater"] is True
 
 
 def test_exports_equipment_under_its_own_slot_type_only(tmp_path: Path) -> None:

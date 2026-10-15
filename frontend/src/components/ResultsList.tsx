@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { determineActiveSkills } from '../search-engine/active-skill-cap'
 import type { NamedSkill } from '../search-engine/load-bundle'
 import type { SkillId } from '../search-engine/types'
@@ -8,9 +9,21 @@ export interface ResultsListProps {
   readonly skillNames: ReadonlyMap<SkillId, string>
   readonly skills: readonly NamedSkill[]
   readonly zenithSkills: readonly NamedSkill[]
+  /** When given, each card gets a "Get shareable link" button that calls this
+   * with the card's own index to produce the link (docs/skill-system-roadmap.md
+   * TODO #9) -- omitted entirely (no button at all) when not provided, e.g.
+   * `ResultPage.tsx` rendering a single already-shared result has no further
+   * index to share. */
+  readonly getShareUrl?: (index: number) => string
 }
 
-export function ResultsList({ results, skillNames, skills, zenithSkills }: ResultsListProps) {
+export function ResultsList({
+  results,
+  skillNames,
+  skills,
+  zenithSkills,
+  getShareUrl,
+}: ResultsListProps) {
   if (results.length === 0) return null
 
   return (
@@ -25,6 +38,7 @@ export function ResultsList({ results, skillNames, skills, zenithSkills }: Resul
             skillNames={skillNames}
             skills={skills}
             zenithSkills={zenithSkills}
+            getShareUrl={getShareUrl ? () => getShareUrl(i) : undefined}
           />
         </li>
       ))}
@@ -32,17 +46,26 @@ export function ResultsList({ results, skillNames, skills, zenithSkills }: Resul
   )
 }
 
-function ResultCard({
+export interface ResultCardProps {
+  readonly result: NamedBuildResult
+  readonly skillNames: ReadonlyMap<SkillId, string>
+  readonly skills: readonly NamedSkill[]
+  readonly zenithSkills: readonly NamedSkill[]
+  readonly getShareUrl?: () => string
+}
+
+/** Exported so `ResultPage.tsx` (a shared single-result link, see
+ * docs/skill-system-roadmap.md TODO #9) can render exactly the same card the
+ * main search page's results list does, instead of a second, drifting copy
+ * of this rendering. */
+export function ResultCard({
   result,
   skillNames,
   skills,
   zenithSkills,
-}: {
-  result: NamedBuildResult
-  skillNames: ReadonlyMap<SkillId, string>
-  skills: readonly NamedSkill[]
-  zenithSkills: readonly NamedSkill[]
-}) {
+  getShareUrl,
+}: ResultCardProps) {
+  const [shareUrl, setShareUrl] = useState<string | null>(null)
   const { cap, disabled } = determineActiveSkills(
     result.picks,
     result.skillTotals,
@@ -104,6 +127,38 @@ function ResultCard({
           })
           .join(', ')}
       </div>
+
+      {getShareUrl && (
+        <div className="mt-2">
+          {shareUrl ? (
+            <div className="d-flex gap-2 align-items-center">
+              <input
+                type="text"
+                className="form-control form-control-sm"
+                aria-label="Shareable link"
+                readOnly
+                value={shareUrl}
+                onFocus={(e) => e.target.select()}
+              />
+              <button
+                type="button"
+                className="btn btn-sm btn-outline-secondary"
+                onClick={() => void navigator.clipboard?.writeText(shareUrl)}
+              >
+                Copy
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="btn btn-sm btn-outline-secondary"
+              onClick={() => setShareUrl(getShareUrl())}
+            >
+              Get shareable link
+            </button>
+          )}
+        </div>
+      )}
     </div>
   )
 }

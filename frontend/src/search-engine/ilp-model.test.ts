@@ -489,6 +489,82 @@ describe('buildModel with cuffs', () => {
   })
 })
 
+describe('buildModel with options.pinnedCuffs', () => {
+  it("credits a pinned cuff's skills toward a requirement without any cuff column existing", () => {
+    const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Helm', { 1: 3 })] }]
+    const pinnedCuffs = [cuff('Sharpening PC1', 1, { 2: 10 })]
+    const { model, columns } = buildModel(
+      highs,
+      slots,
+      [],
+      [
+        { skillId: 1, minPoints: 3 },
+        { skillId: 2, minPoints: 10 },
+      ],
+      { pinnedCuffs },
+      [],
+    )
+
+    expect(columns.some((c) => c.kind === 'cuff')).toBe(false)
+    const { modelStatus, colValue, native } = solve(model)
+    expect(modelStatus).toBe(highs.constants.modelStatus.optimal)
+    const decoded = decodeSolution(columns, colValue)
+    expect(decoded.cuffs).toEqual([])
+    native.dispose()
+  })
+
+  it('reduces the free cuff pool budget by a pinned cuff that shares the same slot-cost budget', () => {
+    const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Helm', { 1: 3 })] }]
+    const pinnedCuffs = [cuff('Skill Slots Up SZ', 2, { 2: 5 })]
+    const freeCuffs = [cuff('Guard Up SZ', 2, { 3: 5 })]
+    const { model } = buildModel(
+      highs,
+      slots,
+      [],
+      [
+        { skillId: 1, minPoints: 3 },
+        { skillId: 2, minPoints: 5 },
+        { skillId: 3, minPoints: 5 },
+      ],
+      { pinnedCuffs },
+      freeCuffs,
+    )
+
+    // The pin already spends the full budget (2), so the free cuff (also
+    // costing 2) can no longer fit alongside it -- mirrors the unpinned
+    // "rejects two cuffs whose combined slotSize exceeds the budget" case.
+    const { modelStatus, native } = solve(model)
+    expect(modelStatus).toBe(highs.constants.modelStatus.infeasible)
+    native.dispose()
+  })
+
+  it('reduces the free cuff pool item-count limit by how many cuffs are pinned', () => {
+    const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Helm', { 1: 3 })] }]
+    const pinnedCuffs = [cuff('SnS - Basic', 0, { 2: 5 }), cuff('SnS - Issen', 0, { 2: 5 })]
+    const freeCuffs = [cuff('SnS - Rush', 0, { 2: 5 })]
+    const { model, columns } = buildModel(
+      highs,
+      slots,
+      [],
+      [
+        { skillId: 1, minPoints: 3 },
+        { skillId: 2, minPoints: 5 },
+      ],
+      { pinnedCuffs },
+      freeCuffs,
+    )
+
+    // Both cuff slots are already spoken for by the pins, so the free pool
+    // (one more free cuff) can't be equipped at all even though it costs
+    // nothing against the shared budget.
+    const { modelStatus, colValue, native } = solve(model)
+    expect(modelStatus).toBe(highs.constants.modelStatus.optimal)
+    const decoded = decodeSolution(columns, colValue)
+    expect(decoded.cuffs).toEqual([])
+    native.dispose()
+  })
+})
+
 describe('decodeSolution', () => {
   it('ignores auxiliary columns entirely, even when their value is far outside 0/1', () => {
     const slots: SlotQuery[] = [

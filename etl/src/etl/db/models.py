@@ -94,6 +94,11 @@ class Equipment:
     # The reference set-searcher's gear-level category leaf -- see
     # docs/gear-category-taxonomy.md.
     category: str = "standard_plain"
+    # Whether this piece is "G Rank or later" for the active-skill-cap
+    # piece-count bonus -- see etl.parse.gear_category.is_grank_or_later_equipment.
+    # Independent of `category`: several display categories mix below-G-rank
+    # and G-rank-or-later pieces and can't be used for this on their own.
+    grank_or_later: bool = False
     source_url: str | None = None
 
 

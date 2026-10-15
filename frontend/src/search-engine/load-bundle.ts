@@ -42,13 +42,18 @@ export interface NamedSkill {
 }
 
 /** A Candidate as exported (see etl/src/etl/export.py) also carries a
- * display name and a gear-level category -- the search engine itself never
- * needs either (Candidate doesn't declare them), but the UI does: `name` for
- * display, `category` for the gear-level filter (see
- * docs/gear-category-taxonomy.md). */
+ * display name, a gear-level category, and a G-Rank-or-later flag -- the
+ * search engine itself never needs any of these (Candidate doesn't declare
+ * them), but the UI does: `name` for display, `category` for the gear-level
+ * filter (see docs/gear-category-taxonomy.md), `grankOrLater` for the
+ * active-skill-cap piece-count bonus (see active-skill-cap.ts). `category`
+ * alone can't answer the latter -- several display categories (every "Paid
+ * and Premium" one, plus a few route-level "plain"/Festival/Event buckets)
+ * mix below-G-rank and G-Rank-or-later pieces together. */
 export interface NamedCandidate extends Candidate {
   readonly name: string
   readonly category: string
+  readonly grankOrLater: boolean
 }
 
 export interface NamedDecoration extends Decoration {

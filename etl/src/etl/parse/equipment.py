@@ -13,7 +13,11 @@ from dataclasses import dataclass
 from enum import IntEnum
 
 from etl.db.models import EquipmentType
-from etl.parse.gear_category import classify_cuff_category, classify_equipment_category
+from etl.parse.gear_category import (
+    classify_cuff_category,
+    classify_equipment_category,
+    is_grank_or_later_equipment,
+)
 from etl.parse.js_extract import extract_balanced
 
 BUCKET_TO_SLOT_TYPE: dict[str, EquipmentType] = {
@@ -96,6 +100,14 @@ class ParsedEquipmentRow:
     # The reference set-searcher's gear-level category leaf (CRE + CLASS +
     # name-suffix derived) -- see docs/gear-category-taxonomy.md.
     category: str = "standard_plain"
+    # Whether this piece is "G Rank or later" for the active-skill-cap
+    # piece-count bonus (see docs/skill-system-roadmap.md TODO #1) --
+    # decided purely by CLASS (or, for Tower armor, the name-suffix),
+    # independent of `category`/CRE. Several display categories (every
+    # "Paid and Premium" one, plus a few route-level "plain"/Festival/Event
+    # buckets) mix below-G-rank and G-rank-or-later pieces together and can't
+    # be used for this on their own -- see `is_grank_or_later_equipment`.
+    grank_or_later: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -231,6 +243,7 @@ def parse_equipment_bucket(
                 is_tower=_field(fields, Field.CLASS) == _TOWER_CLASS,
                 zenith_skill_id=_int_or_none(_field(fields, Field.TENI)),
                 category=classify_equipment_category(fields),
+                grank_or_later=is_grank_or_later_equipment(fields),
             )
         )
     return parsed

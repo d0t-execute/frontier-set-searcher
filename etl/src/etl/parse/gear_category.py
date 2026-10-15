@@ -169,6 +169,52 @@ def _tokens(name: str) -> frozenset[str]:
     return frozenset(name.split())
 
 
+# Whether a piece is "G Rank or later" (the in-game active-skill-cap piece-
+# count rule, see docs/skill-system-roadmap.md TODO #1) is decided purely by
+# CLASS -- see docs/data-format-notes.md's "CLASS field" decode table -- and
+# is independent of the display category/CRE acquisition route a piece was
+# obtained through. Confirmed directly against the real cached dataset: the
+# "Paid and Premium" categories (CRE 4k/4g/3-/3e/5-/5p) and some route-level
+# "plain"/Festival/Event buckets never split by CLASS at all today, so they
+# silently mix below-G-rank pieces with G-rank-or-later ones (e.g.
+# paid_gachapon alone holds 1,056 CLASS "Q" Zenith-Shugo rows and 840 CLASS
+# "L" G-Hiden rows among its 13,745) -- this function is the authoritative,
+# category-independent signal those buckets are missing.
+#
+# G/GX (G-class) | G-Hashu | Resshu ("Burst Species") | G-Shugo (explicitly
+# documented as "G-rank sibling of" plain Shugo/HS) | G-Hiden | Sisyu/Origin |
+# Exotic | Zenith/Tan'i (both P and Q tiers).
+_GRANK_OR_LATER_CLASSES: frozenset[str] = frozenset(
+    {
+        _CLASS_G,
+        _CLASS_G_HASHU,
+        _CLASS_RESSHU,
+        _CLASS_G_SHUGO,
+        _CLASS_G_HIDEN,
+        _CLASS_SISYU,
+        _CLASS_EXOTIC,
+        _CLASS_ZENITH,
+        _CLASS_ZENITH_SHUGO,
+    }
+)
+
+
+def is_grank_or_later_equipment(fields: list[str]) -> bool:
+    """Whether this equipment row is "G Rank or later" for the active-skill-
+    cap piece-count bonus -- see `_GRANK_OR_LATER_CLASSES` above.
+
+    Tower armor (`CLASS="N"`) is a special case: Tower uses one CLASS value
+    for every tier, so its G-rank-or-later distinction is carried by the
+    name-suffix "G"/"GX" tokens instead (same tokens `classify_equipment_category`
+    already keys on for `tower_g`/`tower_gx_custom`), not by CLASS membership.
+    """
+    clazz = _field(fields, _CLASS)
+    if clazz == _CLASS_TOWER:
+        tokens = _tokens(_field(fields, _NAME))
+        return bool(tokens & {"G", "GF", "GX"})
+    return clazz in _GRANK_OR_LATER_CLASSES
+
+
 def classify_equipment_category(fields: list[str]) -> str:
     """Returns the gear-level category leaf key for one equipment row.
 

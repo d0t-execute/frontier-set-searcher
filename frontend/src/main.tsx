@@ -3,14 +3,14 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './vendor/bootstrap/bootstrap.min.css'
 import './index.css'
-import App from './App.tsx'
+import { AppRoot } from './AppRoot.tsx'
 
 const queryClient = new QueryClient()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <App />
+      <AppRoot />
     </QueryClientProvider>
   </StrictMode>,
 )

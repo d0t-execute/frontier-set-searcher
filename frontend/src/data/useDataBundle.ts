@@ -13,7 +13,12 @@ import { loadBundle } from '../search-engine/load-bundle'
 export function useDataBundle() {
   return useQuery({
     queryKey: ['data-bundle'],
-    queryFn: () => loadBundle('/data', (url) => fetch(url)),
+    // `import.meta.env.BASE_URL` (Vite's own `base` config, see
+    // vite.config.ts) rather than a hardcoded `/data` -- a project page on
+    // GitHub Pages serves this app from a subpath
+    // (`/frontier-set-searcher/`, not `/`), and a root-absolute path would
+    // 404 there even though it works fine in local dev at the root.
+    queryFn: () => loadBundle(`${import.meta.env.BASE_URL}data`, (url) => fetch(url)),
     staleTime: Infinity,
   })
 }

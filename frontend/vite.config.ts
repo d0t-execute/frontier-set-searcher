@@ -4,7 +4,17 @@ import { defineConfig } from 'vite'
 import { configDefaults } from 'vitest/config'
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(() => ({
+  // Served from https://<user>.github.io/<repo>/ (a project page, not a
+  // `<user>.github.io` user page) -- see .github/workflows/deploy-pages.yml
+  // and docs/hosting.md. Gated on an explicit env var (set only by that
+  // workflow's build step), not `command === 'build'` -- `vite preview`
+  // also reports `command: 'serve'` just like the dev server, so a
+  // command-based check would make a local production build's own HTML
+  // (baked with the subpath prefix) mismatch `vite preview`'s serving root
+  // (confirmed live: a local `vite build` + `vite preview` 404'd on every
+  // asset until this was switched to an explicit flag).
+  base: process.env.GH_PAGES ? '/frontier-set-searcher/' : '/',
   plugins: [react()],
   test: {
     environment: 'jsdom',
@@ -22,4 +32,4 @@ export default defineConfig({
     // terminating, not a claim that any test legitimately needs 2 minutes.
     testTimeout: 120_000,
   },
-})
+}))

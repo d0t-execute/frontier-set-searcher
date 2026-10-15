@@ -6,8 +6,8 @@ import {
 } from './active-skill-cap'
 import type { NamedCandidate, NamedSkill } from './load-bundle'
 
-function candidate(category: string): NamedCandidate {
-  return { id: `c:${category}`, name: category, category, skills: [] }
+function candidate(category: string, grankOrLater = false): NamedCandidate {
+  return { id: `c:${category}`, name: category, category, grankOrLater, skills: [] }
 }
 
 function skill(
@@ -21,14 +21,26 @@ const SKILL_SLOTS_UP_ID = 1000001
 const ZENITH_SKILLS: readonly NamedSkill[] = [skill(SKILL_SLOTS_UP_ID, { name: 'Skill Slots Up' })]
 
 describe('countGrankOrLaterPieces', () => {
-  it('counts only categories in the G-Rank-or-later set', () => {
+  it('counts only candidates flagged grankOrLater', () => {
     const picks = new Map([
-      ['head', candidate('grank_g')],
-      ['chest', candidate('zenith_zy')],
-      ['arms', candidate('standard_plain')],
+      ['head', candidate('grank_g', true)],
+      ['chest', candidate('zenith_zy', true)],
+      ['arms', candidate('standard_plain', false)],
     ])
 
     expect(countGrankOrLaterPieces(picks)).toBe(2)
+  })
+
+  it("doesn't trust category alone -- a mixed-tier category's pieces are judged individually", () => {
+    // paid_gachapon mixes below-G-rank and G-Rank-or-later pieces together --
+    // see NamedCandidate.grankOrLater's own docstring. The flag, not the
+    // category string, is what this function reads.
+    const picks = new Map([
+      ['head', candidate('paid_gachapon', true)],
+      ['chest', candidate('paid_gachapon', false)],
+    ])
+
+    expect(countGrankOrLaterPieces(picks)).toBe(1)
   })
 })
 
@@ -41,9 +53,9 @@ describe('computeActiveSkillCap', () => {
 
   it('adds +1 for 3-4 G-Rank-or-later pieces', () => {
     const picks = new Map([
-      ['head', candidate('grank_g')],
-      ['chest', candidate('grank_g')],
-      ['arms', candidate('grank_g')],
+      ['head', candidate('grank_g', true)],
+      ['chest', candidate('grank_g', true)],
+      ['arms', candidate('grank_g', true)],
     ])
 
     expect(computeActiveSkillCap(picks, new Map(), ZENITH_SKILLS)).toBe(11)
@@ -51,7 +63,7 @@ describe('computeActiveSkillCap', () => {
 
   it('adds +2 for 5+ G-Rank-or-later pieces', () => {
     const picks = new Map(
-      Array.from({ length: 5 }, (_, i) => [`slot${i}`, candidate('grank_g')] as const),
+      Array.from({ length: 5 }, (_, i) => [`slot${i}`, candidate('grank_g', true)] as const),
     )
 
     expect(computeActiveSkillCap(picks, new Map(), ZENITH_SKILLS)).toBe(12)
@@ -70,7 +82,7 @@ describe('computeActiveSkillCap', () => {
 
   it('combines the G-Rank bonus and the Skill Slots Up bonus', () => {
     const picks = new Map(
-      Array.from({ length: 5 }, (_, i) => [`slot${i}`, candidate('grank_g')] as const),
+      Array.from({ length: 5 }, (_, i) => [`slot${i}`, candidate('grank_g', true)] as const),
     )
 
     expect(

@@ -282,6 +282,7 @@ def _export_equipment(
             ),
             "openSlotCount": equipment.slot_count_max,
             "category": equipment.category,
+            "grankOrLater": equipment.grank_or_later,
         }
         for equipment in list_equipment(conn, slot_type=slot_type)
     ]

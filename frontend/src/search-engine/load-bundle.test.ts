@@ -34,6 +34,7 @@ const headEquipment = [
     skills: [{ skillId: 1, points: 5 }],
     openSlotCount: 1,
     category: 'standard_plain',
+    grankOrLater: false,
   },
 ]
 const chestEquipment = [
@@ -43,6 +44,7 @@ const chestEquipment = [
     skills: [],
     openSlotCount: 0,
     category: 'standard_plain',
+    grankOrLater: false,
   },
 ]
 

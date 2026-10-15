@@ -16,8 +16,20 @@ const BUNDLE = {
     {
       slotId: 'head',
       candidates: [
-        { id: 'head:0001', name: 'Leather Helm', skills: [], category: 'standard_plain' },
-        { id: 'head:0002', name: 'White Cat Mask', skills: [], category: 'paid_premium_kit' },
+        {
+          id: 'head:0001',
+          name: 'Leather Helm',
+          skills: [],
+          category: 'standard_plain',
+          grankOrLater: false,
+        },
+        {
+          id: 'head:0002',
+          name: 'White Cat Mask',
+          skills: [],
+          category: 'paid_premium_kit',
+          grankOrLater: false,
+        },
       ],
     },
   ],
@@ -36,6 +48,13 @@ const BUNDLE = {
       slotSize: 1,
       skills: [],
       category: 'cuff_standard_tier1',
+    },
+    {
+      id: 'cuff:C003',
+      name: 'Lost Cuff',
+      slotSize: 0,
+      skills: [],
+      category: 'cuff_standard_unavailable',
     },
   ],
   skills: [{ id: 1, name: 'Attack', category: null, priorityRank: null, tiers: [] }],
@@ -62,6 +81,7 @@ const DEFAULT_WEAPON_SLOT = {
       id: 'weapon:none',
       name: 'Plain weapon (no Zenith skill)',
       category: 'weapon',
+      grankOrLater: false,
       skills: [],
       openSlotCount: 0,
     },
@@ -145,19 +165,20 @@ describe('App', () => {
         onError: expect.any(Function),
       }),
       {
-        preferExactMatches: false,
+        preferExactMatches: true,
         skillTiers: [
           { skillId: 1, tierThresholds: [] },
           { skillId: 1000001, tierThresholds: [] },
         ],
+        pinnedCuffs: [],
       },
-      // Premium cuffs are excluded by default (see App.tsx's
-      // DEFAULT_EXCLUDED_CUFF_CATEGORIES) -- only the standard one passes.
-      [BUNDLE.cuffs[1]],
+      // The "Unavailable"-leaf cuff is excluded by default (see App.tsx's
+      // DEFAULT_EXCLUDED_CUFF_CATEGORIES) -- both real ones pass.
+      [BUNDLE.cuffs[0], BUNDLE.cuffs[1]],
     )
   })
 
-  it("passes preferExactMatches and the bundle's skill tiers through once the toggle is checked", async () => {
+  it("stops passing preferExactMatches and the bundle's skill tiers once the toggle is unchecked", async () => {
     const worker = makeWorker()
     mockUseSearchWorker.mockReturnValue(worker as unknown as ReturnType<typeof useSearchWorker>)
     const user = userEvent.setup()
@@ -173,13 +194,14 @@ describe('App', () => {
       BUNDLE.decorations,
       expect.anything(),
       {
-        preferExactMatches: true,
+        preferExactMatches: false,
         skillTiers: [
           { skillId: 1, tierThresholds: [] },
           { skillId: 1000001, tierThresholds: [] },
         ],
+        pinnedCuffs: [],
       },
-      [BUNDLE.cuffs[1]],
+      [BUNDLE.cuffs[0], BUNDLE.cuffs[1]],
     )
   })
 
@@ -199,20 +221,18 @@ describe('App', () => {
       BUNDLE.decorations,
       expect.anything(),
       expect.anything(),
-      [BUNDLE.cuffs[1]],
+      [BUNDLE.cuffs[0], BUNDLE.cuffs[1]],
     )
   })
 
-  it('excludes premium cuffs from the search by default', async () => {
+  it('includes premium cuffs in the search by default', async () => {
     const worker = makeWorker()
     mockUseSearchWorker.mockReturnValue(worker as unknown as ReturnType<typeof useSearchWorker>)
     const user = userEvent.setup()
     render(<App />)
 
-    // Premium cuffs only equip while Poogie wears Premium clothes, a
-    // precondition this app can't verify -- see App.tsx's
-    // DEFAULT_EXCLUDED_CUFF_CATEGORIES. No cuff checkbox is touched here;
-    // this is the out-of-the-box default.
+    // No cuff checkbox is touched here -- this is the out-of-the-box
+    // default (see App.tsx's DEFAULT_EXCLUDED_CUFF_CATEGORIES).
     await user.selectOptions(screen.getByRole('combobox', { name: /add a skill/i }), 'Attack')
     await user.click(screen.getByRole('button', { name: /search/i }))
 
@@ -222,18 +242,20 @@ describe('App', () => {
       BUNDLE.decorations,
       expect.anything(),
       expect.anything(),
-      [BUNDLE.cuffs[1]],
+      [BUNDLE.cuffs[0], BUNDLE.cuffs[1]],
     )
   })
 
-  it('includes premium cuffs once their category is checked back in', async () => {
+  it('excludes an unavailable-leaf cuff from the search by default', async () => {
     const worker = makeWorker()
     mockUseSearchWorker.mockReturnValue(worker as unknown as ReturnType<typeof useSearchWorker>)
     const user = userEvent.setup()
     render(<App />)
 
+    // A piece/cuff that's unobtainable in the real game is never worth
+    // surfacing by default -- see App.tsx's DEFAULT_EXCLUDED_CUFF_CATEGORIES.
+    // No checkbox touched here; this is the out-of-the-box default.
     await user.selectOptions(screen.getByRole('combobox', { name: /add a skill/i }), 'Attack')
-    await user.click(screen.getByRole('checkbox', { name: 'Premium' }))
     await user.click(screen.getByRole('button', { name: /search/i }))
 
     expect(worker.search).toHaveBeenCalledWith(
@@ -242,7 +264,7 @@ describe('App', () => {
       BUNDLE.decorations,
       expect.anything(),
       expect.anything(),
-      BUNDLE.cuffs,
+      expect.not.arrayContaining([BUNDLE.cuffs[2]]),
     )
   })
 
@@ -253,10 +275,10 @@ describe('App', () => {
     render(<App />)
 
     await user.selectOptions(screen.getByRole('combobox', { name: /add a skill/i }), 'Attack')
-    // Standard is included by default -- unchecking it (on top of Premium's
-    // own exclude-by-default) leaves no cuff category enabled at all. Both
-    // the gear-level and cuff filters have their own "Standard" leaf, so the
-    // last match is the cuff one (Poogie cuffs renders after Gear levels).
+    // Standard is included by default -- unchecking it leaves only the
+    // Premium cuff enabled. Both the gear-level and cuff filters have their
+    // own "Standard" leaf, so the last match is the cuff one (Poogie cuffs
+    // renders after Gear levels).
     const standardCheckboxes = screen.getAllByRole('checkbox', { name: 'Standard' })
     await user.click(standardCheckboxes[standardCheckboxes.length - 1])
     await user.click(screen.getByRole('button', { name: /search/i }))
@@ -267,7 +289,34 @@ describe('App', () => {
       BUNDLE.decorations,
       expect.anything(),
       expect.anything(),
-      [],
+      [BUNDLE.cuffs[0]],
+    )
+  })
+
+  it('passes a pinned cuff as pinnedCuffs once picked, resolved to its full data', async () => {
+    const worker = makeWorker()
+    mockUseSearchWorker.mockReturnValue(worker as unknown as ReturnType<typeof useSearchWorker>)
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.selectOptions(screen.getByRole('combobox', { name: /add a skill/i }), 'Attack')
+    await user.type(
+      screen.getByLabelText('Search cuffs for Cuff slot 1'),
+      BUNDLE.cuffs[0].name.slice(0, 4),
+    )
+    await user.selectOptions(
+      screen.getByLabelText('Cuffs matching search for Cuff slot 1'),
+      BUNDLE.cuffs[0].id,
+    )
+    await user.click(screen.getByRole('button', { name: /search/i }))
+
+    expect(worker.search).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      expect.objectContaining({ pinnedCuffs: [BUNDLE.cuffs[0]] }),
+      expect.anything(),
     )
   })
 
@@ -291,7 +340,7 @@ describe('App', () => {
       BUNDLE.decorations,
       expect.anything(),
       expect.anything(),
-      [BUNDLE.cuffs[1]],
+      [BUNDLE.cuffs[0], BUNDLE.cuffs[1]],
     )
   })
 
@@ -316,6 +365,7 @@ describe('App', () => {
               id: 'weapon:none',
               name: 'Plain weapon (no Zenith skill)',
               category: 'weapon',
+              grankOrLater: false,
               skills: [],
               openSlotCount: 2,
             },
@@ -323,6 +373,7 @@ describe('App', () => {
               id: 'weapon:1000001',
               name: 'Zenith weapon (Dissolver Up)',
               category: 'weapon',
+              grankOrLater: false,
               skills: [{ skillId: 1000001, points: 1 }],
               openSlotCount: 2,
             },
@@ -333,7 +384,7 @@ describe('App', () => {
       BUNDLE.decorations,
       expect.anything(),
       expect.anything(),
-      [BUNDLE.cuffs[1]],
+      [BUNDLE.cuffs[0], BUNDLE.cuffs[1]],
     )
   })
 
@@ -373,7 +424,7 @@ describe('App', () => {
       BUNDLE.decorations,
       expect.anything(),
       expect.anything(),
-      [BUNDLE.cuffs[1]],
+      [BUNDLE.cuffs[0], BUNDLE.cuffs[1]],
     )
   })
 
@@ -398,6 +449,39 @@ describe('App', () => {
 
     const resultsList = await screen.findByRole('list', { name: /search results/i })
     expect(await within(resultsList).findByText(/leather helm/i)).toBeInTheDocument()
+  })
+
+  it('produces a shareable link that decodes back to the search that produced it', async () => {
+    const worker = makeWorker()
+    worker.search.mockImplementation((...args: unknown[]) => {
+      const callbacks = args[3] as { onResult: (result: unknown) => void }
+      callbacks.onResult({
+        picks: new Map([['head', { id: 'head:0001', name: 'Leather Helm', skills: [] }]]),
+        decorations: new Map(),
+        cuffs: [],
+        skillTotals: new Map([[1, 15]]),
+      })
+      return 'req-1'
+    })
+    mockUseSearchWorker.mockReturnValue(worker as unknown as ReturnType<typeof useSearchWorker>)
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.selectOptions(screen.getByRole('combobox', { name: /add a skill/i }), 'Attack')
+    await user.click(screen.getByRole('button', { name: /search/i }))
+    await screen.findByRole('list', { name: /search results/i })
+    await user.click(screen.getByRole('button', { name: /get shareable link/i }))
+
+    const link = screen.getByRole('textbox', { name: /shareable link/i })
+    const url = (link as HTMLInputElement).value
+    expect(url).toContain('#/result/')
+
+    const { readSharedStateFromLocation } = await import('./search-engine/shared-state')
+    window.location.hash = new URL(url).hash
+    const decoded = readSharedStateFromLocation()
+    expect(decoded?.requirements).toEqual([{ skillId: 1, minPoints: 1 }])
+    expect(decoded?.resultIndex).toBe(0)
+    expect(decoded?.preferExactMatches).toBe(true)
   })
 
   it('stops the search and reports a capped result set once enough results have streamed in', async () => {
