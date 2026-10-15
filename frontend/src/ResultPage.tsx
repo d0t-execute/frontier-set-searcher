@@ -42,10 +42,11 @@ type DecodeStatus = 'loading' | 'found' | 'invalid-link'
 
 /** `category` is left empty on every reconstructed pick/decoration/cuff --
  * nothing on this page's display path (`ResultCard`, `active-skill-cap.ts`)
- * ever reads it, only `grankOrLater` and `exoticSkillId` (both kept, from the
- * link itself) -- see `shared-state.ts`'s own `SharedPick` docstring.
- * `hunterType` is a placeholder ('common') -- it only matters pre-solve,
- * never on an already-solved result's own display or cap logic. */
+ * ever reads it, only `grankOrLater`, `exoticSkillId`, `defenseMax`, and
+ * `resistances` (all kept, from the link itself) -- see `shared-state.ts`'s
+ * own `SharedPick` docstring. `hunterType` is a placeholder ('common') -- it
+ * only matters pre-solve, never on an already-solved result's own display or
+ * cap logic. */
 function toNamedBuildResult(result: SharedBuildResult): NamedBuildResult {
   const picks = new Map<string, NamedCandidate>(
     result.picks.map((p) => [
@@ -59,6 +60,8 @@ function toNamedBuildResult(result: SharedBuildResult): NamedBuildResult {
         grankOrLater: p.grankOrLater,
         hunterType: 'common',
         exoticSkillId: p.exoticSkillId,
+        defenseMax: p.defenseMax,
+        resistances: p.resistances,
       },
     ]),
   )

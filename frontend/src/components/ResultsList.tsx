@@ -1,9 +1,38 @@
 import { toPng } from 'html-to-image'
 import { useRef, useState } from 'react'
 import { determineActiveSkills } from '../search-engine/active-skill-cap'
-import type { NamedSkill, SkillTierRecord } from '../search-engine/load-bundle'
+import type { NamedCandidate, NamedResistances, NamedSkill, SkillTierRecord } from '../search-engine/load-bundle'
 import type { SkillContribution, SkillId } from '../search-engine/types'
 import type { NamedBuildResult } from './types'
+
+/** Summed across every pick in a result (armor, weapon, cuffs aren't picks
+ * here -- see `NamedBuildResult.picks`). Weapons and cuffs carry no defense/
+ * resistance data at all (confirmed against the raw data, see
+ * docs/data-format-notes.md: the "deco" bucket's Cuff rows and the weapon
+ * buckets have no F/W/T/D/I/DEF columns, a different row shape from armor),
+ * so in practice only armor picks ever contribute a non-zero amount here --
+ * but summing every pick regardless costs nothing, since a non-armor pick's
+ * own placeholder values (`null`/all-zero, see `build-query.ts`'s
+ * `NO_RESISTANCES`) are additive no-ops. `defenseMax` (not `defenseBase`) is
+ * used for "Total defense" -- the fully-forged value is what a hunter
+ * actually cares about reaching, the same reasoning
+ * docs/data-format-notes.md gives for storing it at all. */
+function sumStats(picks: ReadonlyMap<string, NamedCandidate>): {
+  readonly totalDefense: number
+  readonly resistances: NamedResistances
+} {
+  let totalDefense = 0
+  const resistances = { fire: 0, water: 0, thunder: 0, ice: 0, dragon: 0 }
+  for (const candidate of picks.values()) {
+    totalDefense += candidate.defenseMax ?? 0
+    resistances.fire += candidate.resistances.fire
+    resistances.water += candidate.resistances.water
+    resistances.thunder += candidate.resistances.thunder
+    resistances.ice += candidate.resistances.ice
+    resistances.dragon += candidate.resistances.dragon
+  }
+  return { totalDefense, resistances }
+}
 
 export interface ResultsListProps {
   readonly results: readonly NamedBuildResult[]
@@ -248,6 +277,7 @@ export function ResultCard({
   const zenithSkillEntries = skillEntries
     .filter((e) => zenithSkillIds.has(e.skillId))
     .sort(compareSkillEntries)
+  const { totalDefense, resistances } = sumStats(result.picks)
 
   function renderSkillEntry(entry: SkillDisplayEntry, showValue = true) {
     const inactive = entry.disabled || !entry.crossed
@@ -345,6 +375,11 @@ export function ResultCard({
               ({disabledIds.size} skill{disabledIds.size === 1 ? '' : 's'} disabled)
             </span>
           )}
+        </div>
+        <div className="small mt-2">Total defense: {totalDefense}</div>
+        <div className="small">
+          Fire: {resistances.fire}, Water: {resistances.water}, Thunder: {resistances.thunder}, Ice:{' '}
+          {resistances.ice}, Dragon: {resistances.dragon}
         </div>
 
         <div className="mt-auto pt-2 d-flex justify-content-end align-items-center gap-2">

@@ -317,6 +317,44 @@ def test_parses_hunter_type_restriction() -> None:
     assert by_id["body:0004"].hunter_type == "gunner"
 
 
+def test_parses_elemental_resistances() -> None:
+    # F/W/T/D/I fields (index 5-9) -- real "Hunter's Vest" row, which happens
+    # to have a negative Dragon resistance (-5), confirming negatives parse
+    # correctly (not just `_int_or_none`-style blank-vs-zero handling).
+    bucket_json = (
+        '{"0004":"Hunter\'s Vest,0,2,1,,3,2,1,-5,4,22,3,35,3,3,3,46,-5,,,,'
+        "00D83R 014D1,1,0006,7,400,5,0,2,01,03,03,0,1-,,,,,"
+        'ハンター用に作られた胴用装備。急所の喉を守る大型パーツが印象的。,68"}'
+    )
+
+    rows = parse_equipment_bucket(
+        "body", bucket_json, def_patterns=["100,100,100,100,100,100,100"] * 4
+    )
+
+    assert rows[0].resistance_fire == 3
+    assert rows[0].resistance_water == 2
+    assert rows[0].resistance_thunder == 1
+    assert rows[0].resistance_dragon == -5
+    assert rows[0].resistance_ice == 4
+
+
+def test_resistances_default_to_zero_when_blank() -> None:
+    bucket_json = (
+        '{"0001":"Leather Helm,0,0,1,,0,0,0,0,0,22,3,63,3,80,3,,,,,,'
+        '01521R,1,0000,7,100,2,0,1,01,00,0B,0,1-,,,,,軽い素材で作られた頭用装備。,0"}'
+    )
+
+    rows = parse_equipment_bucket("head", bucket_json, def_patterns=["100,120,120,120,120,120,120"])
+
+    assert (
+        rows[0].resistance_fire,
+        rows[0].resistance_water,
+        rows[0].resistance_thunder,
+        rows[0].resistance_dragon,
+        rows[0].resistance_ice,
+    ) == (0, 0, 0, 0, 0)
+
+
 def test_hunter_type_defaults_to_common() -> None:
     bucket_json = (
         '{"0001":"Leather Helm,0,0,1,,0,0,0,0,0,22,3,63,3,80,3,,,,,,'
@@ -408,6 +446,11 @@ def test_parse_equip_js_covers_every_armor_bucket() -> None:
         slot_count_base=3,
         slot_count_max=3,
         skills=((9, 5), (68, 10), (26, 5), (18, 5), (65, 4)),
+        resistance_fire=4,
+        resistance_water=4,
+        resistance_thunder=4,
+        resistance_dragon=1,
+        resistance_ice=4,
         is_tower=False,
         zenith_skill_id=None,
         # CRE "5-" (Promotional) wins over CLASS "E" (HC) -- the acquisition
