@@ -151,6 +151,48 @@ CATEGORY_CUFF_STANDARD_UNAVAILABLE = "cuff_standard_unavailable"  # S_未
 CATEGORY_CUFF_STANDARD_TRAINING_ONLY = "cuff_standard_training_only"  # S_不
 CATEGORY_CUFF_HIDEN = "cuff_hiden"  # 祕
 
+# Decoration category leaf keys -- "Tree 2: Decorations and Cuffs" (Decorations
+# half) in docs/gear-category-taxonomy.md. Prefixed `deco_` for the same
+# cross-tree-collision reason as the `cuff_` keys above (a decoration row can
+# land on the same CRE as an equipment or cuff row but mean a different leaf).
+# Tower Gems get their own leaf here purely for traceability -- they're never
+# surfaced through this tree in the UI, since they're already filtered by the
+# separate, pre-existing `is_tower` flag (see ParsedDecorationRow.is_tower).
+CATEGORY_DECO_STANDARD = "deco_standard"  # 無分類
+CATEGORY_DECO_G = "deco_g"  # G
+CATEGORY_DECO_GX = "deco_gx"  # GX
+CATEGORY_DECO_HIDEN = "deco_hiden"  # G祕
+CATEGORY_DECO_TRUE_HIDEN = "deco_true_hiden"  # 真G祕
+CATEGORY_DECO_LOTTERY_HIDEN = "deco_lottery_hiden"  # ガG祕 ("do not use")
+CATEGORY_DECO_RAVIENTE = "deco_raviente"  # 蛇GX
+CATEGORY_DECO_EXTREME_RAVIENTE = "deco_extreme_raviente"  # 極蛇GX
+# Musou leaves -- confirmed by the project owner against the real decoration
+# names (etl/.data/cache/equip.body), since CRE/CLASS alone can't distinguish
+# these from any other named monster's G-rank decorations (see
+# docs/gear-category-taxonomy.md's "Musou Decorations" table for the full
+# name-to-leaf mapping this implements).
+CATEGORY_DECO_MUSOU_NARGACUGA = "deco_musou_nargacuga"  # DClad
+CATEGORY_DECO_MUSOU_BOGABADORUMU = "deco_musou_bogabadorumu"  # Rapin
+CATEGORY_DECO_MUSOU_ZERUREUSU = "deco_musou_zerureusu"  # Elysium
+CATEGORY_DECO_MUSOU_DUREMUDIRA = "deco_musou_duremudira"  # Bonne
+CATEGORY_DECO_MUSOU_ELZELION = "deco_musou_elzelion"  # Fonce
+CATEGORY_DECO_EVENT = "deco_event"  # イ
+CATEGORY_DECO_EVENT_G = "deco_event_g"  # イG
+CATEGORY_DECO_EVENT_GX = "deco_event_gx"  # イGX
+CATEGORY_DECO_FESTIVAL_G = "deco_festival_g"  # 祭G
+CATEGORY_DECO_FESTIVAL_GX = "deco_festival_gx"  # 祭GX
+CATEGORY_DECO_GUILD_G = "deco_guild_g"  # 猟G
+CATEGORY_DECO_GUILD_GX = "deco_guild_gx"  # 猟GX
+# Keoaruboru decorations ("Burning Cliff"/"Crimson Cliff") -- confirmed by the
+# project owner to be obtained through Diva Defense, i.e. one and the same as
+# the reference tool's separate "Diva Def" leaf, not two leaves.
+CATEGORY_DECO_KEOARUBORU = "deco_keoaruboru"  # 衛GX
+CATEGORY_DECO_ROAD = "deco_road"  # 道
+CATEGORY_DECO_ROAD_WHITE_FATALIS = "deco_road_white_fatalis"  # Wht
+CATEGORY_DECO_ROAD_GX = "deco_road_gx"  # 道GX ("Multi Event")
+CATEGORY_DECO_TOWER = "deco_tower"  # Tower Gem -- not surfaced in the UI tree
+CATEGORY_DECO_OTHER = "deco_other"  # SP改/SP真, Unavailable rows, anything unmodeled
+
 # Name-suffix tokens that mark a gear tier (NOT the "F"/"FY"/"FZ" forge-level
 # upgrade markers, which appear within every category uniformly and don't
 # affect classification -- confirmed against the real dataset, e.g. "Ranvuo F
@@ -441,3 +483,120 @@ def classify_cuff_category(fields: list[str]) -> str:
     if hr.isdigit() and int(hr) >= 2001:
         return CATEGORY_CUFF_STANDARD_TIER2
     return CATEGORY_CUFF_STANDARD_TIER1
+
+
+# Musou leaves share CRE "1e" + CLASS "I" with ordinary Event-GX decorations --
+# the only thing that distinguishes them is the decoration's own name, so each
+# leaf is keyed on the exact name prefix(es) confirmed against the real
+# dataset (both a Blademaster-named and a Gunner-named series can map to the
+# same leaf, e.g. "Demonclad"/"Dojiclad" both being Musou Nargacuga).
+_MUSOU_NAME_PREFIXES: tuple[tuple[tuple[str, ...], str], ...] = (
+    (("Demonclad", "Dojiclad"), CATEGORY_DECO_MUSOU_NARGACUGA),
+    (("Rafan",), CATEGORY_DECO_MUSOU_BOGABADORUMU),
+    (("Elysium",), CATEGORY_DECO_MUSOU_ZERUREUSU),
+    (("Bonne",), CATEGORY_DECO_MUSOU_DUREMUDIRA),
+    (("Fonce",), CATEGORY_DECO_MUSOU_ELZELION),
+)
+
+# Raviente/Violent Raviente/Berserk Raviente GX decorations (蛇GX) share CRE
+# "1-" + CLASS "I" with ordinary G/GX monster decorations -- same situation as
+# Musou above, keyed on name prefix. Extreme Raviente GX (極蛇GX) is a fourth,
+# separate prefix within the same bucket.
+_RAVIENTE_NAME_PREFIXES = ("Raviente", "Violent Ravi", "Berserk Ravi")
+
+_DECO_GX_TIER_RE = re.compile(r"GX\d*$")
+_DECO_G_TIER_RE = re.compile(r"G\d*$")
+_DECO_GF_TIER_RE = re.compile(r"GF\d*$")
+
+
+def _has_deco_gx_tier(tokens: frozenset[str]) -> bool:
+    # Decoration names carry the GX tier as a "GX"/"GX1".."GX5" token, unlike
+    # equipment's always-bare "GX" -- confirmed against the real dataset.
+    return any(_DECO_GX_TIER_RE.fullmatch(token) for token in tokens)
+
+
+def _has_deco_g_or_gf_tier(tokens: frozenset[str]) -> bool:
+    # Same numbered-token quirk as GX above (e.g. "Shantien BM G2"/"GF3"), so a
+    # bare {"G", "GF"} membership check isn't enough -- but this must still be
+    # anchored (fullmatch, not a substring/prefix test) so it doesn't also
+    # catch an ordinary monster name that happens to start with "G"
+    # (e.g. "Gravios").
+    return any(_DECO_G_TIER_RE.fullmatch(t) or _DECO_GF_TIER_RE.fullmatch(t) for t in tokens)
+
+
+def classify_decoration_category(fields: list[str]) -> str:
+    """Returns the decoration-tree category leaf key for one decoration row.
+
+    `fields` is the same raw comma-split field list `parse_decoration_bucket`
+    already builds (only ever called with rows already confirmed to be real
+    decorations, not Cuffs or UI placeholders). See
+    docs/gear-category-taxonomy.md's "Decorations" table for the full rule set
+    and confirmed row counts this implements -- CRE wins first (matching
+    `classify_equipment_category`/`classify_cuff_category`'s own precedence),
+    with CLASS and the decoration's own name only deciding the leaf *within* a
+    CRE bucket that needs it.
+    """
+    name = _field(fields, _NAME)
+    cre = _field(fields, _CRE).replace("#", "")
+    clazz = _field(fields, _CLASS)
+    tokens = _tokens(name)
+
+    if cre in ("9", "7-", "5-", "4k"):
+        return CATEGORY_DECO_OTHER
+    if cre == "4g":
+        return CATEGORY_DECO_LOTTERY_HIDEN
+    if cre == "2u":
+        return CATEGORY_DECO_KEOARUBORU
+    if cre == "2m":
+        if _has_deco_gx_tier(tokens):
+            return CATEGORY_DECO_FESTIVAL_GX
+        if _has_deco_g_or_gf_tier(tokens):
+            return CATEGORY_DECO_FESTIVAL_G
+        return CATEGORY_DECO_OTHER
+    if cre == "2-":
+        if _has_deco_gx_tier(tokens):
+            return CATEGORY_DECO_GUILD_GX
+        if _has_deco_g_or_gf_tier(tokens):
+            return CATEGORY_DECO_GUILD_G
+        return CATEGORY_DECO_OTHER
+    if cre == "1t":
+        if clazz == _CLASS_TOWER:
+            return CATEGORY_DECO_TOWER
+        if clazz == _CLASS_G:
+            if name.startswith("Wht Fatalis"):
+                return CATEGORY_DECO_ROAD_WHITE_FATALIS
+            return CATEGORY_DECO_ROAD_GX
+        return CATEGORY_DECO_ROAD
+    if cre == "1e":
+        if clazz == _CLASS_G:
+            for prefixes, category in _MUSOU_NAME_PREFIXES:
+                if name.startswith(prefixes):
+                    return category
+            if _has_deco_gx_tier(tokens):
+                return CATEGORY_DECO_EVENT_GX
+            if _has_deco_g_or_gf_tier(tokens):
+                return CATEGORY_DECO_EVENT_G
+            return CATEGORY_DECO_OTHER
+        return CATEGORY_DECO_EVENT
+
+    # Standard tier: CRE is "1-" (no special acquisition path). Everything
+    # below is decided purely by CLASS and name.
+    if clazz == _CLASS_G_HIDEN:
+        if "True?" in name:
+            return CATEGORY_DECO_TRUE_HIDEN
+        if "Hiden?" in name:
+            return CATEGORY_DECO_HIDEN
+        return CATEGORY_DECO_OTHER
+    if clazz == _CLASS_G:
+        if name.startswith(_RAVIENTE_NAME_PREFIXES):
+            return CATEGORY_DECO_RAVIENTE
+        if name.startswith("Extreme Ravi"):
+            return CATEGORY_DECO_EXTREME_RAVIENTE
+        if _has_deco_gx_tier(tokens):
+            return CATEGORY_DECO_GX
+        if _has_deco_g_or_gf_tier(tokens):
+            return CATEGORY_DECO_G
+        return CATEGORY_DECO_OTHER
+    if clazz == "":
+        return CATEGORY_DECO_STANDARD
+    return CATEGORY_DECO_OTHER  # CLASS "A" (SP改/SP真) and anything else unmodeled

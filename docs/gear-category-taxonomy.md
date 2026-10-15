@@ -173,13 +173,28 @@ just originally plausible.
 **Update (2026-10-15)**: the "S_辿 (Zenith)" leaf's count above was
 corrected from 52 to 26 -- the 26 `DEC=3`+`CLASS P` "Sigil" rows it used to
 include turned out not to be Cuffs at all (see docs/data-format-notes.md
-"Cuffs"), dropping the real total to 3,306. Decorations are NOT classified by this function yet
-(out of scope for the cuff-support work that prompted this verification
-pass) -- the "Decorations" tree further below remains undocumented-only.
+"Cuffs"), dropping the real total to 3,306.
 Display labels for cuff leaves still haven't been confirmed against the
 reference tool's own tree (unlike every equipment leaf above) -- the
 `cuff_*` category keys are correct and already usable for filtering, but
 treat their eventual UI label as open.
+
+**Decorations fully implemented (2026-10-15)**: `classify_decoration_category`
+in `etl/src/etl/parse/gear_category.py` implements every confirmed leaf below,
+threaded through `Decoration.category` -> `decorations.json`'s `category`
+field. Re-verified by re-running the full ETL pipeline against the real
+cached dataset and tabulating `decoration.category`: every leaf below matched
+its confirmed count exactly (2,658 decorations total). CRE/CLASS alone was
+enough for every leaf except the 5 "Musou" leaves and Keoaruboru, which the
+project owner confirmed by name against the real dataset (see "Musou
+Decorations" and "Keoaruboru" notes below) -- CRE/CLASS can't distinguish
+these from any other named monster's ordinary G-rank decorations. One known
+gap: "(EXd): Extreme Quests" from the reference tool's own tree couldn't be
+confirmed against any real decoration name and is deferred (see
+docs/skill-system-roadmap.md). Tower Gems (`CLASS=N`) get their own leaf
+(`deco_tower`) purely for traceability -- they're governed by the
+pre-existing, separate `isTower` flag, not surfaced as a selectable option in
+this tree.
 
 ### Premium Outfit Pugi Cuffs
 | Leaf | Rule | Count | Confidence |
@@ -210,29 +225,48 @@ treat their eventual UI label as open.
 | 祕 (Hiden Cuff) | `CRE=1-` + `CLASS L` | 140 | HIGH |
 
 ### Decorations
-| Leaf | Rule | Count | Confidence |
-|---|---|---|---|
-| 無分類 | `CRE=1-`, plain | 271 | HIGH |
-| SP改 | `CLASS A` "SP α" | 43 | HIGH |
-| SP真 | `CLASS A` "SP β" | 43 | HIGH |
-| G | `CRE=1-` + `CLASS I` + G/GF | 360 | HIGH |
-| GX | `CRE=1-` + `CLASS I` + GX | 842 | HIGH |
-| G祕 | `CRE=1-` + `CLASS L` "Hiden?" | 56 | HIGH |
-| 真G祕 | `CRE=1-` + `CLASS L` "True?" | 56 | HIGH |
-| 蛇GX (Raviente Decorations) | Raviente / Violent Raviente / Berserk Raviente GX | 30 | CONFIRMED |
-| 極蛇GX (Extreme Raviente Decorations) | Extreme Raviente GX | 10 | CONFIRMED |
-| イ (Event) | `CRE=1e`, plain class | 49 | HIGH |
-| イG | `CRE=1e` + G/GF | 6 | INFERRED |
-| イGX | `CRE=1e` + GX | 93 | INFERRED |
-| Festival | `CRE=2m` | 421 | HIGH |
-| 猟G | `CRE=2-` + G/GF | 8 | HIGH |
-| 猟GX | `CRE=2-` + GX | 20 | HIGH |
-| Diva Defense | `CRE=2u` | 10 | INFERRED |
-| 道 (Road) | `CRE=1t`, plain | 3 | HIGH |
-| 道GX (Road GX) | `CRE=1t` + `CLASS I` | 40 | CONFIRMED — "just road's gx tier" |
-| ｶﾞG祕 | `CRE=4g` + `CLASS L` "Hiden EX" | 56 | HIGH |
-| ｶﾞ | `CRE=4k` (4) + `CRE=5-` (1) | 5 | INFERRED |
-| ｶﾞTW | *(no leaf — confirmed empty)* | 0 | CONFIRMED |
+
+Leaf keys below are `classify_decoration_category`'s actual return values
+(`deco_*`), not the reference tool's own display codes (shown in the "Leaf"
+column for cross-reference, same as every table above). Every count was
+re-verified against the real, properly-filtered dataset (2,658 decorations;
+`DEC==""` rows only -- earlier passes that didn't filter out Cuff/placeholder
+rows got some counts wrong, since cuffs and decorations share the same raw
+"deco" JS bucket, see docs/data-format-notes.md "Cuffs").
+
+| Leaf | Key | Rule | Count | Confidence |
+|---|---|---|---|---|
+| 無分類 | `deco_standard` | `CRE=1-`, plain | 271 | HIGH |
+| G | `deco_g` | `CRE=1-` + `CLASS I` + G/GF (incl. numbered `G2`.."G5"/`GF2`.."GF5" tier variants) | 360 | HIGH |
+| GX | `deco_gx` | `CRE=1-` + `CLASS I` + GX | 842 | HIGH |
+| G祕 (Hiden) | `deco_hiden` | `CRE=1-` + `CLASS L` "Hiden?" | 56 | HIGH |
+| 真G祕 (True Hiden) | `deco_true_hiden` | `CRE=1-` + `CLASS L` "True?" | 56 | HIGH |
+| ガG祕 (Lottery Hiden, "do not use") | `deco_lottery_hiden` | `CRE=4g` + `CLASS L` "Hiden EX" | 56 | HIGH |
+| 蛇GX (Raviente Decorations) | `deco_raviente` | `CRE=1-` + `CLASS I`, name starts "Raviente"/"Violent Ravi"/"Berserk Ravi" | 30 | CONFIRMED |
+| 極蛇GX (Extreme Raviente Decorations) | `deco_extreme_raviente` | `CRE=1-` + `CLASS I`, name starts "Extreme Ravi" | 10 | CONFIRMED |
+| DClad (Musou Nargacuga) | `deco_musou_nargacuga` | `CRE=1e` + `CLASS I`, name starts "Demonclad" (BM) or "Dojiclad" (GN) | 10 | CONFIRMED — user-provided names |
+| Rapin (Musou Bogabadorumu) | `deco_musou_bogabadorumu` | `CRE=1e` + `CLASS I`, name starts "Rafan" | 10 | CONFIRMED — user-provided name |
+| Elysium (Musou Zerureusu) | `deco_musou_zerureusu` | `CRE=1e` + `CLASS I`, name starts "Elysium" | 10 | CONFIRMED — user-provided name |
+| Bonne (Musou Duremudira) | `deco_musou_duremudira` | `CRE=1e` + `CLASS I`, name starts "Bonne" | 10 | CONFIRMED — user-provided name |
+| Fonce (Musou Elzelion) | `deco_musou_elzelion` | `CRE=1e` + `CLASS I`, name starts "Fonce" | 10 | CONFIRMED — user-provided name |
+| イ (Event) | `deco_event` | `CRE=1e`, plain class | 49 | HIGH |
+| イG | `deco_event_g` | `CRE=1e` + `CLASS I` + G/GF, not a Musou name | 6 | HIGH |
+| イGX | `deco_event_gx` | `CRE=1e` + `CLASS I` + GX, not a Musou name | 43 | HIGH — corrected from the earlier 93 guess, which hadn't carved the 50 Musou rows (also `CRE=1e`+`CLASS I`) out yet |
+| 祭G (Festival) | `deco_festival_g` | `CRE=2m` + `CLASS I` + G/GF | 106 | HIGH |
+| 祭GX (Festival GX) | `deco_festival_gx` | `CRE=2m` + `CLASS I` + GX | 315 | HIGH |
+| 猟G (Guild) | `deco_guild_g` | `CRE=2-` + `CLASS I` + G/GF | 8 | HIGH |
+| 猟GX (Guild GX) | `deco_guild_gx` | `CRE=2-` + `CLASS I` + GX | 20 | HIGH |
+| 衛GX (Keoaruboru Decorations) | `deco_keoaruboru` | `CRE=2u` | 10 | CONFIRMED — user-provided names "Burning Cliff"(BM)/"Crimson Cliff"(GN); obtained through Diva Defense, so this is also the reference tool's "Diva Def" leaf (one and the same, not two leaves) |
+| 道 (Road) | `deco_road` | `CRE=1t`, plain | 3 | HIGH |
+| Wht (Wht Fatalis) | `deco_road_white_fatalis` | `CRE=1t` + `CLASS I`, name starts "Wht Fatalis" | 10 | CONFIRMED |
+| 道GX (Multi Event) | `deco_road_gx` | `CRE=1t` + `CLASS I`, not Wht Fatalis | 30 | HIGH |
+| (unsurfaced) Tower Gem | `deco_tower` | `CRE=1t` + `CLASS N` | 173 | HIGH — not a selectable leaf in this tree; governed by the separate `isTower` flag |
+| (unsurfaced) everything else | `deco_other` | SP改/SP真 (`CLASS A`, 129), Unavailable (`CRE` 9/7-/5-/4k, 24), one unclassified stray | 154 | n/a — not part of the reference tool's tree, always included regardless of filter |
+
+**"(EXd): Extreme Quests" is deferred** -- no decoration name in the real
+cached dataset could be confirmed for it (searched for "Extreme"/"EX" tokens;
+the only matches were the already-accounted-for Extreme Raviente GX rows).
+Needs the exact decoration name text before it can be added as its own leaf.
 
 ### Unavailable
 | Leaf | Rule | Count | Confidence |

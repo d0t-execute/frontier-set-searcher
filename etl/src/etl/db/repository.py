@@ -277,14 +277,15 @@ def insert_decoration(
     name: str,
     slot_size: int,
     is_tower: bool = False,
+    category: str = "deco_standard",
     source_url: str | None = None,
 ) -> Decoration:
     cursor = conn.execute(
         """
-        INSERT INTO decoration (external_id, name, slot_size, is_tower, source_url)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO decoration (external_id, name, slot_size, is_tower, category, source_url)
+        VALUES (?, ?, ?, ?, ?, ?)
         """,
-        (external_id, name, slot_size, is_tower, source_url),
+        (external_id, name, slot_size, is_tower, category, source_url),
     )
     row_id = cursor.lastrowid
     assert row_id is not None
@@ -294,6 +295,7 @@ def insert_decoration(
         name=name,
         slot_size=slot_size,
         is_tower=is_tower,
+        category=category,
         source_url=source_url,
     )
 
@@ -472,6 +474,7 @@ def _decoration_from_row(row: sqlite3.Row) -> Decoration:
         name=row["name"],
         slot_size=row["slot_size"],
         is_tower=bool(row["is_tower"]),
+        category=row["category"],
         source_url=row["source_url"],
     )
 

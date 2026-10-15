@@ -67,6 +67,14 @@ export interface NamedDecoration extends Decoration {
    * keeps Tower Gems out of the general pool this flag alone doesn't stop
    * the engine from freely mixing in. */
   readonly isTower: boolean
+  /** The reference set-searcher's decoration-tree category leaf (see
+   * docs/gear-category-taxonomy.md's "Decorations" table) -- mirrors
+   * `NamedCandidate`/`NamedCuff`'s own `category` field. Entirely separate
+   * from `isTower` above: Tower Gems get their own category leaf too
+   * (`deco_tower`), but it's never surfaced as a selectable option in this
+   * tree -- Tower stays governed by the pre-existing `isTower` toggle (see
+   * `decoration-categories.ts`'s own docstring). */
+  readonly category: string
 }
 
 /** A Cuff is shaped exactly like a Decoration (id, slotSize, skills) -- see

@@ -16,10 +16,7 @@ import {
 } from './search-engine/build-query'
 import type { QueryFormState } from './search-engine/build-query'
 import { CUFF_CATEGORY_GROUPS } from './search-engine/cuff-categories'
-import {
-  DECORATION_CATEGORY_GROUPS,
-  TOWER_DECORATION_CATEGORY_KEY,
-} from './search-engine/decoration-categories'
+import { DECORATION_CATEGORY_GROUPS } from './search-engine/decoration-categories'
 import { GEAR_CATEGORY_GROUPS } from './search-engine/gear-categories'
 import type { PinnedSlot } from './search-engine/pinned-armor'
 import { buildResultUrl } from './search-engine/shared-state'
@@ -79,12 +76,11 @@ const DEFAULT_EXCLUDED_CUFF_CATEGORIES = new Set(
     .map((c) => c.key)
     .filter((key) => key.includes('unavailable') || key.includes('training_only')),
 )
-// Tower Gems are strictly stronger than their regular counterparts and crowd
-// out normal decorations if left in the pool (docs/skill-system-roadmap.md
-// TODO #11, superseding the earlier hardcoded exclusion this default
-// replicates) -- excluded by default, but now a user-visible, togglable
-// choice rather than baked in.
-const DEFAULT_EXCLUDED_DECORATION_CATEGORIES = new Set([TOWER_DECORATION_CATEGORY_KEY])
+// Tower Gems are excluded unconditionally, not via this set at all -- see
+// `decorationsAfterCategoryFilter`'s own docstring. Lottery Hiden decorations
+// ("do not use" per the reference tool's own tree) are excluded by default
+// here, but stay a togglable choice since they're at least equippable.
+const DEFAULT_EXCLUDED_DECORATION_CATEGORIES = new Set(['deco_lottery_hiden'])
 
 function countLeaves(groups: readonly CategoryFilterGroup[]): number {
   return groups.reduce((sum, group) => sum + group.categories.length, 0)
@@ -436,9 +432,8 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
 
             <Disclosure title="Decorations" summary={decorationsSummary}>
               <p className="form-text">
-                Tower Gems are strictly stronger than their regular equivalents and are excluded
-                by default so they don't crowd out normal decorations -- include them here if
-                you're specifically building around Tower armor.
+                Tower Gems are never included -- they're strictly stronger than their regular
+                equivalents and this tool has no way to target them at Tower armor specifically.
               </p>
               <CategoryFilter
                 groups={DECORATION_CATEGORY_GROUPS}

@@ -5,17 +5,16 @@ import {
   resolvePinnedSlotDecorations,
 } from './build-query'
 import type { QueryFormState } from './build-query'
-import { TOWER_DECORATION_CATEGORY_KEY } from './decoration-categories'
 import type { DataBundle, NamedDecoration } from './load-bundle'
 
-function deco(id: string, isTower: boolean): NamedDecoration {
-  return { id, name: id, slotSize: 1, skills: [], isTower }
+function deco(id: string, isTower: boolean, category = 'deco_standard'): NamedDecoration {
+  return { id, name: id, slotSize: 1, skills: [], isTower, category }
 }
 
 const EMPTY_FORM_STATE: QueryFormState = {
   excludedCategories: new Set(),
   excludedCuffCategories: new Set(),
-  excludedDecorationCategories: new Set([TOWER_DECORATION_CATEGORY_KEY]),
+  excludedDecorationCategories: new Set(),
   excludedWeaponZenithSkillIds: new Set(),
   weaponSlotCount: 0,
   pinnedArmor: new Map(),
@@ -34,25 +33,43 @@ const BUNDLE: DataBundle = {
 }
 
 describe('decorationsAfterCategoryFilter', () => {
-  it('drops every decoration flagged isTower when the Tower category is excluded', () => {
+  it('drops every decoration flagged isTower unconditionally, even with no categories excluded', () => {
     const result = decorationsAfterCategoryFilter(
       [deco('a', false), deco('b', true), deco('c', false)],
-      new Set([TOWER_DECORATION_CATEGORY_KEY]),
+      new Set(),
     )
 
     expect(result.map((d) => d.id)).toEqual(['a', 'c'])
   })
 
-  it('returns an empty array when every decoration is a Tower Gem and Tower is excluded', () => {
-    expect(
-      decorationsAfterCategoryFilter([deco('a', true)], new Set([TOWER_DECORATION_CATEGORY_KEY])),
-    ).toEqual([])
+  it('returns an empty array when every decoration is a Tower Gem', () => {
+    expect(decorationsAfterCategoryFilter([deco('a', true)], new Set())).toEqual([])
   })
 
-  it('keeps Tower Gems when the Tower category is not excluded', () => {
-    const result = decorationsAfterCategoryFilter([deco('a', false), deco('b', true)], new Set())
+  it('drops decorations whose own category is excluded, independent of isTower', () => {
+    const result = decorationsAfterCategoryFilter(
+      [
+        deco('a', false, 'deco_standard'),
+        deco('b', false, 'deco_musou_elzelion'),
+        deco('c', false, 'deco_keoaruboru'),
+      ],
+      new Set(['deco_musou_elzelion']),
+    )
 
-    expect(result.map((d) => d.id)).toEqual(['a', 'b'])
+    expect(result.map((d) => d.id)).toEqual(['a', 'c'])
+  })
+
+  it('applies both the Tower check and the category check together', () => {
+    const result = decorationsAfterCategoryFilter(
+      [
+        deco('a', false, 'deco_standard'),
+        deco('b', true, 'deco_tower'),
+        deco('c', false, 'deco_keoaruboru'),
+      ],
+      new Set(['deco_keoaruboru']),
+    )
+
+    expect(result.map((d) => d.id)).toEqual(['a'])
   })
 })
 

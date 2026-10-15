@@ -31,6 +31,32 @@ from etl.parse.gear_category import (
     CATEGORY_CUFF_STANDARD_TRAINING_ONLY,
     CATEGORY_CUFF_STANDARD_UNAVAILABLE,
     CATEGORY_CUFF_STANDARD_ZENITH,
+    CATEGORY_DECO_EVENT,
+    CATEGORY_DECO_EVENT_G,
+    CATEGORY_DECO_EVENT_GX,
+    CATEGORY_DECO_EXTREME_RAVIENTE,
+    CATEGORY_DECO_FESTIVAL_G,
+    CATEGORY_DECO_FESTIVAL_GX,
+    CATEGORY_DECO_G,
+    CATEGORY_DECO_GUILD_G,
+    CATEGORY_DECO_GUILD_GX,
+    CATEGORY_DECO_GX,
+    CATEGORY_DECO_HIDEN,
+    CATEGORY_DECO_KEOARUBORU,
+    CATEGORY_DECO_LOTTERY_HIDEN,
+    CATEGORY_DECO_MUSOU_BOGABADORUMU,
+    CATEGORY_DECO_MUSOU_DUREMUDIRA,
+    CATEGORY_DECO_MUSOU_ELZELION,
+    CATEGORY_DECO_MUSOU_NARGACUGA,
+    CATEGORY_DECO_MUSOU_ZERUREUSU,
+    CATEGORY_DECO_OTHER,
+    CATEGORY_DECO_RAVIENTE,
+    CATEGORY_DECO_ROAD,
+    CATEGORY_DECO_ROAD_GX,
+    CATEGORY_DECO_ROAD_WHITE_FATALIS,
+    CATEGORY_DECO_STANDARD,
+    CATEGORY_DECO_TOWER,
+    CATEGORY_DECO_TRUE_HIDEN,
     CATEGORY_DIVA_DEFENSE,
     CATEGORY_EVENT_MYSTERY,
     CATEGORY_EVENT_PLAIN,
@@ -90,6 +116,7 @@ from etl.parse.gear_category import (
     CATEGORY_ZENITH_ZX,
     CATEGORY_ZENITH_ZY,
     classify_cuff_category,
+    classify_decoration_category,
     classify_equipment_category,
     is_grank_or_later_equipment,
 )
@@ -736,3 +763,198 @@ def test_cuff_hiden() -> None:
     assert (
         classify_cuff_category(_cuff_row("SnS - Basic", cre="1-", clazz="L")) == CATEGORY_CUFF_HIDEN
     )
+
+
+# == Decorations (Tree 2 in docs/gear-category-taxonomy.md) ===================
+# Real example names from the live dataset (etl/.data/cache/equip.body),
+# confirmed by the project owner where CRE/CLASS alone couldn't distinguish a
+# leaf (every Musou leaf, Keoaruboru).
+
+
+def test_deco_standard() -> None:
+    assert classify_decoration_category(_row("Attack Gem", cre="1-")) == CATEGORY_DECO_STANDARD
+
+
+def test_deco_g() -> None:
+    assert classify_decoration_category(_row("Rathalos G", cre="1-", clazz="I")) == CATEGORY_DECO_G
+
+
+def test_deco_gx() -> None:
+    assert (
+        classify_decoration_category(_row("Rathalos GX1", cre="1-", clazz="I")) == CATEGORY_DECO_GX
+    )
+
+
+def test_deco_hiden() -> None:
+    assert (
+        classify_decoration_category(_row("SnS Hiden? White", cre="1-", clazz="L"))
+        == CATEGORY_DECO_HIDEN
+    )
+
+
+def test_deco_true_hiden() -> None:
+    assert (
+        classify_decoration_category(_row("SnS True? White", cre="1-", clazz="L"))
+        == CATEGORY_DECO_TRUE_HIDEN
+    )
+
+
+def test_deco_lottery_hiden() -> None:
+    assert (
+        classify_decoration_category(_row("SnS Hiden EX?White", cre="4g", clazz="L"))
+        == CATEGORY_DECO_LOTTERY_HIDEN
+    )
+
+
+def test_deco_raviente() -> None:
+    assert (
+        classify_decoration_category(_row("Raviente BM GX1", cre="1-", clazz="I"))
+        == CATEGORY_DECO_RAVIENTE
+    )
+    assert (
+        classify_decoration_category(_row("Violent Ravi BM GX1", cre="1-", clazz="I"))
+        == CATEGORY_DECO_RAVIENTE
+    )
+    assert (
+        classify_decoration_category(_row("Berserk Ravi BM GX1", cre="1-", clazz="I"))
+        == CATEGORY_DECO_RAVIENTE
+    )
+
+
+def test_deco_extreme_raviente() -> None:
+    assert (
+        classify_decoration_category(_row("Extreme Ravi BM GX1", cre="1-", clazz="I"))
+        == CATEGORY_DECO_EXTREME_RAVIENTE
+    )
+
+
+def test_deco_musou_nargacuga() -> None:
+    # Both the Blademaster ("Demonclad") and Gunner ("Dojiclad") named series
+    # map to the same leaf -- confirmed by the project owner.
+    assert (
+        classify_decoration_category(_row("Demonclad BM GX1", cre="1e", clazz="I"))
+        == CATEGORY_DECO_MUSOU_NARGACUGA
+    )
+    assert (
+        classify_decoration_category(_row("Dojiclad GN GX1", cre="1e", clazz="I"))
+        == CATEGORY_DECO_MUSOU_NARGACUGA
+    )
+
+
+def test_deco_musou_bogabadorumu() -> None:
+    assert (
+        classify_decoration_category(_row("Rafan BM GX1", cre="1e", clazz="I"))
+        == CATEGORY_DECO_MUSOU_BOGABADORUMU
+    )
+
+
+def test_deco_musou_zerureusu() -> None:
+    assert (
+        classify_decoration_category(_row("Elysium BM GX1", cre="1e", clazz="I"))
+        == CATEGORY_DECO_MUSOU_ZERUREUSU
+    )
+
+
+def test_deco_musou_duremudira() -> None:
+    assert (
+        classify_decoration_category(_row("Bonne BM GX1", cre="1e", clazz="I"))
+        == CATEGORY_DECO_MUSOU_DUREMUDIRA
+    )
+
+
+def test_deco_musou_elzelion() -> None:
+    assert (
+        classify_decoration_category(_row("Fonce BM GX1", cre="1e", clazz="I"))
+        == CATEGORY_DECO_MUSOU_ELZELION
+    )
+
+
+def test_deco_event() -> None:
+    assert classify_decoration_category(_row("Hunger Gem", cre="1e")) == CATEGORY_DECO_EVENT
+
+
+def test_deco_event_g() -> None:
+    assert (
+        classify_decoration_category(_row("Jess BM G", cre="1e", clazz="I"))
+        == CATEGORY_DECO_EVENT_G
+    )
+
+
+def test_deco_event_gx() -> None:
+    assert (
+        classify_decoration_category(_row("Jess BM GX1", cre="1e", clazz="I"))
+        == CATEGORY_DECO_EVENT_GX
+    )
+
+
+def test_deco_festival_g() -> None:
+    assert (
+        classify_decoration_category(_row("Arumyu BM G", cre="2m", clazz="I"))
+        == CATEGORY_DECO_FESTIVAL_G
+    )
+
+
+def test_deco_festival_gx() -> None:
+    assert (
+        classify_decoration_category(_row("Arumyu BM GX1", cre="2m", clazz="I"))
+        == CATEGORY_DECO_FESTIVAL_GX
+    )
+
+
+def test_deco_guild_g() -> None:
+    assert (
+        classify_decoration_category(_row("Mixes G", cre="2-", clazz="I")) == CATEGORY_DECO_GUILD_G
+    )
+
+
+def test_deco_guild_gx() -> None:
+    assert (
+        classify_decoration_category(_row("Mixes GX1", cre="2-", clazz="I"))
+        == CATEGORY_DECO_GUILD_GX
+    )
+
+
+def test_deco_keoaruboru() -> None:
+    # Confirmed by the project owner: obtained through Diva Defense, one and
+    # the same as the reference tool's "Diva Def" leaf -- not split in two.
+    assert (
+        classify_decoration_category(_row("Burning Cliff BM GX1", cre="2u", clazz="I"))
+        == CATEGORY_DECO_KEOARUBORU
+    )
+    assert (
+        classify_decoration_category(_row("Crimson Cliff GN GX1", cre="2u", clazz="I"))
+        == CATEGORY_DECO_KEOARUBORU
+    )
+
+
+def test_deco_road() -> None:
+    assert classify_decoration_category(_row("G Break・Blade", cre="1t")) == CATEGORY_DECO_ROAD
+
+
+def test_deco_road_white_fatalis() -> None:
+    assert (
+        classify_decoration_category(_row("Wht Fatalis BM GX1", cre="1t", clazz="I"))
+        == CATEGORY_DECO_ROAD_WHITE_FATALIS
+    )
+
+
+def test_deco_road_gx() -> None:
+    assert (
+        classify_decoration_category(_row("Miniomu GX1", cre="1t", clazz="I"))
+        == CATEGORY_DECO_ROAD_GX
+    )
+
+
+def test_deco_tower_not_surfaced_in_the_ui_tree() -> None:
+    # Tower Gems are already filtered by the separate `is_tower` flag -- this
+    # leaf exists purely for traceability, not for a checkbox.
+    assert (
+        classify_decoration_category(_row("Status Res Gem III", cre="1t", clazz="N"))
+        == CATEGORY_DECO_TOWER
+    )
+
+
+def test_deco_other_for_unmodeled_rows() -> None:
+    assert classify_decoration_category(_row("Placeholder Gem", cre="9")) == CATEGORY_DECO_OTHER
+    assert classify_decoration_category(_row("Guild R. Gem", cre="7-")) == CATEGORY_DECO_OTHER
+    assert classify_decoration_category(_row("SP Gem", cre="1-", clazz="A")) == CATEGORY_DECO_OTHER

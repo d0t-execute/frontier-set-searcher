@@ -127,6 +127,7 @@ def load_equipment(
             name=deco_row.name,
             slot_size=deco_row.slot_size,
             is_tower=deco_row.is_tower,
+            category=deco_row.category,
             source_url=source_url,
         )
         for skill_id, points in deco_row.skills:

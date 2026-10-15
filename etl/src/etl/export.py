@@ -255,6 +255,7 @@ def _export_decorations(conn: sqlite3.Connection) -> list[dict[str, Any]]:
             # this flag at least lets it exclude Tower Gems from the general
             # pool outright (see frontend's build-query.ts).
             "isTower": decoration.is_tower,
+            "category": decoration.category,
         }
         for decoration in list_decorations(conn)
     ]

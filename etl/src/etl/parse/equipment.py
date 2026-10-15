@@ -15,6 +15,7 @@ from enum import IntEnum
 from etl.db.models import EquipmentType
 from etl.parse.gear_category import (
     classify_cuff_category,
+    classify_decoration_category,
     classify_equipment_category,
     is_grank_or_later_equipment,
 )
@@ -118,6 +119,9 @@ class ParsedDecorationRow:
     skills: tuple[tuple[int, int], ...]
     # Tower Gem (CLASS "N") -- see the matching note on ParsedEquipmentRow.
     is_tower: bool = False
+    # The reference set-searcher's decoration-tree category leaf -- see
+    # docs/gear-category-taxonomy.md.
+    category: str = "deco_standard"
 
 
 @dataclass(frozen=True, slots=True)
@@ -273,6 +277,7 @@ def parse_decoration_bucket(bucket_json: str) -> list[ParsedDecorationRow]:
                 slot_size=slot_size,
                 skills=_extract_skills(fields),
                 is_tower=_field(fields, Field.CLASS) == _TOWER_CLASS,
+                category=classify_decoration_category(fields),
             )
         )
     return parsed

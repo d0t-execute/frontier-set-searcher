@@ -11,7 +11,6 @@
  */
 
 import type { DataBundle, NamedCandidate, NamedCuff, NamedDecoration, NamedSlotQuery } from './load-bundle'
-import { TOWER_DECORATION_CATEGORY_KEY } from './decoration-categories'
 import type { PinnedSlot } from './pinned-armor'
 
 /** Key used for the weapon Zenith-skill checklist's "carries no Zenith skill
@@ -163,22 +162,26 @@ export function cuffsAfterCategoryFilter(
  * in both directions in-game (docs/data-format-notes.md's "Decorations"
  * section: Tower armor can only take Tower Gems, regular armor can't take
  * them at all) -- a rule this engine doesn't model per-slot/per-candidate at
- * all. Excluding Tower Gems from the general pool (the default, per
- * `decoration-categories.ts`'s `DECORATION_CATEGORY_GROUPS`, matching the
- * original hardcoded fix this superseded) is only a partial, one-sided fix
- * for a real bug (confirmed by the project owner, 2026-10-15): Tower Gems
- * are strictly stronger than their regular equivalents, so leaving them in
- * the shared pool let them crowd out normal decorations in nearly every
- * search, not just ones that happened to pin Tower armor. The other
- * direction -- a regular decoration ending up placed into a Tower armor
- * piece's own open slots -- remains unenforced regardless of this filter's
- * setting (see docs/skill-system-roadmap.md TODO #11's own note on this). */
+ * all. Tower Gems are therefore ALWAYS excluded from the general pool, not a
+ * togglable choice (confirmed by the project owner, 2026-10-15: there's no
+ * legitimate reason to search with them in scope, since this engine has no
+ * way to target them at a Tower armor piece specifically). This is only a
+ * partial, one-sided fix for the underlying exclusivity rule: a regular
+ * decoration ending up placed into a Tower armor piece's own open slots
+ * remains unenforced regardless (see docs/skill-system-roadmap.md TODO #11's
+ * own note on this).
+ *
+ * Separately filters by `d.category` against the richer decoration-tree
+ * taxonomy (see decoration-categories.ts), which IS togglable via
+ * `excludedCategories`. */
 export function decorationsAfterCategoryFilter(
   decorations: readonly NamedDecoration[],
   excludedCategories: ReadonlySet<string>,
 ): NamedDecoration[] {
-  if (!excludedCategories.has(TOWER_DECORATION_CATEGORY_KEY)) return [...decorations]
-  return decorations.filter((d) => !d.isTower)
+  return decorations.filter((d) => {
+    if (d.isTower) return false
+    return !excludedCategories.has(d.category)
+  })
 }
 
 /** Resolves pinned cuff ids (see `QueryFormState.pinnedCuffIds`) to their full

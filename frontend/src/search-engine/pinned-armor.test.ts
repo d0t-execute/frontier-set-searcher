@@ -15,7 +15,14 @@ const slots: readonly PinnableSlot[] = [
 ]
 
 const decorations: readonly NamedDecoration[] = [
-  { id: 'D001', name: 'Attack Jewel', slotSize: 1, skills: [{ skillId: 1, points: 3 }], isTower: false },
+  {
+    id: 'D001',
+    name: 'Attack Jewel',
+    slotSize: 1,
+    skills: [{ skillId: 1, points: 3 }],
+    isTower: false,
+    category: 'deco_standard',
+  },
 ]
 
 describe('computePinnedSkillTotals', () => {

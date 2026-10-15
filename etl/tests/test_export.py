@@ -121,6 +121,7 @@ def test_exports_decorations_shaped_for_the_search_engine(tmp_path: Path) -> Non
             "slotSize": 2,
             "skills": [{"skillId": attack.id, "points": 3}],
             "isTower": False,
+            "category": "deco_standard",
         }
     ]
 

@@ -811,6 +811,79 @@ on every decoration row, it just never reached the export.
   `tsc -b`, and oxlint all clean. Live-browser confirmed via the real exported bundle (173 Tower
   decorations correctly flagged, including the project owner's own two named examples).
 
+**Follow-up (2026-10-15): replaced the single "Tower Gems" toggle with a real, full decoration
+category tree.** The user supplied a screenshot of the reference tool's own decoration-category
+checkbox tree (Standard, G Rank, Hiden, Raviente, Musou, Events, Festival, Guild, Hunter's Road --
+24 leaves total), explicitly excluding Tower from it (Tower stays governed by the pre-existing,
+separate `isTower` toggle above, untouched).
+
+- `etl/src/etl/parse/gear_category.py`'s new `classify_decoration_category` (mirrors
+  `classify_equipment_category`/`classify_cuff_category`'s own CRE-first precedence) implements
+  every leaf, threaded through `ParsedDecorationRow.category` -> `Decoration.category` (new DB
+  column, default `'deco_standard'`) -> `decorations.json`'s new `category` field.
+- Every leaf was verified against the real cached dataset (`etl/.data/cache/equip.body`'s decoration
+  bucket, 2,658 rows after correctly filtering out Cuff/placeholder rows that share the same raw
+  bucket) -- see `docs/gear-category-taxonomy.md`'s "Decorations" table for the full rule set and
+  confirmed counts. Two corrections fell out of this pass: the old "イGX" count (93, a guess) was
+  actually 43 once the 50 Musou rows (which share its same `CRE=1e`+`CLASS I` bucket) were carved
+  out; and the old "Diva Defense" leaf (`CRE=2u`, guessed INFERRED) turned out to actually be
+  Keoaruboru's decorations (confirmed by the user: obtained through Diva Defense, so it's the same
+  leaf as the reference tool's own "Diva Def," not two).
+- Five leaves (the Musou monster sub-series, DClad/Rapin/Elysium/Bonne/Fonce) and Keoaruboru
+  couldn't be derived from CRE/CLASS alone -- every one of them shares its bucket with ordinary
+  named-monster decorations, so CRE/CLASS can't distinguish them. Resolved by asking the user for
+  the exact in-game decoration names, then confirming each against the raw dataset: Demonclad(BM)/
+  Dojiclad(GN) = Musou Nargacuga, Rafan = Musou Bogabadorumu, Elysium = Musou Zerureusu, Bonne =
+  Musou Duremudira, Fonce = Musou Elzelion, Burning Cliff(BM)/Crimson Cliff(GN) = Keoaruboru.
+- One leaf from the reference tool's tree, "(EXd): Extreme Quests," is deferred -- no decoration
+  name in the real dataset could be confirmed for it (only "Extreme"/"EX" token matches were the
+  already-accounted-for Extreme Raviente GX rows). Needs the exact decoration name before it can be
+  added.
+- `frontend/src/search-engine/decoration-categories.ts` rewritten: `DECORATION_CATEGORY_GROUPS` now
+  has 10 groups (the pre-existing single-leaf "Decoration tier" group, kept untouched and first, plus
+  9 new groups for the confirmed taxonomy). `load-bundle.ts`'s `NamedDecoration` gained a `category:
+  string` field (mirrors `NamedCuff`/`NamedCandidate`). `build-query.ts`'s
+  `decorationsAfterCategoryFilter` now checks both `isTower` (via `TOWER_DECORATION_CATEGORY_KEY`,
+  unchanged) and `d.category` against the same `excludedDecorationCategories` set -- a decoration
+  survives only if it passes both checks, so the Tower toggle and the new tree keep working
+  independently through one shared state.
+- Schema change required a full ETL pipeline rebuild (new `decoration.category` column; `CREATE
+  TABLE IF NOT EXISTS` is a no-op against an already-materialized table -- same gotcha as the cuff-
+  category column, see [[project_cuff_equipment_support]]): old `frontier.sqlite3` moved aside as
+  `frontier.sqlite3.bak-pre-deco-category`, full `python -m etl.pipeline` + `python -m etl.export`
+  re-run against the cached raw data. Real counts tabulated and matched the taxonomy doc exactly
+  (2,658 decorations; see the doc's table for every leaf's count).
+- Verification: 285 ETL tests pass (up from 258; new `test_gear_category.py` cases for every leaf,
+  including the Shantien-shaped "G2".."G5"/"GF2".."GF5" numbered-tier-token edge case that an
+  exact-token-membership check misses), ruff clean. Full frontend suite (250 tests, up from 248;
+  two new `build-query.test.ts` cases for the combined isTower+category filter), `tsc -b`, oxlint
+  all clean. Live-browser confirmed against the real regenerated bundle: all 25 checkboxes (Tower +
+  24 new leaves) render under "Decorations" exactly matching the user's screenshot structure, and an
+  end-to-end search (Attack) completes with no console errors.
+
+**Follow-up (2026-10-15): Tower Gems removed from search entirely; Lottery Hiden excluded by
+default.** User feedback: Tower Gems shouldn't be a togglable choice at all (there's no legitimate
+reason to search with them in scope, since this engine has no way to target them at a Tower armor
+piece specifically) -- the toggle from the entry above is now gone, replaced with an unconditional
+exclusion.
+
+- `decoration-categories.ts`: removed `TOWER_DECORATION_CATEGORY_KEY` and the "Decoration tier"
+  group entirely (24 leaves now, down from 25).
+- `build-query.ts`'s `decorationsAfterCategoryFilter`: drops every `isTower` decoration
+  unconditionally (`if (d.isTower) return false`), no longer gated on `excludedCategories`. The
+  `category`-based filter (the richer tree) is unaffected and stays togglable.
+- `App.tsx`: `DEFAULT_EXCLUDED_DECORATION_CATEGORIES` changed from `new Set([TOWER_DECORATION_CATEGORY_KEY])`
+  to `new Set(['deco_lottery_hiden'])` -- Lottery Hiden Decorations ("do not use" per the reference
+  tool's own tree) now starts excluded by default, same pattern as Tower Gems used to, but still a
+  togglable choice (unlike Tower, which is never equippable through this tool's searches at all).
+  The "Decorations" section's static blurb was rewritten to state the Tower exclusion as a fact,
+  not an instruction to "include them here."
+- Verification: full frontend suite (249 tests, down from 250 -- two Tower-toggle-specific cases
+  removed, one combined case added), `tsc -b`, oxlint all clean. Live-browser confirmed via DOM
+  query against the real bundle: no `deco_tower` checkbox exists anywhere in the Decorations
+  section; `gear-category-deco_lottery_hiden` renders unchecked (excluded) by default; every other
+  decoration leaf renders checked (included).
+
 ## 12. Pin a decoration into a slot without pinning the armor piece
 
 **Status (2026-10-15): COMPLETE.** Resolved the open design question from this entry's own

@@ -303,6 +303,7 @@ def test_parses_a_tower_gem() -> None:
             slot_size=1,
             skills=((148, 30),),
             is_tower=True,
+            category="deco_tower",
         )
     ]
 
