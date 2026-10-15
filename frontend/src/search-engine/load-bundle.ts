@@ -63,9 +63,9 @@ export interface NamedDecoration extends Decoration {
    * directions in-game (docs/data-format-notes.md's "Decorations" section:
    * Tower armor can only take Tower Gems, and regular armor can't take them
    * at all). The search engine itself has no concept of this -- see
-   * `build-query.ts`'s `filterOutTowerDecorations`, which keeps Tower Gems
-   * out of the general pool this flag alone doesn't stop the engine from
-   * freely mixing in. */
+   * `build-query.ts`'s `decorationsAfterCategoryFilter`, which (by default)
+   * keeps Tower Gems out of the general pool this flag alone doesn't stop
+   * the engine from freely mixing in. */
   readonly isTower: boolean
 }
 

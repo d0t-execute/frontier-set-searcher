@@ -749,16 +749,35 @@ and present it in a way that doesn't feel as overwhelming, while feeling modern 
 
 ## 11. Decoration tier include/exclude filter
 
-**Status (2026-10-15): Not started -- added per the project owner's request.** The same
-category-level include/exclude control that already exists for armor (`GEAR_CATEGORY_GROUPS`/
-`CategoryFilter.tsx`) and cuffs (`CUFF_CATEGORY_GROUPS`) should exist for decorations too, letting
-the user exclude whole decoration tiers from the search pool rather than only individual pieces (per-
-decoration pinning already exists via `ArmorPicker.tsx`'s decoration search, but that's
-force-*include* for one slot at a time, not a pool-wide exclude). Decorations only have one
-machine-readable axis to filter on today -- `isTower` (see the "Tower-decoration bug fix" note
-below) -- not the richer multi-level category tree armor/cuffs have, so this would start narrower
-(an "Exclude Tower Gems" toggle, effectively) unless a fuller decoration category taxonomy gets
-built out first.
+**Status (2026-10-15): COMPLETE.** The same category-level include/exclude control that already
+exists for armor (`GEAR_CATEGORY_GROUPS`/`CategoryFilter.tsx`) and cuffs (`CUFF_CATEGORY_GROUPS`)
+now exists for decorations too. Decorations only have one machine-readable axis to filter on today
+-- `isTower` -- so this started (and ships) as a single toggle rather than the richer multi-level
+category tree armor/cuffs have; a fuller decoration category taxonomy would add more groups to the
+same mechanism, not replace it.
+
+- `frontend/src/search-engine/decoration-categories.ts` (new): `DECORATION_CATEGORY_GROUPS`
+  (reuses `GearCategoryGroup` from `gear-categories.ts`) -- one group, "Decoration tier", one leaf
+  keyed `TOWER_DECORATION_CATEGORY_KEY = 'tower'`.
+- `build-query.ts`'s old hardcoded `filterOutTowerDecorations` became
+  `decorationsAfterCategoryFilter(decorations, excludedCategories)`, filtering `isTower`
+  decorations only when the `'tower'` key is in the excluded set -- same shape as
+  `cuffsAfterCategoryFilter`. `QueryFormState` gained `excludedDecorationCategories`.
+- `App.tsx`: new "Decorations" `Disclosure` section (reusing `CategoryFilter`, same as "Gear
+  levels"/"Poogie cuffs"), new `excludedDecorationCategories` state defaulting to
+  `DEFAULT_EXCLUDED_DECORATION_CATEGORIES = new Set(['tower'])` -- i.e. Tower Gems stay excluded
+  out of the box, matching the old hardcoded behavior, but are now a visible, togglable choice.
+  Both `pinnableDecorations` (the manual per-slot picker's pool) and `queryFormState` (the solver's
+  pool) read from the same state, so pinning and searching can't drift apart on this.
+  `AppInitialState`/`buildShareUrl` also carry the field through "use as a base" and shared links.
+- `shared-state.ts`'s `SharedSearchState` gained `excludedDecorationCategories: readonly string[]`
+  (required, same as `excludedCategories`/`excludedCuffCategories` -- not the nullable-with-bundle-
+  fallback pattern `excludedWeaponZenithSkillIds` uses, since this filter's default set is static,
+  not bundle-dependent). A link encoded before this change won't decode (missing required field),
+  same as any other `SharedSearchState` shape change would -- no migration attempted.
+- Verification: `tsc -b` clean, full frontend suite (226 tests, up from 225 -- one new case added
+  to `build-query.test.ts` for "Tower category not excluded keeps Tower Gems in the pool"), oxlint
+  clean. Live-browser confirmed the new checkbox renders unchecked (excluded) by default.
 
 **Bug fix (2026-10-15): Tower Gems no longer mixed into the regular decoration pool.** Reported by
 the project owner: Tower Gems (e.g. "Vampirism Gem II", "Sword God Gem II") are strictly stronger
@@ -809,19 +828,24 @@ cuffs' shared pool). Left open for implementation time rather than guessed at he
 
 ## 13. Let the user choose how many results to return
 
-**Status (2026-10-15): Not started -- added per the project owner's request.** `App.tsx`'s
-`MAX_RESULTS` (`App.tsx:48`) is a hardcoded constant (currently 5): `handleSearch`'s `onResult`
-callback (`App.tsx:257-271`) counts streamed results and calls `worker.cancel(requestId)` once
-`count >= MAX_RESULTS`, and the "Showing the top N results" copy (`App.tsx:466`) interpolates the
-same constant. Needs a form control (a number input or a small preset dropdown, following the
-existing `CategoryFilter.tsx`/`FilterableOptions.tsx` styling conventions) feeding a piece of
-`App.tsx` state in place of the constant, plumbed into both the cap check and the results-shown
-copy. Also needs a decision on bounds (a sensible floor so a value of 0 can't be submitted, and a
-ceiling -- the ILP solver streams results strictly worst-to-best-ranked one at a time today, so a
-much larger N mostly just costs more solver time, not correctness, but an unbounded input could let
-a user stall the page). Worth also deciding whether this should be part of `SharedSearchState`
-(TODO #9) so a shared link preserves how many results its sender was shown -- lean towards *not*
-including it, since the link only ever points at one specific `resultIndex`, not the whole list.
+**Status (2026-10-15): COMPLETE.** `App.tsx`'s old hardcoded `MAX_RESULTS` constant is now a
+user-facing dropdown.
+
+- `App.tsx`: `DEFAULT_MAX_RESULTS = 5` (the old constant's value, now just the default) and
+  `MAX_RESULTS_OPTIONS = [1, 3, 5, 10, 20] as const` -- a closed set of options rather than a free
+  number input, decided per the ILP solver's own cost model (each extra result is a full extra
+  solver round-trip, see the preserved comment above `DEFAULT_MAX_RESULTS`), so the ceiling stays
+  bounded without needing separate floor/ceiling validation on a text input. New `maxResults` state
+  (seeded from `initialState?.maxResults ?? DEFAULT_MAX_RESULTS`) replaces the constant in both
+  `handleSearch`'s cap check and the "Showing the top N results" copy (now pluralized for N=1). A
+  new "Results to show" `<select>` sits next to the "Prefer exact matches" toggle in the action bar.
+- `AppInitialState` gained an optional `maxResults?: number` so "use as a base for a new search"
+  (TODO #9) can carry it forward, but per this entry's own original note, `SharedSearchState` does
+  *not* carry it -- a shared link still only ever points at one specific `resultIndex`, so how many
+  results its original sender chose to see doesn't change what the link resolves to.
+- Verification: `tsc -b` clean, `App.test.tsx` (18/18, including the existing "doesn't render every
+  streamed result" cap test, unchanged since it exercises the same default), live-browser confirmed
+  the dropdown renders with all five options.
 
 ## 14. Shorten shareable build-result links
 

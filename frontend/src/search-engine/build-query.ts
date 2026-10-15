@@ -11,6 +11,7 @@
  */
 
 import type { DataBundle, NamedCandidate, NamedCuff, NamedDecoration, NamedSlotQuery } from './load-bundle'
+import { TOWER_DECORATION_CATEGORY_KEY } from './decoration-categories'
 import type { PinnedSlot } from './pinned-armor'
 
 /** Key used for the weapon Zenith-skill checklist's "carries no Zenith skill
@@ -25,6 +26,7 @@ export const WEAPON_NO_ZENITH_SKILL_KEY = 'none'
 export interface QueryFormState {
   readonly excludedCategories: ReadonlySet<string>
   readonly excludedCuffCategories: ReadonlySet<string>
+  readonly excludedDecorationCategories: ReadonlySet<string>
   readonly excludedWeaponZenithSkillIds: ReadonlySet<string>
   readonly weaponSlotCount: number
   readonly pinnedArmor: ReadonlyMap<string, PinnedSlot>
@@ -154,18 +156,21 @@ export function cuffsAfterCategoryFilter(
  * in both directions in-game (docs/data-format-notes.md's "Decorations"
  * section: Tower armor can only take Tower Gems, regular armor can't take
  * them at all) -- a rule this engine doesn't model per-slot/per-candidate at
- * all. Unconditionally excluding Tower Gems from the general pool is a
- * partial but one-sided fix for a real bug (confirmed by the project owner,
- * 2026-10-15): Tower Gems are strictly stronger than their regular
- * equivalents, so leaving them in the shared pool let them crowd out normal
- * decorations in nearly every search, not just ones that happened to pin
- * Tower armor. The other direction -- a regular decoration ending up placed
- * into a Tower armor piece's own open slots -- remains unenforced; see
- * docs/skill-system-roadmap.md TODO #11 for turning this into a real,
- * user-controlled category filter instead of this hardcoded exclusion. */
-export function filterOutTowerDecorations(
+ * all. Excluding Tower Gems from the general pool (the default, per
+ * `decoration-categories.ts`'s `DECORATION_CATEGORY_GROUPS`, matching the
+ * original hardcoded fix this superseded) is only a partial, one-sided fix
+ * for a real bug (confirmed by the project owner, 2026-10-15): Tower Gems
+ * are strictly stronger than their regular equivalents, so leaving them in
+ * the shared pool let them crowd out normal decorations in nearly every
+ * search, not just ones that happened to pin Tower armor. The other
+ * direction -- a regular decoration ending up placed into a Tower armor
+ * piece's own open slots -- remains unenforced regardless of this filter's
+ * setting (see docs/skill-system-roadmap.md TODO #11's own note on this). */
+export function decorationsAfterCategoryFilter(
   decorations: readonly NamedDecoration[],
+  excludedCategories: ReadonlySet<string>,
 ): NamedDecoration[] {
+  if (!excludedCategories.has(TOWER_DECORATION_CATEGORY_KEY)) return [...decorations]
   return decorations.filter((d) => !d.isTower)
 }
 
@@ -239,7 +244,10 @@ export function pinnedArmorFromResult(
  * single place both `App.tsx`'s live search and `ResultPage.tsx`'s
  * reconstructed one call through, so they can never drift apart. */
 export function buildSearchQuery(bundle: DataBundle, state: QueryFormState): BuiltQuery {
-  const decorations = filterOutTowerDecorations(bundle.decorations)
+  const decorations = decorationsAfterCategoryFilter(
+    bundle.decorations,
+    state.excludedDecorationCategories,
+  )
   const slots = [
     ...slotsAfterPinning(
       slotsAfterCategoryFilter(bundle.slots, state.excludedCategories),

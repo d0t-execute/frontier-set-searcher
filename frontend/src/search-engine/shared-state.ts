@@ -28,6 +28,7 @@ export interface SharedSearchState {
   readonly zenithRequirements: readonly SkillRequirement[]
   readonly excludedCategories: readonly string[]
   readonly excludedCuffCategories: readonly string[]
+  readonly excludedDecorationCategories: readonly string[]
   /** `null` means "use the app's own default" (the user never touched the
    * weapon Zenith-skill checklist) -- mirrors `App.tsx`'s own
    * `excludedWeaponZenithSkillIds` state, so a shared link doesn't have to
@@ -89,6 +90,7 @@ export function decodeSharedState(encoded: string): SharedSearchState | null {
     !Array.isArray(p.zenithRequirements) ||
     !Array.isArray(p.excludedCategories) ||
     !Array.isArray(p.excludedCuffCategories) ||
+    !Array.isArray(p.excludedDecorationCategories) ||
     (p.excludedWeaponZenithSkillIds !== null && !Array.isArray(p.excludedWeaponZenithSkillIds)) ||
     typeof p.weaponSlotCount !== 'number' ||
     !Array.isArray(p.pinnedArmor) ||
@@ -104,6 +106,7 @@ export function decodeSharedState(encoded: string): SharedSearchState | null {
     zenithRequirements: p.zenithRequirements as SkillRequirement[],
     excludedCategories: p.excludedCategories as string[],
     excludedCuffCategories: p.excludedCuffCategories as string[],
+    excludedDecorationCategories: p.excludedDecorationCategories as string[],
     excludedWeaponZenithSkillIds: p.excludedWeaponZenithSkillIds as string[] | null,
     weaponSlotCount: p.weaponSlotCount,
     pinnedArmor: p.pinnedArmor as (readonly [string, PinnedSlot])[],

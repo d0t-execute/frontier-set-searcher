@@ -11,11 +11,15 @@ import { useDataBundle } from './data/useDataBundle'
 import { useSearchWorker } from './search/useSearchWorker'
 import {
   buildSearchQuery,
-  filterOutTowerDecorations,
+  decorationsAfterCategoryFilter,
   WEAPON_NO_ZENITH_SKILL_KEY,
 } from './search-engine/build-query'
 import type { QueryFormState } from './search-engine/build-query'
 import { CUFF_CATEGORY_GROUPS } from './search-engine/cuff-categories'
+import {
+  DECORATION_CATEGORY_GROUPS,
+  TOWER_DECORATION_CATEGORY_KEY,
+} from './search-engine/decoration-categories'
 import { GEAR_CATEGORY_GROUPS } from './search-engine/gear-categories'
 import type { PinnedSlot } from './search-engine/pinned-armor'
 import { buildResultUrl } from './search-engine/shared-state'
@@ -41,11 +45,18 @@ type SearchStatus = 'idle' | 'searching' | 'done' | 'error'
 // unlike the old Pareto-dominance engine's sub-second streaming. A "top 20"
 // cap made sense when results were nearly free; now it risks the UI sitting
 // on a search for minutes just to fill a page nobody asked to wait that long
-// for. Capped lower, and still stopping the search as soon as the cap is
+// for. Defaults lower, and still stopping the search as soon as the cap is
 // reached (the same cancellation the user's own Cancel button uses) -- results
 // still stream in one at a time as each round completes, so the user sees
 // progress immediately rather than waiting for the whole batch.
-const MAX_RESULTS = 5
+const DEFAULT_MAX_RESULTS = 5
+
+// A user-facing dropdown (docs/skill-system-roadmap.md TODO #13) rather than
+// a free-typed number: each extra result is a full extra solver round-trip
+// (see above), so the options stay in the same cheap-to-expensive range the
+// old hardcoded default lived in rather than letting an arbitrary number
+// stall the page.
+const MAX_RESULTS_OPTIONS = [1, 3, 5, 10, 20] as const
 
 // A piece/cuff that's unobtainable in the real game (removed, unimplemented,
 // or training-quest-only) is never worth surfacing by default -- these start
@@ -68,6 +79,12 @@ const DEFAULT_EXCLUDED_CUFF_CATEGORIES = new Set(
     .map((c) => c.key)
     .filter((key) => key.includes('unavailable') || key.includes('training_only')),
 )
+// Tower Gems are strictly stronger than their regular counterparts and crowd
+// out normal decorations if left in the pool (docs/skill-system-roadmap.md
+// TODO #11, superseding the earlier hardcoded exclusion this default
+// replicates) -- excluded by default, but now a user-visible, togglable
+// choice rather than baked in.
+const DEFAULT_EXCLUDED_DECORATION_CATEGORIES = new Set([TOWER_DECORATION_CATEGORY_KEY])
 
 function countLeaves(groups: readonly CategoryFilterGroup[]): number {
   return groups.reduce((sum, group) => sum + group.categories.length, 0)
@@ -75,6 +92,7 @@ function countLeaves(groups: readonly CategoryFilterGroup[]): number {
 
 const GEAR_LEVEL_LEAF_COUNT = countLeaves(GEAR_CATEGORY_GROUPS)
 const CUFF_LEAF_COUNT = countLeaves(CUFF_CATEGORY_GROUPS)
+const DECORATION_LEAF_COUNT = countLeaves(DECORATION_CATEGORY_GROUPS)
 
 function pluralize(count: number, noun: string, plural: string = `${noun}s`): string {
   return `${count} ${count === 1 ? noun : plural}`
@@ -92,11 +110,13 @@ export interface AppInitialState {
   readonly zenithRequirements: readonly SkillRequirement[]
   readonly excludedCategories: ReadonlySet<string>
   readonly excludedCuffCategories: ReadonlySet<string>
+  readonly excludedDecorationCategories: ReadonlySet<string>
   readonly excludedWeaponZenithSkillIds: ReadonlySet<string> | null
   readonly weaponSlotCount: number
   readonly pinnedArmor: ReadonlyMap<string, PinnedSlot>
   readonly pinnedCuffIds: readonly string[]
   readonly preferExactMatches: boolean
+  readonly maxResults?: number
 }
 
 function App({ initialState }: { readonly initialState?: AppInitialState } = {}) {
@@ -114,6 +134,12 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
   )
   const [excludedCuffCategories, setExcludedCuffCategories] = useState<Set<string>>(
     () => new Set(initialState?.excludedCuffCategories ?? DEFAULT_EXCLUDED_CUFF_CATEGORIES),
+  )
+  const [excludedDecorationCategories, setExcludedDecorationCategories] = useState<Set<string>>(
+    () =>
+      new Set(
+        initialState?.excludedDecorationCategories ?? DEFAULT_EXCLUDED_DECORATION_CATEGORIES,
+      ),
   )
   // `null` until the user first touches the checklist -- the weapon Zenith
   // skill catalog is bundle-provided data, not a static constant like
@@ -142,6 +168,9 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
   const [preferExactMatches, setPreferExactMatches] = useState(
     () => initialState?.preferExactMatches ?? true,
   )
+  const [maxResults, setMaxResults] = useState(
+    () => initialState?.maxResults ?? DEFAULT_MAX_RESULTS,
+  )
   const [results, setResults] = useState<NamedBuildResult[]>([])
   const [status, setStatus] = useState<SearchStatus>('idle')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -150,12 +179,14 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
 
   const bundle = bundleQuery.data
 
-  // Tower Gems are excluded from manual pinning the same way they're
-  // excluded from the solver's own pool (see build-query.ts's
-  // `filterOutTowerDecorations`) -- otherwise a player could still pin one
-  // into a non-Tower slot through ArmorPicker even though the search itself
-  // never would.
-  const pinnableDecorations = bundle ? filterOutTowerDecorations(bundle.decorations) : []
+  // Decorations excluded by the filter below are excluded from manual
+  // pinning the same way they're excluded from the solver's own pool (see
+  // build-query.ts's `decorationsAfterCategoryFilter`) -- otherwise a player
+  // could still pin an excluded decoration into a slot through ArmorPicker
+  // even though the search itself never would.
+  const pinnableDecorations = bundle
+    ? decorationsAfterCategoryFilter(bundle.decorations, excludedDecorationCategories)
+    : []
 
   // The engine only needs each skill's point thresholds (not its name or
   // description) to tell a harmless incidental bonus point apart from one
@@ -218,6 +249,10 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
     excludedCuffCategories.size === 0
       ? 'All included'
       : `${pluralize(excludedCuffCategories.size, 'category', 'categories')} of ${CUFF_LEAF_COUNT} excluded`
+  const decorationsSummary =
+    excludedDecorationCategories.size === 0
+      ? 'All included'
+      : `${pluralize(excludedDecorationCategories.size, 'tier', 'tiers')} of ${DECORATION_LEAF_COUNT} excluded`
   const weaponSummary = (() => {
     const total = bundle?.weaponZenithSkillIds.length ?? 0
     const excludedRealSkills = [...effectiveExcludedWeaponZenithSkillIds].filter(
@@ -231,6 +266,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
   const queryFormState: QueryFormState = {
     excludedCategories,
     excludedCuffCategories,
+    excludedDecorationCategories,
     excludedWeaponZenithSkillIds: effectiveExcludedWeaponZenithSkillIds,
     weaponSlotCount,
     pinnedArmor,
@@ -262,7 +298,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
           if (capped) return
           count++
           setResults((prev) => [...prev, result as unknown as NamedBuildResult])
-          if (count >= MAX_RESULTS) {
+          if (count >= maxResults) {
             capped = true
             worker.cancel(requestId)
             setReachedCap(true)
@@ -297,6 +333,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
       zenithRequirements,
       excludedCategories: [...excludedCategories],
       excludedCuffCategories: [...excludedCuffCategories],
+      excludedDecorationCategories: [...excludedDecorationCategories],
       excludedWeaponZenithSkillIds: excludedWeaponZenithSkillIds
         ? [...excludedWeaponZenithSkillIds]
         : null,
@@ -373,6 +410,19 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
               />
             </Disclosure>
 
+            <Disclosure title="Decorations" summary={decorationsSummary}>
+              <p className="form-text">
+                Tower Gems are strictly stronger than their regular equivalents and are excluded
+                by default so they don't crowd out normal decorations -- include them here if
+                you're specifically building around Tower armor.
+              </p>
+              <CategoryFilter
+                groups={DECORATION_CATEGORY_GROUPS}
+                excludedCategories={excludedDecorationCategories}
+                onChange={setExcludedDecorationCategories}
+              />
+            </Disclosure>
+
             <Disclosure title="Pin specific cuffs" summary={pinnedCuffsSummary}>
               <p className="form-text">
                 Force a specific cuff into one or both cuff slots instead of letting the solver
@@ -433,6 +483,24 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
               </div>
             </div>
 
+            <div>
+              <label className="form-label mb-0" htmlFor="max-results">
+                Results to show
+              </label>
+              <select
+                id="max-results"
+                className="form-select w-auto"
+                value={maxResults}
+                onChange={(e) => setMaxResults(Number(e.target.value))}
+              >
+                {MAX_RESULTS_OPTIONS.map((count) => (
+                  <option key={count} value={count}>
+                    {count}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <div className="d-flex gap-2 ms-auto">
               <button
                 type="button"
@@ -463,8 +531,9 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
           {status === 'done' && results.length === 0 && <p>No matching builds found.</p>}
           {status === 'done' && reachedCap && (
             <p>
-              Showing the top {MAX_RESULTS} results. Narrow your requirements to see a more
-              specific set.
+              Showing the top {maxResults}{' '}
+              {maxResults === 1 ? 'result' : 'results'}. Narrow your requirements or raise the
+              result count above to see more.
             </p>
           )}
 

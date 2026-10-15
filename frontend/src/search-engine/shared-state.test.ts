@@ -13,6 +13,7 @@ const state: SharedSearchState = {
   zenithRequirements: [{ skillId: 1000001, minPoints: 1 }],
   excludedCategories: ['equip_unavailable'],
   excludedCuffCategories: ['cuff_standard_unavailable'],
+  excludedDecorationCategories: ['tower'],
   excludedWeaponZenithSkillIds: null,
   weaponSlotCount: 2,
   pinnedArmor: [['head', { candidateId: 'head:0001', decorationIds: ['D001'] }]],

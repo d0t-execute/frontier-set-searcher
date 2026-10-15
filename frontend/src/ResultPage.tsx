@@ -49,6 +49,7 @@ export function ResultPage({ state, onUseAsBase, onBackToSearch }: ResultPagePro
     () => ({
       excludedCategories: new Set(state.excludedCategories),
       excludedCuffCategories: new Set(state.excludedCuffCategories),
+      excludedDecorationCategories: new Set(state.excludedDecorationCategories),
       excludedWeaponZenithSkillIds: new Set(
         state.excludedWeaponZenithSkillIds ?? bundle?.weaponZenithSkillIds.map(String) ?? [],
       ),
@@ -129,6 +130,7 @@ export function ResultPage({ state, onUseAsBase, onBackToSearch }: ResultPagePro
       zenithRequirements: state.zenithRequirements,
       excludedCategories: new Set(state.excludedCategories),
       excludedCuffCategories: new Set(state.excludedCuffCategories),
+      excludedDecorationCategories: new Set(state.excludedDecorationCategories),
       excludedWeaponZenithSkillIds: weaponCandidate
         ? pinnedWeaponExclusion(bundle.weaponZenithSkillIds, weaponCandidate.id)
         : new Set(state.excludedWeaponZenithSkillIds ?? []),

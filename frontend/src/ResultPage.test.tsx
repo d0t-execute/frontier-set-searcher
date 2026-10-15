@@ -40,6 +40,7 @@ const STATE: SharedSearchState = {
   zenithRequirements: [],
   excludedCategories: [],
   excludedCuffCategories: [],
+  excludedDecorationCategories: [],
   excludedWeaponZenithSkillIds: null,
   weaponSlotCount: 0,
   pinnedArmor: [],
