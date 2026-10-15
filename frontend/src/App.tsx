@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ArmorPicker } from './components/ArmorPicker'
 import { CategoryFilter } from './components/CategoryFilter'
 import type { CategoryFilterGroup } from './components/CategoryFilter'
@@ -19,6 +19,7 @@ import { CUFF_CATEGORY_GROUPS } from './search-engine/cuff-categories'
 import { DECORATION_CATEGORY_GROUPS } from './search-engine/decoration-categories'
 import { GEAR_CATEGORY_GROUPS } from './search-engine/gear-categories'
 import type { PinnedSlot } from './search-engine/pinned-armor'
+import { loadSearchFormState, saveSearchFormState } from './search-engine/search-form-state'
 import { buildResultUrl } from './search-engine/shared-state'
 import type { SharedSearchState } from './search-engine/shared-state'
 import type { SkillRequirement, SkillTierThresholds } from './search-engine/types'
@@ -126,22 +127,43 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
   const bundleQuery = useDataBundle()
   const worker = useSearchWorker()
 
+  // Only consulted as a fallback for a field `initialState` doesn't already
+  // specify -- an explicit "use as a base for a new search"/shared-link seed
+  // always wins over whatever was merely left over from a previous session
+  // (docs/skill-system-roadmap.md TODO #18). Computed once via `useState`'s
+  // own lazy-initializer trick (not a plain `const`), since re-reading
+  // `localStorage` on every render would be wasted work for a value that's
+  // only ever consulted while seeding the `useState` calls below.
+  const [persisted] = useState(() => loadSearchFormState())
+
   const [requirements, setRequirements] = useState<SkillRequirement[]>(
-    () => [...(initialState?.requirements ?? [])],
+    () => [...(initialState?.requirements ?? persisted?.requirements ?? [])],
   )
   const [zenithRequirements, setZenithRequirements] = useState<SkillRequirement[]>(
-    () => [...(initialState?.zenithRequirements ?? [])],
+    () => [...(initialState?.zenithRequirements ?? persisted?.zenithRequirements ?? [])],
   )
   const [excludedCategories, setExcludedCategories] = useState<Set<string>>(
-    () => new Set(initialState?.excludedCategories ?? DEFAULT_EXCLUDED_EQUIPMENT_CATEGORIES),
+    () =>
+      new Set(
+        initialState?.excludedCategories ??
+          persisted?.excludedCategories ??
+          DEFAULT_EXCLUDED_EQUIPMENT_CATEGORIES,
+      ),
   )
   const [excludedCuffCategories, setExcludedCuffCategories] = useState<Set<string>>(
-    () => new Set(initialState?.excludedCuffCategories ?? DEFAULT_EXCLUDED_CUFF_CATEGORIES),
+    () =>
+      new Set(
+        initialState?.excludedCuffCategories ??
+          persisted?.excludedCuffCategories ??
+          DEFAULT_EXCLUDED_CUFF_CATEGORIES,
+      ),
   )
   const [excludedDecorationCategories, setExcludedDecorationCategories] = useState<Set<string>>(
     () =>
       new Set(
-        initialState?.excludedDecorationCategories ?? DEFAULT_EXCLUDED_DECORATION_CATEGORIES,
+        initialState?.excludedDecorationCategories ??
+          persisted?.excludedDecorationCategories ??
+          DEFAULT_EXCLUDED_DECORATION_CATEGORIES,
       ),
   )
   // `null` until the user first touches the checklist -- the weapon Zenith
@@ -150,42 +172,43 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
   // with up front (see `defaultExcludedWeaponZenithSkillIds` below).
   const [excludedWeaponZenithSkillIds, setExcludedWeaponZenithSkillIds] = useState<Set<
     string
-  > | null>(() =>
-    initialState?.excludedWeaponZenithSkillIds
-      ? new Set(initialState.excludedWeaponZenithSkillIds)
-      : null,
+  > | null>(() => {
+    const seed = initialState?.excludedWeaponZenithSkillIds ?? persisted?.excludedWeaponZenithSkillIds
+    return seed ? new Set(seed) : null
+  })
+  const [weaponSlotCount, setWeaponSlotCount] = useState(
+    () => initialState?.weaponSlotCount ?? persisted?.weaponSlotCount ?? 0,
   )
-  const [weaponSlotCount, setWeaponSlotCount] = useState(() => initialState?.weaponSlotCount ?? 0)
   // Defaults to Blademaster (2026-10-15, per the project owner): Hunter Type
   // is fixed by weapon choice in-game, not a per-piece trait -- Blademaster-
   // and Gunner-restricted armor can never be mixed in the same build, so
   // this is a required choice, not an optional filter like the category
   // checklists above it.
   const [hunterTypeFilter, setHunterTypeFilter] = useState<HunterTypeFilter>(
-    () => initialState?.hunterTypeFilter ?? 'blademaster',
+    () => initialState?.hunterTypeFilter ?? persisted?.hunterTypeFilter ?? 'blademaster',
   )
   const [pinnedArmor, setPinnedArmor] = useState<ReadonlyMap<string, PinnedSlot>>(
-    () => new Map(initialState?.pinnedArmor ?? []),
+    () => new Map(initialState?.pinnedArmor ?? persisted?.pinnedArmor ?? []),
   )
   // Up to MAX_EQUIPPED_CUFFS (2) cuff ids, index 0 = cuff slot 1 -- see
   // CuffPicker's own docstring and SearchOptions.pinnedCuffs.
   const [pinnedCuffIds, setPinnedCuffIds] = useState<readonly string[]>(
-    () => [...(initialState?.pinnedCuffIds ?? [])],
+    () => [...(initialState?.pinnedCuffIds ?? persisted?.pinnedCuffIds ?? [])],
   )
   // Decorations forced into a slot without pinning its piece (TODO #12) --
   // see ArmorPicker.tsx's own docstring.
   const [pinnedSlotDecorationIds, setPinnedSlotDecorationIds] = useState<
     ReadonlyMap<string, readonly string[]>
-  >(() => new Map(initialState?.pinnedSlotDecorationIds ?? []))
+  >(() => new Map(initialState?.pinnedSlotDecorationIds ?? persisted?.pinnedSlotDecorationIds ?? []))
   // Defaults to on (2026-10-15, per the project owner): an unrequested skill
   // reaching one of its own tiers unprompted is more often a surprise than a
   // win, so this app now ranks against that by default rather than requiring
   // an opt-in.
   const [preferExactMatches, setPreferExactMatches] = useState(
-    () => initialState?.preferExactMatches ?? true,
+    () => initialState?.preferExactMatches ?? persisted?.preferExactMatches ?? true,
   )
   const [maxResults, setMaxResults] = useState(
-    () => initialState?.maxResults ?? DEFAULT_MAX_RESULTS,
+    () => initialState?.maxResults ?? persisted?.maxResults ?? DEFAULT_MAX_RESULTS,
   )
   const [results, setResults] = useState<NamedBuildResult[]>([])
   const [status, setStatus] = useState<SearchStatus>('idle')
@@ -303,6 +326,47 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
     pinnedCuffIds,
     pinnedSlotDecorationIds,
   }
+
+  // Persists every search input on each change (docs/skill-system-roadmap.md
+  // TODO #18), so refreshing the page restores the last search instead of
+  // resetting to defaults. Saves `excludedWeaponZenithSkillIds` itself
+  // (possibly `null`), not `effectiveExcludedWeaponZenithSkillIds` above --
+  // saving the resolved default as if the user had explicitly chosen it would
+  // freeze in today's Zenith-skill catalog, permanently losing the "untouched,
+  // defer to whatever the default turns out to be" meaning `null` carries.
+  useEffect(() => {
+    saveSearchFormState({
+      requirements,
+      zenithRequirements,
+      excludedCategories: [...excludedCategories],
+      excludedCuffCategories: [...excludedCuffCategories],
+      excludedDecorationCategories: [...excludedDecorationCategories],
+      excludedWeaponZenithSkillIds: excludedWeaponZenithSkillIds
+        ? [...excludedWeaponZenithSkillIds]
+        : null,
+      weaponSlotCount,
+      hunterTypeFilter,
+      pinnedArmor: [...pinnedArmor.entries()],
+      pinnedCuffIds,
+      pinnedSlotDecorationIds: [...pinnedSlotDecorationIds.entries()],
+      preferExactMatches,
+      maxResults,
+    })
+  }, [
+    requirements,
+    zenithRequirements,
+    excludedCategories,
+    excludedCuffCategories,
+    excludedDecorationCategories,
+    excludedWeaponZenithSkillIds,
+    weaponSlotCount,
+    hunterTypeFilter,
+    pinnedArmor,
+    pinnedCuffIds,
+    pinnedSlotDecorationIds,
+    preferExactMatches,
+    maxResults,
+  ])
 
   function handleSearch(): void {
     const allRequirements = [...requirements, ...zenithRequirements]

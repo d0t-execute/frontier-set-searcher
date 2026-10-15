@@ -1311,3 +1311,41 @@ concept of at all.
   `"gunner"`-typed Barioth piece, and the real dataset's `hunterType` distribution across all
   exported equipment (22650 gunner / 24944 blademaster / 14223 common) matches the raw-data
   investigation above.
+
+## 18. Persist search form inputs across page reloads
+
+**Status: COMPLETE and verified (2026-10-15).** The project owner asked how difficult it would be
+to cache search queries in the browser so refreshing the page doesn't reset selected skills, etc.
+
+- Low-to-medium difficulty in practice: `App.tsx`'s form state was already the same shape as
+  `AppInitialState` (the type "use as a base for a new search" -- TODO #9 -- already hands back in),
+  so this mostly reused that shape and `shared-state.ts`'s existing `Set`/`Map` -> JSON-safe-array
+  conversion pattern, rather than inventing a new one.
+- New `search-engine/search-form-state.ts`: a thin JSON-safe mirror of `AppInitialState` (`Set`/`Map`
+  fields as plain arrays, same reasoning `shared-state.ts`'s `WireFormat` already established, though
+  without that module's compression/short-key concerns -- this never leaves the browser, so there's
+  no URL-length budget to economize for). `loadSearchFormState`/`saveSearchFormState` wrap
+  `localStorage` access in `try`/`catch` (private browsing, exhausted quota, or disabled storage all
+  throw rather than just no-op) and fail soft to `null`/silently-do-nothing respectively -- same
+  "losing this is never worth surfacing as an error" reasoning as every other fail-soft convention in
+  this codebase (`resolvePinnedCuffs`'s dropped ids, `shared-state.ts`'s `fromWireFormat`).
+- **Only persists search inputs, never results** -- same scope `AppInitialState` already has. Saved
+  via one `useEffect` in `App.tsx` depending on every relevant piece of state, so any change (adding a
+  skill, flipping a category checkbox, pinning armor, changing Hunter Type) re-saves the full
+  snapshot immediately, no debounce needed (the write is small and cheap).
+- Each `useState` initializer now falls back `initialState?.field ?? persisted?.field ?? DEFAULT` --
+  an explicit seed (shared-link reconstruction or "use as a base") always wins over merely-persisted
+  state from a previous session, never the other way around.
+- `excludedWeaponZenithSkillIds` persists the raw, possibly-`null` state itself, not the
+  bundle-resolved `effectiveExcludedWeaponZenithSkillIds` -- saving the resolved default as if the
+  user had explicitly chosen it would freeze in today's Zenith-skill catalog, permanently losing the
+  "untouched, defer to whatever the default turns out to be" meaning `null` carries.
+- `test/setup.ts` gained a global `afterEach(() => localStorage.clear())` -- without it, one test's
+  saved form state would leak into the next test's fresh `<App />` mount, since jsdom's
+  `localStorage` otherwise persists across tests within a run.
+- Verification: new `search-form-state.test.ts` (7 cases: round-trips every field, round-trips a
+  non-null `excludedWeaponZenithSkillIds`, returns `null` for nothing-saved/malformed JSON/missing
+  fields/an invalid `hunterTypeFilter` value). `tsc -b` and `oxlint` both clean. Full suite excluding
+  the known-flaky real-data performance test: 262/262 pass. Live-browser-verified: set "Hunter type"
+  to Gunner and added an "Ice Attack" skill requirement, confirmed `localStorage` held the expected
+  JSON snapshot, reloaded the page, and confirmed both were restored exactly.
