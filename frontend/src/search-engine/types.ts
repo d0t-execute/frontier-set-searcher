@@ -93,6 +93,21 @@ export interface SearchOptions {
    * the way an armor slot does, so pinning them needs this explicit
    * mechanism instead. */
   readonly pinnedCuffs?: readonly Cuff[]
+  /** Decorations forced into specific slots without pinning which candidate
+   * fills that slot (docs/skill-system-roadmap.md TODO #12) -- keyed by
+   * `slotId`, a flat list with duplicates allowed for multiple copies of the
+   * same decoration (same "flat, duplicates = count" convention
+   * `BuildResult.cuffs`/a `PinnedSlot`'s own `decorationIds` already use).
+   * Unlike `pinnedCuffs`, these interact with a real per-slot capacity row
+   * (`ilp-model.ts`'s `capacityRow`) rather than being folded into row
+   * bounds directly, since the slot's own capacity still depends on
+   * whichever candidate the solver freely picks for it -- modeled instead by
+   * forcing the matching decoration-count column(s) to be selected. A slot
+   * listed here is expected to never also be pinned to a specific candidate
+   * (which already bakes its own decorations in) -- callers keep the two
+   * mutually exclusive per slot (see `build-query.ts`'s
+   * `resolvePinnedSlotDecorations`). */
+  readonly pinnedSlotDecorations?: ReadonlyMap<string, readonly Decoration[]>
 }
 
 export interface BuildResult {

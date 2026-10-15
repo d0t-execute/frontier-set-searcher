@@ -171,6 +171,7 @@ describe('App', () => {
           { skillId: 1000001, tierThresholds: [] },
         ],
         pinnedCuffs: [],
+        pinnedSlotDecorations: new Map(),
       },
       // The "Unavailable"-leaf cuff is excluded by default (see App.tsx's
       // DEFAULT_EXCLUDED_CUFF_CATEGORIES) -- both real ones pass.
@@ -200,6 +201,7 @@ describe('App', () => {
           { skillId: 1000001, tierThresholds: [] },
         ],
         pinnedCuffs: [],
+        pinnedSlotDecorations: new Map(),
       },
       [BUNDLE.cuffs[0], BUNDLE.cuffs[1]],
     )

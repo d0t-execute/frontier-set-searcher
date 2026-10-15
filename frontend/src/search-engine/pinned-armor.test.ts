@@ -64,4 +64,32 @@ describe('computePinnedSkillTotals', () => {
 
     expect(totals.has(2)).toBe(false)
   })
+
+  it('adds a slot-only decoration pin (TODO #12) even though no candidate is pinned for it', () => {
+    const totals = computePinnedSkillTotals(
+      new Map(),
+      slots,
+      decorations,
+      new Map([['head', ['D001', 'D001']]]),
+    )
+
+    expect(totals.get(1)).toBe(6)
+  })
+
+  it("ignores a slot-only decoration pin for a slot that already has a full piece pin", () => {
+    const pinned: ReadonlyMap<string, PinnedSlot> = new Map([
+      ['head', { candidateId: 'head:0001', decorationIds: [] }],
+    ])
+
+    const totals = computePinnedSkillTotals(
+      pinned,
+      slots,
+      decorations,
+      new Map([['head', ['D001']]]),
+    )
+
+    // Only the piece's own 5, not 5 + the slot-only pin's 3 too -- a piece
+    // pin's own `decorationIds` is the only source of truth once one exists.
+    expect(totals.get(1)).toBe(5)
+  })
 })

@@ -61,6 +61,8 @@ describe('ArmorPicker', () => {
         decorations={decorations}
         pinned={new Map()}
         onChange={() => {}}
+        pinnedSlotDecorationIds={new Map()}
+        onChangeSlotDecorations={() => {}}
         skills={skills}
       />,
     )
@@ -76,6 +78,8 @@ describe('ArmorPicker', () => {
         decorations={decorations}
         pinned={new Map()}
         onChange={() => {}}
+        pinnedSlotDecorationIds={new Map()}
+        onChangeSlotDecorations={() => {}}
         skills={skills}
       />,
     )
@@ -95,6 +99,8 @@ describe('ArmorPicker', () => {
         decorations={decorations}
         pinned={new Map()}
         onChange={() => {}}
+        pinnedSlotDecorationIds={new Map()}
+        onChangeSlotDecorations={() => {}}
         skills={skills}
       />,
     )
@@ -116,6 +122,8 @@ describe('ArmorPicker', () => {
         decorations={decorations}
         pinned={new Map()}
         onChange={onChange}
+        pinnedSlotDecorationIds={new Map()}
+        onChangeSlotDecorations={() => {}}
         skills={skills}
       />,
     )
@@ -137,6 +145,8 @@ describe('ArmorPicker', () => {
         decorations={decorations}
         pinned={pinHead('head:0001')}
         onChange={() => {}}
+        pinnedSlotDecorationIds={new Map()}
+        onChangeSlotDecorations={() => {}}
         skills={skills}
       />,
     )
@@ -154,6 +164,8 @@ describe('ArmorPicker', () => {
         decorations={decorations}
         pinned={pinHead('head:0001')}
         onChange={onChange}
+        pinnedSlotDecorationIds={new Map()}
+        onChangeSlotDecorations={() => {}}
         skills={skills}
       />,
     )
@@ -171,6 +183,8 @@ describe('ArmorPicker', () => {
         decorations={decorations}
         pinned={pinHead('head:0001')}
         onChange={onChange}
+        pinnedSlotDecorationIds={new Map()}
+        onChangeSlotDecorations={() => {}}
         skills={skills}
       />,
     )
@@ -197,6 +211,8 @@ describe('ArmorPicker', () => {
         decorations={decorations}
         pinned={pinned}
         onChange={() => {}}
+        pinnedSlotDecorationIds={new Map()}
+        onChangeSlotDecorations={() => {}}
         skills={skills}
       />,
     )
@@ -215,6 +231,8 @@ describe('ArmorPicker', () => {
         decorations={decorations}
         pinned={pinHead('head:0001')}
         onChange={() => {}}
+        pinnedSlotDecorationIds={new Map()}
+        onChangeSlotDecorations={() => {}}
         skills={skills}
       />,
     )
@@ -233,6 +251,8 @@ describe('ArmorPicker', () => {
         decorations={decorations}
         pinned={pinned}
         onChange={onChange}
+        pinnedSlotDecorationIds={new Map()}
+        onChangeSlotDecorations={() => {}}
         skills={skills}
       />,
     )
@@ -242,5 +262,129 @@ describe('ArmorPicker', () => {
     expect(onChange).toHaveBeenCalledWith(
       new Map([['head', { candidateId: 'head:0001', decorationIds: [] }]]),
     )
+  })
+
+  it('offers a decoration-only search for an unpinned slot (TODO #12)', () => {
+    render(
+      <ArmorPicker
+        slots={slots}
+        decorations={decorations}
+        pinned={new Map()}
+        onChange={() => {}}
+        pinnedSlotDecorationIds={new Map()}
+        onChangeSlotDecorations={() => {}}
+        skills={skills}
+      />,
+    )
+
+    expect(screen.getByLabelText('Search decorations to force into head')).toBeInTheDocument()
+  })
+
+  it('forces a decoration into an unpinned slot without pinning its piece', () => {
+    const onChangeSlotDecorations = vi.fn()
+    render(
+      <ArmorPicker
+        slots={slots}
+        decorations={decorations}
+        pinned={new Map()}
+        onChange={() => {}}
+        pinnedSlotDecorationIds={new Map()}
+        onChangeSlotDecorations={onChangeSlotDecorations}
+        skills={skills}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText('Search decorations to force into head'), {
+      target: { value: 'attack' },
+    })
+    fireEvent.change(screen.getByLabelText('Force a decoration into head'), {
+      target: { value: 'D001' },
+    })
+
+    expect(onChangeSlotDecorations).toHaveBeenCalledWith(new Map([['head', ['D001']]]))
+  })
+
+  it("bounds the decoration-only search by the largest capacity any of the slot's candidates could offer", () => {
+    render(
+      <ArmorPicker
+        slots={slots}
+        decorations={decorations}
+        pinned={new Map()}
+        onChange={() => {}}
+        pinnedSlotDecorationIds={new Map([['head', ['D002']]])}
+        onChangeSlotDecorations={() => {}}
+        skills={skills}
+      />,
+    )
+
+    // Max capacity across head's candidates is 2 (Leather Helm), already
+    // spent entirely by the pinned D002 (size 2) -- no room left for
+    // anything else, so the search box itself doesn't render (same as the
+    // piece-pinned decoration picker's own "remainingCapacity > 0" gate).
+    expect(
+      screen.queryByLabelText('Search decorations to force into head'),
+    ).not.toBeInTheDocument()
+    expect(screen.getByText(/0 of 2 possible open slots left/i)).toBeInTheDocument()
+  })
+
+  it("doesn't show the decoration-only search once the slot has a full piece pin", () => {
+    render(
+      <ArmorPicker
+        slots={slots}
+        decorations={decorations}
+        pinned={pinHead('head:0001')}
+        onChange={() => {}}
+        pinnedSlotDecorationIds={new Map()}
+        onChangeSlotDecorations={() => {}}
+        skills={skills}
+      />,
+    )
+
+    expect(
+      screen.queryByLabelText('Search decorations to force into head'),
+    ).not.toBeInTheDocument()
+  })
+
+  it('removes a decoration-only pin when its remove button is clicked', () => {
+    const onChangeSlotDecorations = vi.fn()
+    render(
+      <ArmorPicker
+        slots={slots}
+        decorations={decorations}
+        pinned={new Map()}
+        onChange={() => {}}
+        pinnedSlotDecorationIds={new Map([['head', ['D001']]])}
+        onChangeSlotDecorations={onChangeSlotDecorations}
+        skills={skills}
+      />,
+    )
+
+    fireEvent.click(screen.getByLabelText('Remove Attack Jewel'))
+
+    expect(onChangeSlotDecorations).toHaveBeenCalledWith(new Map())
+  })
+
+  it('clears a slot-only decoration pin once a full piece pin is set for the same slot', () => {
+    const onChangeSlotDecorations = vi.fn()
+    render(
+      <ArmorPicker
+        slots={slots}
+        decorations={decorations}
+        pinned={new Map()}
+        onChange={() => {}}
+        pinnedSlotDecorationIds={new Map([['head', ['D001']]])}
+        onChangeSlotDecorations={onChangeSlotDecorations}
+        skills={skills}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText('Search pieces for head'), {
+      target: { value: 'leather' },
+    })
+    fireEvent.change(screen.getByLabelText('Pieces matching search for head'), {
+      target: { value: 'head:0001' },
+    })
+
+    expect(onChangeSlotDecorations).toHaveBeenCalledWith(new Map())
   })
 })

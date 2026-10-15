@@ -351,6 +351,18 @@ interface TierMachinery {
  * `options.pinnedCuffs` are folded into the row bounds directly rather than
  * modeled as columns -- see this function's own local comment above where
  * they're read.
+ *
+ * `options.pinnedSlotDecorations` (docs/skill-system-roadmap.md TODO #12),
+ * unlike `pinnedCuffs`, *are* modeled as real columns: the matching
+ * decoration-count column for each pinned slot/decoration/count is forced to
+ * exactly 1 (its `colLower` raised to 1) instead of left free, while the
+ * slot's own candidate and every other decoration stay fully solver-chosen.
+ * This works because a decoration's placement already has no coupling to
+ * which candidate fills the slot beyond the shared `capacityRow` -- forcing
+ * one decoration-count column doesn't need the "narrow to one synthesized
+ * candidate" trick pinned armor uses (TODO #7), and naturally still goes
+ * infeasible via `capacityRow` if the pin can't fit any candidate the solver
+ * could otherwise pick for that slot.
  */
 export function buildModel(
   highs: Highs,
@@ -386,11 +398,37 @@ export function buildModel(
   const slotMaxCapacity = slots.map((slot) =>
     slot.candidates.reduce((max, c) => Math.max(max, c.openSlotCount ?? 0), 0),
   )
-  const slotDecorationGroups = slots.map((_slot, s) =>
-    slotMaxCapacity[s] > 0
-      ? decorations.filter((d) => d.slotSize > 0 && d.slotSize <= slotMaxCapacity[s])
-      : [],
-  )
+
+  // Pinned slot decorations (see `SearchOptions.pinnedSlotDecorations`):
+  // grouped per slot into id -> total count (duplicates in the flat input
+  // list = multiple copies, same convention as `pinnedCuffs`). Unlike
+  // pinned cuffs, these *are* modeled as real columns (forced to a fixed
+  // value) rather than folded into row bounds -- see this function's own
+  // docstring.
+  const pinnedSlotDecorationCounts = new Map<string, Map<string, number>>()
+  for (const [slotId, list] of options.pinnedSlotDecorations ?? []) {
+    const counts = new Map<string, number>()
+    for (const d of list) counts.set(d.id, (counts.get(d.id) ?? 0) + 1)
+    pinnedSlotDecorationCounts.set(slotId, counts)
+  }
+
+  const slotDecorationGroups = slots.map((slot, s) => {
+    const naturallyRelevant =
+      slotMaxCapacity[s] > 0
+        ? decorations.filter((d) => d.slotSize > 0 && d.slotSize <= slotMaxCapacity[s])
+        : []
+    const pinned = options.pinnedSlotDecorations?.get(slot.slotId) ?? []
+    if (pinned.length === 0) return naturallyRelevant
+
+    // A pinned decoration gets a group here even if it doesn't naturally fit
+    // this slot's capacity (e.g. no candidate here has enough open slots) --
+    // otherwise an unfittable pin would silently have no column to enforce
+    // it at all, instead of correctly making the model infeasible via
+    // `capacityRow` below.
+    const byId = new Map(naturallyRelevant.map((d) => [d.id, d]))
+    for (const decoration of pinned) byId.set(decoration.id, decoration)
+    return [...byId.values()]
+  })
   // The largest count any decoration relevant to a slot could reach there --
   // only used as a safe (not tight) upper bound by `computeAchievableRanges`,
   // so sharing one count across every decoration in the slot (rather than
@@ -537,9 +575,21 @@ export function buildModel(
       addColumn(OPEN_SLOT_WEIGHT * capacity + bonus, entries)
     }
 
+    const pinnedCounts = pinnedSlotDecorationCounts.get(slot.slotId)
+
     slotDecorationGroups[s].forEach((decoration, groupIndex) => {
       const maxCapacity = slotMaxCapacity[s]
-      const maxCount = Math.floor(maxCapacity / decoration.slotSize)
+      const pinnedCount = pinnedCounts?.get(decoration.id) ?? 0
+      const naturalMaxCount =
+        maxCapacity > 0 && decoration.slotSize > 0
+          ? Math.floor(maxCapacity / decoration.slotSize)
+          : 0
+      // At least as large as `pinnedCount` even when that exceeds what any
+      // candidate here could actually hold -- see this function's own
+      // comment above where `slotDecorationGroups` is built: the forced
+      // column still needs to exist so `capacityRow` can correctly reject
+      // it, rather than the pin having no column to enforce it at all.
+      const maxCount = Math.max(naturalMaxCount, pinnedCount)
       const groupRow = groupRowOf[s][groupIndex]
       const decorationBonus = preferExactMatches
         ? 0
@@ -562,7 +612,12 @@ export function buildModel(
         columns.push({ kind: 'decoration', slotIndex: s, slotId: slot.slotId, decoration, count })
         const cost =
           count === 0 ? 0 : count * (-OPEN_SLOT_WEIGHT * decoration.slotSize + decorationBonus)
-        addColumn(cost, entries)
+        // Forces this exact count to be selected (combined with the
+        // group row's "exactly one column chosen" constraint, every other
+        // column in this group -- including "place none" -- is thereby
+        // forced to 0, with no need to bound them individually).
+        const forced = pinnedCount > 0 && count === pinnedCount
+        addColumn(cost, entries, forced ? 1 : 0)
       }
     })
   })

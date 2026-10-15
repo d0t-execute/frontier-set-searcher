@@ -130,7 +130,19 @@ export async function* search(
     return
   }
 
-  const relevantDecorations = filterRelevantDecorations(decorations, requirements)
+  // A pinned slot decoration (`options.pinnedSlotDecorations`, see TODO #12)
+  // must always reach `buildModel` regardless of `filterRelevantDecorations`
+  // -- the player can pin one purely for its own sake (e.g. a skill they
+  // never added as a requirement), not just when it happens to help meet
+  // one. `Map` dedupes by id, so a decoration that's both naturally relevant
+  // and pinned isn't given two different objects.
+  const relevantDecorationsById = new Map(
+    filterRelevantDecorations(decorations, requirements).map((d) => [d.id, d]),
+  )
+  for (const list of options.pinnedSlotDecorations?.values() ?? []) {
+    for (const d of list) relevantDecorationsById.set(d.id, d)
+  }
+  const relevantDecorations = [...relevantDecorationsById.values()]
   const relevantCuffs = filterRelevantCuffs(cuffs, requirements)
   const highs = await getHighs()
   const { model, columns } = buildModel(

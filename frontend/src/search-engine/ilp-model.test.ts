@@ -565,6 +565,96 @@ describe('buildModel with options.pinnedCuffs', () => {
   })
 })
 
+describe('buildModel with options.pinnedSlotDecorations', () => {
+  it('forces the pinned decoration into the solved result without pinning which candidate is chosen', () => {
+    const slots: SlotQuery[] = [
+      {
+        slotId: 'head',
+        candidates: [
+          candidate('Weak Helm', { 1: 1 }, 2),
+          candidate('Strong Helm', { 1: 5 }, 2),
+        ],
+      },
+    ]
+    const decorations = [deco('Attack Deco', 1, { 1: 3 })]
+    const { model, columns } = buildModel(
+      highs,
+      slots,
+      decorations,
+      [{ skillId: 1, minPoints: 8 }],
+      { pinnedSlotDecorations: new Map([['head', [decorations[0]]]]) },
+    )
+
+    const { modelStatus, colValue, native } = solve(model)
+    expect(modelStatus).toBe(highs.constants.modelStatus.optimal)
+    const decoded = decodeSolution(columns, colValue)
+    // Only "Strong Helm" (5) + the forced deco (3) reaches 8 -- confirms the
+    // candidate itself was still the solver's free choice, not baked in.
+    expect(decoded.picks.get('head')?.id).toBe('Strong Helm')
+    expect(decoded.decorations.get('head')?.map((d) => d.id)).toEqual(['Attack Deco'])
+    native.dispose()
+  })
+
+  it('forces more than one copy of the same pinned decoration via duplicate list entries', () => {
+    const slots: SlotQuery[] = [
+      { slotId: 'head', candidates: [candidate('Helm', { 1: 1 }, 3)] },
+    ]
+    const decorations = [deco('Attack Deco', 1, { 1: 2 })]
+    const { model, columns } = buildModel(
+      highs,
+      slots,
+      decorations,
+      [{ skillId: 1, minPoints: 5 }],
+      { pinnedSlotDecorations: new Map([['head', [decorations[0], decorations[0]]]]) },
+    )
+
+    const { modelStatus, colValue, native } = solve(model)
+    expect(modelStatus).toBe(highs.constants.modelStatus.optimal)
+    const decoded = decodeSolution(columns, colValue)
+    // 1 (candidate) + 2*2 (two forced copies) = 5, with one more open slot
+    // the solver was free to leave empty (nothing else could help here).
+    expect(decoded.decorations.get('head')?.map((d) => d.id)).toEqual([
+      'Attack Deco',
+      'Attack Deco',
+    ])
+    native.dispose()
+  })
+
+  it('goes infeasible when the pinned decoration cannot fit any candidate in the slot', () => {
+    const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Helm', { 1: 1 }, 1)] }]
+    const decorations = [deco('Big Deco', 3, { 1: 10 })]
+    const { model } = buildModel(highs, slots, decorations, [{ skillId: 1, minPoints: 1 }], {
+      pinnedSlotDecorations: new Map([['head', [decorations[0]]]]),
+    })
+
+    const { modelStatus, native } = solve(model)
+    expect(modelStatus).toBe(highs.constants.modelStatus.infeasible)
+    native.dispose()
+  })
+
+  it("doesn't affect a different slot with no pin of its own", () => {
+    const slots: SlotQuery[] = [
+      { slotId: 'head', candidates: [candidate('Helm', { 1: 1 }, 2)] },
+      { slotId: 'chest', candidates: [candidate('Suit', { 1: 1 }, 2)] },
+    ]
+    const decorations = [deco('Attack Deco', 1, { 1: 3 })]
+    const { model, columns } = buildModel(
+      highs,
+      slots,
+      decorations,
+      [{ skillId: 1, minPoints: 1 }],
+      { pinnedSlotDecorations: new Map([['head', [decorations[0]]]]) },
+    )
+
+    const { modelStatus, colValue, native } = solve(model)
+    expect(modelStatus).toBe(highs.constants.modelStatus.optimal)
+    const decoded = decodeSolution(columns, colValue)
+    expect(decoded.decorations.get('head')?.map((d) => d.id)).toEqual(['Attack Deco'])
+    expect(decoded.decorations.get('chest')).toBeUndefined()
+    native.dispose()
+  })
+})
+
 describe('decodeSolution', () => {
   it('ignores auxiliary columns entirely, even when their value is far outside 0/1', () => {
     const slots: SlotQuery[] = [

@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { buildSearchQuery, decorationsAfterCategoryFilter } from './build-query'
+import {
+  buildSearchQuery,
+  decorationsAfterCategoryFilter,
+  resolvePinnedSlotDecorations,
+} from './build-query'
 import type { QueryFormState } from './build-query'
 import { TOWER_DECORATION_CATEGORY_KEY } from './decoration-categories'
 import type { DataBundle, NamedDecoration } from './load-bundle'
@@ -16,6 +20,7 @@ const EMPTY_FORM_STATE: QueryFormState = {
   weaponSlotCount: 0,
   pinnedArmor: new Map(),
   pinnedCuffIds: [],
+  pinnedSlotDecorationIds: new Map(),
 }
 
 const BUNDLE: DataBundle = {
@@ -56,5 +61,54 @@ describe('buildSearchQuery', () => {
     const query = buildSearchQuery(BUNDLE, EMPTY_FORM_STATE)
 
     expect(query.decorations.map((d) => d.id)).toEqual(['regular'])
+  })
+
+  it('resolves pinnedSlotDecorationIds into the pinnedSlotDecorations option', () => {
+    const query = buildSearchQuery(BUNDLE, {
+      ...EMPTY_FORM_STATE,
+      pinnedSlotDecorationIds: new Map([['head', ['regular']]]),
+    })
+
+    expect(query.pinnedSlotDecorations.get('head')?.map((d) => d.id)).toEqual(['regular'])
+  })
+})
+
+describe('resolvePinnedSlotDecorations', () => {
+  const decorations = [deco('a', false), deco('b', false)]
+
+  it('resolves ids to their full decoration data, duplicates preserved', () => {
+    const resolved = resolvePinnedSlotDecorations(
+      decorations,
+      new Map([['head', ['a', 'a', 'b']]]),
+      new Map(),
+    )
+
+    expect(resolved.get('head')?.map((d) => d.id)).toEqual(['a', 'a', 'b'])
+  })
+
+  it('drops ids that no longer resolve in the catalog', () => {
+    const resolved = resolvePinnedSlotDecorations(
+      decorations,
+      new Map([['head', ['a', 'gone']]]),
+      new Map(),
+    )
+
+    expect(resolved.get('head')?.map((d) => d.id)).toEqual(['a'])
+  })
+
+  it('omits a slot entirely once every one of its ids fails to resolve', () => {
+    const resolved = resolvePinnedSlotDecorations(decorations, new Map([['head', ['gone']]]), new Map())
+
+    expect(resolved.has('head')).toBe(false)
+  })
+
+  it('ignores a slot that already has a full piece pin', () => {
+    const resolved = resolvePinnedSlotDecorations(
+      decorations,
+      new Map([['head', ['a']]]),
+      new Map([['head', { candidateId: 'head:0001', decorationIds: [] }]]),
+    )
+
+    expect(resolved.has('head')).toBe(false)
   })
 })

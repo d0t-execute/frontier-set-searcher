@@ -23,14 +23,18 @@ export interface PinnableSlot {
 }
 
 /** Sums skill contributions across every currently pinned slot's chosen
- * candidate and its placed decorations -- the "running skill point totals"
- * live-feedback ArmorPicker shows while picking. Unpinned slots contribute
+ * candidate and its placed decorations, plus every slot-only decoration pin
+ * (docs/skill-system-roadmap.md TODO #12 -- a decoration forced into a slot
+ * without pinning which candidate fills it) -- the "running skill point
+ * totals" live-feedback ArmorPicker shows while picking. Unpinned slots (and
+ * a slot-only decoration pin's own not-yet-chosen candidate) contribute
  * nothing (they're still up to the solver), so this is always a partial,
  * best-effort total, not a prediction of the final build's totals. */
 export function computePinnedSkillTotals(
   pinned: ReadonlyMap<string, PinnedSlot>,
   slots: readonly PinnableSlot[],
   decorations: readonly NamedDecoration[],
+  pinnedSlotDecorationIds: ReadonlyMap<string, readonly string[]> = new Map(),
 ): Map<SkillId, number> {
   const decorationsById = new Map(decorations.map((d) => [d.id, d]))
   const totals = new Map<SkillId, number>()
@@ -48,6 +52,14 @@ export function computePinnedSkillTotals(
     add(candidate.skills)
     for (const decorationId of pin.decorationIds) {
       const decoration = decorationsById.get(decorationId)
+      if (decoration) add(decoration.skills)
+    }
+  }
+
+  for (const [slotId, ids] of pinnedSlotDecorationIds) {
+    if (pinned.has(slotId)) continue
+    for (const id of ids) {
+      const decoration = decorationsById.get(id)
       if (decoration) add(decoration.skills)
     }
   }

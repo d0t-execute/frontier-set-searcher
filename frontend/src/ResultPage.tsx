@@ -83,6 +83,7 @@ export function ResultPage({ encoded, onUseAsBase, onBackToSearch }: ResultPageP
       weaponSlotCount: state.weaponSlotCount,
       pinnedArmor: new Map(state.pinnedArmor),
       pinnedCuffIds: state.pinnedCuffIds,
+      pinnedSlotDecorationIds: new Map(state.pinnedSlotDecorationIds),
     }
     // `bundle` only matters here as a fallback default for an omitted
     // `excludedWeaponZenithSkillIds` (see `SharedSearchState`'s own
@@ -103,7 +104,10 @@ export function ResultPage({ encoded, onUseAsBase, onBackToSearch }: ResultPageP
     setReconstructStatus('loading')
     setErrorMessage(null)
 
-    const { slots, decorations, cuffs, pinnedCuffs } = buildSearchQuery(bundle, formState)
+    const { slots, decorations, cuffs, pinnedCuffs, pinnedSlotDecorations } = buildSearchQuery(
+      bundle,
+      formState,
+    )
     const allRequirements = [...state.requirements, ...state.zenithRequirements]
     const skillTiers: SkillTierThresholds[] = [...bundle.skills, ...bundle.zenithSkills].map(
       (skill) => ({
@@ -138,7 +142,7 @@ export function ResultPage({ encoded, onUseAsBase, onBackToSearch }: ResultPageP
           setErrorMessage(message)
         },
       },
-      { preferExactMatches: state.preferExactMatches, skillTiers, pinnedCuffs },
+      { preferExactMatches: state.preferExactMatches, skillTiers, pinnedCuffs, pinnedSlotDecorations },
       cuffs,
     )
 

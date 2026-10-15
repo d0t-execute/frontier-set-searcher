@@ -115,6 +115,7 @@ export interface AppInitialState {
   readonly weaponSlotCount: number
   readonly pinnedArmor: ReadonlyMap<string, PinnedSlot>
   readonly pinnedCuffIds: readonly string[]
+  readonly pinnedSlotDecorationIds?: ReadonlyMap<string, readonly string[]>
   readonly preferExactMatches: boolean
   readonly maxResults?: number
 }
@@ -161,6 +162,11 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
   const [pinnedCuffIds, setPinnedCuffIds] = useState<readonly string[]>(
     () => [...(initialState?.pinnedCuffIds ?? [])],
   )
+  // Decorations forced into a slot without pinning its piece (TODO #12) --
+  // see ArmorPicker.tsx's own docstring.
+  const [pinnedSlotDecorationIds, setPinnedSlotDecorationIds] = useState<
+    ReadonlyMap<string, readonly string[]>
+  >(() => new Map(initialState?.pinnedSlotDecorationIds ?? []))
   // Defaults to on (2026-10-15, per the project owner): an unrequested skill
   // reaching one of its own tiers unprompted is more often a surprise than a
   // win, so this app now ranks against that by default rather than requiring
@@ -237,8 +243,18 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
     requirements.length === 0 ? 'None yet' : pluralize(requirements.length, 'skill')
   const zenithSkillsSummary =
     zenithRequirements.length === 0 ? 'None yet' : pluralize(zenithRequirements.length, 'skill')
-  const pinnedArmorSummary =
-    pinnedArmor.size === 0 ? 'None pinned' : `${pluralize(pinnedArmor.size, 'slot')} pinned`
+  const pinnedArmorSummary = (() => {
+    const pieceCount = pinnedArmor.size
+    const decorationOnlyCount = [...pinnedSlotDecorationIds.keys()].filter(
+      (slotId) => !pinnedArmor.has(slotId),
+    ).length
+    if (pieceCount === 0 && decorationOnlyCount === 0) return 'None pinned'
+    const parts = [
+      pieceCount > 0 ? `${pluralize(pieceCount, 'slot')} pinned` : null,
+      decorationOnlyCount > 0 ? `${pluralize(decorationOnlyCount, 'slot')} deco-only` : null,
+    ].filter((p): p is string => p !== null)
+    return parts.join(', ')
+  })()
   const pinnedCuffsSummary =
     pinnedCuffIds.length === 0 ? 'None pinned' : `${pluralize(pinnedCuffIds.length, 'cuff')} pinned`
   const gearLevelsSummary =
@@ -271,6 +287,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
     weaponSlotCount,
     pinnedArmor,
     pinnedCuffIds,
+    pinnedSlotDecorationIds,
   }
 
   function handleSearch(): void {
@@ -284,7 +301,10 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
 
     let count = 0
     let capped = false
-    const { slots, decorations, cuffs, pinnedCuffs } = buildSearchQuery(bundle, queryFormState)
+    const { slots, decorations, cuffs, pinnedCuffs, pinnedSlotDecorations } = buildSearchQuery(
+      bundle,
+      queryFormState,
+    )
     const requestId = worker.search(
       slots,
       allRequirements,
@@ -311,7 +331,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
           setErrorMessage(message)
         },
       },
-      { preferExactMatches, skillTiers, pinnedCuffs },
+      { preferExactMatches, skillTiers, pinnedCuffs, pinnedSlotDecorations },
       cuffs,
     )
     setActiveRequestId(requestId)
@@ -341,6 +361,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
       weaponSlotCount,
       pinnedArmor: [...pinnedArmor],
       pinnedCuffIds,
+      pinnedSlotDecorationIds: [...pinnedSlotDecorationIds],
       preferExactMatches,
       resultIndex,
     }
@@ -391,6 +412,8 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                 decorations={pinnableDecorations}
                 pinned={pinnedArmor}
                 onChange={setPinnedArmor}
+                pinnedSlotDecorationIds={pinnedSlotDecorationIds}
+                onChangeSlotDecorations={setPinnedSlotDecorationIds}
                 skills={bundle.skills}
               />
             </Disclosure>

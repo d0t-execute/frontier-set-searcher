@@ -32,6 +32,7 @@ const STATE: SharedSearchState = {
   weaponSlotCount: 0,
   pinnedArmor: [],
   pinnedCuffIds: [],
+  pinnedSlotDecorationIds: [],
   preferExactMatches: true,
   resultIndex: 0,
 }

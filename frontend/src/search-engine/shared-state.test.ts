@@ -18,6 +18,7 @@ const state: SharedSearchState = {
   weaponSlotCount: 2,
   pinnedArmor: [['head', { candidateId: 'head:0001', decorationIds: ['D001'] }]],
   pinnedCuffIds: ['cuff:C001', 'cuff:C001'],
+  pinnedSlotDecorationIds: [['chest', ['D002', 'D002']]],
   preferExactMatches: true,
   resultIndex: 2,
 }

@@ -60,6 +60,10 @@ export interface SharedSearchState {
   readonly weaponSlotCount: number
   readonly pinnedArmor: readonly (readonly [string, PinnedSlot])[]
   readonly pinnedCuffIds: readonly string[]
+  /** Decorations forced into a slot without a piece pin
+   * (docs/skill-system-roadmap.md TODO #12) -- keyed by `slotId`, a flat
+   * list of decoration ids with duplicates allowed for multiple copies. */
+  readonly pinnedSlotDecorationIds: readonly (readonly [string, readonly string[]])[]
   readonly preferExactMatches: boolean
   /** Which of the (possibly several) ranked results a plain re-run of this
    * exact query would yield is the one this link points at -- 0-based. */
@@ -82,6 +86,7 @@ interface WireFormat {
   readonly wsc: number
   readonly pa: readonly (readonly [string, string, readonly string[]])[]
   readonly pc: readonly string[]
+  readonly psd: readonly (readonly [string, readonly string[]])[]
   readonly pem: boolean
   readonly ri: number
 }
@@ -97,6 +102,7 @@ function toWireFormat(state: SharedSearchState): WireFormat {
     wsc: state.weaponSlotCount,
     pa: state.pinnedArmor.map(([slotId, pin]) => [slotId, pin.candidateId, pin.decorationIds]),
     pc: state.pinnedCuffIds,
+    psd: state.pinnedSlotDecorationIds,
     pem: state.preferExactMatches,
     ri: state.resultIndex,
   }
@@ -122,6 +128,7 @@ function fromWireFormat(parsed: unknown): SharedSearchState | null {
     typeof p.wsc !== 'number' ||
     !Array.isArray(p.pa) ||
     !Array.isArray(p.pc) ||
+    !Array.isArray(p.psd) ||
     typeof p.pem !== 'boolean' ||
     typeof p.ri !== 'number'
   ) {
@@ -142,6 +149,7 @@ function fromWireFormat(parsed: unknown): SharedSearchState | null {
       { candidateId, decorationIds },
     ]),
     pinnedCuffIds: w.pc,
+    pinnedSlotDecorationIds: w.psd,
     preferExactMatches: w.pem,
     resultIndex: w.ri,
   }

@@ -813,18 +813,56 @@ on every decoration row, it just never reached the export.
 
 ## 12. Pin a decoration into a slot without pinning the armor piece
 
-**Status (2026-10-15): Not started -- added per the project owner's request.** Today,
-`ArmorPicker.tsx`'s decoration picker only appears once a specific piece is already pinned for that
-slot (`PinnedSlot` requires a `candidateId`; see `ArmorSlotPicker`'s `candidate && !picking` gate) --
-there's no way to force a specific decoration into a slot while leaving the solver free to choose
-*which piece* goes there. Needs a design decision on how this composes with `ilp-model.ts`: a pinned
-decoration without a pinned candidate can't use the existing "narrow the slot to one synthesized
-candidate" trick (TODO #7's own mechanism), since the candidate itself is still meant to be chosen by
-the solver -- this is closer in shape to the cuff-pinning mechanism (TODO #7's "Cuff pinning"
-section: fold a fixed contribution directly into the model's row bounds) than to armor-piece pinning,
-except it also has to guarantee the decoration's `slotSize` fits within whichever candidate the
-solver ends up picking for that slot (a per-slot capacity constraint that doesn't apply to the
-cuffs' shared pool). Left open for implementation time rather than guessed at here.
+**Status (2026-10-15): COMPLETE.** Resolved the open design question from this entry's own
+original note in favor of a third mechanism, distinct from both pinned-armor's "narrow to one
+synthesized candidate" trick (TODO #7) and pinned-cuffs' "fold into row bounds" trick: a decoration
+'s placement already has no model-level coupling to which candidate fills the slot beyond the
+shared per-slot capacity row, so a pinned decoration is modeled as a real column whose matching
+decoration-count column is forced to exactly 1, while the slot's own candidate and every other
+decoration stay fully solver-chosen. This turned out to need no new ILP machinery at all beyond
+bound-fixing one existing column.
+
+- `ilp-model.ts`'s `buildModel` gained `options.pinnedSlotDecorations` (keyed by `slotId`, a flat
+  decoration list with duplicates allowed for multiple copies -- same convention as `pinnedCuffs`).
+  Per slot, groups the flat list into id -> total count; when generating each decoration's one-hot
+  count columns, raises `maxCount` to at least the pinned count (even past what any candidate's
+  real capacity allows, so an unfittable pin still gets a column for `capacityRow` to correctly
+  reject rather than silently vanishing) and fixes the matching count column's `colLower` to 1.
+  `slotDecorationGroups` also now force-includes a pinned decoration even when it wouldn't
+  naturally pass the slot's own capacity-fit filter, for the same reason.
+- `types.ts`'s `SearchOptions` gained `pinnedSlotDecorations?: ReadonlyMap<string, readonly
+  Decoration[]>`.
+- `engine.ts`'s `search()`: pinned slot decorations are unioned into the relevant-decorations pool
+  *after* `filterRelevantDecorations` runs, not before -- a pinned decoration must reach the solver
+  even if it contributes to no requested skill (the player might pin one purely for its own sake).
+- `build-query.ts`: `QueryFormState` gained `pinnedSlotDecorationIds: ReadonlyMap<string, readonly
+  string[]>`; new `resolvePinnedSlotDecorations()` resolves ids to full `NamedDecoration` data
+  (dropping unresolvable ids, same fail-soft convention as `resolvePinnedCuffs`) and skips any slot
+  that's also present in `pinnedArmor` (mutual exclusivity -- a piece pin's own decorations already
+  cover that slot). `BuiltQuery`/`buildSearchQuery` carry the resolved map through.
+- `pinned-armor.ts`'s `computePinnedSkillTotals` gained an optional 4th parameter so the live
+  "Pinned skill totals" preview in `ArmorPicker.tsx` also reflects slot-only decoration pins.
+- `ArmorPicker.tsx`: new `SlotDecorationOnlyPicker` sub-component, shown only when a slot has no
+  full piece pin (alongside the existing piece search, not replacing it) -- a type-to-filter
+  decoration search bounded by the *largest* open-slot count any candidate for that slot could
+  offer (not a specific candidate's, since none is chosen yet; a looser bound than the real
+  eventual capacity, so the solver itself is what ultimately rejects an unfittable pin, not this
+  UI). `ArmorPicker`'s own `setPin` now also clears a slot's decoration-only pin whenever a full
+  piece pin is set for the same slot, enforcing mutual exclusivity from the UI side too.
+- `App.tsx`/`ResultPage.tsx`/`shared-state.ts`: new `pinnedSlotDecorationIds` state/field threaded
+  through `AppInitialState`, `QueryFormState`, and `SharedSearchState` (wire key `psd`) the same way
+  every other pinning mechanism already is -- shareable links and "use as a base" both carry it
+  (though a solved result's "use as a base" still re-pins every slot as a full piece pin via
+  `pinnedArmorFromResult`, same pre-existing behavior, not something this TODO changes).
+- Verification: new tests in `ilp-model.test.ts` (4 cases: candidate stays solver-chosen, multiple
+  copies via duplicate list entries, infeasible when unfittable, doesn't affect other slots),
+  `engine.test.ts` (2 cases, including surviving `filterRelevantDecorations` for an
+  otherwise-irrelevant decoration), `build-query.test.ts` (`resolvePinnedSlotDecorations`, 4 cases),
+  `pinned-armor.test.ts` (2 cases), and `ArmorPicker.test.tsx` (6 cases, including the mutual-
+  exclusivity UI behavior). `tsc -b` clean, full frontend suite (248 tests total) and oxlint clean.
+  Live-browser end-to-end: pinned "Attack 1 Deco" into the head slot with no piece chosen, ran a
+  real search, and confirmed the result picked a real candidate ("Aura GS Head") with the forced
+  decoration correctly attached ("Aura GS Head + Attack 1 Deco").
 
 ## 13. Let the user choose how many results to return
 

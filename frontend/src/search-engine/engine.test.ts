@@ -397,3 +397,45 @@ describe('search with cuffs', () => {
     expect(results).toHaveLength(0)
   })
 })
+
+describe('search with options.pinnedSlotDecorations', () => {
+  it('forces the pinned decoration into the result even though it contributes to no requested skill', async () => {
+    const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Helm', { 1: 5 }, 2)] }]
+    // Only skill 1 is requested -- skill 2 is what the pinned decoration
+    // actually contributes, which `filterRelevantDecorations` would
+    // otherwise drop as irrelevant.
+    const pinnedDeco = deco('Irrelevant-to-requirement Deco', 1, { 2: 3 })
+
+    const results = await collect(
+      search(slots, [{ skillId: 1, minPoints: 5 }], [], {
+        pinnedSlotDecorations: new Map([['head', [pinnedDeco]]]),
+      }),
+    )
+
+    expect(results).toHaveLength(1)
+    expect(results[0].decorations.get('head')?.map((d) => d.id)).toEqual([
+      'Irrelevant-to-requirement Deco',
+    ])
+    expect(results[0].skillTotals.get(2)).toBe(3)
+  })
+
+  it('leaves the candidate choice to the solver', async () => {
+    const slots: SlotQuery[] = [
+      {
+        slotId: 'head',
+        candidates: [candidate('Weak Helm', { 1: 1 }, 2), candidate('Strong Helm', { 1: 5 }, 2)],
+      },
+    ]
+    const pinnedDeco = deco('Attack Deco', 1, { 1: 3 })
+
+    const results = await collect(
+      search(slots, [{ skillId: 1, minPoints: 8 }], [], {
+        pinnedSlotDecorations: new Map([['head', [pinnedDeco]]]),
+      }),
+    )
+
+    expect(results).toHaveLength(1)
+    expect(results[0].picks.get('head')?.id).toBe('Strong Helm')
+    expect(results[0].decorations.get('head')?.map((d) => d.id)).toEqual(['Attack Deco'])
+  })
+})

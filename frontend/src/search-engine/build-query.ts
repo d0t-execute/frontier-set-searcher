@@ -33,6 +33,13 @@ export interface QueryFormState {
   /** Up to `MAX_EQUIPPED_CUFFS` cuff ids, index 0 = cuff slot 1 -- see
    * `CuffPicker.tsx`'s own docstring. */
   readonly pinnedCuffIds: readonly string[]
+  /** Decorations forced into a slot without pinning which candidate fills it
+   * (docs/skill-system-roadmap.md TODO #12) -- keyed by `slotId`, a flat list
+   * of decoration ids with duplicates allowed for multiple copies, same
+   * convention as a `PinnedSlot`'s own `decorationIds`. A slot present in
+   * `pinnedArmor` already bakes its own decorations in and takes priority --
+   * see `resolvePinnedSlotDecorations`. */
+  readonly pinnedSlotDecorationIds: ReadonlyMap<string, readonly string[]>
 }
 
 // The weapon slot is virtual (see etl/src/etl/export.py's module docstring --
@@ -190,11 +197,41 @@ export function resolvePinnedCuffs(
     .filter((c): c is NamedCuff => c !== undefined)
 }
 
+/** Resolves `QueryFormState.pinnedSlotDecorationIds` into the
+ * `SearchOptions.pinnedSlotDecorations` shape `search()` takes --
+ * `NamedDecoration` objects instead of bare ids, dropping any id no longer
+ * present in the catalog (same fail-soft convention as
+ * `resolvePinnedCuffs`), and skipping any slot that's also present in
+ * `pinnedArmor` entirely (that slot's own baked-in decorations already cover
+ * it -- see `slotsAfterPinning` -- so a stray decoration-only pin for the
+ * same slot, e.g. from an old shared link, is silently ignored rather than
+ * doubly enforced or conflicting). A slot that resolves to zero decorations
+ * (every id dropped) isn't included in the result at all, matching
+ * `resolvePinnedCuffs`'s "nothing left" meaning "no pin," not "pin nothing."
+ */
+export function resolvePinnedSlotDecorations(
+  decorations: readonly NamedDecoration[],
+  pinnedSlotDecorationIds: ReadonlyMap<string, readonly string[]>,
+  pinnedArmor: ReadonlyMap<string, PinnedSlot>,
+): Map<string, NamedDecoration[]> {
+  const decorationsById = new Map(decorations.map((d) => [d.id, d]))
+  const resolved = new Map<string, NamedDecoration[]>()
+  for (const [slotId, ids] of pinnedSlotDecorationIds) {
+    if (pinnedArmor.has(slotId)) continue
+    const found = ids
+      .map((id) => decorationsById.get(id))
+      .filter((d): d is NamedDecoration => d !== undefined)
+    if (found.length > 0) resolved.set(slotId, found)
+  }
+  return resolved
+}
+
 export interface BuiltQuery {
   readonly slots: NamedSlotQuery[]
   readonly decorations: NamedDecoration[]
   readonly cuffs: NamedCuff[]
   readonly pinnedCuffs: NamedCuff[]
+  readonly pinnedSlotDecorations: Map<string, NamedDecoration[]>
 }
 
 /** The inverse direction of `buildWeaponSlot`: given which weapon candidate a
@@ -259,5 +296,10 @@ export function buildSearchQuery(bundle: DataBundle, state: QueryFormState): Bui
   ]
   const cuffs = cuffsAfterCategoryFilter(bundle.cuffs, state.excludedCuffCategories)
   const pinnedCuffs = resolvePinnedCuffs(bundle.cuffs, state.pinnedCuffIds)
-  return { slots, decorations, cuffs, pinnedCuffs }
+  const pinnedSlotDecorations = resolvePinnedSlotDecorations(
+    decorations,
+    state.pinnedSlotDecorationIds,
+    state.pinnedArmor,
+  )
+  return { slots, decorations, cuffs, pinnedCuffs, pinnedSlotDecorations }
 }
