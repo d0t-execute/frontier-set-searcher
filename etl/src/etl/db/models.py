@@ -89,6 +89,14 @@ class Equipment:
     defense_max: int | None = None
     slot_count_base: int = 0
     slot_count_max: int = 0
+    # Elemental resistances -- flat per piece, not forge-level scaled (see
+    # docs/data-format-notes.md's column table and
+    # etl.parse.equipment.ParsedEquipmentRow's own note on this).
+    resistance_fire: int = 0
+    resistance_water: int = 0
+    resistance_thunder: int = 0
+    resistance_dragon: int = 0
+    resistance_ice: int = 0
     min_hr: int | None = None
     min_gr: int | None = None
     # Tower armor can only take Tower Gems in its slots, and Tower Gems can

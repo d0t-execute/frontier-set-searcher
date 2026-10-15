@@ -24,6 +24,8 @@ function candidate(
     grankOrLater: false,
     hunterType: 'common',
     exoticSkillId: null,
+    defenseMax: null,
+    resistances: { fire: 0, water: 0, thunder: 0, ice: 0, dragon: 0 },
     ...overrides,
   }
 }
@@ -258,8 +260,7 @@ describe('ResultsList', () => {
 
     expect(screen.getByText(/attack/i)).toBeInTheDocument()
     expect(screen.getByText(/20/)).toBeInTheDocument()
-    expect(screen.getByText(/defense/i)).toBeInTheDocument()
-    expect(screen.getByText(/8/)).toBeInTheDocument()
+    expect(screen.getByText('Defense').closest('div')).toHaveTextContent('Defense (8)')
   })
 
   it('shows Zenith skills under their own heading, separate from regular skills', () => {
@@ -283,7 +284,8 @@ describe('ResultsList', () => {
     )
 
     const zenithLine = screen.getByText(/zenith skills:/i).closest('div')
-    expect(zenithLine).toHaveTextContent('Skill Slots Up (3)')
+    expect(zenithLine).toHaveTextContent('Skill Slots Up')
+    expect(zenithLine).not.toHaveTextContent('(3)')
     expect(zenithLine).not.toHaveTextContent('Attack (20)')
   })
 
@@ -379,9 +381,9 @@ describe('ResultsList', () => {
       />,
     )
 
-    expect(screen.getByText('Poison Res Up +1').closest('div')).toHaveTextContent(
-      'Poison Res Up +1 (1/1)',
-    )
+    const entry = screen.getByText('Poison Res Up +1').closest('div')
+    expect(entry).toHaveTextContent('Poison Res Up +1')
+    expect(entry).not.toHaveTextContent('(1/1)')
   })
 
   it('shows plain progress toward the weakest tier when none has been crossed yet', () => {
@@ -404,6 +406,116 @@ describe('ResultsList', () => {
     )
 
     expect(screen.getByText('Vampirism').closest('div')).toHaveTextContent('Vampirism (8/10)')
+  })
+
+  it('shows a crossed negative (penalty) tier with its own label and negative threshold', () => {
+    const tieredSkills: readonly NamedSkill[] = [
+      {
+        id: 1,
+        name: 'Precision',
+        category: null,
+        priorityRank: null,
+        tiers: [
+          { label: 'Precision+2', minPoints: 20, description: null },
+          { label: 'Deviation Down', minPoints: 10, description: null },
+          { label: 'Deviation Up', minPoints: -10, description: null },
+        ],
+      },
+    ]
+    render(
+      <ResultsList
+        results={[result({ skillTotals: new Map([[1, -13]]) })]}
+        skillNames={new Map([[1, 'Precision']])}
+        skills={tieredSkills}
+        zenithSkills={zenithSkills}
+      />,
+    )
+
+    const entry = screen.getByText('Deviation Up').closest('div')
+    expect(entry).toHaveTextContent('Deviation Up (-13/-10)')
+    expect(entry).toHaveClass('text-danger')
+    expect(entry).not.toHaveClass('result-skill-inactive')
+  })
+
+  it('picks the deepest negative tier reached, not just the first one crossed', () => {
+    const tieredSkills: readonly NamedSkill[] = [
+      {
+        id: 1,
+        name: 'Defense',
+        category: null,
+        priorityRank: null,
+        tiers: [
+          { label: 'Defense-20', minPoints: -10, description: null },
+          { label: 'Defense-30', minPoints: -15, description: null },
+          { label: 'Defense-40', minPoints: -20, description: null },
+        ],
+      },
+    ]
+    render(
+      <ResultsList
+        results={[result({ skillTotals: new Map([[1, -17]]) })]}
+        skillNames={new Map([[1, 'Defense']])}
+        skills={tieredSkills}
+        zenithSkills={zenithSkills}
+      />,
+    )
+
+    expect(screen.getByText('Defense-30').closest('div')).toHaveTextContent('Defense-30 (-17/-15)')
+  })
+
+  it('shows plain progress toward the weakest negative tier when none has been crossed yet', () => {
+    const tieredSkills: readonly NamedSkill[] = [
+      {
+        id: 1,
+        name: 'Precision',
+        category: null,
+        priorityRank: null,
+        tiers: [{ label: 'Deviation Up', minPoints: -10, description: null }],
+      },
+    ]
+    render(
+      <ResultsList
+        results={[result({ skillTotals: new Map([[1, -5]]) })]}
+        skillNames={new Map([[1, 'Precision']])}
+        skills={tieredSkills}
+        zenithSkills={zenithSkills}
+      />,
+    )
+
+    const entry = screen.getByText('Precision').closest('div')
+    expect(entry).toHaveTextContent('Precision (-5/-10)')
+    expect(entry).not.toHaveClass('text-danger')
+  })
+
+  it("doesn't warn-color a crossed negative tier that's also disabled by the skill cap", () => {
+    const manySkills: readonly NamedSkill[] = Array.from({ length: 11 }, (_, i) => ({
+      id: i + 1,
+      name: `Skill ${i + 1}`,
+      category: null,
+      priorityRank: i + 1,
+      tiers:
+        i === 10
+          ? [{ label: 'Deviation Up', minPoints: -10, description: null }]
+          : [],
+    }))
+    const skillTotals = new Map([
+      ...manySkills.slice(0, 10).map((s, i): [number, number] => [s.id, i + 1]),
+      [11, -10],
+    ])
+
+    render(
+      <ResultsList
+        results={[result({ skillTotals })]}
+        skillNames={new Map(manySkills.map((s) => [s.id, s.name]))}
+        skills={manySkills}
+        zenithSkills={zenithSkills}
+      />,
+    )
+
+    const entry = screen.getByText('Deviation Up').closest('div')
+    expect(entry).toHaveTextContent('(disabled)')
+    expect(entry).toHaveClass('result-skill-inactive')
+    expect(entry).not.toHaveClass('text-danger')
   })
 
   it('sorts skills by points descending, with disabled ones after active and uncrossed ones last', () => {
@@ -478,6 +590,64 @@ describe('ResultsList', () => {
     expect(attackJewel).toBeInTheDocument()
     expect(screen.getByText('Defense Jewel')).toBeInTheDocument()
     expect(attackJewel).toHaveAttribute('title', 'Attack: 3')
+  })
+
+  it('shows the summed total defense and elemental resistances across every pick', () => {
+    render(
+      <ResultsList
+        results={[
+          result({
+            picks: new Map([
+              [
+                'head',
+                candidate({
+                  id: 'head:0001',
+                  name: 'Leather Helm',
+                  defenseMax: 10,
+                  resistances: { fire: 4, water: -1, thunder: 0, ice: 3, dragon: 2 },
+                }),
+              ],
+              [
+                'chest',
+                candidate({
+                  id: 'body:0001',
+                  name: 'Leather Vest',
+                  defenseMax: 20,
+                  resistances: { fire: -2, water: 5, thunder: 1, ice: 0, dragon: 1 },
+                }),
+              ],
+            ]),
+          }),
+        ]}
+        skillNames={skillNames}
+        skills={skills}
+        zenithSkills={zenithSkills}
+      />,
+    )
+
+    expect(screen.getByText(/total defense: 30/i)).toBeInTheDocument()
+    expect(
+      screen.getByText(/fire: 2, water: 4, thunder: 1, ice: 3, dragon: 3/i),
+    ).toBeInTheDocument()
+  })
+
+  it('treats a missing defenseMax as zero when summing total defense', () => {
+    render(
+      <ResultsList
+        results={[
+          result({
+            picks: new Map([
+              ['head', candidate({ id: 'head:0001', name: 'Leather Helm', defenseMax: null })],
+            ]),
+          }),
+        ]}
+        skillNames={skillNames}
+        skills={skills}
+        zenithSkills={zenithSkills}
+      />,
+    )
+
+    expect(screen.getByText(/total defense: 0/i)).toBeInTheDocument()
   })
 
   it('renders nothing when there are no results', () => {

@@ -52,6 +52,12 @@ def test_exports_equipment_shaped_for_the_search_engine(tmp_path: Path) -> None:
         slot_type="head",
         slot_count_base=0,
         slot_count_max=2,
+        defense_max=10,
+        resistance_fire=4,
+        resistance_water=-1,
+        resistance_thunder=0,
+        resistance_dragon=2,
+        resistance_ice=3,
     )
     repo.add_equipment_skill(conn, equipment_id=equipment.id, skill_id=attack.id, points=3)
     conn.commit()
@@ -70,6 +76,8 @@ def test_exports_equipment_shaped_for_the_search_engine(tmp_path: Path) -> None:
             "grankOrLater": False,
             "exoticSkillId": None,
             "hunterType": "common",
+            "defenseMax": 10,
+            "resistances": {"fire": 4, "water": -1, "thunder": 0, "ice": 3, "dragon": 2},
         }
     ]
 

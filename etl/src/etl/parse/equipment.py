@@ -59,6 +59,11 @@ class Field(IntEnum):
     SEX = 1
     TYPE = 2
     RARE = 3
+    F = 5
+    W = 6
+    T = 7
+    D = 8
+    ICE = 9  # named ICE, not the source's own "I", to avoid ruff's E741
     SN1 = 10
     SP1 = 11
     SN2 = 12
@@ -104,6 +109,18 @@ class ParsedEquipmentRow:
     slot_count_base: int
     slot_count_max: int
     skills: tuple[tuple[int, int], ...]
+    # Elemental resistances (F/W/T/D/I fields, index 5-9) -- confirmed flat
+    # per piece, not scaled by forge level like defense is (SkillForm.js's
+    # own display code reads these fields directly with no per-level lookup,
+    # the same way it reads SN/SP skill points -- see the module docstring's
+    # "skill points are fixed per piece" note, which applies here too). All
+    # five are always present and numeric on a real armor row (even "0"), so
+    # these default to 0 rather than being optional like `defense_base`.
+    resistance_fire: int = 0
+    resistance_water: int = 0
+    resistance_thunder: int = 0
+    resistance_dragon: int = 0
+    resistance_ice: int = 0
     # Tower armor (CLASS "N") can only take Tower Gems, and vice versa -- see
     # docs/data-format-notes.md "Tower Armor".
     is_tower: bool = False
@@ -210,6 +227,10 @@ def _int_or_none(value: str) -> int | None:
     return int(value) if value != "" else None
 
 
+def _int_or_zero(value: str) -> int:
+    return int(value) if value != "" else 0
+
+
 # "Exotic" equipment (CLASS "O") grants a fixed bonus to one *normal* skill
 # just by being equipped, in addition to its own listed skills -- confirmed
 # via the site's own SkillForm.js (its "遷悠"/senyu branch), which forces a
@@ -284,6 +305,11 @@ def parse_equipment_bucket(
                 slot_count_base=_int_or_none(_field(fields, Field.SLOT1)) or 0,
                 slot_count_max=_int_or_none(_field(fields, Field.SLOT7)) or 0,
                 skills=_extract_skills(fields),
+                resistance_fire=_int_or_zero(_field(fields, Field.F)),
+                resistance_water=_int_or_zero(_field(fields, Field.W)),
+                resistance_thunder=_int_or_zero(_field(fields, Field.T)),
+                resistance_dragon=_int_or_zero(_field(fields, Field.D)),
+                resistance_ice=_int_or_zero(_field(fields, Field.ICE)),
                 is_tower=_field(fields, Field.CLASS) == _TOWER_CLASS,
                 zenith_skill_id=_int_or_none(_field(fields, Field.TENI)),
                 category=classify_equipment_category(fields),

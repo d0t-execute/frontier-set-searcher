@@ -292,6 +292,22 @@ def _export_equipment(
             "grankOrLater": equipment.grank_or_later,
             "exoticSkillId": equipment.exotic_skill_id,
             "hunterType": equipment.hunter_type,
+            # Fully-forged defense (docs/data-format-notes.md "Defense
+            # progression") -- a display-only stat for the result card's
+            # Stats column (docs/skill-system-roadmap.md's result-card-
+            # redesign spec), not a search constraint, so it's exported
+            # straight onto the candidate like `category`/`grankOrLater`
+            # rather than threaded through the search engine's own types.
+            "defenseMax": equipment.defense_max,
+            # Elemental resistances -- flat per piece, see
+            # docs/data-format-notes.md's column table.
+            "resistances": {
+                "fire": equipment.resistance_fire,
+                "water": equipment.resistance_water,
+                "thunder": equipment.resistance_thunder,
+                "ice": equipment.resistance_ice,
+                "dragon": equipment.resistance_dragon,
+            },
         }
         for equipment in list_equipment(conn, slot_type=slot_type)
     ]

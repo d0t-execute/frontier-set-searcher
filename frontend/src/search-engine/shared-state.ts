@@ -56,6 +56,17 @@ import type { SkillContribution, SkillRequirement } from './types'
  * `determineActiveSkills`) reads a pick's category. `hunterType` is also left
  * out -- it only matters pre-solve (`slotsAfterHunterTypeFilter`), never on
  * an already-solved result's own display or cap logic. */
+/** Mirrors `NamedResistances` (load-bundle.ts) structurally rather than
+ * importing it -- this module otherwise has no dependency on load-bundle.ts,
+ * encoding/decoding only plain data. */
+export interface SharedResistances {
+  readonly fire: number
+  readonly water: number
+  readonly thunder: number
+  readonly ice: number
+  readonly dragon: number
+}
+
 export interface SharedPick {
   readonly slotId: string
   readonly id: string
@@ -63,6 +74,12 @@ export interface SharedPick {
   readonly openSlotCount: number | null
   readonly grankOrLater: boolean
   readonly exoticSkillId: number | null
+  /** A piece's display-only stats (docs/skill-system-roadmap.md's result-
+   * card-redesign spec) -- kept here, unlike `category`/`hunterType`, since
+   * `ResultCard` now sums these across a result's picks for its Stats
+   * column. */
+  readonly defenseMax: number | null
+  readonly resistances: SharedResistances
 }
 
 export interface SharedDecoration {
@@ -127,7 +144,16 @@ interface WireFormat {
   readonly wsc: number
   readonly htf: HunterTypeFilter
   readonly pem: boolean
-  readonly rp: readonly (readonly [string, string, string, number | null, boolean, number | null])[]
+  readonly rp: readonly (readonly [
+    string,
+    string,
+    string,
+    number | null,
+    boolean,
+    number | null,
+    number | null,
+    readonly [number, number, number, number, number],
+  ])[]
   readonly rd: readonly (readonly [string, readonly (readonly [string, string, number])[]])[]
   readonly rc: readonly (readonly [string, string, readonly (readonly [number, number])[]])[]
   readonly rt: readonly (readonly [number, number])[]
@@ -151,6 +177,8 @@ function toWireFormat(state: SharedSearchState): WireFormat {
       p.openSlotCount,
       p.grankOrLater,
       p.exoticSkillId,
+      p.defenseMax,
+      [p.resistances.fire, p.resistances.water, p.resistances.thunder, p.resistances.ice, p.resistances.dragon],
     ]),
     rd: state.result.decorations.map((d) => [
       d.slotId,
@@ -205,14 +233,24 @@ function fromWireFormat(parsed: unknown): SharedSearchState | null {
     hunterTypeFilter: w.htf,
     preferExactMatches: w.pem,
     result: {
-      picks: w.rp.map(([slotId, id, name, openSlotCount, grankOrLater, exoticSkillId]) => ({
-        slotId,
-        id,
-        name,
-        openSlotCount,
-        grankOrLater,
-        exoticSkillId,
-      })),
+      picks: w.rp.map(
+        ([slotId, id, name, openSlotCount, grankOrLater, exoticSkillId, defenseMax, resistances]) => ({
+          slotId,
+          id,
+          name,
+          openSlotCount,
+          grankOrLater,
+          exoticSkillId,
+          defenseMax,
+          resistances: {
+            fire: resistances[0],
+            water: resistances[1],
+            thunder: resistances[2],
+            ice: resistances[3],
+            dragon: resistances[4],
+          },
+        }),
+      ),
       decorations: w.rd.map(([slotId, decorations]) => ({
         slotId,
         decorations: decorations.map(([id, name, slotSize]) => ({ id, name, slotSize })),

@@ -489,6 +489,8 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
           openSlotCount: c.openSlotCount ?? null,
           grankOrLater: c.grankOrLater,
           exoticSkillId: c.exoticSkillId,
+          defenseMax: c.defenseMax,
+          resistances: c.resistances,
         })),
         decorations: [...result.decorations.entries()].map(([slotId, decorations]) => ({
           slotId,

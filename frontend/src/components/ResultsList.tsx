@@ -1,8 +1,38 @@
-import { useState } from 'react'
+import { toPng } from 'html-to-image'
+import { useRef, useState } from 'react'
 import { determineActiveSkills } from '../search-engine/active-skill-cap'
-import type { NamedSkill, SkillTierRecord } from '../search-engine/load-bundle'
+import type { NamedCandidate, NamedResistances, NamedSkill, SkillTierRecord } from '../search-engine/load-bundle'
 import type { SkillContribution, SkillId } from '../search-engine/types'
 import type { NamedBuildResult } from './types'
+
+/** Summed across every pick in a result (armor, weapon, cuffs aren't picks
+ * here -- see `NamedBuildResult.picks`). Weapons and cuffs carry no defense/
+ * resistance data at all (confirmed against the raw data, see
+ * docs/data-format-notes.md: the "deco" bucket's Cuff rows and the weapon
+ * buckets have no F/W/T/D/I/DEF columns, a different row shape from armor),
+ * so in practice only armor picks ever contribute a non-zero amount here --
+ * but summing every pick regardless costs nothing, since a non-armor pick's
+ * own placeholder values (`null`/all-zero, see `build-query.ts`'s
+ * `NO_RESISTANCES`) are additive no-ops. `defenseMax` (not `defenseBase`) is
+ * used for "Total defense" -- the fully-forged value is what a hunter
+ * actually cares about reaching, the same reasoning
+ * docs/data-format-notes.md gives for storing it at all. */
+function sumStats(picks: ReadonlyMap<string, NamedCandidate>): {
+  readonly totalDefense: number
+  readonly resistances: NamedResistances
+} {
+  let totalDefense = 0
+  const resistances = { fire: 0, water: 0, thunder: 0, ice: 0, dragon: 0 }
+  for (const candidate of picks.values()) {
+    totalDefense += candidate.defenseMax ?? 0
+    resistances.fire += candidate.resistances.fire
+    resistances.water += candidate.resistances.water
+    resistances.thunder += candidate.resistances.thunder
+    resistances.ice += candidate.resistances.ice
+    resistances.dragon += candidate.resistances.dragon
+  }
+  return { totalDefense, resistances }
+}
 
 export interface ResultsListProps {
   readonly results: readonly NamedBuildResult[]
@@ -81,13 +111,29 @@ interface SkillDisplayEntry {
   readonly value: string
   readonly crossed: boolean
   readonly disabled: boolean
+  /** True once a *penalty* tier (a tier with a negative threshold, e.g.
+   * Precision's "Deviation Up" at -10) is crossed -- flagged separately from
+   * `crossed` so the card can call it out in the same warning color used
+   * elsewhere, rather than looking identical to a beneficial tier (2026-10-
+   * 16, per the project owner). */
+  readonly negative: boolean
 }
 
 /** Resolves one skill total into its own display entry (docs/skill-system-
  * roadmap.md's result-card-redesign spec) -- once a tier is crossed, its own
  * label plus current points over its threshold; below every tier, plain
- * progress toward the weakest one. Negative (penalty) tiers and untiered
- * skills fall back to the bare point total under the skill's own name. */
+ * progress toward the weakest one. Untiered skills fall back to the bare
+ * point total under the skill's own name.
+ *
+ * Negative thresholds (e.g. Precision's "Deviation Up" at -10) work as the
+ * mirror image of positive ones: more-negative points cross *deeper* penalty
+ * tiers, so among the negative tiers whose threshold points has reached
+ * (points <= threshold), the one actually in effect is the most-negative one
+ * reached, not the first one reached (2026-10-16, per the project owner: a
+ * crossed negative tier was previously never detected at all, so its label
+ * and threshold silently fell back to the skill's own name and its weakest
+ * *positive* tier's threshold, e.g. "Precision (-13/10)" instead of
+ * "Deviation Up (-13/-10)"). */
 function buildSkillEntry(
   skillId: SkillId,
   points: number,
@@ -95,8 +141,19 @@ function buildSkillEntry(
   name: string,
   disabled: boolean,
 ): SkillDisplayEntry {
+  // Both lists come out of `tiers` already sorted highest-threshold-first
+  // (see `NamedSkill.tiers`'s own docstring), so the weakest positive tier is
+  // last and the weakest (least severe) negative tier is first.
   const positiveTiers = tiers.filter((t) => t.minPoints >= 0)
-  const crossedTier = points >= 0 ? positiveTiers.find((t) => points >= t.minPoints) : undefined
+  const negativeTiers = tiers.filter((t) => t.minPoints < 0)
+
+  const crossedTier =
+    points > 0
+      ? positiveTiers.find((t) => points >= t.minPoints)
+      : points < 0
+        ? lastOrUndefined(negativeTiers.filter((t) => points <= t.minPoints))
+        : undefined
+
   if (crossedTier) {
     const label = GENERIC_TIER_LABEL.test(crossedTier.label)
       ? `${name} ${crossedTier.label}`
@@ -108,20 +165,30 @@ function buildSkillEntry(
       value: `${points}/${crossedTier.minPoints}`,
       crossed: true,
       disabled,
+      negative: crossedTier.minPoints < 0,
     }
   }
-  const value =
-    positiveTiers.length > 0
-      ? `${points}/${positiveTiers[positiveTiers.length - 1].minPoints}`
-      : String(points)
+
+  const weakestTier =
+    points > 0
+      ? positiveTiers[positiveTiers.length - 1]
+      : points < 0
+        ? negativeTiers[0]
+        : undefined
+  const value = weakestTier ? `${points}/${weakestTier.minPoints}` : String(points)
   return {
     skillId,
     points,
     label: name,
     value,
-    crossed: positiveTiers.length === 0 && points > 0,
+    crossed: tiers.length === 0 && points !== 0,
     disabled,
+    negative: false,
   }
+}
+
+function lastOrUndefined<T>(items: readonly T[]): T | undefined {
+  return items.length > 0 ? items[items.length - 1] : undefined
 }
 
 /** Highest points first; disabled skills sort after every still-active one
@@ -156,6 +223,8 @@ export function ResultCard({
 }: ResultCardProps) {
   const [shareUrl, setShareUrl] = useState<string | null>(null)
   const [isGeneratingShareUrl, setIsGeneratingShareUrl] = useState(false)
+  const [isDownloadingImage, setIsDownloadingImage] = useState(false)
+  const cardRef = useRef<HTMLDivElement>(null)
 
   function handleGetShareUrl(): void {
     if (!getShareUrl) return
@@ -163,6 +232,23 @@ export function ResultCard({
     void getShareUrl()
       .then(setShareUrl)
       .finally(() => setIsGeneratingShareUrl(false))
+  }
+
+  function handleDownloadImage(): void {
+    const card = cardRef.current
+    if (!card) return
+    setIsDownloadingImage(true)
+    // Captured against the page's own current background color (rather than
+    // a fixed white/transparent default) so a dark-mode screenshot doesn't
+    // come out with light gaps between the card's columns.
+    void toPng(card, { backgroundColor: getComputedStyle(document.body).backgroundColor })
+      .then((dataUrl) => {
+        const link = document.createElement('a')
+        link.href = dataUrl
+        link.download = 'frontier-build.png'
+        link.click()
+      })
+      .finally(() => setIsDownloadingImage(false))
   }
   const { cap, disabled } = determineActiveSkills(
     result.picks,
@@ -191,27 +277,42 @@ export function ResultCard({
   const zenithSkillEntries = skillEntries
     .filter((e) => zenithSkillIds.has(e.skillId))
     .sort(compareSkillEntries)
+  const { totalDefense, resistances } = sumStats(result.picks)
 
-  function renderSkillEntry(entry: SkillDisplayEntry) {
+  function renderSkillEntry(entry: SkillDisplayEntry, showValue = true) {
     const inactive = entry.disabled || !entry.crossed
+    // An active penalty tier gets the same warning color used for the
+    // disabled-skill-count callout elsewhere on the card, rather than
+    // looking identical to a beneficial tier (2026-10-16, per the project
+    // owner); a disabled skill keeps its own gray "inactive" look instead.
+    const warning = entry.negative && !entry.disabled
+    const className =
+      [inactive ? 'result-skill-inactive' : null, warning ? 'text-danger' : null]
+        .filter(Boolean)
+        .join(' ') || undefined
     return (
-      <div key={entry.skillId} className={inactive ? 'result-skill-inactive' : undefined}>
-        <span className="result-skill-level">{entry.label}</span>{' '}
-        <span className="result-skill-value">({entry.value})</span>
+      <div key={entry.skillId} className={className}>
+        <span className="result-skill-level">{entry.label}</span>
+        {showValue && (
+          <>
+            {' '}
+            <span className="result-skill-value">({entry.value})</span>
+          </>
+        )}
         {entry.disabled && ' (disabled)'}
       </div>
     )
   }
 
   return (
-    <div className="result-card">
+    <div className="result-card" ref={cardRef}>
       <div className="result-column">
         <h3 className="result-column-heading">Skills</h3>
-        <div className="small">{regularSkillEntries.map(renderSkillEntry)}</div>
+        <div className="small">{regularSkillEntries.map((entry) => renderSkillEntry(entry))}</div>
         {zenithSkillEntries.length > 0 && (
           <div className="small mt-2">
             <span className="fw-bold">Zenith skills:</span>
-            <div>{zenithSkillEntries.map(renderSkillEntry)}</div>
+            <div>{zenithSkillEntries.map((entry) => renderSkillEntry(entry, false))}</div>
           </div>
         )}
       </div>
@@ -239,9 +340,13 @@ export function ResultCard({
                   </dd>
                 </div>
                 {decorations.length > 0 && (
-                  <div className="result-decoration-list">
+                  <div className="category-group-children result-decoration-list">
                     {decorations.map((decoration, i) => (
-                      <div key={i} title={contributionSummary(decoration.skills, skillNames)}>
+                      <div
+                        key={i}
+                        className="category-leaf"
+                        title={contributionSummary(decoration.skills, skillNames)}
+                      >
                         {decoration.name}
                       </div>
                     ))}
@@ -258,10 +363,28 @@ export function ResultCard({
             {result.cuffs.map((cuff) => cuff.name).join(', ')}
           </div>
         )}
+      </div>
 
-        {getShareUrl && (
-          <div className="mt-2">
-            {shareUrl ? (
+      <div className="result-column d-flex flex-column">
+        <h3 className="result-column-heading">Stats</h3>
+        <div className="small">
+          Active skill cap: {cap}
+          {disabledIds.size > 0 && (
+            <span className="text-danger">
+              {' '}
+              ({disabledIds.size} skill{disabledIds.size === 1 ? '' : 's'} disabled)
+            </span>
+          )}
+        </div>
+        <div className="small mt-2">Total defense: {totalDefense}</div>
+        <div className="small">
+          Fire: {resistances.fire}, Water: {resistances.water}, Thunder: {resistances.thunder}, Ice:{' '}
+          {resistances.ice}, Dragon: {resistances.dragon}
+        </div>
+
+        <div className="mt-auto pt-2 d-flex justify-content-end align-items-center gap-2">
+          {getShareUrl &&
+            (shareUrl ? (
               <div className="d-flex gap-2 align-items-center">
                 <input
                   type="text"
@@ -288,21 +411,15 @@ export function ResultCard({
               >
                 {isGeneratingShareUrl ? 'Generating link…' : 'Get shareable link'}
               </button>
-            )}
-          </div>
-        )}
-      </div>
-
-      <div className="result-column">
-        <h3 className="result-column-heading">Stats</h3>
-        <div className="small">
-          Active skill cap: {cap}
-          {disabledIds.size > 0 && (
-            <span className="text-danger">
-              {' '}
-              ({disabledIds.size} skill{disabledIds.size === 1 ? '' : 's'} disabled)
-            </span>
-          )}
+            ))}
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-secondary"
+            disabled={isDownloadingImage}
+            onClick={handleDownloadImage}
+          >
+            {isDownloadingImage ? 'Downloading…' : 'Download as image'}
+          </button>
         </div>
       </div>
     </div>

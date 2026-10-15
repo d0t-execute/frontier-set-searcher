@@ -15,11 +15,22 @@ def test_insert_and_fetch_equipment_by_external_id(conn: sqlite3.Connection) -> 
         defense_max=10,
         slot_count_base=0,
         slot_count_max=1,
+        resistance_fire=4,
+        resistance_water=-1,
+        resistance_thunder=0,
+        resistance_dragon=2,
+        resistance_ice=3,
     )
 
     fetched = repo.get_equipment_by_external_id(conn, "0001")
 
     assert fetched == created
+    assert fetched is not None
+    assert fetched.resistance_fire == 4
+    assert fetched.resistance_water == -1
+    assert fetched.resistance_thunder == 0
+    assert fetched.resistance_dragon == 2
+    assert fetched.resistance_ice == 3
 
 
 def test_insert_equipment_round_trips_grank_or_later(conn: sqlite3.Connection) -> None:

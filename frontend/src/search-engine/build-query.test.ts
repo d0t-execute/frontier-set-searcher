@@ -13,7 +13,17 @@ function deco(id: string, isTower: boolean, category = 'deco_standard'): NamedDe
 }
 
 function candidate(id: string, hunterType: HunterType): NamedCandidate {
-  return { id, name: id, category: 'standard_plain', grankOrLater: false, hunterType, exoticSkillId: null, skills: [] }
+  return {
+    id,
+    name: id,
+    category: 'standard_plain',
+    grankOrLater: false,
+    hunterType,
+    exoticSkillId: null,
+    defenseMax: null,
+    resistances: { fire: 0, water: 0, thunder: 0, ice: 0, dragon: 0 },
+    skills: [],
+  }
 }
 
 const EMPTY_FORM_STATE: QueryFormState = {

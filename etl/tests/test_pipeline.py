@@ -197,6 +197,14 @@ def test_load_equipment_persists_equipment_and_decoration_fields(tmp_path: Path)
     assert helm.defense_max == 10
     assert helm.source_url == "https://example.test/equip.js"
 
+    cap = repo.get_equipment_by_external_id(conn, "head:1000")
+    assert cap is not None
+    assert cap.resistance_fire == 4
+    assert cap.resistance_water == 4
+    assert cap.resistance_thunder == 4
+    assert cap.resistance_dragon == 1
+    assert cap.resistance_ice == 4
+
     decoration_row = conn.execute(
         "SELECT name, slot_size FROM decoration WHERE external_id = ?", ("deco:031F",)
     ).fetchone()

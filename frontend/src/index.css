@@ -444,7 +444,7 @@ code {
 }
 
 /* ArmorPicker's own decoration search boxes (`w-auto` alone left them at the
- * browser's intrinsic text-input width, ~183px) -- widened to a fixed 200px
+ * browser's intrinsic text-input width, ~183px) -- widened to a fixed 230px
  * (2026-10-15, per the project owner). */
 .decoration-search-input {
   width: 230px;
@@ -581,8 +581,13 @@ code {
   margin: 0 0 8px;
 }
 
+/* Reuses `.category-group-children`/`.category-leaf`'s own branch-line
+ * styling (see this file's "Category filter tree" rules above) so a pick's
+ * decorations read the same way as every other group/leaf structure on the
+ * page -- attached to, and visibly branching from, the piece they're socketed
+ * into (2026-10-16, per the project owner). */
 .result-decoration-list {
-  margin: 2px 0 6px 20px;
+  margin-bottom: 6px;
   color: var(--text);
   font-size: 0.875em;
 }
