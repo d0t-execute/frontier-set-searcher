@@ -326,8 +326,9 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
   // #9) -- encodes the query that produced it (not the solved result data
   // itself, see shared-state.ts's own docstring for why) plus which ranked
   // index to take, so the result page can reconstruct it with one re-run of
-  // the solver.
-  function buildShareUrl(resultIndex: number): string {
+  // the solver. Returns a Promise because encoding now compresses the
+  // payload (TODO #14) -- see shared-state.ts's own docstring.
+  function buildShareUrl(resultIndex: number): Promise<string> {
     const state: SharedSearchState = {
       requirements,
       zenithRequirements,

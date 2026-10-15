@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   buildResultUrl,
   decodeSharedState,
+  encodedResultFromLocation,
   encodeSharedState,
-  readSharedStateFromLocation,
   RESULT_HASH_PREFIX,
 } from './shared-state'
 import type { SharedSearchState } from './shared-state'
@@ -23,56 +23,77 @@ const state: SharedSearchState = {
 }
 
 describe('encodeSharedState / decodeSharedState', () => {
-  it('round-trips every field exactly', () => {
-    const encoded = encodeSharedState(state)
-    expect(decodeSharedState(encoded)).toEqual(state)
+  it('round-trips every field exactly', async () => {
+    const encoded = await encodeSharedState(state)
+    expect(await decodeSharedState(encoded)).toEqual(state)
   })
 
-  it('round-trips a non-null excludedWeaponZenithSkillIds too', () => {
+  it('round-trips a non-null excludedWeaponZenithSkillIds too', async () => {
     const withWeaponExclusions: SharedSearchState = {
       ...state,
       excludedWeaponZenithSkillIds: ['1000002', 'none'],
     }
-    const encoded = encodeSharedState(withWeaponExclusions)
-    expect(decodeSharedState(encoded)).toEqual(withWeaponExclusions)
+    const encoded = await encodeSharedState(withWeaponExclusions)
+    expect(await decodeSharedState(encoded)).toEqual(withWeaponExclusions)
   })
 
-  it('is URL-safe (no +, /, or = characters)', () => {
-    const encoded = encodeSharedState(state)
+  it('is URL-safe (no +, /, or = characters)', async () => {
+    const encoded = await encodeSharedState(state)
     expect(encoded).not.toMatch(/[+/=]/)
   })
 
-  it('returns null for malformed base64', () => {
-    expect(decodeSharedState('not valid base64 at all!!!')).toBeNull()
+  it('is meaningfully shorter than a plain JSON/base64 encoding of the same state', async () => {
+    const encoded = await encodeSharedState(state)
+    const uncompressedBaseline = btoa(JSON.stringify(state))
+    expect(encoded.length).toBeLessThan(uncompressedBaseline.length)
   })
 
-  it('returns null for well-formed JSON missing required fields', () => {
-    const encoded = encodeSharedState(state)
-    // Corrupt it by decoding, stripping a field, and re-encoding by hand
-    // would require exposing the base64 helpers -- simpler to just assert
-    // against a hand-built bad payload through the same encode path.
-    const badJson = JSON.stringify({ requirements: [] })
-    const bad = btoa(badJson).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
-    expect(decodeSharedState(bad)).toBeNull()
-    expect(decodeSharedState(encoded)).not.toBeNull()
+  it('returns null for malformed base64', async () => {
+    expect(await decodeSharedState('not valid base64 at all!!!')).toBeNull()
+  })
+
+  it('returns null for data that base64-decodes but is not valid gzip', async () => {
+    const notGzip = btoa('just some text, not a gzip stream')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '')
+    expect(await decodeSharedState(notGzip)).toBeNull()
+  })
+
+  it('returns null for well-formed JSON missing required fields', async () => {
+    const encoded = await encodeSharedState(state)
+    const badJson = JSON.stringify({ r: [] })
+    const badJsonBytes = new TextEncoder().encode(badJson)
+    const badJsonBuffer = badJsonBytes.slice().buffer as ArrayBuffer
+    const compressed = await new Response(
+      new Response(badJsonBuffer).body!.pipeThrough(new CompressionStream('gzip')),
+    ).arrayBuffer()
+    let binary = ''
+    for (const byte of new Uint8Array(compressed)) binary += String.fromCharCode(byte)
+    const bad = btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+
+    expect(await decodeSharedState(bad)).toBeNull()
+    expect(await decodeSharedState(encoded)).not.toBeNull()
   })
 })
 
-describe('buildResultUrl / readSharedStateFromLocation', () => {
-  it('builds a URL whose hash round-trips back to the same state', () => {
-    const url = buildResultUrl(state)
+describe('buildResultUrl / encodedResultFromLocation', () => {
+  it('builds a URL whose hash round-trips back to the same state', async () => {
+    const url = await buildResultUrl(state)
     const hash = new URL(url).hash
     expect(hash.startsWith(RESULT_HASH_PREFIX)).toBe(true)
 
     window.location.hash = hash
-    expect(readSharedStateFromLocation()).toEqual(state)
+    const encoded = encodedResultFromLocation()
+    expect(encoded).not.toBeNull()
+    expect(await decodeSharedState(encoded!)).toEqual(state)
   })
 
   it('returns null when the location hash is not a shared-result link', () => {
     window.location.hash = ''
-    expect(readSharedStateFromLocation()).toBeNull()
+    expect(encodedResultFromLocation()).toBeNull()
 
     window.location.hash = '#something-else'
-    expect(readSharedStateFromLocation()).toBeNull()
+    expect(encodedResultFromLocation()).toBeNull()
   })
 })

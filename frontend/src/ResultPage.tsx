@@ -25,28 +25,55 @@ import {
   pinnedArmorFromResult,
   pinnedWeaponExclusion,
 } from './search-engine/build-query'
+import { decodeSharedState } from './search-engine/shared-state'
 import type { SharedSearchState } from './search-engine/shared-state'
 import type { SkillTierThresholds } from './search-engine/types'
 
 export interface ResultPageProps {
-  readonly state: SharedSearchState
+  /** The still-compressed/base64url payload from the location hash -- see
+   * `shared-state.ts`'s own docstring on why decoding is `async` now, and
+   * why that pushed the decode step down into this component (which already
+   * has its own loading/error states for the equally-async solver
+   * reconstruction) rather than `AppRoot.tsx` doing it up front. */
+  readonly encoded: string
   readonly onUseAsBase: (initialState: AppInitialState) => void
   readonly onBackToSearch: () => void
 }
 
-type ReconstructStatus = 'loading' | 'found' | 'not-found' | 'error'
+type ReconstructStatus = 'loading' | 'found' | 'not-found' | 'error' | 'invalid-link'
 
-export function ResultPage({ state, onUseAsBase, onBackToSearch }: ResultPageProps) {
+export function ResultPage({ encoded, onUseAsBase, onBackToSearch }: ResultPageProps) {
   const bundleQuery = useDataBundle()
   const worker = useSearchWorker()
   const bundle = bundleQuery.data
 
+  const [state, setState] = useState<SharedSearchState | null>(null)
   const [result, setResult] = useState<NamedBuildResult | null>(null)
   const [reconstructStatus, setReconstructStatus] = useState<ReconstructStatus>('loading')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  const formState = useMemo<QueryFormState>(
-    () => ({
+  useEffect(() => {
+    let cancelled = false
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setState(null)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setReconstructStatus('loading')
+    void decodeSharedState(encoded).then((decoded) => {
+      if (cancelled) return
+      if (!decoded) {
+        setReconstructStatus('invalid-link')
+        return
+      }
+      setState(decoded)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [encoded])
+
+  const formState = useMemo<QueryFormState | null>(() => {
+    if (!state) return null
+    return {
       excludedCategories: new Set(state.excludedCategories),
       excludedCuffCategories: new Set(state.excludedCuffCategories),
       excludedDecorationCategories: new Set(state.excludedDecorationCategories),
@@ -56,16 +83,15 @@ export function ResultPage({ state, onUseAsBase, onBackToSearch }: ResultPagePro
       weaponSlotCount: state.weaponSlotCount,
       pinnedArmor: new Map(state.pinnedArmor),
       pinnedCuffIds: state.pinnedCuffIds,
-    }),
+    }
     // `bundle` only matters here as a fallback default for an omitted
     // `excludedWeaponZenithSkillIds` (see `SharedSearchState`'s own
     // docstring) -- re-deriving once the bundle loads is intentional, not an
     // accidental extra dependency.
-    [state, bundle],
-  )
+  }, [state, bundle])
 
   useEffect(() => {
-    if (!worker || !bundle) return undefined
+    if (!worker || !bundle || !state || !formState) return undefined
 
     // Resetting before kicking off a new worker search is the same
     // "synchronize with an external system" case `useSearchWorker.ts`'s own
@@ -123,7 +149,7 @@ export function ResultPage({ state, onUseAsBase, onBackToSearch }: ResultPagePro
   }, [worker, bundle, state, formState])
 
   function handleUseAsBase(): void {
-    if (!bundle || !result) return
+    if (!bundle || !result || !state) return
     const weaponCandidate = result.picks.get('weapon')
     onUseAsBase({
       requirements: state.requirements,
@@ -153,6 +179,12 @@ export function ResultPage({ state, onUseAsBase, onBackToSearch }: ResultPagePro
       {(bundleQuery.isLoading || reconstructStatus === 'loading') && <p>Loading…</p>}
       {bundleQuery.isError && (
         <p role="alert">Couldn't load equipment data. Try reloading the page.</p>
+      )}
+      {reconstructStatus === 'invalid-link' && (
+        <p role="alert">
+          This link is corrupted, or was created before an update changed how links are encoded,
+          and can no longer be opened.
+        </p>
       )}
       {reconstructStatus === 'not-found' && (
         <p role="alert">

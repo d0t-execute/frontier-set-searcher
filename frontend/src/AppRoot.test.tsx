@@ -59,8 +59,8 @@ describe('AppRoot', () => {
     expect(screen.getByRole('heading', { name: 'Frontier Set Searcher' })).toBeInTheDocument()
   })
 
-  it('renders the shared-result page when the location hash points at one', () => {
-    window.location.hash = new URL(buildResultUrl(STATE)).hash
+  it('renders the shared-result page when the location hash points at one', async () => {
+    window.location.hash = new URL(await buildResultUrl(STATE)).hash
     render(<AppRoot />)
     expect(screen.getByRole('heading', { name: 'Shared build' })).toBeInTheDocument()
   })

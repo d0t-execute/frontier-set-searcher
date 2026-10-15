@@ -849,38 +849,49 @@ user-facing dropdown.
 
 ## 14. Shorten shareable build-result links
 
-**Status (2026-10-15): Not started -- added per the project owner's request, and flagged as making
-the shared-link feature (TODO #9) not reliably usable as shipped.** The project owner reports that
-even with the current `shared-state.ts` encoding, a real link can come out far longer than what
-Discord allows a non-Nitro user to post in one message (Discord's non-Nitro message-length cap is
-2000 characters) -- confirmed independently earlier in this same project's work via a disposable
-Node.js size-check script comparing encodings, which already showed real links landing in the
-several-hundred-to-low-thousands-of-characters range depending on how many skill requirements and
-pinned pieces a query carries, so this isn't a hypothetical edge case.
+**Status (2026-10-15): COMPLETE.** Combined the two cheapest candidate directions this entry
+originally proposed: short field names/tuples instead of `SharedSearchState`'s full shape, plus
+gzip compression via the browser's native `CompressionStream`/`DecompressionStream` (no new
+dependency). The backend/URL-shortener option was not pursued -- it would give up this app's
+"fully static, no server" property, and the combined approach already gives a large margin under
+Discord's 2000-character non-Nitro limit.
 
-Where the size actually goes (per `shared-state.ts`'s `SharedSearchState` and `encodeSharedState`):
-it's a `JSON.stringify` of the *entire* query form state -- every requirement, every excluded
-category id, every pinned-armor `[slotId, PinnedSlot]` pair, pinned cuff ids, etc. -- base64url-
-encoded, which alone inflates size by ~33% on top of the JSON's own verbosity (repeated key names
-like `"excludedWeaponZenithSkillIds"` and `"requirements"` cost bytes on every link regardless of
-how little the query actually customizes). Candidate directions, roughly cheapest-to-implement
-first, not mutually exclusive:
-
-- **Compact the JSON shape first** -- shortest-path win with no architecture change: switch
-  `SharedSearchState`'s field names to short keys (or encode as a tuple/array instead of a keyed
-  object) only at the serialization boundary in `shared-state.ts`, decoding back to the same typed
-  interface everywhere else. Free size reduction proportional to how many fields a typical query
-  touches.
-- **Compress before base64**, e.g. via the browser's native `CompressionStream('deflate')` (no new
-  dependency, supported in all current evergreen browsers), base64url-encoding the compressed bytes
-  instead of the raw JSON. Likely the single biggest win given how repetitive the JSON keys/skill-id
-  arrays are, but decoding becomes `async` (`DecompressionStream` is a streams API), which ripples
-  into `readSharedStateFromLocation()` and `AppRoot.tsx`'s currently-synchronous read-on-mount.
-- **A real backend/URL-shortener**, trading away this app's current "fully static, no server"
-  property (see `shared-state.ts`'s own docstring on why the query is encoded client-side at all) --
-  out of scope unless the project owner decides a static GitHub Pages site is no longer a hard
-  requirement; flagged here only so it's not silently assumed away.
-
-No implementation attempted yet -- needs a decision on which of these (likely "compact field
-names" + "compress," done together) before writing code, since the compression approach's
-async-decode ripple touches `AppRoot.tsx`/`ResultPage.tsx` beyond just `shared-state.ts` itself.
+- `shared-state.ts`: new internal `WireFormat` type (`toWireFormat`/`fromWireFormat`) with short
+  keys (`r`, `zr`, `ec`, `ecc`, `edc`, `ewz`, `wsc`, `pa`, `pc`, `pem`, `ri`) and tuple-shaped
+  requirements/pinned-armor entries -- `SharedSearchState` itself, and everything outside this
+  module, is untouched. `encodeSharedState`/`decodeSharedState` now `JSON.stringify`/`parse` the
+  wire format, gzip/gunzip it (via `Response`/`CompressionStream`, not `Blob.stream()` -- jsdom's
+  `Blob` polyfill doesn't implement that method, unlike every real browser's), and base64url-encode
+  the compressed bytes directly (no more UTF-8-escape round-trip, since compressed output is
+  already raw bytes, not text).
+- This makes encode/decode `async`, which ripples into every caller: `buildResultUrl`,
+  `App.tsx`'s `buildShareUrl` (and `ResultsList.tsx`'s `getShareUrl` prop type, now
+  `() => Promise<string>`, with a brief "Generating link…" disabled state on the button while it
+  awaits), and reading a link back. `AppRoot.tsx` no longer decodes at all -- it only checks
+  `hasSharedResultHash()`/reads the raw payload via `encodedResultFromLocation()` (both
+  synchronous, a plain prefix/substring check) to decide whether to render `ResultPage` at all;
+  `ResultPage.tsx` now takes the still-encoded `encoded: string` instead of a decoded
+  `SharedSearchState`, and decodes it itself in an effect (new `'invalid-link'`
+  `ReconstructStatus`, shown as its own error message) alongside its already-async solver
+  reconstruction, rather than `AppRoot` needing a decode-loading state of its own with nothing yet
+  to render.
+- Breaking change, not versioned, matching TODO #11's own precedent: a link encoded before this
+  change fails to decode (shows the new "invalid-link" message) rather than being migrated.
+- Verification: a disposable size-check script comparing a realistic query (12 skill
+  requirements, 3 pinned armor pieces with decorations, both cuff slots pinned, several excluded
+  categories) across encodings: today's old full-name/plain-base64 encoding came to ~1538 total
+  link characters; short names alone, ~746; short names + gzip (what shipped), ~442 -- roughly a
+  3.5x reduction. A second scratch test (also not committed) checked scaling isn't the worry it
+  looks like at first glance -- link length grows roughly linearly with constraint count, no blowup,
+  because gzip compresses the repetitive structure (many similar skill-id/category-key entries)
+  well: a tiny query (2 requirements, nothing pinned) encodes to ~294 total characters; "heavy" (25
+  requirements, all 5 armor pieces pinned with 3 decorations each, 20 excluded categories) to ~760;
+  and a deliberately pathological case (all 194 catalog skills required at once, every one of the
+  63 gear categories and all 26 weapon Zenith skills excluded, 5 pieces pinned) still only reaches
+  ~1447 -- comfortably under Discord's 2000-character limit even at that extreme. `tsc -b` clean
+  (after routing gzip/gunzip through `Response` rather than hand-rolled `ReadableStream` reading --
+  the DOM lib's `Uint8Array<ArrayBuffer>` vs. `Uint8Array<ArrayBufferLike>` generics didn't
+  reconcile cleanly with a raw stream reader). Full frontend suite (229 tests, up from 226) and
+  oxlint clean. Live-browser end-to-end: generated a real link from an actual search (243
+  characters total), confirmed it reconstructs the exact same build on open, and confirmed a
+  corrupted/garbage link shows the new error message instead of crashing.

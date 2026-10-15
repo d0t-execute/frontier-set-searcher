@@ -18,6 +18,29 @@
  * result index, or none, if opened long after the bundle changed -- no worse
  * than this app's existing lack of any cross-session stability guarantee
  * elsewhere (e.g. pinned armor/cuff ids already carry the same risk).
+ *
+ * Encoding (docs/skill-system-roadmap.md TODO #14): the project owner
+ * reported real links coming out longer than Discord allows a non-Nitro user
+ * to post in one message (2000 characters). The wire format below combines
+ * the two cheapest wins that don't require giving up the "fully static, no
+ * backend" property: short field names/tuple-shaped arrays instead of
+ * `JSON.stringify`ing `SharedSearchState` verbatim (see `toWireFormat`/
+ * `fromWireFormat`), and gzip compression of the resulting JSON via the
+ * browser's native `CompressionStream`/`DecompressionStream` (no new
+ * dependency; supported in every current evergreen browser). A disposable
+ * size-check script comparing both against the previous plain-base64
+ * encoding showed short-keys-alone roughly halving link size, and adding
+ * gzip on top roughly halving it again. Compression makes encode/decode
+ * inherently `async` (`DecompressionStream` is a streams API) -- this
+ * ripples into `buildResultUrl`/`readSharedStateFromLocation`'s own callers
+ * (`AppRoot.tsx` now only checks the hash prefix synchronously and hands the
+ * still-encoded string to `ResultPage.tsx`, which decodes it itself
+ * alongside its own already-async solver reconstruction; `App.tsx`'s
+ * "Get shareable link" button awaits the encode before showing the link).
+ *
+ * Breaking change, not versioned: a link encoded before this change cannot
+ * be decoded afterwards (same as any other `SharedSearchState` shape change
+ * -- see TODO #11's own note on this; no migration attempted).
  */
 
 import type { PinnedSlot } from './pinned-armor'
@@ -43,77 +66,157 @@ export interface SharedSearchState {
   readonly resultIndex: number
 }
 
-/** `btoa`/`atob` only handle Latin1, so UTF-16 code points outside that range
- * (none expected in practice -- every string field here is an id, a category
- * key, or a skill id -- but skill/category *names* never flow through this,
- * only machine ids) are escaped first via `encodeURIComponent`, matching the
- * standard browser-safe base64-of-arbitrary-text recipe. */
-function toBase64Url(json: string): string {
-  const base64 = btoa(encodeURIComponent(json).replace(/%([0-9A-F]{2})/g, (_, hex: string) =>
-    String.fromCharCode(Number.parseInt(hex, 16)),
-  ))
-  return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+/** The on-the-wire shape `SharedSearchState` is transcoded to/from --
+ * short, order-dependent keys/tuples instead of the full interface's own
+ * descriptive names, since every byte here gets repeated in a URL a person
+ * might have to paste somewhere space-constrained (see this module's own
+ * docstring). Internal to this module; nothing outside ever sees this
+ * shape directly. */
+interface WireFormat {
+  readonly r: readonly (readonly [number, number])[]
+  readonly zr: readonly (readonly [number, number])[]
+  readonly ec: readonly string[]
+  readonly ecc: readonly string[]
+  readonly edc: readonly string[]
+  readonly ewz: readonly string[] | null
+  readonly wsc: number
+  readonly pa: readonly (readonly [string, string, readonly string[]])[]
+  readonly pc: readonly string[]
+  readonly pem: boolean
+  readonly ri: number
 }
 
-function fromBase64Url(encoded: string): string {
-  const base64 = encoded.replace(/-/g, '+').replace(/_/g, '/')
-  const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4)
-  const binary = atob(padded)
-  const percentEncoded = [...binary]
-    .map((char) => `%${char.charCodeAt(0).toString(16).padStart(2, '0')}`)
-    .join('')
-  return decodeURIComponent(percentEncoded)
-}
-
-export function encodeSharedState(state: SharedSearchState): string {
-  return toBase64Url(JSON.stringify(state))
+function toWireFormat(state: SharedSearchState): WireFormat {
+  return {
+    r: state.requirements.map((req) => [req.skillId, req.minPoints]),
+    zr: state.zenithRequirements.map((req) => [req.skillId, req.minPoints]),
+    ec: state.excludedCategories,
+    ecc: state.excludedCuffCategories,
+    edc: state.excludedDecorationCategories,
+    ewz: state.excludedWeaponZenithSkillIds,
+    wsc: state.weaponSlotCount,
+    pa: state.pinnedArmor.map(([slotId, pin]) => [slotId, pin.candidateId, pin.decorationIds]),
+    pc: state.pinnedCuffIds,
+    pem: state.preferExactMatches,
+    ri: state.resultIndex,
+  }
 }
 
 /** Returns `null` for anything that doesn't decode into a usable
- * `SharedSearchState` (malformed base64, invalid JSON, or missing/wrong-typed
- * fields) rather than throwing -- a shared link is user-facing input (pasted,
- * possibly truncated or hand-edited), so this follows the same
- * fail-soft-with-null convention as `resolvePinnedCuffs`'s "drop ids that no
- * longer resolve" rather than crashing the page. */
-export function decodeSharedState(encoded: string): SharedSearchState | null {
-  let parsed: unknown
-  try {
-    parsed = JSON.parse(fromBase64Url(encoded))
-  } catch {
-    return null
-  }
+ * `SharedSearchState` (missing/wrong-typed fields) rather than throwing --
+ * `decodeSharedState` follows the same fail-soft-with-null convention as
+ * `resolvePinnedCuffs`'s "drop ids that no longer resolve", since a shared
+ * link is user-facing input (pasted, possibly truncated or from before a
+ * wire-format change) rather than trusted internal data. */
+function fromWireFormat(parsed: unknown): SharedSearchState | null {
   if (typeof parsed !== 'object' || parsed === null) return null
   const p = parsed as Record<string, unknown>
 
   if (
-    !Array.isArray(p.requirements) ||
-    !Array.isArray(p.zenithRequirements) ||
-    !Array.isArray(p.excludedCategories) ||
-    !Array.isArray(p.excludedCuffCategories) ||
-    !Array.isArray(p.excludedDecorationCategories) ||
-    (p.excludedWeaponZenithSkillIds !== null && !Array.isArray(p.excludedWeaponZenithSkillIds)) ||
-    typeof p.weaponSlotCount !== 'number' ||
-    !Array.isArray(p.pinnedArmor) ||
-    !Array.isArray(p.pinnedCuffIds) ||
-    typeof p.preferExactMatches !== 'boolean' ||
-    typeof p.resultIndex !== 'number'
+    !Array.isArray(p.r) ||
+    !Array.isArray(p.zr) ||
+    !Array.isArray(p.ec) ||
+    !Array.isArray(p.ecc) ||
+    !Array.isArray(p.edc) ||
+    (p.ewz !== null && !Array.isArray(p.ewz)) ||
+    typeof p.wsc !== 'number' ||
+    !Array.isArray(p.pa) ||
+    !Array.isArray(p.pc) ||
+    typeof p.pem !== 'boolean' ||
+    typeof p.ri !== 'number'
   ) {
     return null
   }
+  const w = p as unknown as WireFormat
 
   return {
-    requirements: p.requirements as SkillRequirement[],
-    zenithRequirements: p.zenithRequirements as SkillRequirement[],
-    excludedCategories: p.excludedCategories as string[],
-    excludedCuffCategories: p.excludedCuffCategories as string[],
-    excludedDecorationCategories: p.excludedDecorationCategories as string[],
-    excludedWeaponZenithSkillIds: p.excludedWeaponZenithSkillIds as string[] | null,
-    weaponSlotCount: p.weaponSlotCount,
-    pinnedArmor: p.pinnedArmor as (readonly [string, PinnedSlot])[],
-    pinnedCuffIds: p.pinnedCuffIds as string[],
-    preferExactMatches: p.preferExactMatches,
-    resultIndex: p.resultIndex,
+    requirements: w.r.map(([skillId, minPoints]) => ({ skillId, minPoints })),
+    zenithRequirements: w.zr.map(([skillId, minPoints]) => ({ skillId, minPoints })),
+    excludedCategories: w.ec,
+    excludedCuffCategories: w.ecc,
+    excludedDecorationCategories: w.edc,
+    excludedWeaponZenithSkillIds: w.ewz,
+    weaponSlotCount: w.wsc,
+    pinnedArmor: w.pa.map(([slotId, candidateId, decorationIds]) => [
+      slotId,
+      { candidateId, decorationIds },
+    ]),
+    pinnedCuffIds: w.pc,
+    preferExactMatches: w.pem,
+    resultIndex: w.ri,
   }
+}
+
+function toBase64Url(bytes: Uint8Array): string {
+  let binary = ''
+  for (const byte of bytes) binary += String.fromCharCode(byte)
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+}
+
+function fromBase64Url(encoded: string): Uint8Array {
+  const base64 = encoded.replace(/-/g, '+').replace(/_/g, '/')
+  const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4)
+  const binary = atob(padded)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+  return bytes
+}
+
+// A `Uint8Array`'s own `.buffer` is typed as the wider `ArrayBufferLike`
+// (it could in principle be a `SharedArrayBuffer`) -- `BodyInit`/`Blob` only
+// accept a concrete `ArrayBuffer`, and the DOM lib's generic
+// `Uint8Array<ArrayBuffer>` vs. `Uint8Array<ArrayBufferLike>` typings don't
+// reconcile cleanly here. An explicit copy into a fresh `ArrayBuffer`
+// sidesteps that without an unsound cast.
+function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
+  return bytes.slice().buffer as ArrayBuffer
+}
+
+// Routed through `Response` rather than `Blob.stream()` (jsdom's own `Blob`
+// polyfill -- the test environment this runs under -- doesn't implement
+// `.stream()`, unlike every real browser's). `Response`'s body is always
+// present for a body constructed from bytes, never null -- the `!` reflects
+// that, not an assumption this could fail silently.
+async function gzip(bytes: Uint8Array): Promise<Uint8Array> {
+  const compressed = new Response(toArrayBuffer(bytes)).body!.pipeThrough(
+    new CompressionStream('gzip'),
+  )
+  return new Uint8Array(await new Response(compressed).arrayBuffer())
+}
+
+async function gunzip(bytes: Uint8Array): Promise<Uint8Array> {
+  const decompressed = new Response(toArrayBuffer(bytes)).body!.pipeThrough(
+    new DecompressionStream('gzip'),
+  )
+  return new Uint8Array(await new Response(decompressed).arrayBuffer())
+}
+
+export async function encodeSharedState(state: SharedSearchState): Promise<string> {
+  const json = JSON.stringify(toWireFormat(state))
+  const compressed = await gzip(new TextEncoder().encode(json))
+  return toBase64Url(compressed)
+}
+
+/** Returns `null` for anything that doesn't decode into a usable
+ * `SharedSearchState` at all (malformed base64, not valid gzip, invalid
+ * JSON, or a shape `fromWireFormat` rejects) -- see `fromWireFormat`'s own
+ * docstring on why this fails soft instead of throwing. */
+export async function decodeSharedState(encoded: string): Promise<SharedSearchState | null> {
+  let json: string
+  try {
+    const compressed = fromBase64Url(encoded)
+    const decompressed = await gunzip(compressed)
+    json = new TextDecoder().decode(decompressed)
+  } catch {
+    return null
+  }
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(json)
+  } catch {
+    return null
+  }
+  return fromWireFormat(parsed)
 }
 
 /** The hash-fragment prefix a shared-result link uses (`#/result/<encoded>`)
@@ -122,16 +225,26 @@ export function decodeSharedState(encoded: string): SharedSearchState | null {
  * refresh or direct navigation (see this module's own docstring). */
 export const RESULT_HASH_PREFIX = '#/result/'
 
-export function buildResultUrl(state: SharedSearchState): string {
+export async function buildResultUrl(state: SharedSearchState): Promise<string> {
   const { origin, pathname } = window.location
-  return `${origin}${pathname}${RESULT_HASH_PREFIX}${encodeSharedState(state)}`
+  return `${origin}${pathname}${RESULT_HASH_PREFIX}${await encodeSharedState(state)}`
 }
 
-/** Reads the currently-shared state out of `window.location.hash`, or `null`
- * if the hash isn't a shared-result link at all (the common case: a plain
- * visit to the main search page). */
-export function readSharedStateFromLocation(): SharedSearchState | null {
+/** `true` when `window.location.hash` looks like a shared-result link --
+ * purely a prefix check, resolvable synchronously (unlike decoding the
+ * payload itself, see this module's own docstring on why decoding is now
+ * async) so `AppRoot.tsx` can still make its "which page" decision
+ * synchronously on mount. */
+export function hasSharedResultHash(): boolean {
+  return window.location.hash.startsWith(RESULT_HASH_PREFIX)
+}
+
+/** The encoded payload following `RESULT_HASH_PREFIX` in the current
+ * location hash, or `null` if the hash isn't a shared-result link at all.
+ * Doesn't decode it -- see `hasSharedResultHash`'s own docstring; callers
+ * that need the decoded state call `decodeSharedState` themselves. */
+export function encodedResultFromLocation(): string | null {
   const { hash } = window.location
   if (!hash.startsWith(RESULT_HASH_PREFIX)) return null
-  return decodeSharedState(hash.slice(RESULT_HASH_PREFIX.length))
+  return hash.slice(RESULT_HASH_PREFIX.length)
 }

@@ -472,13 +472,15 @@ describe('App', () => {
     await screen.findByRole('list', { name: /search results/i })
     await user.click(screen.getByRole('button', { name: /get shareable link/i }))
 
-    const link = screen.getByRole('textbox', { name: /shareable link/i })
+    const link = await screen.findByRole('textbox', { name: /shareable link/i })
     const url = (link as HTMLInputElement).value
     expect(url).toContain('#/result/')
 
-    const { readSharedStateFromLocation } = await import('./search-engine/shared-state')
+    const { decodeSharedState, encodedResultFromLocation } = await import(
+      './search-engine/shared-state'
+    )
     window.location.hash = new URL(url).hash
-    const decoded = readSharedStateFromLocation()
+    const decoded = await decodeSharedState(encodedResultFromLocation()!)
     expect(decoded?.requirements).toEqual([{ skillId: 1, minPoints: 1 }])
     expect(decoded?.resultIndex).toBe(0)
     expect(decoded?.preferExactMatches).toBe(true)

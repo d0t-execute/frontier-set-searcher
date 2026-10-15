@@ -14,7 +14,7 @@ export interface ResultsListProps {
    * TODO #9) -- omitted entirely (no button at all) when not provided, e.g.
    * `ResultPage.tsx` rendering a single already-shared result has no further
    * index to share. */
-  readonly getShareUrl?: (index: number) => string
+  readonly getShareUrl?: (index: number) => Promise<string>
 }
 
 export function ResultsList({
@@ -51,7 +51,7 @@ export interface ResultCardProps {
   readonly skillNames: ReadonlyMap<SkillId, string>
   readonly skills: readonly NamedSkill[]
   readonly zenithSkills: readonly NamedSkill[]
-  readonly getShareUrl?: () => string
+  readonly getShareUrl?: () => Promise<string>
 }
 
 /** Exported so `ResultPage.tsx` (a shared single-result link, see
@@ -66,6 +66,15 @@ export function ResultCard({
   getShareUrl,
 }: ResultCardProps) {
   const [shareUrl, setShareUrl] = useState<string | null>(null)
+  const [isGeneratingShareUrl, setIsGeneratingShareUrl] = useState(false)
+
+  function handleGetShareUrl(): void {
+    if (!getShareUrl) return
+    setIsGeneratingShareUrl(true)
+    void getShareUrl()
+      .then(setShareUrl)
+      .finally(() => setIsGeneratingShareUrl(false))
+  }
   const { cap, disabled } = determineActiveSkills(
     result.picks,
     result.skillTotals,
@@ -153,9 +162,10 @@ export function ResultCard({
             <button
               type="button"
               className="btn btn-sm btn-outline-secondary"
-              onClick={() => setShareUrl(getShareUrl())}
+              disabled={isGeneratingShareUrl}
+              onClick={handleGetShareUrl}
             >
-              Get shareable link
+              {isGeneratingShareUrl ? 'Generating link…' : 'Get shareable link'}
             </button>
           )}
         </div>

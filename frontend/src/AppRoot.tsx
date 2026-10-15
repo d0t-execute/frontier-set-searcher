@@ -15,19 +15,21 @@ import { useEffect, useState } from 'react'
 import App from './App'
 import type { AppInitialState } from './App'
 import { ResultPage } from './ResultPage'
-import { readSharedStateFromLocation } from './search-engine/shared-state'
-import type { SharedSearchState } from './search-engine/shared-state'
+import { encodedResultFromLocation } from './search-engine/shared-state'
 
 export function AppRoot() {
-  const [sharedState, setSharedState] = useState<SharedSearchState | null>(() =>
-    readSharedStateFromLocation(),
-  )
+  // Just the still-encoded payload, not the decoded `SharedSearchState` --
+  // decoding is async now (see shared-state.ts's own docstring), so
+  // `ResultPage` decodes it itself alongside its already-async solver
+  // reconstruction rather than this component needing its own loading state
+  // for a decode step with nothing to render yet.
+  const [encoded, setEncoded] = useState<string | null>(() => encodedResultFromLocation())
   const [initialState, setInitialState] = useState<AppInitialState | undefined>(undefined)
   const [appKey, setAppKey] = useState(0)
 
   useEffect(() => {
     function onHashChange(): void {
-      setSharedState(readSharedStateFromLocation())
+      setEncoded(encodedResultFromLocation())
     }
     window.addEventListener('hashchange', onHashChange)
     return () => window.removeEventListener('hashchange', onHashChange)
@@ -35,7 +37,7 @@ export function AppRoot() {
 
   function goToSearch(): void {
     window.location.hash = ''
-    setSharedState(null)
+    setEncoded(null)
   }
 
   function handleUseAsBase(next: AppInitialState): void {
@@ -44,9 +46,9 @@ export function AppRoot() {
     goToSearch()
   }
 
-  if (sharedState) {
+  if (encoded !== null) {
     return (
-      <ResultPage state={sharedState} onUseAsBase={handleUseAsBase} onBackToSearch={goToSearch} />
+      <ResultPage encoded={encoded} onUseAsBase={handleUseAsBase} onBackToSearch={goToSearch} />
     )
   }
   return <App key={appKey} initialState={initialState} />

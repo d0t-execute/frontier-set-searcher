@@ -1,9 +1,10 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ResultPage } from './ResultPage'
 import { useDataBundle } from './data/useDataBundle'
 import { useSearchWorker } from './search/useSearchWorker'
+import { encodeSharedState } from './search-engine/shared-state'
 import type { SharedSearchState } from './search-engine/shared-state'
 
 vi.mock('./data/useDataBundle')
@@ -65,10 +66,11 @@ beforeEach(() => {
 })
 
 describe('ResultPage', () => {
-  it('shows a loading state until the solver yields the requested result index', () => {
+  it('shows a loading state until the solver yields the requested result index', async () => {
     const worker = makeWorker()
     mockUseSearchWorker.mockReturnValue(worker as unknown as ReturnType<typeof useSearchWorker>)
-    render(<ResultPage state={STATE} onUseAsBase={() => {}} onBackToSearch={() => {}} />)
+    const encoded = await encodeSharedState(STATE)
+    render(<ResultPage encoded={encoded} onUseAsBase={() => {}} onBackToSearch={() => {}} />)
 
     expect(screen.getByText(/loading/i)).toBeInTheDocument()
   })
@@ -91,7 +93,8 @@ describe('ResultPage', () => {
       return 'req-1'
     })
     mockUseSearchWorker.mockReturnValue(worker as unknown as ReturnType<typeof useSearchWorker>)
-    render(<ResultPage state={STATE} onUseAsBase={() => {}} onBackToSearch={() => {}} />)
+    const encoded = await encodeSharedState(STATE)
+    render(<ResultPage encoded={encoded} onUseAsBase={() => {}} onBackToSearch={() => {}} />)
 
     expect(await screen.findByText(/leather helm/i)).toBeInTheDocument()
     expect(
@@ -103,14 +106,10 @@ describe('ResultPage', () => {
     const worker = makeWorker()
     worker.search.mockImplementation(() => 'req-1')
     mockUseSearchWorker.mockReturnValue(worker as unknown as ReturnType<typeof useSearchWorker>)
-    render(
-      <ResultPage
-        state={{ ...STATE, resultIndex: 3 }}
-        onUseAsBase={() => {}}
-        onBackToSearch={() => {}}
-      />,
-    )
+    const encoded = await encodeSharedState({ ...STATE, resultIndex: 3 })
+    render(<ResultPage encoded={encoded} onUseAsBase={() => {}} onBackToSearch={() => {}} />)
 
+    await waitFor(() => expect(worker.search).toHaveBeenCalled())
     const args = worker.search.mock.calls[0] as unknown[]
     const callbacks = args[3] as { onDone: () => void }
     callbacks.onDone()
@@ -135,7 +134,8 @@ describe('ResultPage', () => {
     mockUseSearchWorker.mockReturnValue(worker as unknown as ReturnType<typeof useSearchWorker>)
     const onUseAsBase = vi.fn()
     const user = userEvent.setup()
-    render(<ResultPage state={STATE} onUseAsBase={onUseAsBase} onBackToSearch={() => {}} />)
+    const encoded = await encodeSharedState(STATE)
+    render(<ResultPage encoded={encoded} onUseAsBase={onUseAsBase} onBackToSearch={() => {}} />)
 
     await screen.findByText(/leather helm/i)
     await user.click(screen.getByRole('button', { name: /use as a base for a new search/i }))
@@ -155,10 +155,21 @@ describe('ResultPage', () => {
     mockUseSearchWorker.mockReturnValue(worker as unknown as ReturnType<typeof useSearchWorker>)
     const onBackToSearch = vi.fn()
     const user = userEvent.setup()
-    render(<ResultPage state={STATE} onUseAsBase={() => {}} onBackToSearch={onBackToSearch} />)
+    const encoded = await encodeSharedState(STATE)
+    render(<ResultPage encoded={encoded} onUseAsBase={() => {}} onBackToSearch={onBackToSearch} />)
 
     await user.click(screen.getByRole('button', { name: /back to search/i }))
 
     expect(onBackToSearch).toHaveBeenCalledTimes(1)
+  })
+
+  it('shows an error for a link that fails to decode', async () => {
+    const worker = makeWorker()
+    mockUseSearchWorker.mockReturnValue(worker as unknown as ReturnType<typeof useSearchWorker>)
+    render(
+      <ResultPage encoded="not-a-valid-encoded-payload" onUseAsBase={() => {}} onBackToSearch={() => {}} />,
+    )
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/corrupted/i)
   })
 })
