@@ -3,7 +3,7 @@ from pathlib import Path
 
 from etl.db import repository as repo
 from etl.db.connection import connect
-from etl.pipeline import load_equipment, load_skill_tiers, load_weapons
+from etl.pipeline import load_equipment, load_skill_priority, load_skill_tiers, load_weapons
 
 FIXTURES_DIR = Path(__file__).resolve().parent / "fixtures"
 
@@ -152,7 +152,7 @@ def test_load_equipment_resolves_zenith_skills(tmp_path: Path) -> None:
 
     # The Zenith Cuff grants the *same* Zenith skill -- confirms it's shared
     # (get-or-create), not duplicated, the same way normal skills are shared.
-    zenith_cuff = repo.get_cuff_by_external_id(conn, "cuff:3918")
+    zenith_cuff = repo.get_cuff_by_external_id(conn, "cuff:3637")
     assert zenith_cuff is not None
     assert zenith_cuff.zenith_skill_id == zenith_skill.id
 
@@ -258,6 +258,35 @@ def test_load_weapons_shares_one_zenith_skill_row_across_multiple_weapons(
     assert zenith_skill_row_count == 1
 
 
+def test_load_weapons_aliases_abbreviated_zenith_skill_names_to_the_canonical_family(
+    tmp_path: Path,
+) -> None:
+    # The weapon pages label this family "Earplugs Up+1" (confirmed against
+    # the raw cached buki_taiken.body: "Zenith Skill：Earplugs Up+1"), but
+    # equip.js/SkillForm.js -- and this family's own real cuffs, e.g.
+    # "Earplugs Up SZ" -- call it "Hearing Protection Up+1" (see
+    # ZENITH_SKILL_WEAPON_NAME_ALIASES). Without the alias, `load_weapons`
+    # would insert a second, duplicate `zenith_skill` row for the same real
+    # effect instead of reusing the family's one true id.
+    conn = _conn(tmp_path)
+    canonical = repo.insert_zenith_skill(conn, name="Hearing Protection Up+1")
+
+    html = """
+    <table><tbody>
+    <tr><td id="l0001">Weapon A</td><td>1</td><td></td>
+        <td><q>Zenith Skill：Earplugs Up+1</q></td><td>0</td><td>HR<br>1</td></tr>
+    </tbody></table>
+    """
+    load_weapons(conn, page_sources={"taiken": html})
+
+    (zenith_skill_row_count,) = conn.execute("SELECT COUNT(*) FROM zenith_skill").fetchone()
+    assert zenith_skill_row_count == 1
+
+    weapon_a = repo.get_weapon_by_external_id(conn, "taiken:0001")
+    assert weapon_a is not None
+    assert weapon_a.zenith_skill_id == canonical.id
+
+
 _TIER_HTML = """
 <table id="skills_base"><tbody id="skills_base">
 <tr onclick="x"><th colspan="5" class="title">-Health and Stamina-</th></tr>
@@ -345,3 +374,91 @@ def test_load_skill_tiers_matches_a_known_alias_when_the_exact_name_differs(
     skill = repo.get_skill_by_name(conn, "Paralysis")
     assert skill is not None
     assert len(repo.get_skill_tiers(conn, skill.id)) == 1
+
+
+_PRIORITY_HTML = """
+<table id="skills_priority"><tbody>
+<tr><td class="npr">1</td><td class="i">SnS Tech</td><td class="npr">78</td>
+<td class="i">[Skill Removed]</td></tr>
+<tr><td class="npr">16</td><td class="i">Strong Attack</td><td class="npr">200</td>
+<td class="i">Not In Catalog</td></tr>
+</tbody></table>
+"""
+
+
+def test_load_skill_priority_attaches_a_rank_to_a_matching_skill(tmp_path: Path) -> None:
+    conn = _conn(tmp_path)
+    repo.insert_skill(conn, name="SnS Tech")
+
+    load_skill_priority(conn, html=_PRIORITY_HTML)
+
+    skill = repo.get_skill_by_name(conn, "SnS Tech")
+    assert skill is not None
+    assert skill.priority_rank == 1
+
+
+def test_load_skill_priority_skips_the_skill_removed_placeholder(tmp_path: Path) -> None:
+    conn = _conn(tmp_path)
+    repo.insert_skill(conn, name="SnS Tech")
+
+    summary = load_skill_priority(conn, html=_PRIORITY_HTML)
+
+    assert "[Skill Removed]" not in summary.unmatched_entry_names
+
+
+def test_load_skill_priority_reports_entries_with_no_matching_catalog_skill(
+    tmp_path: Path,
+) -> None:
+    conn = _conn(tmp_path)
+    repo.insert_skill(conn, name="SnS Tech")
+    repo.insert_skill(conn, name="Strong Attack")
+
+    summary = load_skill_priority(conn, html=_PRIORITY_HTML)
+
+    assert summary.matched_rank_count == 2
+    assert summary.unmatched_entry_names == ("Not In Catalog",)
+
+
+def test_load_skill_priority_reports_catalog_skills_with_no_rank(tmp_path: Path) -> None:
+    conn = _conn(tmp_path)
+    repo.insert_skill(conn, name="SnS Tech")
+    repo.insert_skill(conn, name="Gather")  # not present in _PRIORITY_HTML at all
+
+    summary = load_skill_priority(conn, html=_PRIORITY_HTML)
+
+    assert summary.unmatched_skill_names == ("Gather",)
+
+
+def test_load_skill_priority_is_safe_to_run_twice(tmp_path: Path) -> None:
+    conn = _conn(tmp_path)
+    repo.insert_skill(conn, name="SnS Tech")
+
+    load_skill_priority(conn, html=_PRIORITY_HTML)
+    load_skill_priority(conn, html=_PRIORITY_HTML)
+
+    skill = repo.get_skill_by_name(conn, "SnS Tech")
+    assert skill is not None
+    assert skill.priority_rank == 1
+
+
+def test_load_skill_priority_matches_a_known_alias_when_the_exact_name_differs(
+    tmp_path: Path,
+) -> None:
+    # Same site as load_skill_tiers, same alias map (SKILL_TIER_NAME_ALIASES)
+    # -- e.g. the priority page's "DB Tech" is this project's catalog's
+    # "DS Tech".
+    conn = _conn(tmp_path)
+    repo.insert_skill(conn, name="DS Tech")
+    html = """
+    <table id="skills_priority"><tbody>
+    <tr><td class="npr">2</td><td class="i">DB Tech</td></tr>
+    </tbody></table>
+    """
+
+    summary = load_skill_priority(conn, html=html)
+
+    assert summary.matched_rank_count == 1
+    assert summary.unmatched_entry_names == ()
+    skill = repo.get_skill_by_name(conn, "DS Tech")
+    assert skill is not None
+    assert skill.priority_rank == 2

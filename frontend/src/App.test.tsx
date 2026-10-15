@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
@@ -38,12 +38,34 @@ const BUNDLE = {
       category: 'cuff_standard_tier1',
     },
   ],
-  skills: [{ id: 1, name: 'Attack', category: null, tiers: [] }],
-  zenithSkills: [{ id: 1000001, name: 'Dissolver Up', category: null, tiers: [] }],
+  skills: [{ id: 1, name: 'Attack', category: null, priorityRank: null, tiers: [] }],
+  zenithSkills: [
+    { id: 1000001, name: 'Dissolver Up', category: null, priorityRank: null, tiers: [] },
+  ],
   skillNames: new Map([
     [1, 'Attack'],
     [1000001, 'Dissolver Up'],
   ]),
+  weaponZenithSkillIds: [1000001],
+}
+
+// The weapon slot the search is called with when nothing's touched the new
+// "Weapon" section -- every real Zenith skill starts excluded there (see
+// App.tsx's `defaultExcludedWeaponZenithSkillIds`), so the sole candidate is
+// the plain, no-Zenith-skill fallback at the default 0 reserved slots. Every
+// existing assertion on the exact `slots` argument needs this appended now
+// that the weapon slot always rides along.
+const DEFAULT_WEAPON_SLOT = {
+  slotId: 'weapon',
+  candidates: [
+    {
+      id: 'weapon:none',
+      name: 'Plain weapon (no Zenith skill)',
+      category: 'weapon',
+      skills: [],
+      openSlotCount: 0,
+    },
+  ],
 }
 
 function makeWorker() {
@@ -114,7 +136,7 @@ describe('App', () => {
     await user.click(screen.getByRole('button', { name: /search/i }))
 
     expect(worker.search).toHaveBeenCalledWith(
-      BUNDLE.slots,
+      [...BUNDLE.slots, DEFAULT_WEAPON_SLOT],
       [{ skillId: 1, minPoints: 1 }],
       BUNDLE.decorations,
       expect.objectContaining({
@@ -129,7 +151,9 @@ describe('App', () => {
           { skillId: 1000001, tierThresholds: [] },
         ],
       },
-      BUNDLE.cuffs,
+      // Premium cuffs are excluded by default (see App.tsx's
+      // DEFAULT_EXCLUDED_CUFF_CATEGORIES) -- only the standard one passes.
+      [BUNDLE.cuffs[1]],
     )
   })
 
@@ -144,7 +168,7 @@ describe('App', () => {
     await user.click(screen.getByRole('button', { name: /search/i }))
 
     expect(worker.search).toHaveBeenCalledWith(
-      BUNDLE.slots,
+      [...BUNDLE.slots, DEFAULT_WEAPON_SLOT],
       [{ skillId: 1, minPoints: 1 }],
       BUNDLE.decorations,
       expect.anything(),
@@ -155,7 +179,7 @@ describe('App', () => {
           { skillId: 1000001, tierThresholds: [] },
         ],
       },
-      BUNDLE.cuffs,
+      [BUNDLE.cuffs[1]],
     )
   })
 
@@ -170,7 +194,50 @@ describe('App', () => {
     await user.click(screen.getByRole('button', { name: /search/i }))
 
     expect(worker.search).toHaveBeenCalledWith(
-      [{ slotId: 'head', candidates: [BUNDLE.slots[0].candidates[0]] }],
+      [{ slotId: 'head', candidates: [BUNDLE.slots[0].candidates[0]] }, DEFAULT_WEAPON_SLOT],
+      [{ skillId: 1, minPoints: 1 }],
+      BUNDLE.decorations,
+      expect.anything(),
+      expect.anything(),
+      [BUNDLE.cuffs[1]],
+    )
+  })
+
+  it('excludes premium cuffs from the search by default', async () => {
+    const worker = makeWorker()
+    mockUseSearchWorker.mockReturnValue(worker as unknown as ReturnType<typeof useSearchWorker>)
+    const user = userEvent.setup()
+    render(<App />)
+
+    // Premium cuffs only equip while Poogie wears Premium clothes, a
+    // precondition this app can't verify -- see App.tsx's
+    // DEFAULT_EXCLUDED_CUFF_CATEGORIES. No cuff checkbox is touched here;
+    // this is the out-of-the-box default.
+    await user.selectOptions(screen.getByRole('combobox', { name: /add a skill/i }), 'Attack')
+    await user.click(screen.getByRole('button', { name: /search/i }))
+
+    expect(worker.search).toHaveBeenCalledWith(
+      [...BUNDLE.slots, DEFAULT_WEAPON_SLOT],
+      [{ skillId: 1, minPoints: 1 }],
+      BUNDLE.decorations,
+      expect.anything(),
+      expect.anything(),
+      [BUNDLE.cuffs[1]],
+    )
+  })
+
+  it('includes premium cuffs once their category is checked back in', async () => {
+    const worker = makeWorker()
+    mockUseSearchWorker.mockReturnValue(worker as unknown as ReturnType<typeof useSearchWorker>)
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.selectOptions(screen.getByRole('combobox', { name: /add a skill/i }), 'Attack')
+    await user.click(screen.getByRole('checkbox', { name: 'Premium' }))
+    await user.click(screen.getByRole('button', { name: /search/i }))
+
+    expect(worker.search).toHaveBeenCalledWith(
+      [...BUNDLE.slots, DEFAULT_WEAPON_SLOT],
       [{ skillId: 1, minPoints: 1 }],
       BUNDLE.decorations,
       expect.anything(),
@@ -186,11 +253,82 @@ describe('App', () => {
     render(<App />)
 
     await user.selectOptions(screen.getByRole('combobox', { name: /add a skill/i }), 'Attack')
-    await user.click(screen.getByRole('checkbox', { name: 'Premium' }))
+    // Standard is included by default -- unchecking it (on top of Premium's
+    // own exclude-by-default) leaves no cuff category enabled at all. Both
+    // the gear-level and cuff filters have their own "Standard" leaf, so the
+    // last match is the cuff one (Poogie cuffs renders after Gear levels).
+    const standardCheckboxes = screen.getAllByRole('checkbox', { name: 'Standard' })
+    await user.click(standardCheckboxes[standardCheckboxes.length - 1])
     await user.click(screen.getByRole('button', { name: /search/i }))
 
     expect(worker.search).toHaveBeenCalledWith(
-      BUNDLE.slots,
+      [...BUNDLE.slots, DEFAULT_WEAPON_SLOT],
+      [{ skillId: 1, minPoints: 1 }],
+      BUNDLE.decorations,
+      expect.anything(),
+      expect.anything(),
+      [],
+    )
+  })
+
+  it('excludes every weapon Zenith skill from the search by default', async () => {
+    const worker = makeWorker()
+    mockUseSearchWorker.mockReturnValue(worker as unknown as ReturnType<typeof useSearchWorker>)
+    const user = userEvent.setup()
+    render(<App />)
+
+    // No weapon checkbox is touched here -- this is the out-of-the-box
+    // default (see App.tsx's `defaultExcludedWeaponZenithSkillIds`), which
+    // must change nothing about an existing search until the player opts a
+    // skill in. DEFAULT_WEAPON_SLOT (asserted via BUNDLE.slots elsewhere)
+    // already proves the sole candidate is the plain, no-Zenith-skill one.
+    await user.selectOptions(screen.getByRole('combobox', { name: /add a skill/i }), 'Attack')
+    await user.click(screen.getByRole('button', { name: /search/i }))
+
+    expect(worker.search).toHaveBeenCalledWith(
+      [...BUNDLE.slots, DEFAULT_WEAPON_SLOT],
+      [{ skillId: 1, minPoints: 1 }],
+      BUNDLE.decorations,
+      expect.anything(),
+      expect.anything(),
+      [BUNDLE.cuffs[1]],
+    )
+  })
+
+  it('includes a weapon Zenith skill once checked in, at the chosen slot count', async () => {
+    const worker = makeWorker()
+    mockUseSearchWorker.mockReturnValue(worker as unknown as ReturnType<typeof useSearchWorker>)
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.selectOptions(screen.getByRole('combobox', { name: /add a skill/i }), 'Attack')
+    await user.click(screen.getByRole('checkbox', { name: 'Dissolver Up' }))
+    await user.selectOptions(screen.getByRole('combobox', { name: /weapon slots/i }), '2')
+    await user.click(screen.getByRole('button', { name: /search/i }))
+
+    expect(worker.search).toHaveBeenCalledWith(
+      [
+        ...BUNDLE.slots,
+        {
+          slotId: 'weapon',
+          candidates: [
+            {
+              id: 'weapon:none',
+              name: 'Plain weapon (no Zenith skill)',
+              category: 'weapon',
+              skills: [],
+              openSlotCount: 2,
+            },
+            {
+              id: 'weapon:1000001',
+              name: 'Zenith weapon (Dissolver Up)',
+              category: 'weapon',
+              skills: [{ skillId: 1000001, points: 1 }],
+              openSlotCount: 2,
+            },
+          ],
+        },
+      ],
       [{ skillId: 1, minPoints: 1 }],
       BUNDLE.decorations,
       expect.anything(),
@@ -227,7 +365,7 @@ describe('App', () => {
     await user.click(screen.getByRole('button', { name: /search/i }))
 
     expect(worker.search).toHaveBeenCalledWith(
-      BUNDLE.slots,
+      [...BUNDLE.slots, DEFAULT_WEAPON_SLOT],
       [
         { skillId: 1, minPoints: 1 },
         { skillId: 1000001, minPoints: 1 },
@@ -235,7 +373,7 @@ describe('App', () => {
       BUNDLE.decorations,
       expect.anything(),
       expect.anything(),
-      BUNDLE.cuffs,
+      [BUNDLE.cuffs[1]],
     )
   })
 
@@ -258,7 +396,8 @@ describe('App', () => {
     await user.selectOptions(screen.getByRole('combobox', { name: /add a skill/i }), 'Attack')
     await user.click(screen.getByRole('button', { name: /search/i }))
 
-    expect(await screen.findByText(/leather helm/i)).toBeInTheDocument()
+    const resultsList = await screen.findByRole('list', { name: /search results/i })
+    expect(await within(resultsList).findByText(/leather helm/i)).toBeInTheDocument()
   })
 
   it('stops the search and reports a capped result set once enough results have streamed in', async () => {

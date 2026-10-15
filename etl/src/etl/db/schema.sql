@@ -5,7 +5,15 @@
 CREATE TABLE IF NOT EXISTS skill (
     id INTEGER PRIMARY KEY,
     name TEXT NOT NULL UNIQUE,
-    category TEXT
+    category TEXT,
+    -- This skill's rank in the game's active-skill-cap priority list (lower
+    -- survives longer once a build's simultaneously-active normal-skill
+    -- count exceeds its cap) -- scraped from a third source
+    -- (mertna.github.io/MHFZ-Skills/tables/Priority.html), independent of
+    -- `skill_tier`'s own tier-threshold source. NULL means this skill never
+    -- matched a row on that page (see pipeline.py's `load_skill_priority`),
+    -- not that it has no priority in-game.
+    priority_rank INTEGER
 );
 
 -- A skill system entirely separate from `skill` (resolved through TENINAME,
@@ -101,8 +109,10 @@ CREATE TABLE IF NOT EXISTS cuff (
     external_id TEXT NOT NULL UNIQUE,
     name TEXT NOT NULL,
     slot_size INTEGER NOT NULL CHECK (slot_size BETWEEN 0 AND 2),
-    -- Zenith Cuffs (DEC "3" + CLASS "P") carry only a Zenith skill, no
-    -- normal skills -- see docs/data-format-notes.md "Cuffs".
+    -- Zenith Cuffs (DEC "1" + CLASS "P", e.g. "Skill Slots Up SZ") carry
+    -- only a Zenith skill, no normal skills -- see
+    -- docs/data-format-notes.md "Cuffs". (DEC "3" rows are never Cuffs,
+    -- Zenith or otherwise -- they're a separate Weapon Sigil row shape.)
     zenith_skill_id INTEGER REFERENCES zenith_skill (id) ON DELETE RESTRICT,
     -- The reference set-searcher's cuff-tree category leaf (Premium vs
     -- Standard Poogie-clothes gating, among others) -- see

@@ -166,9 +166,14 @@ Cuffs"/"Standard Pugi Cuffs" below, threaded through `Cuff.category` ->
 `cuffs.json`'s `category` field (see the skill-system-roadmap's cuff-support
 TODO). Every leaf's count was re-verified by re-running the full ETL
 pipeline against the live cached dataset and tabulating `cuff.category` --
-all 18 leaves matched this table's counts exactly (3,332 cuffs total), so
-every "INFERRED" tag below should be read as re-confirmed, not just
-originally plausible. Decorations are NOT classified by this function yet
+all 18 leaves matched this table's counts exactly (3,332 cuffs total at the
+time), so every "INFERRED" tag below should be read as re-confirmed, not
+just originally plausible.
+
+**Update (2026-10-15)**: the "S_辿 (Zenith)" leaf's count above was
+corrected from 52 to 26 -- the 26 `DEC=3`+`CLASS P` "Sigil" rows it used to
+include turned out not to be Cuffs at all (see docs/data-format-notes.md
+"Cuffs"), dropping the real total to 3,306. Decorations are NOT classified by this function yet
 (out of scope for the cuff-support work that prompted this verification
 pass) -- the "Decorations" tree further below remains undocumented-only.
 Display labels for cuff leaves still haven't been confirmed against the
@@ -199,7 +204,7 @@ treat their eventual UI label as open.
 | S_謎 (Mystery Cuff) | `CRE=1i` | 344 | CONFIRMED — matched against your curated skill-name list (Ammo Combiner, Anti-Theft II, Auto-Guard, Backpacking, Bomb Boost II, Breakout, Capture Expert, Cold Res, Combining, Defense II, Dragon Attack, Dragon Sword, Eating, Everlasting, Fishing, Gathering Spd, Gluttony II, Gunnery, Health, Heat Res, Ice Res, Inspiration, Paralysis Res, Pellet Shot, Pressure, Recovery Speed, Sleep Coating, Sleep Res, Strong Arm, Thunder Res, Wide-Area — each across its SA/SB/SC tier variants) |
 | S_猟 (Guild) | `CRE=2-`, no sub-split between the two recipe-material families | 153 | CONFIRMED — "don't make a distinction between them" |
 | S_祭 (Festival) | `CRE=2m` | 104 | HIGH |
-| S_辿 (Zenith) | `CRE=1-` + `CLASS P` "SZ" (26) + `DEC=3` + `CLASS P` "Sigil" (26) | 52 | HIGH |
+| S_辿 (Zenith) | `CRE=1-` + `CLASS P` "SZ", `DEC=1` only | 26 | HIGH — the matching `DEC=3`+`CLASS P` "Sigil" rows are Weapon Sigils, not Cuffs (see docs/data-format-notes.md "Cuffs") |
 | S_未 | `CRE=9` + S name | 45 | HIGH |
 | S_不 | `CRE=7-` ("Guild R. Cuff") | 12 | INFERRED |
 | 祕 (Hiden Cuff) | `CRE=1-` + `CLASS L` | 140 | HIGH |

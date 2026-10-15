@@ -2,12 +2,18 @@ import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { ResultsList } from './ResultsList'
 import type { NamedBuildResult } from './types'
-import type { NamedCandidate } from '../search-engine/load-bundle'
+import type { NamedCandidate, NamedSkill } from '../search-engine/load-bundle'
 
 const skillNames = new Map([
   [1, 'Attack'],
   [2, 'Defense'],
 ])
+
+const skills: readonly NamedSkill[] = [
+  { id: 1, name: 'Attack', category: null, priorityRank: null, tiers: [] },
+  { id: 2, name: 'Defense', category: null, priorityRank: null, tiers: [] },
+]
+const zenithSkills: readonly NamedSkill[] = []
 
 function candidate(overrides: Partial<NamedCandidate> & Pick<NamedCandidate, 'id' | 'name'>) {
   return { skills: [], category: 'standard_plain', ...overrides }
@@ -36,6 +42,8 @@ describe('ResultsList', () => {
           }),
         ]}
         skillNames={skillNames}
+        skills={skills}
+        zenithSkills={zenithSkills}
       />,
     )
 
@@ -57,6 +65,8 @@ describe('ResultsList', () => {
           }),
         ]}
         skillNames={skillNames}
+        skills={skills}
+        zenithSkills={zenithSkills}
       />,
     )
 
@@ -75,6 +85,8 @@ describe('ResultsList', () => {
           }),
         ]}
         skillNames={skillNames}
+        skills={skills}
+        zenithSkills={zenithSkills}
       />,
     )
 
@@ -92,6 +104,8 @@ describe('ResultsList', () => {
           }),
         ]}
         skillNames={skillNames}
+        skills={skills}
+        zenithSkills={zenithSkills}
       />,
     )
 
@@ -112,6 +126,8 @@ describe('ResultsList', () => {
           }),
         ]}
         skillNames={skillNames}
+        skills={skills}
+        zenithSkills={zenithSkills}
       />,
     )
 
@@ -132,6 +148,8 @@ describe('ResultsList', () => {
           }),
         ]}
         skillNames={skillNames}
+        skills={skills}
+        zenithSkills={zenithSkills}
       />,
     )
 
@@ -155,6 +173,8 @@ describe('ResultsList', () => {
           }),
         ]}
         skillNames={skillNames}
+        skills={skills}
+        zenithSkills={zenithSkills}
       />,
     )
 
@@ -162,7 +182,14 @@ describe('ResultsList', () => {
   })
 
   it('shows nothing about cuffs when none are equipped', () => {
-    render(<ResultsList results={[result()]} skillNames={skillNames} />)
+    render(
+      <ResultsList
+        results={[result()]}
+        skillNames={skillNames}
+        skills={skills}
+        zenithSkills={zenithSkills}
+      />,
+    )
 
     expect(screen.queryByText(/cuffs/i)).not.toBeInTheDocument()
   })
@@ -179,6 +206,8 @@ describe('ResultsList', () => {
           }),
         ]}
         skillNames={skillNames}
+        skills={skills}
+        zenithSkills={zenithSkills}
       />,
     )
 
@@ -188,8 +217,34 @@ describe('ResultsList', () => {
     expect(screen.getByText(/8/)).toBeInTheDocument()
   })
 
+  it('shows the active skill cap and flags skills disabled by exceeding it', () => {
+    const manySkills: readonly NamedSkill[] = Array.from({ length: 11 }, (_, i) => ({
+      id: i + 1,
+      name: `Skill ${i + 1}`,
+      category: null,
+      priorityRank: i + 1,
+      tiers: [],
+    }))
+    const skillTotals = new Map(manySkills.map((s) => [s.id, 3]))
+
+    render(
+      <ResultsList
+        results={[result({ skillTotals })]}
+        skillNames={new Map(manySkills.map((s) => [s.id, s.name]))}
+        skills={manySkills}
+        zenithSkills={zenithSkills}
+      />,
+    )
+
+    expect(screen.getByText(/active skill cap: 10/i)).toBeInTheDocument()
+    expect(screen.getByText(/1 skill disabled/i)).toBeInTheDocument()
+    expect(screen.getByText(/skill 11: 3 \(disabled\)/i)).toBeInTheDocument()
+  })
+
   it('renders nothing when there are no results', () => {
-    const { container } = render(<ResultsList results={[]} skillNames={skillNames} />)
+    const { container } = render(
+      <ResultsList results={[]} skillNames={skillNames} skills={skills} zenithSkills={zenithSkills} />,
+    )
 
     expect(screen.queryAllByRole('listitem')).toHaveLength(0)
     expect(container.querySelector('ul')).not.toBeInTheDocument()

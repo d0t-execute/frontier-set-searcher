@@ -3,6 +3,7 @@
     "id": 1,
     "name": "Gather",
     "category": "Gathering/Transport Skills",
+    "priorityRank": 143,
     "tiers": [
       {
         "label": "Gathering+2",
@@ -30,6 +31,7 @@
     "id": 2,
     "name": "Gathering Speed",
     "category": "Gathering/Transport Skills",
+    "priorityRank": 144,
     "tiers": [
       {
         "label": "High Speed Gathering",
@@ -42,6 +44,7 @@
     "id": 3,
     "name": "Cooking",
     "category": "Item/Combo Skills",
+    "priorityRank": 166,
     "tiers": [
       {
         "label": "BBQ Master",
@@ -64,6 +67,7 @@
     "id": 4,
     "name": "Attack",
     "category": "Attack Skills",
+    "priorityRank": 126,
     "tiers": [
       {
         "label": "Attack Up (Absolute)",
@@ -96,6 +100,7 @@
     "id": 5,
     "name": "Psychic",
     "category": "Map/Detection Skills",
+    "priorityRank": 148,
     "tiers": [
       {
         "label": "Autotracker",
@@ -113,6 +118,7 @@
     "id": 6,
     "name": "Sleep",
     "category": "Abnormal Status Skills",
+    "priorityRank": 90,
     "tiers": [
       {
         "label": "Negate Sleep",
@@ -135,6 +141,7 @@
     "id": 7,
     "name": "Sharpening",
     "category": "Blademaster Skills",
+    "priorityRank": 104,
     "tiers": [
       {
         "label": "Sharpening Artisan",
@@ -157,6 +164,7 @@
     "id": 8,
     "name": "Map",
     "category": "Map/Detection Skills",
+    "priorityRank": 142,
     "tiers": [
       {
         "label": "Map",
@@ -169,6 +177,7 @@
     "id": 9,
     "name": "Paralysis",
     "category": "Abnormal Status Skills",
+    "priorityRank": 89,
     "tiers": [
       {
         "label": "Negate Para",
@@ -191,6 +200,7 @@
     "id": 10,
     "name": "Combining",
     "category": "Item/Combo Skills",
+    "priorityRank": 150,
     "tiers": [
       {
         "label": "Combining+30%",
@@ -218,6 +228,7 @@
     "id": 11,
     "name": "Fish",
     "category": "Item/Combo Skills",
+    "priorityRank": 147,
     "tiers": [
       {
         "label": "Fishing Expert",
@@ -230,6 +241,7 @@
     "id": 12,
     "name": "Eating",
     "category": "Health and Stamina",
+    "priorityRank": 161,
     "tiers": [
       {
         "label": "Speed Eating",
@@ -247,6 +259,7 @@
     "id": 13,
     "name": "Anti-Theft",
     "category": "Other Protection Skills",
+    "priorityRank": 130,
     "tiers": [
       {
         "label": "Anti-Theft",
@@ -259,6 +272,7 @@
     "id": 14,
     "name": "Recovery",
     "category": "Health and Stamina",
+    "priorityRank": 149,
     "tiers": [
       {
         "label": "Recovery Items Up",
@@ -276,6 +290,7 @@
     "id": 15,
     "name": "Gluttony",
     "category": "Health and Stamina",
+    "priorityRank": 125,
     "tiers": [
       {
         "label": "Scavenger",
@@ -293,6 +308,7 @@
     "id": 16,
     "name": "Stun",
     "category": "Abnormal Status Skills",
+    "priorityRank": 91,
     "tiers": [
       {
         "label": "Negate Stun",
@@ -315,6 +331,7 @@
     "id": 17,
     "name": "Stamina",
     "category": "Health and Stamina",
+    "priorityRank": 157,
     "tiers": [
       {
         "label": "Peerless",
@@ -337,6 +354,7 @@
     "id": 18,
     "name": "Poison",
     "category": "Abnormal Status Skills",
+    "priorityRank": 92,
     "tiers": [
       {
         "label": "Negate Poison",
@@ -359,6 +377,7 @@
     "id": 19,
     "name": "Wind Pressure",
     "category": "Other Protection Skills",
+    "priorityRank": 141,
     "tiers": [
       {
         "label": "Violent Wind Breaker",
@@ -386,6 +405,7 @@
     "id": 20,
     "name": "Normal Shot Add",
     "category": "Gunner Skills",
+    "priorityRank": 117,
     "tiers": [
       {
         "label": "Normal S All",
@@ -403,6 +423,7 @@
     "id": 21,
     "name": "Reload",
     "category": "Gunner Skills",
+    "priorityRank": 110,
     "tiers": [
       {
         "label": "Reload Speed+3",
@@ -430,6 +451,7 @@
     "id": 22,
     "name": "Hearing Protection",
     "category": "Other Protection Skills",
+    "priorityRank": 129,
     "tiers": [
       {
         "label": "Super HG Earplugs",
@@ -452,6 +474,7 @@
     "id": 23,
     "name": "Evasion",
     "category": "Other Protection Skills",
+    "priorityRank": 154,
     "tiers": [
       {
         "label": "Evasion+2",
@@ -469,6 +492,7 @@
     "id": 24,
     "name": "Guard",
     "category": "Defensive Skills",
+    "priorityRank": 107,
     "tiers": [
       {
         "label": "Guard+2",
@@ -496,6 +520,7 @@
     "id": 25,
     "name": "Defense",
     "category": "Defensive Skills",
+    "priorityRank": 127,
     "tiers": [
       {
         "label": "Defense+120",
@@ -543,6 +568,7 @@
     "id": 26,
     "name": "Crag Shot Add",
     "category": "Gunner Skills",
+    "priorityRank": 120,
     "tiers": [
       {
         "label": "Crag S All",
@@ -565,6 +591,7 @@
     "id": 27,
     "name": "Health",
     "category": "Health and Stamina",
+    "priorityRank": 96,
     "tiers": [
       {
         "label": "Health+50",
@@ -612,6 +639,7 @@
     "id": 28,
     "name": "Deoderant",
     "category": "Abnormal Status Skills",
+    "priorityRank": 93,
     "tiers": [
       {
         "label": "Deoderant",
@@ -624,6 +652,7 @@
     "id": 29,
     "name": "Heat Res",
     "category": "Other Protection Skills",
+    "priorityRank": 139,
     "tiers": [
       {
         "label": "Summer Person",
@@ -656,6 +685,7 @@
     "id": 30,
     "name": "Backpacking",
     "category": "Gathering/Transport Skills",
+    "priorityRank": 132,
     "tiers": [
       {
         "label": "Pro Transporter",
@@ -668,6 +698,7 @@
     "id": 31,
     "name": "Cold Res",
     "category": "Other Protection Skills",
+    "priorityRank": 140,
     "tiers": [
       {
         "label": "Winter General",
@@ -700,6 +731,7 @@
     "id": 32,
     "name": "Terrain",
     "category": "Other Protection Skills",
+    "priorityRank": 163,
     "tiers": [
       {
         "label": "Hazard Res (Large)",
@@ -727,6 +759,7 @@
     "id": 33,
     "name": "Recovery Speed",
     "category": "Health and Stamina",
+    "priorityRank": 97,
     "tiers": [
       {
         "label": "Recovery Speed+2",
@@ -754,6 +787,7 @@
     "id": 34,
     "name": "Stealth",
     "category": "Map/Detection Skills",
+    "priorityRank": 95,
     "tiers": [
       {
         "label": "Sneak",
@@ -771,6 +805,7 @@
     "id": 35,
     "name": "Ice Res",
     "category": "Resistance Skills",
+    "priorityRank": 136,
     "tiers": [
       {
         "label": "Ice Res+30",
@@ -808,6 +843,7 @@
     "id": 36,
     "name": "Pierce Shot Add",
     "category": "Gunner Skills",
+    "priorityRank": 118,
     "tiers": [
       {
         "label": "Pierce S All",
@@ -830,6 +866,7 @@
     "id": 37,
     "name": "Alchemy",
     "category": "Item/Combo Skills",
+    "priorityRank": 152,
     "tiers": [
       {
         "label": "Alchemy",
@@ -842,6 +879,7 @@
     "id": 38,
     "name": "Dragon Res",
     "category": "Resistance Skills",
+    "priorityRank": 138,
     "tiers": [
       {
         "label": "Dragon Res+30",
@@ -879,6 +917,7 @@
     "id": 39,
     "name": "Loading",
     "category": "Gunner Skills",
+    "priorityRank": 158,
     "tiers": [
       {
         "label": "Loading Up",
@@ -891,6 +930,7 @@
     "id": 40,
     "name": "Wide-Area",
     "category": "Item/Combo Skills",
+    "priorityRank": 131,
     "tiers": [
       {
         "label": "Wide-Area+3",
@@ -918,6 +958,7 @@
     "id": 41,
     "name": "Expert",
     "category": "Attack Skills",
+    "priorityRank": 101,
     "tiers": [
       {
         "label": "Critical Eye+5",
@@ -950,6 +991,7 @@
     "id": 42,
     "name": "Vocal Chords",
     "category": "Abnormal Status Skills",
+    "priorityRank": 165,
     "tiers": [
       {
         "label": "Vocal Chord Immunity",
@@ -967,6 +1009,7 @@
     "id": 43,
     "name": "All Res Up",
     "category": "Resistance Skills",
+    "priorityRank": 133,
     "tiers": [
       {
         "label": "All Res+20",
@@ -1004,6 +1047,7 @@
     "id": 44,
     "name": "Fire Res",
     "category": "Resistance Skills",
+    "priorityRank": 134,
     "tiers": [
       {
         "label": "Fire Res+30",
@@ -1041,6 +1085,7 @@
     "id": 45,
     "name": "Fate",
     "category": "Reward Skills",
+    "priorityRank": 146,
     "tiers": [
       {
         "label": "Great Luck",
@@ -1068,12 +1113,14 @@
     "id": 46,
     "name": "Adrenaline",
     "category": "Attack Skills",
+    "priorityRank": 155,
     "tiers": []
   },
   {
     "id": 47,
     "name": "Pierce Shot Up",
     "category": "Gunner Skills",
+    "priorityRank": 115,
     "tiers": [
       {
         "label": "Pierce/Pierce Up",
@@ -1086,6 +1133,7 @@
     "id": 48,
     "name": "Everlasting",
     "category": "Item/Combo Skills",
+    "priorityRank": 156,
     "tiers": [
       {
         "label": "Item Duration Up",
@@ -1103,6 +1151,7 @@
     "id": 49,
     "name": "Cluster Shot Add",
     "category": "Gunner Skills",
+    "priorityRank": 121,
     "tiers": [
       {
         "label": "Cluster S All",
@@ -1125,6 +1174,7 @@
     "id": 50,
     "name": "Carving",
     "category": "Gathering/Transport Skills",
+    "priorityRank": 162,
     "tiers": [
       {
         "label": "Carving Expert",
@@ -1137,6 +1187,7 @@
     "id": 51,
     "name": "Protection",
     "category": "Other Protection Skills",
+    "priorityRank": 128,
     "tiers": [
       {
         "label": "Goddess' Embrace",
@@ -1164,6 +1215,7 @@
     "id": 52,
     "name": "Bomb Boost",
     "category": "Attack Skills",
+    "priorityRank": 123,
     "tiers": [
       {
         "label": "Bomber",
@@ -1176,6 +1228,7 @@
     "id": 53,
     "name": "Status Attack",
     "category": "Attack Skills",
+    "priorityRank": 122,
     "tiers": [
       {
         "label": "Status Attack Up",
@@ -1188,6 +1241,7 @@
     "id": 54,
     "name": "Monster",
     "category": "Reward Skills",
+    "priorityRank": 160,
     "tiers": [
       {
         "label": "Come on Big Guy!",
@@ -1200,6 +1254,7 @@
     "id": 55,
     "name": "Gunnery",
     "category": "Attack Skills",
+    "priorityRank": 167,
     "tiers": [
       {
         "label": "Artillery God",
@@ -1222,6 +1277,7 @@
     "id": 56,
     "name": "Water Res",
     "category": "Resistance Skills",
+    "priorityRank": 135,
     "tiers": [
       {
         "label": "Water Res+30",
@@ -1259,6 +1315,7 @@
     "id": 57,
     "name": "Thunder Res",
     "category": "Resistance Skills",
+    "priorityRank": 137,
     "tiers": [
       {
         "label": "Thunder Res+30",
@@ -1296,6 +1353,7 @@
     "id": 58,
     "name": "Precision",
     "category": "Gunner Skills",
+    "priorityRank": 159,
     "tiers": [
       {
         "label": "Precision+2",
@@ -1318,6 +1376,7 @@
     "id": 59,
     "name": "Artisan",
     "category": "Blademaster Skills",
+    "priorityRank": 100,
     "tiers": [
       {
         "label": "Sharpness+1",
@@ -1330,6 +1389,7 @@
     "id": 60,
     "name": "Auto-Reload",
     "category": "Gunner Skills",
+    "priorityRank": 112,
     "tiers": [
       {
         "label": "Auto-Reload",
@@ -1342,6 +1402,7 @@
     "id": 61,
     "name": "Hunger",
     "category": "Health and Stamina",
+    "priorityRank": 124,
     "tiers": [
       {
         "label": "Hunger Negated",
@@ -1369,6 +1430,7 @@
     "id": 62,
     "name": "Sharpness",
     "category": "Blademaster Skills",
+    "priorityRank": 99,
     "tiers": [
       {
         "label": "Razor Sharp+2",
@@ -1391,6 +1453,7 @@
     "id": 63,
     "name": "Throwing",
     "category": "Item/Combo Skills",
+    "priorityRank": 109,
     "tiers": [
       {
         "label": "Throwing Distance Up",
@@ -1403,6 +1466,7 @@
     "id": 64,
     "name": "Pellet Shot Up",
     "category": "Gunner Skills",
+    "priorityRank": 116,
     "tiers": [
       {
         "label": "Pellet/Spread Up",
@@ -1415,6 +1479,7 @@
     "id": 65,
     "name": "Snowball Res",
     "category": "Abnormal Status Skills",
+    "priorityRank": 94,
     "tiers": [
       {
         "label": "Snowball Res",
@@ -1427,6 +1492,7 @@
     "id": 66,
     "name": "Pellet Shot Add",
     "category": "Gunner Skills",
+    "priorityRank": 119,
     "tiers": [
       {
         "label": "Pierce S All",
@@ -1449,6 +1515,7 @@
     "id": 67,
     "name": "Recoil",
     "category": "Gunner Skills",
+    "priorityRank": 113,
     "tiers": [
       {
         "label": "Recoil Reduction+3",
@@ -1471,6 +1538,7 @@
     "id": 68,
     "name": "Quake Res",
     "category": "Other Protection Skills",
+    "priorityRank": 164,
     "tiers": [
       {
         "label": "Quake Res+2",
@@ -1488,6 +1556,7 @@
     "id": 69,
     "name": "Normal Shot Up",
     "category": "Gunner Skills",
+    "priorityRank": 114,
     "tiers": [
       {
         "label": "Normal/Rapid Up",
@@ -1500,6 +1569,7 @@
     "id": 70,
     "name": "Ammo Combiner",
     "category": "Gunner Skills",
+    "priorityRank": 151,
     "tiers": [
       {
         "label": "Maximum Bullets",
@@ -1512,6 +1582,7 @@
     "id": 71,
     "name": "Passive",
     "category": "Other Protection Skills",
+    "priorityRank": 173,
     "tiers": [
       {
         "label": "Passive",
@@ -1524,6 +1595,7 @@
     "id": 72,
     "name": "Bond",
     "category": "Other Skills",
+    "priorityRank": 174,
     "tiers": [
       {
         "label": "Bond",
@@ -1536,6 +1608,7 @@
     "id": 73,
     "name": "Flute Expert",
     "category": "Item/Combo Skills",
+    "priorityRank": 168,
     "tiers": [
       {
         "label": "Flute Expert",
@@ -1548,6 +1621,7 @@
     "id": 74,
     "name": "Whim",
     "category": "Item/Combo Skills",
+    "priorityRank": 145,
     "tiers": [
       {
         "label": "Divine Whim",
@@ -1575,6 +1649,7 @@
     "id": 75,
     "name": "Auto-Guard",
     "category": "Defensive Skills",
+    "priorityRank": 108,
     "tiers": [
       {
         "label": "Auto-Guard",
@@ -1587,6 +1662,7 @@
     "id": 76,
     "name": "Pressure",
     "category": "Reward Skills",
+    "priorityRank": 175,
     "tiers": [
       {
         "label": "Pressure (Large)",
@@ -1604,6 +1680,7 @@
     "id": 77,
     "name": "Capture Proficiency",
     "category": "Other Skills",
+    "priorityRank": 176,
     "tiers": [
       {
         "label": "Capture Guru",
@@ -1621,6 +1698,7 @@
     "id": 78,
     "name": "Inspiration",
     "category": "Other Skills",
+    "priorityRank": 172,
     "tiers": [
       {
         "label": "Inspiration",
@@ -1633,6 +1711,7 @@
     "id": 79,
     "name": "Thunder Attack",
     "category": "Attack Skills",
+    "priorityRank": 182,
     "tiers": [
       {
         "label": "Thunder Attack (Large)",
@@ -1650,6 +1729,7 @@
     "id": 80,
     "name": "Fasting",
     "category": "Attack Skills",
+    "priorityRank": 185,
     "tiers": [
       {
         "label": "Starving Wolf+2",
@@ -1667,6 +1747,7 @@
     "id": 81,
     "name": "Poison Coating Add",
     "category": "Gunner Skills",
+    "priorityRank": 177,
     "tiers": [
       {
         "label": "Poison Coating Add",
@@ -1679,6 +1760,7 @@
     "id": 82,
     "name": "Water Attack",
     "category": "Attack Skills",
+    "priorityRank": 181,
     "tiers": [
       {
         "label": "Water Attack (Large)",
@@ -1696,6 +1778,7 @@
     "id": 83,
     "name": "Ice Attack",
     "category": "Attack Skills",
+    "priorityRank": 183,
     "tiers": [
       {
         "label": "Ice Attack (Large)",
@@ -1713,6 +1796,7 @@
     "id": 84,
     "name": "Breakout",
     "category": "Other Protection Skills",
+    "priorityRank": 169,
     "tiers": [
       {
         "label": "Breakout",
@@ -1725,6 +1809,7 @@
     "id": 85,
     "name": "Taijutsu",
     "category": "Attack Skills",
+    "priorityRank": 170,
     "tiers": [
       {
         "label": "Kickboxing King",
@@ -1742,6 +1827,7 @@
     "id": 86,
     "name": "Strong Arm",
     "category": "Item/Combo Skills",
+    "priorityRank": 171,
     "tiers": [
       {
         "label": "Strong Arm+2",
@@ -1759,6 +1845,7 @@
     "id": 87,
     "name": "Fire Attack",
     "category": "Attack Skills",
+    "priorityRank": 180,
     "tiers": [
       {
         "label": "Fire Attack (Large)",
@@ -1776,6 +1863,7 @@
     "id": 88,
     "name": "Sleep Coating Add",
     "category": "Gunner Skills",
+    "priorityRank": 179,
     "tiers": [
       {
         "label": "Sleep Coating Add",
@@ -1788,6 +1876,7 @@
     "id": 89,
     "name": "Fire Sword",
     "category": "Blademaster Skills",
+    "priorityRank": 190,
     "tiers": [
       {
         "label": "Fire Sword+3",
@@ -1810,6 +1899,7 @@
     "id": 90,
     "name": "Poison Sword",
     "category": "Blademaster Skills",
+    "priorityRank": 187,
     "tiers": [
       {
         "label": "Poison Sword+3",
@@ -1832,6 +1922,7 @@
     "id": 91,
     "name": "Ice Sword",
     "category": "Blademaster Skills",
+    "priorityRank": 193,
     "tiers": [
       {
         "label": "Ice Sword+3",
@@ -1854,6 +1945,7 @@
     "id": 92,
     "name": "Water Sword",
     "category": "Blademaster Skills",
+    "priorityRank": 191,
     "tiers": [
       {
         "label": "Water Sword+3",
@@ -1876,6 +1968,7 @@
     "id": 93,
     "name": "Sleep Sword",
     "category": "Blademaster Skills",
+    "priorityRank": 189,
     "tiers": [
       {
         "label": "Sleep Sword+3",
@@ -1898,6 +1991,7 @@
     "id": 94,
     "name": "Bomb Sword",
     "category": "Blademaster Skills",
+    "priorityRank": 186,
     "tiers": [
       {
         "label": "Bomb Sword+3",
@@ -1920,6 +2014,7 @@
     "id": 95,
     "name": "Para Sword",
     "category": "Blademaster Skills",
+    "priorityRank": 188,
     "tiers": [
       {
         "label": "Para Sword+3",
@@ -1942,6 +2037,7 @@
     "id": 96,
     "name": "Para Coating Add",
     "category": "Gunner Skills",
+    "priorityRank": 178,
     "tiers": [
       {
         "label": "Para Coating Add",
@@ -1954,6 +2050,7 @@
     "id": 97,
     "name": "Dragon Sword",
     "category": "Blademaster Skills",
+    "priorityRank": 194,
     "tiers": [
       {
         "label": "Dragon Sword+3",
@@ -1976,6 +2073,7 @@
     "id": 98,
     "name": "Dragon Attack",
     "category": "Attack Skills",
+    "priorityRank": 184,
     "tiers": [
       {
         "label": "Dragon Attack (Large)",
@@ -1993,6 +2091,7 @@
     "id": 99,
     "name": "Focus",
     "category": "Attack Skills",
+    "priorityRank": 195,
     "tiers": [
       {
         "label": "Focus+2",
@@ -2015,6 +2114,7 @@
     "id": 100,
     "name": "SnS Tech",
     "category": "Hiden/Tech Skills",
+    "priorityRank": 1,
     "tiers": [
       {
         "label": "Sword Saint",
@@ -2042,6 +2142,7 @@
     "id": 101,
     "name": "DS Tech",
     "category": "Hiden/Tech Skills",
+    "priorityRank": 2,
     "tiers": [
       {
         "label": "Dual Dragon",
@@ -2069,6 +2170,7 @@
     "id": 102,
     "name": "GS Tech",
     "category": "Hiden/Tech Skills",
+    "priorityRank": 3,
     "tiers": [
       {
         "label": "Sword King",
@@ -2096,6 +2198,7 @@
     "id": 103,
     "name": "LS Tech",
     "category": "Hiden/Tech Skills",
+    "priorityRank": 4,
     "tiers": [
       {
         "label": "Katana God",
@@ -2123,6 +2226,7 @@
     "id": 104,
     "name": "Lance Tech",
     "category": "Hiden/Tech Skills",
+    "priorityRank": 7,
     "tiers": [
       {
         "label": "Heavenly Spear",
@@ -2150,6 +2254,7 @@
     "id": 105,
     "name": "GL Tech",
     "category": "Hiden/Tech Skills",
+    "priorityRank": 8,
     "tiers": [
       {
         "label": "Cannon Emperor",
@@ -2177,6 +2282,7 @@
     "id": 106,
     "name": "Hammer Tech",
     "category": "Hiden/Tech Skills",
+    "priorityRank": 5,
     "tiers": [
       {
         "label": "Blunt Beast",
@@ -2204,6 +2310,7 @@
     "id": 107,
     "name": "HH Tech",
     "category": "Hiden/Tech Skills",
+    "priorityRank": 6,
     "tiers": [
       {
         "label": "Flamboyant Emperor",
@@ -2231,6 +2338,7 @@
     "id": 108,
     "name": "LBG Tech",
     "category": "Hiden/Tech Skills",
+    "priorityRank": 13,
     "tiers": [
       {
         "label": "Gun Prodigy",
@@ -2258,6 +2366,7 @@
     "id": 109,
     "name": "Bow Tech",
     "category": "Hiden/Tech Skills",
+    "priorityRank": 14,
     "tiers": [
       {
         "label": "Bow Demon",
@@ -2285,6 +2394,7 @@
     "id": 110,
     "name": "HBG Tech",
     "category": "Hiden/Tech Skills",
+    "priorityRank": 12,
     "tiers": [
       {
         "label": "Gun Sage",
@@ -2312,6 +2422,7 @@
     "id": 111,
     "name": "Issen",
     "category": "Attack Skills",
+    "priorityRank": 17,
     "tiers": [
       {
         "label": "Issen+3",
@@ -2334,6 +2445,7 @@
     "id": 112,
     "name": "Speed Setup",
     "category": "Item/Combo Skills",
+    "priorityRank": 83,
     "tiers": [
       {
         "label": "Trap Master",
@@ -2351,6 +2463,7 @@
     "id": 113,
     "name": "Guts",
     "category": "Other Protection Skills",
+    "priorityRank": 82,
     "tiers": [
       {
         "label": "True Guts",
@@ -2373,6 +2486,7 @@
     "id": 114,
     "name": "Elemental Attack",
     "category": "Attack Skills",
+    "priorityRank": 80,
     "tiers": [
       {
         "label": "Elemental Attack Up",
@@ -2390,6 +2504,7 @@
     "id": 115,
     "name": "Def Lock",
     "category": "Abnormal Status Skills",
+    "priorityRank": 88,
     "tiers": [
       {
         "label": "Def Lock",
@@ -2402,6 +2517,7 @@
     "id": 116,
     "name": "Knife Throwing",
     "category": "Item/Combo Skills",
+    "priorityRank": 86,
     "tiers": [
       {
         "label": "Throwing Knives+2",
@@ -2419,6 +2535,7 @@
     "id": 117,
     "name": "Weapon Handling",
     "category": "Attack Skills",
+    "priorityRank": 79,
     "tiers": [
       {
         "label": "Weapon Handling",
@@ -2431,6 +2548,7 @@
     "id": 118,
     "name": "Stamina Recovery",
     "category": "Health and Stamina",
+    "priorityRank": 81,
     "tiers": [
       {
         "label": "Stamina Recovery Up (Large)",
@@ -2453,6 +2571,7 @@
     "id": 119,
     "name": "Caring",
     "category": "Other Skills",
+    "priorityRank": 87,
     "tiers": [
       {
         "label": "Caring+3",
@@ -2475,6 +2594,7 @@
     "id": 120,
     "name": "Fencing",
     "category": "Blademaster Skills",
+    "priorityRank": 85,
     "tiers": [
       {
         "label": "Fencing+2",
@@ -2492,6 +2612,7 @@
     "id": 121,
     "name": "Status Res",
     "category": "Abnormal Status Skills",
+    "priorityRank": 84,
     "tiers": [
       {
         "label": "S. Immunity (Myriad)",
@@ -2519,6 +2640,7 @@
     "id": 122,
     "name": "Hunter",
     "category": "Item/Combo Skills",
+    "priorityRank": 50,
     "tiers": [
       {
         "label": "Hunter Valhalla",
@@ -2536,6 +2658,7 @@
     "id": 123,
     "name": "Breeder",
     "category": "Other Skills",
+    "priorityRank": 47,
     "tiers": [
       {
         "label": "Breeder",
@@ -2548,6 +2671,7 @@
     "id": 124,
     "name": "Encourage",
     "category": "Item/Combo Skills",
+    "priorityRank": 33,
     "tiers": [
       {
         "label": "Encourage+2",
@@ -2565,6 +2689,7 @@
     "id": 125,
     "name": "Strong Attack",
     "category": "Attack Skills",
+    "priorityRank": 16,
     "tiers": [
       {
         "label": "Strong Attack+6",
@@ -2602,6 +2727,7 @@
     "id": 126,
     "name": "Light Tread",
     "category": "Other Protection Skills",
+    "priorityRank": 41,
     "tiers": [
       {
         "label": "Light Tread",
@@ -2614,6 +2740,7 @@
     "id": 127,
     "name": "Vitality",
     "category": "Defensive Skills",
+    "priorityRank": 42,
     "tiers": [
       {
         "label": "Vitality+3",
@@ -2641,6 +2768,7 @@
     "id": 128,
     "name": "Exploit Weakness",
     "category": "Attack Skills",
+    "priorityRank": 19,
     "tiers": [
       {
         "label": "Exploit Weakness",
@@ -2658,6 +2786,7 @@
     "id": 129,
     "name": "Combo Expert",
     "category": "Item/Combo Skills",
+    "priorityRank": 38,
     "tiers": [
       {
         "label": "Combo Expert+3",
@@ -2685,6 +2814,7 @@
     "id": 130,
     "name": "Reflect",
     "category": "Defensive Skills",
+    "priorityRank": 31,
     "tiers": [
       {
         "label": "Reflect+3",
@@ -2707,6 +2837,7 @@
     "id": 131,
     "name": "Rapid Fire",
     "category": "Gunner Skills",
+    "priorityRank": 29,
     "tiers": [
       {
         "label": "Rapid Fire",
@@ -2719,6 +2850,7 @@
     "id": 132,
     "name": "Relief",
     "category": "Other Skills",
+    "priorityRank": 49,
     "tiers": [
       {
         "label": "Relief",
@@ -2731,6 +2863,7 @@
     "id": 133,
     "name": "Survivor",
     "category": "Attack Skills",
+    "priorityRank": 48,
     "tiers": [
       {
         "label": "Tenacity",
@@ -2748,6 +2881,7 @@
     "id": 134,
     "name": "Lone Wolf",
     "category": "Attack Skills",
+    "priorityRank": 40,
     "tiers": [
       {
         "label": "Lone Wolf",
@@ -2760,6 +2894,7 @@
     "id": 135,
     "name": "Rage",
     "category": "Attack Skills",
+    "priorityRank": 45,
     "tiers": [
       {
         "label": "Buchigiri",
@@ -2777,6 +2912,7 @@
     "id": 136,
     "name": "Iron Arm",
     "category": "Item/Combo Skills",
+    "priorityRank": 46,
     "tiers": [
       {
         "label": "Iron Arm+2",
@@ -2794,6 +2930,7 @@
     "id": 137,
     "name": "Sobriety",
     "category": "Abnormal Status Skills",
+    "priorityRank": 51,
     "tiers": [
       {
         "label": "Heavy Drinker",
@@ -2811,6 +2948,7 @@
     "id": 138,
     "name": "Mounting",
     "category": "Gunner Skills",
+    "priorityRank": 35,
     "tiers": [
       {
         "label": "Mounting+3",
@@ -2833,6 +2971,7 @@
     "id": 139,
     "name": "Movement Speed",
     "category": "Other Skills",
+    "priorityRank": 59,
     "tiers": [
       {
         "label": "Movement Speed Up+2",
@@ -2850,6 +2989,7 @@
     "id": 140,
     "name": "Magnetic Res",
     "category": "Abnormal Status Skills",
+    "priorityRank": 54,
     "tiers": [
       {
         "label": "Magnetic Res",
@@ -2867,6 +3007,7 @@
     "id": 141,
     "name": "Three Worlds",
     "category": "Other Protection Skills",
+    "priorityRank": 30,
     "tiers": [
       {
         "label": "Unaffected+3",
@@ -2889,6 +3030,7 @@
     "id": 142,
     "name": "Charge Attack Up",
     "category": "Attack Skills",
+    "priorityRank": 57,
     "tiers": [
       {
         "label": "Charge Attack Up+2",
@@ -2906,6 +3048,7 @@
     "id": 143,
     "name": "Bullet Saver",
     "category": "Gunner Skills",
+    "priorityRank": 58,
     "tiers": [
       {
         "label": "Saving Expert",
@@ -2923,6 +3066,7 @@
     "id": 144,
     "name": "Shiriagari",
     "category": "Attack Skills",
+    "priorityRank": 39,
     "tiers": [
       {
         "label": "Shiriagari",
@@ -2935,6 +3079,7 @@
     "id": 145,
     "name": "Evade Distance",
     "category": "Other Protection Skills",
+    "priorityRank": 56,
     "tiers": [
       {
         "label": "Evade Distance Up",
@@ -2947,6 +3092,7 @@
     "id": 146,
     "name": "Reinforcement",
     "category": "Other Skills",
+    "priorityRank": 60,
     "tiers": [
       {
         "label": "Red Soul",
@@ -2964,6 +3110,7 @@
     "id": 147,
     "name": "Grace",
     "category": "Other Skills",
+    "priorityRank": 23,
     "tiers": [
       {
         "label": "Grace+3",
@@ -2986,6 +3133,7 @@
     "id": 148,
     "name": "Steady Hand",
     "category": "Gunner Skills",
+    "priorityRank": 34,
     "tiers": [
       {
         "label": "Steady Hand+2",
@@ -3003,6 +3151,7 @@
     "id": 149,
     "name": "Crystal Res",
     "category": "Abnormal Status Skills",
+    "priorityRank": 53,
     "tiers": [
       {
         "label": "Crystal Res",
@@ -3020,6 +3169,7 @@
     "id": 150,
     "name": "Edgemaster",
     "category": "Blademaster Skills",
+    "priorityRank": 25,
     "tiers": [
       {
         "label": "Honed Blade+3",
@@ -3042,6 +3192,7 @@
     "id": 151,
     "name": "Critical Shot",
     "category": "Gunner Skills",
+    "priorityRank": 26,
     "tiers": [
       {
         "label": "Critical Shot+3",
@@ -3064,6 +3215,7 @@
     "id": 152,
     "name": "Compensation",
     "category": "Other Skills",
+    "priorityRank": 28,
     "tiers": [
       {
         "label": "Compensation",
@@ -3076,6 +3228,7 @@
     "id": 153,
     "name": "Herbal Science",
     "category": "Health and Stamina",
+    "priorityRank": 66,
     "tiers": [
       {
         "label": "Medical Sage",
@@ -3088,6 +3241,7 @@
     "id": 154,
     "name": "Vampirism",
     "category": "Health and Stamina",
+    "priorityRank": 61,
     "tiers": [
       {
         "label": "Vampirism+2",
@@ -3105,6 +3259,7 @@
     "id": 155,
     "name": "Adaptation",
     "category": "Attack Skills",
+    "priorityRank": 62,
     "tiers": [
       {
         "label": "Adaptation+2",
@@ -3122,6 +3277,7 @@
     "id": 156,
     "name": "Dark Pulse",
     "category": "Other Skills",
+    "priorityRank": 65,
     "tiers": [
       {
         "label": "Dark Finale",
@@ -3134,6 +3290,7 @@
     "id": 157,
     "name": "Incitement",
     "category": "Map/Detection Skills",
+    "priorityRank": 67,
     "tiers": [
       {
         "label": "Incitement",
@@ -3146,6 +3303,7 @@
     "id": 158,
     "name": "Absolute Defense",
     "category": "Other Protection Skills",
+    "priorityRank": 74,
     "tiers": [
       {
         "label": "Absolute Defense",
@@ -3158,6 +3316,7 @@
     "id": 159,
     "name": "Drug Knowledge",
     "category": "Attack Skills",
+    "priorityRank": 70,
     "tiers": [
       {
         "label": "Drug Knowledge",
@@ -3170,6 +3329,7 @@
     "id": 160,
     "name": "Tonfa Tech",
     "category": "Hiden/Tech Skills",
+    "priorityRank": 10,
     "tiers": [
       {
         "label": "Piercing Phoenix",
@@ -3197,6 +3357,7 @@
     "id": 161,
     "name": "Mindfulness",
     "category": "Gathering/Transport Skills",
+    "priorityRank": 77,
     "tiers": [
       {
         "label": "Imperturbable",
@@ -3219,6 +3380,7 @@
     "id": 162,
     "name": "Assistance",
     "category": "Other Skills",
+    "priorityRank": 75,
     "tiers": [
       {
         "label": "Assistance",
@@ -3231,6 +3393,7 @@
     "id": 163,
     "name": "Stylish",
     "category": "Blademaster Skills",
+    "priorityRank": 73,
     "tiers": [
       {
         "label": "Stylish",
@@ -3243,6 +3406,7 @@
     "id": 164,
     "name": "Sword God",
     "category": "Blademaster Skills",
+    "priorityRank": 24,
     "tiers": [
       {
         "label": "Sword God+3",
@@ -3265,6 +3429,7 @@
     "id": 165,
     "name": "Status Assault",
     "category": "Attack Skills",
+    "priorityRank": 71,
     "tiers": [
       {
         "label": "Status Pursuit",
@@ -3277,6 +3442,7 @@
     "id": 166,
     "name": "Thunder Clad",
     "category": "Attack Skills",
+    "priorityRank": 21,
     "tiers": [
       {
         "label": "Thunder Clad",
@@ -3289,6 +3455,7 @@
     "id": 167,
     "name": "Gentle Shot",
     "category": "Gunner Skills",
+    "priorityRank": 36,
     "tiers": [
       {
         "label": "Gentle Shot+3",
@@ -3311,6 +3478,7 @@
     "id": 168,
     "name": "Blazing Grace",
     "category": "Other Skills",
+    "priorityRank": 68,
     "tiers": [
       {
         "label": "Blazing Majesty+2",
@@ -3328,6 +3496,7 @@
     "id": 169,
     "name": "Dissolver",
     "category": "Attack Skills",
+    "priorityRank": 20,
     "tiers": [
       {
         "label": "Elemental Exploit",
@@ -3345,6 +3514,7 @@
     "id": 170,
     "name": "Combat Supremacy",
     "category": "Attack Skills",
+    "priorityRank": 76,
     "tiers": [
       {
         "label": "Combat Supremacy",
@@ -3357,6 +3527,7 @@
     "id": 171,
     "name": "Vigorous",
     "category": "Attack Skills",
+    "priorityRank": 64,
     "tiers": [
       {
         "label": "Vigorous",
@@ -3369,6 +3540,7 @@
     "id": 172,
     "name": "Drawing Arts",
     "category": "Other Skills",
+    "priorityRank": 32,
     "tiers": [
       {
         "label": "Drawing Arts+2",
@@ -3386,6 +3558,7 @@
     "id": 173,
     "name": "Stylish Assault",
     "category": "Attack Skills",
+    "priorityRank": 72,
     "tiers": [
       {
         "label": "Stylish Assault",
@@ -3398,6 +3571,7 @@
     "id": 174,
     "name": "Crit Conversion",
     "category": "Attack Skills",
+    "priorityRank": 102,
     "tiers": [
       {
         "label": "Critical Conversion",
@@ -3410,6 +3584,7 @@
     "id": 175,
     "name": "Determination",
     "category": "Attack Skills",
+    "priorityRank": 15,
     "tiers": [
       {
         "label": "Solid Determination",
@@ -3422,6 +3597,7 @@
     "id": 176,
     "name": "Blast Resistance",
     "category": "Abnormal Status Skills",
+    "priorityRank": 52,
     "tiers": [
       {
         "label": "Blast Resistance",
@@ -3434,6 +3610,7 @@
     "id": 177,
     "name": "Ice Age",
     "category": "Other Skills",
+    "priorityRank": 63,
     "tiers": [
       {
         "label": "Ice Age",
@@ -3446,6 +3623,7 @@
     "id": 178,
     "name": "Switch Axe tech",
     "category": "Hiden/Tech Skills",
+    "priorityRank": 9,
     "tiers": [
       {
         "label": "Edge Marshal",
@@ -3473,6 +3651,7 @@
     "id": 179,
     "name": "Lavish Attack",
     "category": "Attack Skills",
+    "priorityRank": 98,
     "tiers": [
       {
         "label": "Consumption Slayer",
@@ -3485,6 +3664,7 @@
     "id": 180,
     "name": "Fortification",
     "category": "Defensive Skills",
+    "priorityRank": 106,
     "tiers": [
       {
         "label": "Fortification+2",
@@ -3502,6 +3682,7 @@
     "id": 181,
     "name": "Freeze Res",
     "category": "Abnormal Status Skills",
+    "priorityRank": 55,
     "tiers": [
       {
         "label": "Freeze Resistance",
@@ -3514,6 +3695,7 @@
     "id": 182,
     "name": "Obscurity",
     "category": "Attack Skills",
+    "priorityRank": 105,
     "tiers": [
       {
         "label": "Obscurity",
@@ -3526,6 +3708,7 @@
     "id": 183,
     "name": "Sniper",
     "category": "Gunner Skills",
+    "priorityRank": 111,
     "tiers": [
       {
         "label": "Sniper",
@@ -3538,6 +3721,7 @@
     "id": 184,
     "name": "Evasion Boost",
     "category": "Other Protection Skills",
+    "priorityRank": 153,
     "tiers": [
       {
         "label": "Evasion Boost",
@@ -3550,6 +3734,7 @@
     "id": 185,
     "name": "Rush",
     "category": "Attack Skills",
+    "priorityRank": 22,
     "tiers": [
       {
         "label": "Rush",
@@ -3562,6 +3747,7 @@
     "id": 186,
     "name": "Ceaseless",
     "category": "Attack Skills",
+    "priorityRank": 103,
     "tiers": [
       {
         "label": "Ceaseless",
@@ -3574,6 +3760,7 @@
     "id": 187,
     "name": "Skilled",
     "category": "Attack Skills",
+    "priorityRank": 43,
     "tiers": [
       {
         "label": "Skilled",
@@ -3586,6 +3773,7 @@
     "id": 188,
     "name": "Point Breakthrough",
     "category": "Attack Skills",
+    "priorityRank": 27,
     "tiers": [
       {
         "label": "Point Breakthrough",
@@ -3598,6 +3786,7 @@
     "id": 189,
     "name": "Abnormality",
     "category": "Attack Skills",
+    "priorityRank": 69,
     "tiers": [
       {
         "label": "Abnormality",
@@ -3610,6 +3799,7 @@
     "id": 190,
     "name": "Spacing",
     "category": "Gunner Skills",
+    "priorityRank": 37,
     "tiers": [
       {
         "label": "Spacing",
@@ -3622,6 +3812,7 @@
     "id": 191,
     "name": "Furious",
     "category": "Attack Skills",
+    "priorityRank": 18,
     "tiers": [
       {
         "label": "Furious",
@@ -3634,6 +3825,7 @@
     "id": 192,
     "name": "MS Tech",
     "category": "Hiden/Tech Skills",
+    "priorityRank": 11,
     "tiers": [
       {
         "label": "Magnetic Star",
@@ -3661,6 +3853,7 @@
     "id": 193,
     "name": "Trained",
     "category": "Attack Skills",
+    "priorityRank": 44,
     "tiers": [
       {
         "label": "Trained+2",
@@ -3678,6 +3871,7 @@
     "id": 194,
     "name": "Thunder Sword",
     "category": "Blademaster Skills",
+    "priorityRank": 192,
     "tiers": [
       {
         "label": "Thunder Sword+3",

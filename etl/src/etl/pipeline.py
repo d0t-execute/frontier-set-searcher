@@ -28,17 +28,37 @@ from etl.db.repository import (
     insert_zenith_skill,
     list_skills,
     set_skill_category,
+    set_skill_priority_rank,
 )
 from etl.fetch import CachingFetcher
 from etl.parse.equipment import parse_equip_js
+from etl.parse.skill_priority import parse_skill_priority_table
 from etl.parse.skill_tiers import parse_skill_tier_table
 from etl.parse.skills import parse_skill_names, parse_zenith_skill_names
 from etl.parse.weapon import WEAPON_PAGE_TO_TYPE, parse_weapon_page
+
+# The weapon pages (buki/*.htm) print each Zenith-infused weapon's skill as
+# its own abbreviated label, independent of the TENINAME-driven naming
+# equip.js/SkillForm.js use for equipment/cuffs (see pipeline.py's
+# `resolve_zenith_skill` in `load_equipment`) -- confirmed against the raw
+# cached weapon pages (e.g. "Zenith Skill：Earplugs Up+1" in buki_taiken.body)
+# and cross-checked against the exact same abbreviation already appearing in
+# real cuff names for the same family (e.g. "Earplugs Up SZ" is one of
+# "Hearing Protection Up+1"'s own cuffs). Without this, `load_weapons` would
+# insert a second, duplicate `zenith_skill` row for the same real effect
+# instead of reusing the family's one true id. Maps a weapon page's label to
+# the catalog's canonical name for the same Zenith skill family.
+ZENITH_SKILL_WEAPON_NAME_ALIASES: dict[str, str] = {
+    "Earplugs Up+1": "Hearing Protection Up+1",
+    "S. Assault Up+1": "Stylish Assault Up+1",
+    "C. Conversion Up+1": "Crit Conversion Up+1",
+}
 
 EQUIP_JS_URL = "https://xl3lackout.github.io/MHFZ-Ferias-English-Project/skill/equip.js"
 SKILLFORM_JS_URL = "https://xl3lackout.github.io/MHFZ-Ferias-English-Project/skill/SkillForm.js"
 WEAPON_BASE_URL = "https://xl3lackout.github.io/MHFZ-Ferias-English-Project/buki/"
 SKILL_TIERS_URL = "https://mertna.github.io/MHFZ-Skills/tables/Base.html"
+SKILL_PRIORITY_URL = "https://mertna.github.io/MHFZ-Skills/tables/Priority.html"
 
 
 @dataclass(frozen=True, slots=True)
@@ -157,6 +177,7 @@ def load_weapons(conn: sqlite3.Connection, *, page_sources: dict[str, str]) -> W
     resolved_zenith_skills: dict[str, int] = {}
 
     def resolve_zenith_skill(name: str) -> int:
+        name = ZENITH_SKILL_WEAPON_NAME_ALIASES.get(name, name)
         if name not in resolved_zenith_skills:
             resolved_zenith_skills[name] = insert_zenith_skill(conn, name=name).id
         return resolved_zenith_skills[name]
@@ -205,6 +226,10 @@ SKILL_TIER_NAME_ALIASES: dict[str, str] = {
     "Gathering": "Gather",
     "DB Tech": "DS Tech",
     "SAF Tech": "Switch Axe tech",
+    # Priority-page-only casing/abbreviation variants (Base.html and
+    # Priority.html are independently maintained and don't always agree).
+    "SAF tech": "Switch Axe tech",
+    "P. Breakthrough": "Point Breakthrough",
 }
 
 
@@ -269,6 +294,55 @@ def load_skill_tiers(conn: sqlite3.Connection, *, html: str) -> SkillTierLoadSum
     )
 
 
+@dataclass(frozen=True, slots=True)
+class SkillPriorityLoadSummary:
+    matched_rank_count: int
+    # Same "report, don't guess" shape as SkillTierLoadSummary -- a priority-
+    # page entry with no matching catalog skill, and a catalog skill the
+    # priority page never ranked, are each surfaced rather than silently
+    # dropped (the fan-translated source can legitimately drift from the
+    # catalog's own naming, same as the tier site does -- see
+    # SKILL_TIER_NAME_ALIASES, reused here since it's the exact same site).
+    unmatched_entry_names: tuple[str, ...]
+    unmatched_skill_names: tuple[str, ...]
+
+
+def load_skill_priority(conn: sqlite3.Connection, *, html: str) -> SkillPriorityLoadSummary:
+    """Attach each normal skill's activation-priority rank (see
+    `parse_skill_priority_table`'s module docstring and
+    docs/skill-system-roadmap.md TODO #1) from a third source, independent of
+    `skill_tier`'s own tier-threshold source -- matches purely by exact name
+    (aliased the same way `load_skill_tiers` is, since both sources are the
+    same mertna.github.io site).
+
+    Safe to re-run: `priority_rank` is overwritten per matched skill, not
+    accumulated.
+    """
+    entries = parse_skill_priority_table(html)
+    matched_names: set[str] = set()
+    unmatched_entry_names: list[str] = []
+
+    for entry in entries:
+        catalog_name = SKILL_TIER_NAME_ALIASES.get(entry.name, entry.name)
+        skill = get_skill_by_name(conn, catalog_name)
+        if skill is None:
+            unmatched_entry_names.append(entry.name)
+            continue
+
+        matched_names.add(skill.name)
+        set_skill_priority_rank(conn, skill_id=skill.id, rank=entry.rank)
+
+    all_skill_names = {skill.name for skill in list_skills(conn)}
+    unmatched_skill_names = sorted(all_skill_names - matched_names)
+
+    conn.commit()
+    return SkillPriorityLoadSummary(
+        matched_rank_count=len(matched_names),
+        unmatched_entry_names=tuple(unmatched_entry_names),
+        unmatched_skill_names=tuple(unmatched_skill_names),
+    )
+
+
 def main() -> None:  # pragma: no cover -- network-touching, run manually only
     parser = argparse.ArgumentParser(description="Fetch and load the Frontier equipment dataset.")
     parser.add_argument("--db", type=Path, required=True, help="Path to the SQLite database file")
@@ -291,6 +365,9 @@ def main() -> None:  # pragma: no cover -- network-touching, run manually only
             skill_tiers_source = fetcher.fetch(
                 SKILL_TIERS_URL, cache_key="skill_tiers_base"
             ).content
+            skill_priority_source = fetcher.fetch(
+                SKILL_PRIORITY_URL, cache_key="skill_priority"
+            ).content
         summary = load_equipment(
             conn,
             skillform_source=skillform_source,
@@ -299,6 +376,7 @@ def main() -> None:  # pragma: no cover -- network-touching, run manually only
         )
         weapon_summary = load_weapons(conn, page_sources=weapon_page_sources)
         tier_summary = load_skill_tiers(conn, html=skill_tiers_source)
+        priority_summary = load_skill_priority(conn, html=skill_priority_source)
     finally:
         conn.close()
 
@@ -319,6 +397,18 @@ def main() -> None:  # pragma: no cover -- network-touching, run manually only
         print(f"  Unmatched tier-site groups: {', '.join(tier_summary.unmatched_group_names)}")
     if tier_summary.unmatched_skill_names:
         print(f"  Catalog skills with no tiers: {', '.join(tier_summary.unmatched_skill_names)}")
+    print(
+        f"Attached priority ranks to {priority_summary.matched_rank_count} skills. "
+        f"{len(priority_summary.unmatched_entry_names)} priority-page entries had no matching "
+        f"catalog skill, {len(priority_summary.unmatched_skill_names)} catalog skills got no rank."
+    )
+    if priority_summary.unmatched_entry_names:
+        print(
+            f"  Unmatched priority-page entries: "
+            f"{', '.join(priority_summary.unmatched_entry_names)}"
+        )
+    if priority_summary.unmatched_skill_names:
+        print(f"  Catalog skills with no rank: {', '.join(priority_summary.unmatched_skill_names)}")
 
 
 if __name__ == "__main__":

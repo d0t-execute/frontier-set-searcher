@@ -5,7 +5,12 @@ from typing import Any
 
 from etl.db import repository as repo
 from etl.db.connection import connect
-from etl.export import EXPORT_FORMAT_VERSION, ZENITH_SKILL_ID_OFFSET, export_bundle
+from etl.export import (
+    EXPORT_FORMAT_VERSION,
+    ZENITH_SKILL_ID_OFFSET,
+    ZENITH_SKILL_MAX_LEVEL,
+    export_bundle,
+)
 
 
 def _conn(tmp_path: Path) -> sqlite3.Connection:
@@ -210,13 +215,17 @@ def test_zenith_skills_json_groups_same_family_names_under_one_shared_id(tmp_pat
             "id": ZENITH_SKILL_ID_OFFSET + tier1.id,
             "name": "Vampirism Up",
             "category": None,
-            "tiers": [],
+            # "Vampirism Up" is single-level per ZENITH_SKILL_MAX_LEVEL --
+            # the synthetic "Vampirism Up+2" row (tier2) in this test only
+            # proves family grouping, not that the family itself has two
+            # real levels.
+            "tiers": [{"label": "+1", "minPoints": 1, "description": None}],
         },
         {
             "id": ZENITH_SKILL_ID_OFFSET + single.id,
             "name": "Dissolver Up",
             "category": None,
-            "tiers": [],
+            "tiers": [{"label": "+1", "minPoints": 1, "description": None}],
         },
     ]
     # "Vampirism Up+2" (tier2) shares its family's id with "Vampirism Up+1"
@@ -225,7 +234,38 @@ def test_zenith_skills_json_groups_same_family_names_under_one_shared_id(tmp_pat
     assert tier2.id != tier1.id
 
 
-def test_zenith_skills_json_excludes_families_only_referenced_by_weapons(tmp_path: Path) -> None:
+def test_zenith_skills_json_builds_a_descending_tier_ladder_for_a_multi_level_family(
+    tmp_path: Path,
+) -> None:
+    conn = _conn(tmp_path)
+    guard_up = repo.insert_zenith_skill(conn, name="Guard Up+1")
+    repo.insert_cuff(
+        conn, external_id="cuff:C104", name="Guard SZ", slot_size=0, zenith_skill_id=guard_up.id
+    )
+    conn.commit()
+    out_dir = tmp_path / "bundle"
+
+    export_bundle(conn, out_dir)
+
+    assert ZENITH_SKILL_MAX_LEVEL["Guard Up"] == 2
+    assert _load(out_dir / "zenith-skills.json") == [
+        {
+            "id": ZENITH_SKILL_ID_OFFSET + guard_up.id,
+            "name": "Guard Up",
+            "category": None,
+            "tiers": [
+                {"label": "+2", "minPoints": 2, "description": None},
+                {"label": "+1", "minPoints": 1, "description": None},
+            ],
+        }
+    ]
+
+
+def test_zenith_skills_json_includes_families_only_referenced_by_weapons(tmp_path: Path) -> None:
+    # Weapons aren't exported as a full candidate catalog (see export.py's
+    # module docstring), but a Zenith skill only a weapon grants is still a
+    # satisfiable requirement through the virtual weapon slot -- so it must
+    # still appear in the catalog, unlike a genuinely unreferenced row.
     conn = _conn(tmp_path)
     weapon_only = repo.insert_zenith_skill(conn, name="Earplugs Up+1")
     repo.insert_weapon(
@@ -240,7 +280,65 @@ def test_zenith_skills_json_excludes_families_only_referenced_by_weapons(tmp_pat
 
     export_bundle(conn, out_dir)
 
-    assert _load(out_dir / "zenith-skills.json") == []
+    zenith_skills = _load(out_dir / "zenith-skills.json")
+    assert zenith_skills == [
+        {
+            "id": ZENITH_SKILL_ID_OFFSET + weapon_only.id,
+            "name": "Earplugs Up",
+            "category": None,
+            "tiers": [{"label": "+1", "minPoints": 1, "description": None}],
+        }
+    ]
+
+
+def test_weapon_zenith_skills_json_lists_the_exported_family_ids_weapons_can_carry(
+    tmp_path: Path,
+) -> None:
+    conn = _conn(tmp_path)
+    # Also granted by a cuff -- proves the weapon-zenith-skills list uses the
+    # same exported family id as everything else, not a separate numbering.
+    vampirism = repo.insert_zenith_skill(conn, name="Vampirism Up+1")
+    repo.insert_cuff(
+        conn,
+        external_id="cuff:C201",
+        name="Vampirism SZ",
+        slot_size=0,
+        zenith_skill_id=vampirism.id,
+    )
+    weapon_only = repo.insert_zenith_skill(conn, name="Earplugs Up+1")
+    repo.insert_weapon(
+        conn,
+        external_id="weapon:W002",
+        name="Some Great Sword",
+        weapon_type="great_sword",
+        zenith_skill_id=vampirism.id,
+    )
+    repo.insert_weapon(
+        conn,
+        external_id="weapon:W003",
+        name="Another Great Sword",
+        weapon_type="great_sword",
+        zenith_skill_id=weapon_only.id,
+    )
+    conn.commit()
+    out_dir = tmp_path / "bundle"
+
+    export_bundle(conn, out_dir)
+
+    assert _load(out_dir / "weapon-zenith-skills.json") == sorted(
+        [ZENITH_SKILL_ID_OFFSET + vampirism.id, ZENITH_SKILL_ID_OFFSET + weapon_only.id]
+    )
+
+
+def test_writes_an_empty_weapon_zenith_skills_file_when_no_weapon_grants_one(
+    tmp_path: Path,
+) -> None:
+    conn = _conn(tmp_path)
+    out_dir = tmp_path / "bundle"
+
+    export_bundle(conn, out_dir)
+
+    assert _load(out_dir / "weapon-zenith-skills.json") == []
 
 
 def test_writes_an_empty_zenith_skills_file_when_there_are_none(tmp_path: Path) -> None:
@@ -270,7 +368,33 @@ def test_exports_a_skill_lookup_table(tmp_path: Path) -> None:
     export_bundle(conn, out_dir)
 
     assert _load(out_dir / "skills.json") == [
-        {"id": attack.id, "name": "Attack Up (Small)", "category": "offense", "tiers": []}
+        {
+            "id": attack.id,
+            "name": "Attack Up (Small)",
+            "category": "offense",
+            "priorityRank": None,
+            "tiers": [],
+        }
+    ]
+
+
+def test_exports_a_skills_priority_rank_when_set(tmp_path: Path) -> None:
+    conn = _conn(tmp_path)
+    attack = repo.insert_skill(conn, name="Attack Up (Small)", category="offense")
+    repo.set_skill_priority_rank(conn, skill_id=attack.id, rank=16)
+    conn.commit()
+    out_dir = tmp_path / "bundle"
+
+    export_bundle(conn, out_dir)
+
+    assert _load(out_dir / "skills.json") == [
+        {
+            "id": attack.id,
+            "name": "Attack Up (Small)",
+            "category": "offense",
+            "priorityRank": 16,
+            "tiers": [],
+        }
     ]
 
 
@@ -298,6 +422,7 @@ def test_exports_a_skills_tiers_in_order(tmp_path: Path) -> None:
             "id": health.id,
             "name": "Health",
             "category": "Health and Stamina",
+            "priorityRank": None,
             "tiers": [
                 {"label": "Health+50", "minPoints": 40, "description": "Maximum Health +50"},
                 {"label": "Health-10", "minPoints": -10, "description": None},

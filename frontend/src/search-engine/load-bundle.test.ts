@@ -8,6 +8,7 @@ const skills = [
     id: 1,
     name: 'Attack Up (Small)',
     category: 'offense',
+    priorityRank: 16,
     tiers: [{ label: 'Attack Up (Small)', minPoints: 10, description: null }],
   },
 ]
@@ -23,7 +24,9 @@ const cuffs = [
     category: 'cuff_premium_tier1',
   },
 ]
-const zenithSkills = [{ id: 1000001, name: 'Dissolver Up', category: null, tiers: [] }]
+const zenithSkills = [
+  { id: 1000001, name: 'Dissolver Up', category: null, priorityRank: null, tiers: [] },
+]
 const headEquipment = [
   {
     id: 'head:0001',
@@ -53,6 +56,8 @@ function fakeFetch(files: Record<string, unknown>): FetchLike {
   }
 }
 
+const weaponZenithSkillIds = [1000001]
+
 const allFiles = {
   'manifest.json': manifest,
   'skills.json': skills,
@@ -61,6 +66,7 @@ const allFiles = {
   'cuffs.json': cuffs,
   'equipment/head.json': headEquipment,
   'equipment/chest.json': chestEquipment,
+  'weapon-zenith-skills.json': weaponZenithSkillIds,
 }
 
 describe('loadBundle', () => {
@@ -101,6 +107,12 @@ describe('loadBundle', () => {
     const bundle = await loadBundle('/data', fakeFetch(allFiles))
 
     expect(bundle.zenithSkills).toEqual(zenithSkills)
+  })
+
+  it('exposes the weapon-eligible Zenith skill id list as-is', async () => {
+    const bundle = await loadBundle('/data', fakeFetch(allFiles))
+
+    expect(bundle.weaponZenithSkillIds).toEqual(weaponZenithSkillIds)
   })
 
   it('rejects a bundle whose format version this build does not understand', async () => {

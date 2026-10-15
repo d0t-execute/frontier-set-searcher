@@ -30,6 +30,14 @@ export interface NamedSkill {
   readonly id: number
   readonly name: string
   readonly category: string | null
+  /** This skill's rank in the game's active-skill-cap priority list (lower
+   * survives longer once a build's simultaneously-active normal-skill count
+   * exceeds its cap) -- see active-skill-cap.ts. `null` means this skill
+   * never matched a row on the priority source page, not that it has no
+   * priority in-game -- treated as the lowest priority (first disabled).
+   * Zenith skills (loaded through this same type for `zenithSkills`) are
+   * never subject to the cap and always have `priorityRank: null`. */
+  readonly priorityRank: number | null
   readonly tiers: readonly SkillTierRecord[]
 }
 
@@ -85,6 +93,13 @@ export interface DataBundle {
    * dropdown. */
   readonly zenithSkills: readonly NamedSkill[]
   readonly skillNames: ReadonlyMap<number, string>
+  /** Exported (family-level) ids of every Zenith skill at least one weapon
+   * can carry (see etl/src/etl/export.py's module docstring) -- the weapon
+   * slot's own candidates aren't exported at all (a weapon's identity never
+   * matters to this tool, only this), so the UI builds that slot's
+   * `SlotQuery` itself from this list plus its own include/exclude and
+   * slot-count controls (see App.tsx). */
+  readonly weaponZenithSkillIds: readonly number[]
 }
 
 export async function loadBundle(baseUrl: string, fetchImpl: FetchLike): Promise<DataBundle> {
@@ -96,17 +111,19 @@ export async function loadBundle(baseUrl: string, fetchImpl: FetchLike): Promise
     )
   }
 
-  const [skills, zenithSkills, decorations, cuffs, equipmentBySlotType] = await Promise.all([
-    fetchJson<NamedSkill[]>(fetchImpl, `${baseUrl}/skills.json`),
-    fetchJson<NamedSkill[]>(fetchImpl, `${baseUrl}/zenith-skills.json`),
-    fetchJson<NamedDecoration[]>(fetchImpl, `${baseUrl}/decorations.json`),
-    fetchJson<NamedCuff[]>(fetchImpl, `${baseUrl}/cuffs.json`),
-    Promise.all(
-      manifest.slotTypes.map((slotType) =>
-        fetchJson<NamedCandidate[]>(fetchImpl, `${baseUrl}/equipment/${slotType}.json`),
+  const [skills, zenithSkills, decorations, cuffs, equipmentBySlotType, weaponZenithSkillIds] =
+    await Promise.all([
+      fetchJson<NamedSkill[]>(fetchImpl, `${baseUrl}/skills.json`),
+      fetchJson<NamedSkill[]>(fetchImpl, `${baseUrl}/zenith-skills.json`),
+      fetchJson<NamedDecoration[]>(fetchImpl, `${baseUrl}/decorations.json`),
+      fetchJson<NamedCuff[]>(fetchImpl, `${baseUrl}/cuffs.json`),
+      Promise.all(
+        manifest.slotTypes.map((slotType) =>
+          fetchJson<NamedCandidate[]>(fetchImpl, `${baseUrl}/equipment/${slotType}.json`),
+        ),
       ),
-    ),
-  ])
+      fetchJson<number[]>(fetchImpl, `${baseUrl}/weapon-zenith-skills.json`),
+    ])
 
   return {
     slots: manifest.slotTypes.map((slotType, i): NamedSlotQuery => ({
@@ -118,6 +135,7 @@ export async function loadBundle(baseUrl: string, fetchImpl: FetchLike): Promise
     skills,
     zenithSkills,
     skillNames: new Map([...skills, ...zenithSkills].map((skill) => [skill.id, skill.name])),
+    weaponZenithSkillIds,
   }
 }
 

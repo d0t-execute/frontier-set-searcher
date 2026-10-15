@@ -3,156 +3,432 @@
     "id": 1000001,
     "name": "Skill Slots Up",
     "category": null,
-    "tiers": []
+    "tiers": [
+      {
+        "label": "+7",
+        "minPoints": 7,
+        "description": null
+      },
+      {
+        "label": "+6",
+        "minPoints": 6,
+        "description": null
+      },
+      {
+        "label": "+5",
+        "minPoints": 5,
+        "description": null
+      },
+      {
+        "label": "+4",
+        "minPoints": 4,
+        "description": null
+      },
+      {
+        "label": "+3",
+        "minPoints": 3,
+        "description": null
+      },
+      {
+        "label": "+2",
+        "minPoints": 2,
+        "description": null
+      },
+      {
+        "label": "+1",
+        "minPoints": 1,
+        "description": null
+      }
+    ]
   },
   {
     "id": 1000002,
     "name": "Vampirism Up",
     "category": null,
-    "tiers": []
+    "tiers": [
+      {
+        "label": "+1",
+        "minPoints": 1,
+        "description": null
+      }
+    ]
   },
   {
     "id": 1000003,
     "name": "Quake Res Up",
     "category": null,
-    "tiers": []
+    "tiers": [
+      {
+        "label": "+2",
+        "minPoints": 2,
+        "description": null
+      },
+      {
+        "label": "+1",
+        "minPoints": 1,
+        "description": null
+      }
+    ]
   },
   {
     "id": 1000004,
     "name": "Stylish Assault Up",
     "category": null,
-    "tiers": []
+    "tiers": [
+      {
+        "label": "+2",
+        "minPoints": 2,
+        "description": null
+      },
+      {
+        "label": "+1",
+        "minPoints": 1,
+        "description": null
+      }
+    ]
   },
   {
     "id": 1000005,
     "name": "Crit Conversion Up",
     "category": null,
-    "tiers": []
+    "tiers": [
+      {
+        "label": "+2",
+        "minPoints": 2,
+        "description": null
+      },
+      {
+        "label": "+1",
+        "minPoints": 1,
+        "description": null
+      }
+    ]
   },
   {
     "id": 1000006,
     "name": "Thunder Clad Up",
     "category": null,
-    "tiers": []
+    "tiers": [
+      {
+        "label": "+2",
+        "minPoints": 2,
+        "description": null
+      },
+      {
+        "label": "+1",
+        "minPoints": 1,
+        "description": null
+      }
+    ]
   },
   {
     "id": 1000007,
     "name": "Ice Age Up",
     "category": null,
-    "tiers": []
+    "tiers": [
+      {
+        "label": "+1",
+        "minPoints": 1,
+        "description": null
+      }
+    ]
   },
   {
     "id": 1000008,
     "name": "Dissolver Up",
     "category": null,
-    "tiers": []
+    "tiers": [
+      {
+        "label": "+1",
+        "minPoints": 1,
+        "description": null
+      }
+    ]
   },
   {
     "id": 1000009,
     "name": "Hearing Protection Up",
     "category": null,
-    "tiers": []
+    "tiers": [
+      {
+        "label": "+3",
+        "minPoints": 3,
+        "description": null
+      },
+      {
+        "label": "+2",
+        "minPoints": 2,
+        "description": null
+      },
+      {
+        "label": "+1",
+        "minPoints": 1,
+        "description": null
+      }
+    ]
   },
   {
     "id": 1000010,
     "name": "Assistance Up",
     "category": null,
-    "tiers": []
+    "tiers": [
+      {
+        "label": "+1",
+        "minPoints": 1,
+        "description": null
+      }
+    ]
   },
   {
     "id": 1000011,
     "name": "Guard Up",
     "category": null,
-    "tiers": []
+    "tiers": [
+      {
+        "label": "+2",
+        "minPoints": 2,
+        "description": null
+      },
+      {
+        "label": "+1",
+        "minPoints": 1,
+        "description": null
+      }
+    ]
   },
   {
     "id": 1000012,
     "name": "Adaptation Up",
     "category": null,
-    "tiers": []
+    "tiers": [
+      {
+        "label": "+2",
+        "minPoints": 2,
+        "description": null
+      },
+      {
+        "label": "+1",
+        "minPoints": 1,
+        "description": null
+      }
+    ]
   },
   {
     "id": 1000013,
     "name": "Encourage Up",
     "category": null,
-    "tiers": []
+    "tiers": [
+      {
+        "label": "+2",
+        "minPoints": 2,
+        "description": null
+      },
+      {
+        "label": "+1",
+        "minPoints": 1,
+        "description": null
+      }
+    ]
   },
   {
     "id": 1000014,
     "name": "Bullet Saver Up",
     "category": null,
-    "tiers": []
+    "tiers": [
+      {
+        "label": "+2",
+        "minPoints": 2,
+        "description": null
+      },
+      {
+        "label": "+1",
+        "minPoints": 1,
+        "description": null
+      }
+    ]
   },
   {
     "id": 1000015,
     "name": "Wind Res Up",
     "category": null,
-    "tiers": []
+    "tiers": [
+      {
+        "label": "+4",
+        "minPoints": 4,
+        "description": null
+      },
+      {
+        "label": "+3",
+        "minPoints": 3,
+        "description": null
+      },
+      {
+        "label": "+2",
+        "minPoints": 2,
+        "description": null
+      },
+      {
+        "label": "+1",
+        "minPoints": 1,
+        "description": null
+      }
+    ]
   },
   {
     "id": 1000016,
     "name": "Reflect Up",
     "category": null,
-    "tiers": []
+    "tiers": [
+      {
+        "label": "+3",
+        "minPoints": 3,
+        "description": null
+      },
+      {
+        "label": "+2",
+        "minPoints": 2,
+        "description": null
+      },
+      {
+        "label": "+1",
+        "minPoints": 1,
+        "description": null
+      }
+    ]
   },
   {
     "id": 1000017,
     "name": "Para Res Up",
     "category": null,
-    "tiers": []
+    "tiers": [
+      {
+        "label": "+2",
+        "minPoints": 2,
+        "description": null
+      },
+      {
+        "label": "+1",
+        "minPoints": 1,
+        "description": null
+      }
+    ]
   },
   {
     "id": 1000018,
     "name": "Poison Res Up",
     "category": null,
-    "tiers": []
+    "tiers": [
+      {
+        "label": "+2",
+        "minPoints": 2,
+        "description": null
+      },
+      {
+        "label": "+1",
+        "minPoints": 1,
+        "description": null
+      }
+    ]
   },
   {
     "id": 1000019,
     "name": "Drug Knowledge Up",
     "category": null,
-    "tiers": []
+    "tiers": [
+      {
+        "label": "+1",
+        "minPoints": 1,
+        "description": null
+      }
+    ]
   },
   {
     "id": 1000020,
     "name": "Stylish Up",
     "category": null,
-    "tiers": []
+    "tiers": [
+      {
+        "label": "+1",
+        "minPoints": 1,
+        "description": null
+      }
+    ]
   },
   {
     "id": 1000021,
     "name": "Vigorous Up",
     "category": null,
-    "tiers": []
+    "tiers": [
+      {
+        "label": "+1",
+        "minPoints": 1,
+        "description": null
+      }
+    ]
   },
   {
     "id": 1000022,
     "name": "Sleep Res Up",
     "category": null,
-    "tiers": []
+    "tiers": [
+      {
+        "label": "+2",
+        "minPoints": 2,
+        "description": null
+      },
+      {
+        "label": "+1",
+        "minPoints": 1,
+        "description": null
+      }
+    ]
   },
   {
     "id": 1000023,
     "name": "Obscurity Up",
     "category": null,
-    "tiers": []
+    "tiers": [
+      {
+        "label": "+1",
+        "minPoints": 1,
+        "description": null
+      }
+    ]
   },
   {
     "id": 1000024,
     "name": "Soul Up",
     "category": null,
-    "tiers": []
+    "tiers": [
+      {
+        "label": "+1",
+        "minPoints": 1,
+        "description": null
+      }
+    ]
   },
   {
     "id": 1000025,
     "name": "Rush Up",
     "category": null,
-    "tiers": []
+    "tiers": [
+      {
+        "label": "+1",
+        "minPoints": 1,
+        "description": null
+      }
+    ]
   },
   {
     "id": 1000026,
     "name": "Ceaseless Up",
     "category": null,
-    "tiers": []
+    "tiers": [
+      {
+        "label": "+1",
+        "minPoints": 1,
+        "description": null
+      }
+    ]
   }
 ]

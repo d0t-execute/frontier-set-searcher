@@ -34,7 +34,6 @@ _PLACEHOLDER_EXTERNAL_ID = "0000"
 # CLASS codes for the categories this module cares about -- see
 # docs/data-format-notes.md "Equipment taxonomy" for the full decode table.
 _TOWER_CLASS = "N"
-_ZENITH_CUFF_CLASS = "P"
 
 
 class Field(IntEnum):
@@ -113,8 +112,10 @@ class ParsedDecorationRow:
 class ParsedCuffRow:
     """A separate category from ParsedDecorationRow — see docs/data-format-notes.md
     "Cuffs". Both are read from the "deco" JS bucket, distinguished by the
-    DEC field (empty = Decoration, "1" = Cuff, plus Zenith Cuffs at
-    DEC="3"+CLASS="P").
+    DEC field (empty = Decoration, "1" = Cuff). Zenith Cuffs ("SZ"/"PZ..."
+    variants) are plain DEC="1" rows too, just with a non-empty Teni --
+    DEC="3" is a wholly different, non-equippable "Sigil(Info)" row shape
+    (see `_is_cuff_row`'s own docstring) and is never a Cuff.
     """
 
     external_id: str
@@ -265,18 +266,34 @@ def parse_decoration_bucket(bucket_json: str) -> list[ParsedDecorationRow]:
 
 
 def _is_cuff_row(fields: list[str]) -> bool:
-    dec = _field(fields, Field.DEC)
-    if dec == "1":
-        return True
-    # Zenith Cuffs share DEC="3" with Tower Weapon Sigils (CLASS="N") in the
-    # raw data but are mechanically Cuffs -- see docs/data-format-notes.md
-    # "Cuffs".
-    return dec == "3" and _field(fields, Field.CLASS) == _ZENITH_CUFF_CLASS
+    """A row is a Cuff iff DEC == "1" -- that alone, full stop.
+
+    DEC="3" rows (both CLASS="N" and CLASS="P") were *previously* assumed to
+    split into "real Tower Weapon Sigil" vs. "real Zenith Cuff" respectively
+    -- wrong, confirmed by the project owner reporting that two CLASS="P"
+    DEC="3" rows ("Hearing P. Up Sigil", "Stylish Up Sigil") were showing up
+    in the Cuff picker despite never being equippable cuffs in the real game.
+    Direct re-investigation of the raw `deco` bucket (see
+    docs/data-format-notes.md "Cuffs") found every one of the 26 DEC="3",
+    CLASS="P" rows' `Teni` value already has a complete, independently
+    DEC="1" "SZ"/"PZ..." Cuff family covering it -- so these rows add no
+    skill Cuffs don't already reach. Worse, several of them have internally
+    inconsistent names for their own `Teni` value (e.g. the DEC="3" row
+    pointing at `Teni=32`, "Vampirism Up", is itself named "Poison Res Up
+    Sigil") -- not how any real, curated item row looks, and consistent with
+    the source site's own navigation bar listing "Sigil(Info)" as a tab
+    separate from "Cuff/Z Cuff" (see this doc's "Corroboration" note): these
+    are some kind of reference/info data reusing the `deco` bucket's row
+    shape, not real droppable Cuffs. All DEC="3" rows -- CLASS="N" or "P" --
+    are therefore excluded; every genuine Cuff, Zenith included, is DEC="1".
+    """
+    return _field(fields, Field.DEC) == "1"
 
 
 def parse_cuff_bucket(bucket_json: str) -> list[ParsedCuffRow]:
-    """Cuffs: DEC == "1" rows, plus Zenith Cuffs (DEC == "3", CLASS == "P"),
-    from the "deco" bucket (see docs/data-format-notes.md "Cuffs").
+    """Cuffs: DEC == "1" rows from the "deco" bucket (see
+    docs/data-format-notes.md "Cuffs") -- see `_is_cuff_row`'s own docstring
+    for why DEC == "3" is never a Cuff, Zenith or otherwise.
 
     Unlike decorations, slot_size 0 is valid and common here (Hiden Cuffs,
     which cost no Poogie-slot capacity), so there's no placeholder to filter.

@@ -59,6 +59,7 @@ class Skill:
     id: int
     name: str
     category: str | None = None
+    priority_rank: int | None = None
 
 
 @dataclass(frozen=True, slots=True)

@@ -44,7 +44,9 @@ def insert_skill(conn: sqlite3.Connection, *, name: str, category: str | None = 
 
 
 def get_skill_by_name(conn: sqlite3.Connection, name: str) -> Skill | None:
-    row = conn.execute("SELECT id, name, category FROM skill WHERE name = ?", (name,)).fetchone()
+    row = conn.execute(
+        "SELECT id, name, category, priority_rank FROM skill WHERE name = ?", (name,)
+    ).fetchone()
     if row is None:
         return None
     return _skill_from_row(row)
@@ -67,12 +69,18 @@ def insert_zenith_skill(conn: sqlite3.Connection, *, name: str) -> ZenithSkill:
 
 
 def list_skills(conn: sqlite3.Connection) -> list[Skill]:
-    rows = conn.execute("SELECT id, name, category FROM skill ORDER BY id").fetchall()
+    rows = conn.execute(
+        "SELECT id, name, category, priority_rank FROM skill ORDER BY id"
+    ).fetchall()
     return [_skill_from_row(row) for row in rows]
 
 
 def set_skill_category(conn: sqlite3.Connection, *, skill_id: int, category: str) -> None:
     conn.execute("UPDATE skill SET category = ? WHERE id = ?", (category, skill_id))
+
+
+def set_skill_priority_rank(conn: sqlite3.Connection, *, skill_id: int, rank: int) -> None:
+    conn.execute("UPDATE skill SET priority_rank = ? WHERE id = ?", (rank, skill_id))
 
 
 def insert_skill_tier(
@@ -119,17 +127,29 @@ def list_zenith_skills(conn: sqlite3.Connection) -> list[ZenithSkill]:
     return [ZenithSkill(id=row["id"], name=row["name"]) for row in rows]
 
 
-def list_zenith_skill_ids_used_by_equipment_or_cuffs(conn: sqlite3.Connection) -> set[int]:
+def list_zenith_skill_ids_used_by_equipment_cuffs_or_weapons(conn: sqlite3.Connection) -> set[int]:
     """Zenith skill ids actually reachable through an exported entity.
 
-    `zenith_skill` also carries ids referenced only by `weapon` rows (weapons
-    aren't exported -- see etl/src/etl/export.py's module docstring), so a
-    naive `list_zenith_skills` export would include unsatisfiable catalog
-    entries no equipment or cuff could ever grant.
+    `zenith_skill` can in principle carry ids no exported row ever grants
+    (shouldn't happen today -- every family is reachable through at least one
+    of equipment, cuffs, or weapons -- but kept defensive rather than assumed),
+    so a naive `list_zenith_skills` export would risk including an
+    unsatisfiable catalog entry.
     """
     rows = conn.execute(
         "SELECT zenith_skill_id FROM equipment WHERE zenith_skill_id IS NOT NULL "
-        "UNION SELECT zenith_skill_id FROM cuff WHERE zenith_skill_id IS NOT NULL"
+        "UNION SELECT zenith_skill_id FROM cuff WHERE zenith_skill_id IS NOT NULL "
+        "UNION SELECT zenith_skill_id FROM weapon WHERE zenith_skill_id IS NOT NULL"
+    ).fetchall()
+    return {row["zenith_skill_id"] for row in rows}
+
+
+def list_zenith_skill_ids_used_by_weapons(conn: sqlite3.Connection) -> set[int]:
+    """Zenith skill ids a weapon can carry -- see `export.py`'s
+    `_export_weapon_zenith_skill_ids` (the weapon slot's include/exclude
+    filter needs to know which Zenith skills are weapon-eligible at all)."""
+    rows = conn.execute(
+        "SELECT DISTINCT zenith_skill_id FROM weapon WHERE zenith_skill_id IS NOT NULL"
     ).fetchall()
     return {row["zenith_skill_id"] for row in rows}
 
@@ -466,7 +486,12 @@ def _cuff_from_row(row: sqlite3.Row) -> Cuff:
 
 
 def _skill_from_row(row: sqlite3.Row) -> Skill:
-    return Skill(id=row["id"], name=row["name"], category=row["category"])
+    return Skill(
+        id=row["id"],
+        name=row["name"],
+        category=row["category"],
+        priority_rank=row["priority_rank"],
+    )
 
 
 def _equipment_from_row(row: sqlite3.Row) -> Equipment:

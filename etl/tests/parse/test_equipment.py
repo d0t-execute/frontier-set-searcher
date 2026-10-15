@@ -94,10 +94,15 @@ def test_decoration_bucket_only_keeps_dec_empty_rows() -> None:
     assert [row.external_id for row in rows] == ["deco:031F"]
 
 
-def test_cuff_bucket_only_keeps_dec_1_and_zenith_cuff_rows() -> None:
-    # A Zenith Cuff (DEC="3", CLASS="P") is a Cuff; a Tower Weapon Sigil
-    # (DEC="3", CLASS="N") sharing the same DEC value is not -- see
-    # docs/data-format-notes.md "Cuffs".
+def test_cuff_bucket_excludes_every_dec_3_row_regardless_of_class() -> None:
+    # DEC="3" is never a Cuff -- not CLASS="N" (a real Tower Weapon Sigil,
+    # deferred) and not CLASS="P" either, despite a non-empty Teni making
+    # that one look plausible at a glance. See `_is_cuff_row`'s own
+    # docstring and docs/data-format-notes.md "Cuffs" for why: every DEC="3"
+    # row's Teni value is already fully covered by an independent DEC="1"
+    # "SZ"/"PZ..." Cuff family, and several DEC="3", CLASS="P" rows have
+    # internally inconsistent names for their own Teni value -- not how a
+    # real, curated item row looks.
     bucket_json = (
         '{"031F":"Paralysis 1 Deco,0,0,4,,,,,,,57,2,46,-2,,,,,,,,'
         '031A1R 015F3,1,,1,400,,,1,,,,,1-,,",'
@@ -111,7 +116,7 @@ def test_cuff_bucket_only_keeps_dec_1_and_zenith_cuff_rows() -> None:
 
     rows = parse_cuff_bucket(bucket_json)
 
-    assert sorted(row.external_id for row in rows) == ["cuff:1016", "cuff:3918"]
+    assert sorted(row.external_id for row in rows) == ["cuff:1016"]
 
 
 def test_cuff_bucket_accepts_slot_size_zero_for_hiden_cuffs() -> None:
@@ -140,33 +145,9 @@ def test_cuff_bucket_accepts_slot_size_zero_for_hiden_cuffs() -> None:
 
 def test_parses_a_zenith_cuff_row() -> None:
     # Carries only a Zenith skill (via Teni) -- no normal skills at all.
-    bucket_json = (
-        '{"3918":"Skill Slots Up Sigil,0,0,5,,,,,,,,,,,,,,,,,,'
-        '392F1 359D5 359F5 35A15,2200,,1,250000,,,1,,,,,1t,3,P,,1"}'
-    )
-
-    rows = parse_cuff_bucket(bucket_json)
-
-    assert rows == [
-        ParsedCuffRow(
-            external_id="cuff:3918",
-            name="Skill Slots Up Sigil",
-            slot_size=1,
-            skills=(),
-            zenith_skill_id=1,
-            category="cuff_standard_zenith",
-        )
-    ]
-
-
-def test_parses_a_zenith_cuff_with_dec_1_not_just_dec_3() -> None:
-    # Found by actually running the real pipeline and sanity-checking the
-    # loaded counts, not by inspecting the deco bucket's DEC/CLASS/slot_size
-    # shape alone: a second Zenith Cuff variant, "<Name> SZ", lives at
-    # DEC="1" (ordinary Cuff) rather than DEC="3" -- same CLASS="P" +
-    # populated Teni, same empty SN1-5, but slot_size=2 instead of 1 (a
-    # pricier Poogie-slot alternative granting the same Zenith skill). See
-    # docs/data-format-notes.md "Cuffs".
+    # Zenith Cuffs are plain DEC="1" rows, same as any other Cuff -- the
+    # "<Name> SZ" naming is cosmetic, not a sign of a different DEC/CLASS
+    # shape (see `_is_cuff_row`'s own docstring).
     bucket_json = (
         '{"3637":"Skill Slots Up SZ,0,0,6,,,,,,,,,,,,,,,,,,'
         '359B3 359D5 359F5 35A15,2200,,1,250000,,,2,,,,,1-,1,P,,1"}'
@@ -184,6 +165,21 @@ def test_parses_a_zenith_cuff_with_dec_1_not_just_dec_3() -> None:
             category="cuff_standard_zenith",
         )
     ]
+
+
+def test_excludes_a_dec_3_class_p_row_even_with_a_populated_teni() -> None:
+    # The actual bug this guards against: DEC="3", CLASS="P" rows (e.g. the
+    # real "Hearing P. Up Sigil" row) look exactly like a cheaper, 1-slot
+    # Zenith Cuff variant at a glance -- same populated Teni, same empty
+    # SN1-5 -- but are never real Cuffs; see `_is_cuff_row`'s own docstring.
+    bucket_json = (
+        '{"3921":"Hearing P. Up Sigil,0,0,5,,,,,,,,,,,,,,,,,,'
+        '392F1 35A75 35A83 35A91,2200,,1,100000,,,1,,,,,1t,3,P,,17"}'
+    )
+
+    rows = parse_cuff_bucket(bucket_json)
+
+    assert rows == []
 
 
 # -- single-bucket parsing ---------------------------------------------------
@@ -386,7 +382,7 @@ def test_parse_equip_js_covers_decorations() -> None:
     assert "deco:" not in by_id  # the blank-key UI placeholder
     assert "deco:1016" not in by_id  # a Cuff, not a decoration
     assert "deco:3F20" not in by_id  # also a Cuff (Hiden)
-    assert "deco:3918" not in by_id  # a Zenith Cuff, not a decoration
+    assert "deco:3637" not in by_id  # also a Cuff (Zenith "SZ")
     assert by_id["deco:031F"] == ParsedDecorationRow(
         external_id="deco:031F",
         name="Paralysis 1 Deco",
@@ -425,10 +421,10 @@ def test_parse_equip_js_covers_cuffs() -> None:
         zenith_skill_id=None,
         category="cuff_hiden",
     )
-    assert by_id["cuff:3918"] == ParsedCuffRow(
-        external_id="cuff:3918",
-        name="Skill Slots Up Sigil",
-        slot_size=1,
+    assert by_id["cuff:3637"] == ParsedCuffRow(
+        external_id="cuff:3637",
+        name="Skill Slots Up SZ",
+        slot_size=2,
         skills=(),
         zenith_skill_id=1,
         category="cuff_standard_zenith",
