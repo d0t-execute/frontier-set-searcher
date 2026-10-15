@@ -376,6 +376,7 @@ code {
 .form-text {
   color: var(--text);
   font-size: 13px;
+  padding-bottom: 10px;
 }
 
 /* -- Skill search/add control (components/SkillPicker.tsx) --------------
