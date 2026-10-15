@@ -61,9 +61,7 @@ function HunterTypeToggle({
 }) {
   return (
     <div className="app-field-group app-hunter-type-field">
-      <span className="form-label" id="hunter-type-label">
-        Hunter type
-      </span>
+
       <div
         className="hunter-type-toggle"
         role="group"
@@ -623,11 +621,6 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                       </option>
                     ))}
                   </select>
-                  <div className="form-text">
-                    A Zenith-infused weapon always has 3 open slots (a plain one can too). Slots
-                    left unassigned here are yours to spend on Weapon Sigils instead -- a separate
-                    mechanic this tool doesn't model.
-                  </div>
                 </div>
               </Disclosure>
             </div>

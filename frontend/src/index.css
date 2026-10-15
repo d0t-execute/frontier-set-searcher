@@ -10,6 +10,8 @@
   --social-bg: rgba(244, 243, 236, 0.5);
   --shadow: rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
   --danger: #dc3545;
+  --text-muted:#9b93a5;
+
 
   --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
   --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
@@ -47,6 +49,7 @@
     --social-bg: rgba(47, 48, 58, 0.5);
     --shadow: rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
     --danger: #ff6b81;
+    --text-muted:#9397a1
   }
 
   #social .button-icon {
@@ -440,6 +443,13 @@ code {
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%236b6375' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
 }
 
+/* ArmorPicker's own decoration search boxes (`w-auto` alone left them at the
+ * browser's intrinsic text-input width, ~183px) -- widened to a fixed 200px
+ * (2026-10-15, per the project owner). */
+.decoration-search-input {
+  width: 230px;
+}
+
 @media (prefers-color-scheme: dark) {
   .form-select {
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
@@ -451,7 +461,7 @@ code {
  * browser default gray, unreadable against this page's dark background. */
 .form-select::placeholder,
 .form-control::placeholder {
-  color: var(--text);
+  color: var(--text-muted);
   opacity: 1;
 }
 
@@ -527,7 +537,7 @@ code {
  * Bootstrap itself uses, needed to win against its own rule) to this page's
  * own themed tokens instead. */
 .text-muted {
-  color: var(--text) !important;
+  color: var(--text-muted) !important;
 }
 
 .text-danger {
@@ -582,7 +592,7 @@ code {
  * previously only a textual "(disabled)" suffix told them apart from an
  * active skill (docs/skill-system-roadmap.md's result-card-redesign spec). */
 .result-skill-inactive {
-  color: var(--text);
+  color: var(--text-muted);
   opacity: 0.7;
 }
 
