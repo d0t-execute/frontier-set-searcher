@@ -108,8 +108,8 @@ describe('ArmorPicker', () => {
       target: { value: 'L' },
     })
 
-    expect(screen.getAllByText(/type at least/i).length).toBeGreaterThan(0)
     expect(screen.queryByLabelText('Pieces matching search for head')).not.toBeInTheDocument()
+    expect(screen.queryByText(/no matches/i)).not.toBeInTheDocument()
   })
 
   it('filters candidates by a case-insensitive substring match', () => {

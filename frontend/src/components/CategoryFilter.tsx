@@ -37,13 +37,13 @@ export function CategoryFilter({ groups, excludedCategories, onChange }: Categor
   }
 
   return (
-    <div className="d-flex flex-column gap-3">
+    <div className="category-filter">
       {groups.map((group) => {
         const excludedCount = group.categories.filter((c) => excludedCategories.has(c.key)).length
         const allExcluded = excludedCount === group.categories.length
         const someExcluded = excludedCount > 0 && !allExcluded
         return (
-          <div key={group.label}>
+          <div className="category-group" key={group.label}>
             <GroupCheckbox
               label={group.label}
               // Fully checked only when nothing in the group is excluded --
@@ -56,9 +56,9 @@ export function CategoryFilter({ groups, excludedCategories, onChange }: Categor
               indeterminate={someExcluded}
               onChange={(checked) => setGroup(group, checked)}
             />
-            <div className="d-flex flex-wrap gap-3 ps-3">
+            <div className="category-group-children">
               {group.categories.map((category) => (
-                <div className="form-check" key={category.key}>
+                <div className="form-check category-leaf" key={category.key}>
                   <input
                     type="checkbox"
                     className="form-check-input"

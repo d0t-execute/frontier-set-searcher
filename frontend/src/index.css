@@ -9,6 +9,7 @@
   --accent-border: rgba(170, 59, 255, 0.5);
   --social-bg: rgba(244, 243, 236, 0.5);
   --shadow: rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+  --danger: #dc3545;
 
   --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
   --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
@@ -31,7 +32,11 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --text: #9ca3af;
+    /* Noticeably lighter than the old #9ca3af (2026-10-15, per the project
+     * owner: secondary/muted text -- placeholders, section descriptions,
+     * result-card decoration/skill lines -- was close to unreadable against
+     * this dark background). */
+    --text: #c3c7d1;
     --text-h: #f3f4f6;
     --bg: #16171d;
     --border: #2e303a;
@@ -41,6 +46,7 @@
     --accent-border: rgba(192, 132, 252, 0.5);
     --social-bg: rgba(47, 48, 58, 0.5);
     --shadow: rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
+    --danger: #ff6b81;
   }
 
   #social .button-icon {
@@ -49,7 +55,10 @@
 }
 
 #root {
-  width: 1126px;
+  /* Widened from 1126px (2026-10-15, per the project owner: the search
+   * form's columns -- the Skills column especially -- felt cramped with
+   * generous empty margins on either side of the page). */
+  width: 1680px;
   max-width: 100%;
   margin: 0 auto;
   text-align: center;
@@ -201,6 +210,48 @@ code {
   border-top: 1px solid var(--border);
 }
 
+/* -- Category filter tree (components/CategoryFilter.tsx) ----------------
+ * A real tree -- each group's own leaves stacked one per line, with a trunk
+ * line down the left edge and a short branch tick off it to each leaf --
+ * replacing the old flex-wrapped "row of words in a box" (2026-10-15, per
+ * the project owner: the underlying group/leaf structure should be visible
+ * at a glance, not just implied by indentation). Shared by Gear levels,
+ * Poogie cuffs, Decorations, and the Weapon section's Zenith-skill
+ * checklist -- all four render through this one component. */
+.category-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.category-group-children {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+  margin-left: 9px;
+  padding-left: 16px;
+  /* A plain `var(--border)` line was too faint to read as structure at a
+   * glance (2026-10-15, per the project owner) -- blended toward `--text`
+   * for a branch line that's still subtle but clearly visible against the
+   * page background in both color schemes. */
+  border-left: 1.5px solid color-mix(in srgb, var(--border), var(--text) 45%);
+}
+
+.category-leaf {
+  position: relative;
+}
+
+.category-leaf::before {
+  content: '';
+  position: absolute;
+  top: 12px;
+  left: -16px;
+  width: 13px;
+  height: 1.5px;
+  background: color-mix(in srgb, var(--border), var(--text) 45%);
+}
+
 /* Consistent vertical rhythm between a section's own sub-blocks (e.g. the
  * Weapon section's Hunter-type select / Zenith-skill checklist / slot-count
  * select) -- a `gap`-based wrapper instead of per-element margin utility
@@ -234,7 +285,11 @@ code {
  * a phone-width viewport. */
 .app-columns {
   display: grid;
-  grid-template-columns: 1fr 1.3fr 1fr;
+  /* Skills widened from 1fr (2026-10-15, per the project owner: a skill row's
+   * name, level select, and Remove button were cramped in the narrowest of
+   * the three columns) -- Weapon shrinks to match now that Hunter Type has
+   * moved out into its own standalone toggle above the columns. */
+  grid-template-columns: 1.4fr 1.3fr 0.9fr;
   align-items: start;
   gap: 20px;
 }
@@ -253,8 +308,10 @@ code {
 }
 
 .app-action-bar {
-  position: sticky;
-  bottom: 0;
+  /* No longer `position: sticky` (2026-10-15, per the project owner: it
+   * doesn't need to stay pinned to the bottom of the viewport while
+   * scrolling -- just sit at the bottom of the form section like any other
+   * block). */
   display: flex;
   align-items: center;
   gap: 16px;
@@ -279,8 +336,73 @@ code {
   gap: 8px;
 }
 
+/* Breathing room between the action bar and whatever status/result text
+ * follows it (2026-10-15, per the project owner: "Searching…"/"Showing the
+ * top N results" text was sitting right up against the bar above it). */
+.app-status {
+  margin-top: 16px;
+}
+
 .app-results {
   margin-top: 24px;
+}
+
+/* -- Hunter Type toggle (App.tsx) -----------------------------------------
+ * A two-position slider switch standing in for the old "Hunter type" select
+ * nested inside the Weapon disclosure (2026-10-15, per the project owner:
+ * this is a required, build-defining choice, not an optional filter that
+ * belongs behind a click to expand) -- one track, one sliding thumb, each
+ * half labeled with the option it selects instead of a generic on/off. */
+.hunter-type-toggle {
+  position: relative;
+  display: inline-grid;
+  grid-template-columns: 1fr 1fr;
+  width: 280px;
+  max-width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--code-bg);
+  padding: 3px;
+  box-sizing: border-box;
+}
+
+.hunter-type-toggle-thumb {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: calc(50% - 3px);
+  border-radius: 999px;
+  background: var(--accent);
+  transition: transform 0.18s ease;
+}
+
+.hunter-type-toggle[data-selected='gunner'] .hunter-type-toggle-thumb {
+  transform: translateX(100%);
+}
+
+.hunter-type-toggle-option {
+  all: unset;
+  position: relative;
+  z-index: 1;
+  box-sizing: border-box;
+  text-align: center;
+  padding: 8px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--text);
+  transition: color 0.18s ease;
+}
+
+.hunter-type-toggle-option[aria-pressed='true'] {
+  color: #fff;
+}
+
+.hunter-type-toggle-option:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 /* -- Form controls -------------------------------------------------------
@@ -324,8 +446,24 @@ code {
   }
 }
 
+/* Unthemed browser/Bootstrap placeholder color is a 2026-10-15 fix (per the
+ * project owner): without this, search-box placeholders fell back to the
+ * browser default gray, unreadable against this page's dark background. */
+.form-select::placeholder,
+.form-control::placeholder {
+  color: var(--text);
+  opacity: 1;
+}
+
 .form-select:focus,
 .form-control:focus {
+  /* Bootstrap's own `.form-control:focus` sets `background-color:
+   * var(--bs-body-bg)`, which defaults to white (this app never sets
+   * `data-bs-theme="dark"`) -- without this override, every search box
+   * flashed white on focus in dark mode (2026-10-15, per the project
+   * owner). */
+  background-color: var(--bg);
+  color: var(--text-h);
   border-color: var(--accent);
   outline: none;
   box-shadow: 0 0 0 3px var(--accent-bg);
@@ -376,6 +514,93 @@ code {
 .form-text {
   color: var(--text);
   font-size: 13px;
+}
+
+/* This vendored Bootstrap build's `.text-muted`/`.text-danger` are never
+ * re-themed for dark mode (it only ships a `[data-bs-theme=dark]` variant
+ * this app never sets) -- `.text-muted` falls back to a near-black
+ * `rgba(33, 37, 41, .75)` and `.text-danger` to an even darker `#58151c`,
+ * both effectively invisible against this page's dark background (2026-10-15,
+ * per the project owner: decoration/active-skill text in the result cards
+ * was "basically dark gray on dark gray"). Overridden here (same `!important`
+ * Bootstrap itself uses, needed to win against its own rule) to this page's
+ * own themed tokens instead. */
+.text-muted {
+  color: var(--text) !important;
+}
+
+.text-danger {
+  color: var(--danger) !important;
+}
+
+/* -- Result cards (components/ResultsList.tsx) ---------------------------
+ * Three-column layout (docs/skill-system-roadmap.md's result-card-redesign
+ * follow-up, per the project owner's own mockup): skills on the left, picks
+ * in the middle, at-a-glance stats on the right. Collapses to one column
+ * below the same breakpoint `.app-columns` uses, for the same reason. */
+.result-card {
+  display: grid;
+  grid-template-columns: 1fr 1.6fr 0.9fr;
+  align-items: stretch;
+  gap: 20px;
+}
+
+@media (max-width: 860px) {
+  .result-card {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Each column is its own equal-height panel (2026-10-15, per the project
+ * owner: the three columns "looked uneven" -- the Stats column in
+ * particular has far less content than Skills/Picks, so without a visible
+ * boundary its own emptiness read as a layout bug rather than just "there's
+ * less to show here"). `align-items: stretch` above (the grid default, made
+ * explicit) is what makes every column match the row's tallest one; this
+ * gives that equal height a visible edge. */
+.result-column {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+
+.result-column-heading {
+  font-size: 15px;
+  margin: 0 0 8px;
+}
+
+.result-decoration-list {
+  margin: 2px 0 6px 20px;
+  color: var(--text);
+  font-size: 0.875em;
+}
+
+/* A skill that hasn't crossed its own first tier, or that's been
+ * force-disabled by the active-skill cap, renders visually muted --
+ * previously only a textual "(disabled)" suffix told them apart from an
+ * active skill (docs/skill-system-roadmap.md's result-card-redesign spec). */
+.result-skill-inactive {
+  color: var(--text);
+  opacity: 0.7;
+}
+
+/* The crossed tier's own label, or the bare skill name as a fallback (see
+ * `buildSkillEntry`'s own docstring) -- sized up a little from the
+ * surrounding `.small` text so it reads as this row's headline, with the
+ * plain point fraction next to it staying secondary (2026-10-15, per the
+ * project owner). */
+.result-skill-level {
+  font-size: 1.05em;
+  font-weight: 500;
+}
+
+.result-skill-value {
+  color: var(--text);
+}
+
+.result-muted {
+  color: var(--text);
 }
 
 /* -- Skill search/add control (components/SkillPicker.tsx) --------------

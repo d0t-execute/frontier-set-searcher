@@ -88,7 +88,7 @@ export function ArmorPicker({
   }
 
   return (
-    <div>
+    <div className="d-flex flex-column gap-3">
       {slots.map((slot) => (
         <ArmorSlotPicker
           key={slot.slotId}
@@ -153,8 +153,8 @@ function ArmorSlotPicker({
   )
 
   return (
-    <div className="mb-2">
-      <div className="fw-bold text-capitalize">{slotId}</div>
+    <div>
+      <div className="fw-bold text-capitalize mb-1">{slotId}</div>
 
       {candidate && !picking ? (
         <div className="d-flex align-items-center gap-2">
@@ -175,7 +175,7 @@ function ArmorSlotPicker({
           </button>
         </div>
       ) : (
-        <div>
+        <div className="d-flex flex-column gap-1">
           <input
             type="text"
             className="form-control"
@@ -197,7 +197,7 @@ function ArmorSlotPicker({
           {pin && (
             <button
               type="button"
-              className="btn btn-sm btn-outline-secondary mt-1"
+              className="btn btn-sm btn-outline-secondary align-self-start"
               onClick={() => {
                 setPicking(false)
                 setCandidateSearch('')
@@ -210,7 +210,7 @@ function ArmorSlotPicker({
       )}
 
       {candidate && !picking && (
-        <div className="ms-2 mt-1">
+        <div className="ms-2 mt-2">
           {pin!.decorationIds.map((decorationId, i) => {
             const decoration = decorations.find((d) => d.id === decorationId)
             return (
@@ -233,7 +233,7 @@ function ArmorSlotPicker({
           })}
 
           {remainingCapacity > 0 && (
-            <div>
+            <div className="mt-1">
               <input
                 type="text"
                 className="form-control form-control-sm w-auto d-inline-block"
@@ -309,9 +309,7 @@ function SlotDecorationOnlyPicker({
 
   return (
     <div className="ms-2 mt-1">
-      <div className="small text-muted">
-        Or force a decoration into this slot while leaving the piece itself up to the solver:
-      </div>
+      <div className="small text-muted mb-1">Or just a decoration:</div>
       {pinnedIds.map((decorationId, i) => {
         const decoration = decorations.find((d) => d.id === decorationId)
         return (
@@ -329,7 +327,7 @@ function SlotDecorationOnlyPicker({
       })}
 
       {remainingCapacity > 0 && (
-        <div>
+        <div className="mt-1">
           <input
             type="text"
             className="form-control form-control-sm w-auto d-inline-block"
