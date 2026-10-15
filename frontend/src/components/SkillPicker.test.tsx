@@ -15,11 +15,11 @@ function skill(
 const SKILLS = [skill(1, 'Attack'), skill(2, 'Defense'), skill(3, 'Evasion')]
 
 describe('SkillPicker', () => {
-  it('offers every skill in the "add a skill" control when none are picked', () => {
+  it('offers every skill in the "add a skill" results when none are picked', () => {
     render(<SkillPicker skills={SKILLS} requirements={[]} onChange={vi.fn()} />)
 
-    const addControl = screen.getByRole('combobox', { name: /add a skill/i })
-    expect(screen.getAllByRole('option', { name: 'Attack' })).toHaveLength(1)
+    const addControl = screen.getByRole('textbox', { name: /add a skill/i })
+    expect(screen.getAllByRole('button', { name: 'Attack' })).toHaveLength(1)
     expect(addControl).toBeInTheDocument()
   })
 
@@ -34,7 +34,7 @@ describe('SkillPicker', () => {
     const user = userEvent.setup()
     render(<SkillPicker skills={SKILLS} requirements={[]} onChange={onChange} />)
 
-    await user.selectOptions(screen.getByRole('combobox', { name: /add a skill/i }), 'Attack')
+    await user.click(screen.getByRole('button', { name: 'Attack' }))
 
     expect(onChange).toHaveBeenCalledWith([{ skillId: 1, minPoints: 1 }])
   })
@@ -105,8 +105,38 @@ describe('SkillPicker', () => {
       />,
     )
 
-    const addControl = screen.getByRole('combobox', { name: /add a skill/i })
-    expect(within(addControl).queryByRole('option', { name: 'Attack' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Attack' })).not.toBeInTheDocument()
+  })
+
+  it('narrows the add-a-skill results as the search text changes', async () => {
+    const user = userEvent.setup()
+    render(<SkillPicker skills={SKILLS} requirements={[]} onChange={vi.fn()} />)
+
+    await user.type(screen.getByRole('textbox', { name: /add a skill/i }), 'def')
+
+    expect(screen.getByRole('button', { name: 'Defense' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Attack' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Evasion' })).not.toBeInTheDocument()
+  })
+
+  it('shows a message when no skill matches the search text', async () => {
+    const user = userEvent.setup()
+    render(<SkillPicker skills={SKILLS} requirements={[]} onChange={vi.fn()} />)
+
+    await user.type(screen.getByRole('textbox', { name: /add a skill/i }), 'zzz')
+
+    expect(screen.getByText('No matches.')).toBeInTheDocument()
+  })
+
+  it('clears the search text after adding a skill', async () => {
+    const user = userEvent.setup()
+    render(<SkillPicker skills={SKILLS} requirements={[]} onChange={vi.fn()} />)
+
+    const addControl = screen.getByRole('textbox', { name: /add a skill/i })
+    await user.type(addControl, 'Attack')
+    await user.click(screen.getByRole('button', { name: 'Attack' }))
+
+    expect(addControl).toHaveValue('')
   })
 
   describe('categorization', () => {
@@ -117,30 +147,27 @@ describe('SkillPicker', () => {
       skill(4, 'Mystery Skill'), // no category
     ]
 
-    it('groups the add-a-skill options under their category as optgroups', () => {
+    it('groups the add-a-skill options under their category', () => {
       render(<SkillPicker skills={CATEGORIZED_SKILLS} requirements={[]} onChange={vi.fn()} />)
 
-      const addControl = screen.getByRole('combobox', { name: /add a skill/i })
-      const healthGroup = within(addControl).getByRole('group', { name: 'Health and Stamina' })
+      const healthGroup = screen.getByRole('group', { name: 'Health and Stamina' })
       expect(
         within(healthGroup)
-          .getAllByRole('option')
+          .getAllByRole('button')
           .map((o) => o.textContent),
       ).toEqual(['Health', 'Vampirism'])
       expect(
-        within(within(addControl).getByRole('group', { name: 'Attack Skills' })).getByRole(
-          'option',
-          { name: 'Attack' },
-        ),
+        within(screen.getByRole('group', { name: 'Attack Skills' })).getByRole('button', {
+          name: 'Attack',
+        }),
       ).toBeInTheDocument()
     })
 
     it('groups skills with no category under "Other"', () => {
       render(<SkillPicker skills={CATEGORIZED_SKILLS} requirements={[]} onChange={vi.fn()} />)
 
-      const addControl = screen.getByRole('combobox', { name: /add a skill/i })
-      const otherGroup = within(addControl).getByRole('group', { name: 'Other' })
-      expect(within(otherGroup).getByRole('option', { name: 'Mystery Skill' })).toBeInTheDocument()
+      const otherGroup = screen.getByRole('group', { name: 'Other' })
+      expect(within(otherGroup).getByRole('button', { name: 'Mystery Skill' })).toBeInTheDocument()
     })
   })
 
@@ -194,7 +221,7 @@ describe('SkillPicker', () => {
       const user = userEvent.setup()
       render(<SkillPicker skills={LEVELED_SKILLS} requirements={[]} onChange={onChange} />)
 
-      await user.selectOptions(screen.getByRole('combobox', { name: /add a skill/i }), 'Vampirism')
+      await user.click(screen.getByRole('button', { name: 'Vampirism' }))
 
       expect(onChange).toHaveBeenCalledWith([{ skillId: 1, minPoints: 10 }])
     })
@@ -212,10 +239,7 @@ describe('SkillPicker', () => {
       ]
       render(<SkillPicker skills={allPenalty} requirements={[]} onChange={onChange} />)
 
-      await user.selectOptions(
-        screen.getByRole('combobox', { name: /add a skill/i }),
-        'Cursed Skill',
-      )
+      await user.click(screen.getByRole('button', { name: 'Cursed Skill' }))
 
       expect(onChange).toHaveBeenCalledWith([{ skillId: 1, minPoints: -10 }])
     })

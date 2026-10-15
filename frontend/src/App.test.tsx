@@ -147,7 +147,7 @@ describe('App', () => {
 
     expect(screen.getByRole('button', { name: /search/i })).toBeDisabled()
 
-    await user.selectOptions(screen.getByRole('combobox', { name: /add a skill/i }), 'Attack')
+    await user.click(screen.getByRole('button', { name: 'Attack' }))
 
     expect(screen.getByRole('button', { name: /search/i })).toBeEnabled()
   })
@@ -158,7 +158,7 @@ describe('App', () => {
     const user = userEvent.setup()
     render(<App />)
 
-    await user.selectOptions(screen.getByRole('combobox', { name: /add a skill/i }), 'Attack')
+    await user.click(screen.getByRole('button', { name: 'Attack' }))
     await user.click(screen.getByRole('button', { name: /search/i }))
 
     expect(worker.search).toHaveBeenCalledWith(
@@ -191,7 +191,7 @@ describe('App', () => {
     const user = userEvent.setup()
     render(<App />)
 
-    await user.selectOptions(screen.getByRole('combobox', { name: /add a skill/i }), 'Attack')
+    await user.click(screen.getByRole('button', { name: 'Attack' }))
     await user.click(screen.getByRole('checkbox', { name: /prefer exact matches/i }))
     await user.click(screen.getByRole('button', { name: /search/i }))
 
@@ -219,7 +219,7 @@ describe('App', () => {
     const user = userEvent.setup()
     render(<App />)
 
-    await user.selectOptions(screen.getByRole('combobox', { name: /add a skill/i }), 'Attack')
+    await user.click(screen.getByRole('button', { name: 'Attack' }))
     await user.click(screen.getByRole('checkbox', { name: 'Premium Kit' }))
     await user.click(screen.getByRole('button', { name: /search/i }))
 
@@ -241,7 +241,7 @@ describe('App', () => {
 
     // No cuff checkbox is touched here -- this is the out-of-the-box
     // default (see App.tsx's DEFAULT_EXCLUDED_CUFF_CATEGORIES).
-    await user.selectOptions(screen.getByRole('combobox', { name: /add a skill/i }), 'Attack')
+    await user.click(screen.getByRole('button', { name: 'Attack' }))
     await user.click(screen.getByRole('button', { name: /search/i }))
 
     expect(worker.search).toHaveBeenCalledWith(
@@ -263,7 +263,7 @@ describe('App', () => {
     // A piece/cuff that's unobtainable in the real game is never worth
     // surfacing by default -- see App.tsx's DEFAULT_EXCLUDED_CUFF_CATEGORIES.
     // No checkbox touched here; this is the out-of-the-box default.
-    await user.selectOptions(screen.getByRole('combobox', { name: /add a skill/i }), 'Attack')
+    await user.click(screen.getByRole('button', { name: 'Attack' }))
     await user.click(screen.getByRole('button', { name: /search/i }))
 
     expect(worker.search).toHaveBeenCalledWith(
@@ -282,7 +282,7 @@ describe('App', () => {
     const user = userEvent.setup()
     render(<App />)
 
-    await user.selectOptions(screen.getByRole('combobox', { name: /add a skill/i }), 'Attack')
+    await user.click(screen.getByRole('button', { name: 'Attack' }))
     // Standard is included by default -- unchecking it leaves only the
     // Premium cuff enabled. Both the gear-level and cuff filters have their
     // own "Standard" leaf, so the last match is the cuff one (Poogie cuffs
@@ -307,7 +307,7 @@ describe('App', () => {
     const user = userEvent.setup()
     render(<App />)
 
-    await user.selectOptions(screen.getByRole('combobox', { name: /add a skill/i }), 'Attack')
+    await user.click(screen.getByRole('button', { name: 'Attack' }))
     await user.type(
       screen.getByLabelText('Search cuffs for Cuff slot 1'),
       BUNDLE.cuffs[0].name.slice(0, 4),
@@ -339,7 +339,7 @@ describe('App', () => {
     // must change nothing about an existing search until the player opts a
     // skill in. DEFAULT_WEAPON_SLOT (asserted via BUNDLE.slots elsewhere)
     // already proves the sole candidate is the plain, no-Zenith-skill one.
-    await user.selectOptions(screen.getByRole('combobox', { name: /add a skill/i }), 'Attack')
+    await user.click(screen.getByRole('button', { name: 'Attack' }))
     await user.click(screen.getByRole('button', { name: /search/i }))
 
     expect(worker.search).toHaveBeenCalledWith(
@@ -358,7 +358,7 @@ describe('App', () => {
     const user = userEvent.setup()
     render(<App />)
 
-    await user.selectOptions(screen.getByRole('combobox', { name: /add a skill/i }), 'Attack')
+    await user.click(screen.getByRole('button', { name: 'Attack' }))
     await user.click(screen.getByRole('checkbox', { name: 'Dissolver Up' }))
     await user.selectOptions(screen.getByRole('combobox', { name: /weapon slots/i }), '2')
     await user.click(screen.getByRole('button', { name: /search/i }))
@@ -406,10 +406,7 @@ describe('App', () => {
 
     expect(screen.getByRole('button', { name: /search/i })).toBeDisabled()
 
-    await user.selectOptions(
-      screen.getByRole('combobox', { name: /add a zenith skill/i }),
-      'Dissolver Up',
-    )
+    await user.click(screen.getByRole('button', { name: 'Dissolver Up' }))
 
     expect(screen.getByRole('button', { name: /search/i })).toBeEnabled()
   })
@@ -420,11 +417,8 @@ describe('App', () => {
     const user = userEvent.setup()
     render(<App />)
 
-    await user.selectOptions(screen.getByRole('combobox', { name: /add a skill/i }), 'Attack')
-    await user.selectOptions(
-      screen.getByRole('combobox', { name: /add a zenith skill/i }),
-      'Dissolver Up',
-    )
+    await user.click(screen.getByRole('button', { name: 'Attack' }))
+    await user.click(screen.getByRole('button', { name: 'Dissolver Up' }))
     await user.click(screen.getByRole('button', { name: /search/i }))
 
     expect(worker.search).toHaveBeenCalledWith(
@@ -456,7 +450,7 @@ describe('App', () => {
     const user = userEvent.setup()
     render(<App />)
 
-    await user.selectOptions(screen.getByRole('combobox', { name: /add a skill/i }), 'Attack')
+    await user.click(screen.getByRole('button', { name: 'Attack' }))
     await user.click(screen.getByRole('button', { name: /search/i }))
 
     const resultsList = await screen.findByRole('list', { name: /search results/i })
@@ -479,7 +473,7 @@ describe('App', () => {
     const user = userEvent.setup()
     render(<App />)
 
-    await user.selectOptions(screen.getByRole('combobox', { name: /add a skill/i }), 'Attack')
+    await user.click(screen.getByRole('button', { name: 'Attack' }))
     await user.click(screen.getByRole('button', { name: /search/i }))
     await screen.findByRole('list', { name: /search results/i })
     await user.click(screen.getByRole('button', { name: /get shareable link/i }))
@@ -488,9 +482,8 @@ describe('App', () => {
     const url = (link as HTMLInputElement).value
     expect(url).toContain('#/result/')
 
-    const { decodeSharedState, encodedResultFromLocation } = await import(
-      './search-engine/shared-state'
-    )
+    const { decodeSharedState, encodedResultFromLocation } =
+      await import('./search-engine/shared-state')
     window.location.hash = new URL(url).hash
     const decoded = await decodeSharedState(encodedResultFromLocation()!)
     expect(decoded?.requirements).toEqual([{ skillId: 1, minPoints: 1 }])
@@ -530,7 +523,7 @@ describe('App', () => {
     const user = userEvent.setup()
     render(<App />)
 
-    await user.selectOptions(screen.getByRole('combobox', { name: /add a skill/i }), 'Attack')
+    await user.click(screen.getByRole('button', { name: 'Attack' }))
     await user.click(screen.getByRole('button', { name: /search/i }))
 
     // A query that could stream thousands of results against the real

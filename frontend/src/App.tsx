@@ -34,7 +34,10 @@ import type { SkillRequirement, SkillTierThresholds } from './search-engine/type
  * away the player's own use for them. */
 const WEAPON_SLOT_COUNT_OPTIONS = [0, 1, 2, 3] as const
 
-const HUNTER_TYPE_FILTER_OPTIONS: readonly { readonly value: HunterTypeFilter; readonly label: string }[] = [
+const HUNTER_TYPE_FILTER_OPTIONS: readonly {
+  readonly value: HunterTypeFilter
+  readonly label: string
+}[] = [
   { value: 'blademaster', label: 'Blademaster' },
   { value: 'gunner', label: 'Gunner' },
 ]
@@ -70,15 +73,11 @@ const MAX_RESULTS_OPTIONS = [1, 3, 5, 10, 20, 50] as const
 // pass here excluded the whole "Premium Poogie Cuffs" group for that reason
 // -- superseded by this narrower rule).
 const DEFAULT_EXCLUDED_EQUIPMENT_CATEGORIES = new Set(
-  GEAR_CATEGORY_GROUPS.find((group) => group.label === 'Unavailable')!.categories.map(
-    (c) => c.key,
-  ),
+  GEAR_CATEGORY_GROUPS.find((group) => group.label === 'Unavailable')!.categories.map((c) => c.key),
 )
 const DEFAULT_EXCLUDED_CUFF_CATEGORIES = new Set(
   ['Premium Poogie Cuffs', 'Standard Poogie Cuffs']
-    .flatMap(
-      (label) => CUFF_CATEGORY_GROUPS.find((group) => group.label === label)!.categories,
-    )
+    .flatMap((label) => CUFF_CATEGORY_GROUPS.find((group) => group.label === label)!.categories)
     .map((c) => c.key)
     .filter((key) => key.includes('unavailable') || key.includes('training_only')),
 )
@@ -136,12 +135,12 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
   // only ever consulted while seeding the `useState` calls below.
   const [persisted] = useState(() => loadSearchFormState())
 
-  const [requirements, setRequirements] = useState<SkillRequirement[]>(
-    () => [...(initialState?.requirements ?? persisted?.requirements ?? [])],
-  )
-  const [zenithRequirements, setZenithRequirements] = useState<SkillRequirement[]>(
-    () => [...(initialState?.zenithRequirements ?? persisted?.zenithRequirements ?? [])],
-  )
+  const [requirements, setRequirements] = useState<SkillRequirement[]>(() => [
+    ...(initialState?.requirements ?? persisted?.requirements ?? []),
+  ])
+  const [zenithRequirements, setZenithRequirements] = useState<SkillRequirement[]>(() => [
+    ...(initialState?.zenithRequirements ?? persisted?.zenithRequirements ?? []),
+  ])
   const [excludedCategories, setExcludedCategories] = useState<Set<string>>(
     () =>
       new Set(
@@ -170,12 +169,12 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
   // skill catalog is bundle-provided data, not a static constant like
   // CUFF_CATEGORY_GROUPS, so there's no fixed default set to seed useState
   // with up front (see `defaultExcludedWeaponZenithSkillIds` below).
-  const [excludedWeaponZenithSkillIds, setExcludedWeaponZenithSkillIds] = useState<Set<
-    string
-  > | null>(() => {
-    const seed = initialState?.excludedWeaponZenithSkillIds ?? persisted?.excludedWeaponZenithSkillIds
-    return seed ? new Set(seed) : null
-  })
+  const [excludedWeaponZenithSkillIds, setExcludedWeaponZenithSkillIds] =
+    useState<Set<string> | null>(() => {
+      const seed =
+        initialState?.excludedWeaponZenithSkillIds ?? persisted?.excludedWeaponZenithSkillIds
+      return seed ? new Set(seed) : null
+    })
   const [weaponSlotCount, setWeaponSlotCount] = useState(
     () => initialState?.weaponSlotCount ?? persisted?.weaponSlotCount ?? 0,
   )
@@ -192,14 +191,17 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
   )
   // Up to MAX_EQUIPPED_CUFFS (2) cuff ids, index 0 = cuff slot 1 -- see
   // CuffPicker's own docstring and SearchOptions.pinnedCuffs.
-  const [pinnedCuffIds, setPinnedCuffIds] = useState<readonly string[]>(
-    () => [...(initialState?.pinnedCuffIds ?? persisted?.pinnedCuffIds ?? [])],
-  )
+  const [pinnedCuffIds, setPinnedCuffIds] = useState<readonly string[]>(() => [
+    ...(initialState?.pinnedCuffIds ?? persisted?.pinnedCuffIds ?? []),
+  ])
   // Decorations forced into a slot without pinning its piece (TODO #12) --
   // see ArmorPicker.tsx's own docstring.
   const [pinnedSlotDecorationIds, setPinnedSlotDecorationIds] = useState<
     ReadonlyMap<string, readonly string[]>
-  >(() => new Map(initialState?.pinnedSlotDecorationIds ?? persisted?.pinnedSlotDecorationIds ?? []))
+  >(
+    () =>
+      new Map(initialState?.pinnedSlotDecorationIds ?? persisted?.pinnedSlotDecorationIds ?? []),
+  )
   // Defaults to on (2026-10-15, per the project owner): an unrequested skill
   // reaching one of its own tiers unprompted is more often a surprise than a
   // win, so this app now ranks against that by default rather than requiring
@@ -464,8 +466,8 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
     <main className="app-shell">
       <h1>Frontier Set Searcher</h1>
       <p className="app-intro">
-        Pick what your build needs, then search. Every section below is optional and remembers
-        its own settings -- open only the ones you need to change.
+        Pick what your build needs, then search. Every section below is optional and remembers its
+        own settings -- open only the ones you need to change.
       </p>
 
       {bundleQuery.isLoading && <p>Loading equipment data…</p>}
@@ -475,128 +477,140 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
 
       {bundle && (
         <>
-          <div className="app-section-stack">
-            <Disclosure title="Skills" summary={skillsSummary} defaultOpen>
-              <SkillPicker
-                skills={bundle.skills}
-                requirements={requirements}
-                onChange={setRequirements}
-              />
-            </Disclosure>
+          <div className="app-columns">
+            <div className="app-column">
+              <Disclosure title="Skills" summary={skillsSummary} defaultOpen>
+                <SkillPicker
+                  skills={bundle.skills}
+                  requirements={requirements}
+                  onChange={setRequirements}
+                />
+              </Disclosure>
 
-            <Disclosure title="Zenith skills" summary={zenithSkillsSummary}>
-              <SkillPicker
-                skills={bundle.zenithSkills}
-                requirements={zenithRequirements}
-                onChange={setZenithRequirements}
-                addLabel="Add a Zenith skill"
-              />
-            </Disclosure>
+              <Disclosure title="Zenith skills" summary={zenithSkillsSummary}>
+                <SkillPicker
+                  skills={bundle.zenithSkills}
+                  requirements={zenithRequirements}
+                  onChange={setZenithRequirements}
+                  addLabel="Add a Zenith skill"
+                />
+              </Disclosure>
+            </div>
 
-            <Disclosure title="Pin specific armor" summary={pinnedArmorSummary}>
-              <p className="form-text">
-                Force a specific piece (and its decorations) into a slot instead of letting the
-                solver choose -- useful for optimizing around gear you already own, or pinning
-                part of a build while exploring the rest. Unpinned slots stay solver-optimized.
-              </p>
-              <ArmorPicker
-                slots={bundle.slots}
-                decorations={pinnableDecorations}
-                pinned={pinnedArmor}
-                onChange={setPinnedArmor}
-                pinnedSlotDecorationIds={pinnedSlotDecorationIds}
-                onChangeSlotDecorations={setPinnedSlotDecorationIds}
-                skills={bundle.skills}
-              />
-            </Disclosure>
+            <div className="app-column">
+              <Disclosure title="Pin specific armor" summary={pinnedArmorSummary}>
+                <p className="form-text">
+                  Force a specific piece (and its decorations) into a slot instead of letting the
+                  solver choose -- useful for optimizing around gear you already own, or pinning
+                  part of a build while exploring the rest. Unpinned slots stay solver-optimized.
+                </p>
+                <ArmorPicker
+                  slots={bundle.slots}
+                  decorations={pinnableDecorations}
+                  pinned={pinnedArmor}
+                  onChange={setPinnedArmor}
+                  pinnedSlotDecorationIds={pinnedSlotDecorationIds}
+                  onChangeSlotDecorations={setPinnedSlotDecorationIds}
+                  skills={bundle.skills}
+                />
+              </Disclosure>
 
-            <Disclosure title="Gear levels" summary={gearLevelsSummary}>
-              <CategoryFilter
-                groups={GEAR_CATEGORY_GROUPS}
-                excludedCategories={excludedCategories}
-                onChange={setExcludedCategories}
-              />
-            </Disclosure>
+              <Disclosure title="Gear levels" summary={gearLevelsSummary}>
+                <CategoryFilter
+                  groups={GEAR_CATEGORY_GROUPS}
+                  excludedCategories={excludedCategories}
+                  onChange={setExcludedCategories}
+                />
+              </Disclosure>
 
-            <Disclosure title="Poogie cuffs" summary={cuffsSummary}>
-              <CategoryFilter
-                groups={CUFF_CATEGORY_GROUPS}
-                excludedCategories={excludedCuffCategories}
-                onChange={setExcludedCuffCategories}
-              />
-            </Disclosure>
+              <Disclosure title="Poogie cuffs" summary={cuffsSummary}>
+                <CategoryFilter
+                  groups={CUFF_CATEGORY_GROUPS}
+                  excludedCategories={excludedCuffCategories}
+                  onChange={setExcludedCuffCategories}
+                />
+              </Disclosure>
 
-            <Disclosure title="Decorations" summary={decorationsSummary}>
-              <p className="form-text">
-                Tower Gems are never included -- they're strictly stronger than their regular
-                equivalents and this tool has no way to target them at Tower armor specifically.
-              </p>
-              <CategoryFilter
-                groups={DECORATION_CATEGORY_GROUPS}
-                excludedCategories={excludedDecorationCategories}
-                onChange={setExcludedDecorationCategories}
-              />
-            </Disclosure>
+              <Disclosure title="Decorations" summary={decorationsSummary}>
+                <p className="form-text">
+                  Tower Gems are never included -- they're strictly stronger than their regular
+                  equivalents and this tool has no way to target them at Tower armor specifically.
+                </p>
+                <CategoryFilter
+                  groups={DECORATION_CATEGORY_GROUPS}
+                  excludedCategories={excludedDecorationCategories}
+                  onChange={setExcludedDecorationCategories}
+                />
+              </Disclosure>
 
-            <Disclosure title="Pin specific cuffs" summary={pinnedCuffsSummary}>
-              <p className="form-text">
-                Force a specific cuff into one or both cuff slots instead of letting the solver
-                choose -- same idea as pinning an armor piece. The same cuff can fill both slots
-                at once.
-              </p>
-              <CuffPicker cuffs={bundle.cuffs} pinned={pinnedCuffIds} onChange={setPinnedCuffIds} />
-            </Disclosure>
+              <Disclosure title="Pin specific cuffs" summary={pinnedCuffsSummary}>
+                <p className="form-text">
+                  Force a specific cuff into one or both cuff slots instead of letting the solver
+                  choose -- same idea as pinning an armor piece. The same cuff can fill both slots
+                  at once.
+                </p>
+                <CuffPicker
+                  cuffs={bundle.cuffs}
+                  pinned={pinnedCuffIds}
+                  onChange={setPinnedCuffIds}
+                />
+              </Disclosure>
+            </div>
 
-            <Disclosure title="Weapon" summary={weaponSummary}>
-              <div className="mb-2">
-                <label className="form-label" htmlFor="hunter-type-filter">
-                  Hunter type
-                </label>
-                <select
-                  id="hunter-type-filter"
-                  className="form-select w-auto"
-                  value={hunterTypeFilter}
-                  onChange={(e) => setHunterTypeFilter(e.target.value as HunterTypeFilter)}
-                >
-                  {HUNTER_TYPE_FILTER_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-                <div className="form-text">
-                  Blademaster and Gunner armor can't be mixed in one build -- this restricts the
-                  search to your Hunter Type's own pieces (plus every piece that fits either).
+            <div className="app-column">
+              <Disclosure title="Weapon" summary={weaponSummary}>
+                <div className="app-field-group">
+                  <label className="form-label" htmlFor="hunter-type-filter">
+                    Hunter type
+                  </label>
+                  <select
+                    id="hunter-type-filter"
+                    className="form-select w-auto"
+                    value={hunterTypeFilter}
+                    onChange={(e) => setHunterTypeFilter(e.target.value as HunterTypeFilter)}
+                  >
+                    {HUNTER_TYPE_FILTER_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="form-text">
+                    Blademaster and Gunner armor can't be mixed in one build -- this restricts the
+                    search to your Hunter Type's own pieces (plus every piece that fits either).
+                  </div>
                 </div>
-              </div>
-              <CategoryFilter
-                groups={weaponZenithSkillGroups}
-                excludedCategories={effectiveExcludedWeaponZenithSkillIds}
-                onChange={setExcludedWeaponZenithSkillIds}
-              />
-              <div className="mt-2">
-                <label className="form-label" htmlFor="weapon-slot-count">
-                  Weapon slots to use for decorations
-                </label>
-                <select
-                  id="weapon-slot-count"
-                  className="form-select w-auto"
-                  value={weaponSlotCount}
-                  onChange={(e) => setWeaponSlotCount(Number(e.target.value))}
-                >
-                  {WEAPON_SLOT_COUNT_OPTIONS.map((count) => (
-                    <option key={count} value={count}>
-                      {count}
-                    </option>
-                  ))}
-                </select>
-                <div className="form-text">
-                  A Zenith-infused weapon always has 3 open slots (a plain one can too). Slots
-                  left unassigned here are yours to spend on Weapon Sigils instead -- a separate
-                  mechanic this tool doesn't model.
+                <div className="app-field-group">
+                  <CategoryFilter
+                    groups={weaponZenithSkillGroups}
+                    excludedCategories={effectiveExcludedWeaponZenithSkillIds}
+                    onChange={setExcludedWeaponZenithSkillIds}
+                  />
                 </div>
-              </div>
-            </Disclosure>
+                <div className="app-field-group">
+                  <label className="form-label" htmlFor="weapon-slot-count">
+                    Weapon slots to use for decorations
+                  </label>
+                  <select
+                    id="weapon-slot-count"
+                    className="form-select w-auto"
+                    value={weaponSlotCount}
+                    onChange={(e) => setWeaponSlotCount(Number(e.target.value))}
+                  >
+                    {WEAPON_SLOT_COUNT_OPTIONS.map((count) => (
+                      <option key={count} value={count}>
+                        {count}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="form-text">
+                    A Zenith-infused weapon always has 3 open slots (a plain one can too). Slots
+                    left unassigned here are yours to spend on Weapon Sigils instead -- a separate
+                    mechanic this tool doesn't model.
+                  </div>
+                </div>
+              </Disclosure>
+            </div>
           </div>
 
           <div className="app-action-bar">
@@ -614,8 +628,8 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                 </label>
               </div>
               <div className="form-text">
-                Rank builds that pick up the fewest skills you didn't ask for above ones with
-                more of them.
+                Rank builds that pick up the fewest skills you didn't ask for above ones with more
+                of them.
               </div>
             </div>
 
@@ -651,11 +665,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                 Search
               </button>
               {status === 'searching' && (
-                <button
-                  type="button"
-                  className="btn btn-outline-secondary"
-                  onClick={handleCancel}
-                >
+                <button type="button" className="btn btn-outline-secondary" onClick={handleCancel}>
                   Cancel
                 </button>
               )}
@@ -667,9 +677,8 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
           {status === 'done' && results.length === 0 && <p>No matching builds found.</p>}
           {status === 'done' && reachedCap && (
             <p>
-              Showing the top {maxResults}{' '}
-              {maxResults === 1 ? 'result' : 'results'}. Narrow your requirements or raise the
-              result count above to see more.
+              Showing the top {maxResults} {maxResults === 1 ? 'result' : 'results'}. Narrow your
+              requirements or raise the result count above to see more.
             </p>
           )}
 

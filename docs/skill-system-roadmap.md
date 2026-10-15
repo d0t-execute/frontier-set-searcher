@@ -1349,3 +1349,77 @@ to cache search queries in the browser so refreshing the page doesn't reset sele
   the known-flaky real-data performance test: 262/262 pass. Live-browser-verified: set "Hunter type"
   to Gunner and added an "Ice Attack" skill requirement, confirmed `localStorage` held the expected
   JSON snapshot, reloaded the page, and confirmed both were restored exactly.
+
+## 19. Search-page layout rework: columns, searchable skills, modern form controls
+
+**Status: COMPLETE and verified (2026-10-15).** The project owner: divide the search page into
+columns (skill-related things on the left, gear-related in the middle, other things on the right),
+give the skill picker a real search field, clean up the dropdowns, and add breathing room between
+elements.
+
+- **Three-column layout** (`App.tsx`/`index.css`'s new `.app-columns`/`.app-column`): left holds
+  Skills + Zenith skills, middle holds Pin specific armor / Gear levels / Poogie cuffs / Decorations
+  / Pin specific cuffs, right holds Weapon. The middle column gets extra width
+  (`grid-template-columns: 1fr 1.3fr 1fr`) since it holds the most/densest sections. Collapses to one
+  column below 860px rather than squeezing three narrow columns onto a phone-width viewport. Replaces
+  the old single `.app-section-stack` -- inter-card spacing is now each column's own flex `gap`
+  instead of a `.disclosure + .disclosure` sibling margin, so there's one place controlling it, not
+  two that could silently double up.
+- **Searchable skill picker** (`SkillPicker.tsx`): the old flat `<select>` "add a skill" dropdown
+  (bad for finding one skill in a ~194-entry list) is now a live-filtered, always-grouped list -- a
+  text input narrows a scrollable, category-grouped button list as you type, with the full catalog
+  shown by default (not gated behind a minimum-character count like ArmorPicker/CuffPicker's own
+  `FilterableOptions`, since this catalog is small enough to render in full; `groupByCategory`'s
+  existing grouping stays intact as visible headings). Picking a skill clears the search text and
+  re-shows the full list, so adding several skills in a row doesn't need re-typing anything.
+- **Form-control restyling uncovered a real bug, not just a cosmetic one**: investigating "the
+  dropdowns still look a little weird" found that `frontend/src/vendor/bootstrap/` was vendoring
+  **Bootstrap 6.0.0-alpha.1** (confirmed via its JS bundle's own header comment), which is missing
+  `.btn-primary`, `.btn-outline-*`, `.form-select`, `.form-check-input`, `.form-check-label`,
+  `.btn-close-white`, `.text-bg-secondary`, `.text-muted`, and more -- every one of those had been
+  rendering as a bare unstyled native element or with no component styling at all, this whole
+  project. Asked the project owner how to handle it (downgrade to stable Bootstrap, patch the alpha's
+  gaps with custom CSS, or defer); chose to downgrade. Added `bootstrap@^5.3.8` as a real npm
+  dependency, switched `main.tsx` to `import 'bootstrap/dist/css/bootstrap.min.css'` from
+  `node_modules`, and deleted `frontend/src/vendor/bootstrap/` entirely (its JS bundle was never
+  imported anywhere in the app to begin with -- confirmed via a repo-wide search for `data-bs-*`
+  attributes and any import of it, finding none -- so nothing besides the CSS was ever actually used).
+- **Modernized form controls** (`index.css`): `.form-select`/`.form-control` get this page's own
+  border/background/accent tokens instead of Bootstrap's defaults, with an explicit `appearance:
+  none` + hand-drawn SVG chevron (light/dark variants, since a data-URI can't reference a CSS custom
+  property) -- needed explicitly once real Bootstrap was in place, since nothing can be assumed to
+  inherit correctly without checking. `.form-check-input` picks up `accent-color: var(--accent)`.
+  `.btn-primary` is re-themed from Bootstrap's default blue to this page's own purple accent by
+  overriding its own Bootstrap-5.3-style component custom properties (`--bs-btn-bg` etc.) rather than
+  hand-rewriting the whole rule, so hover/active/disabled states keep working automatically.
+- **A real Bootstrap also exposed a second latent bug**: its Reboot CSS sets an opaque `background-
+  color` directly on `<body>`, which painted over `:root`'s own dark-mode background (previously
+  invisible since the broken alpha build never applied that rule at all). Fixed by setting
+  `background`/`color` explicitly on `body` in `index.css`, which wins on the same-specificity tie
+  since this project's own stylesheet loads after Bootstrap's.
+- **Padding**: `.disclosure-body-inner`'s open-state bottom padding increased slightly (18px ->
+  20px, plus a new 14px top padding); a new `.app-field-group` class (gap-based, not margin-utility-
+  based) gives the Weapon section's three sub-blocks (Hunter type / Zenith-skill checklist / slot
+  count) consistent spacing without fighting Bootstrap's own `.mt-*`/`.mb-*` utility classes already
+  sprinkled through other components' markup (equal-specificity rules are decided by source order,
+  and a blanket spacing rule would have silently overridden those elsewhere).
+- **Not attempted this pass**: a minor pre-existing (unrelated to this rework) `FilterableOptions.tsx`
+  quirk noticed while verifying live -- its matches `<select size={Math.min(shown.length, 8)}>`
+  collapses to a normal closed dropdown when exactly one match exists, instead of an open listbox
+  like 2+ matches get -- spun off as a separate follow-up task rather than fixed inline here, since
+  it's an existing ArmorPicker/CuffPicker behavior this pass didn't touch.
+- Verification: `SkillPicker.test.tsx` rewritten for the new interaction model (role changes from
+  `combobox`/`option` to `textbox`/`button`, plus 3 new tests: narrows results while typing, shows a
+  "No matches" message, clears search text after adding) -- 16/16 pass. `App.test.tsx`'s ~16
+  `selectOptions`-based "add a skill"/"add a Zenith skill" interactions mechanically updated to
+  `click` the skill's button instead -- 18/18 pass. Full suite excluding the known-flaky real-data
+  performance test: 265/265 pass. `tsc -b`, `oxlint`, and `prettier --check` on every file this pass
+  touched all clean (pre-existing drift in ~16 untouched files, confirmed unrelated -- not introduced
+  by this work). `vite build` production build succeeds (236 KB CSS, 32.7 KB gzipped, real Bootstrap
+  now bundled in full rather than a broken partial one). Live-browser-verified in both light and dark
+  color schemes: 3-column layout renders correctly and collapses to one column at a narrow width;
+  dropdowns show one correctly-colored chevron each (no more tiled/broken background-image); the
+  "Search" button and checkbox checkmarks render in the page's own purple accent instead of
+  Bootstrap's default blue; the skill search field live-narrows results by category as typed,
+  clicking a result adds it and clears the field, and typing "attack" correctly narrowed to exactly
+  "Attack Skills" category members.

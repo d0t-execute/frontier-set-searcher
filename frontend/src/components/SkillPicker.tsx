@@ -1,3 +1,16 @@
+/**
+ * "Add a skill" is a live-filtered, always-grouped list rather than a plain
+ * `<select>` (2026-10-15, per the project owner: finding a skill in a flat
+ * ~194-entry dropdown was hard enough to need its own search field). Unlike
+ * `FilterableOptions` (ArmorPicker/CuffPicker's own type-to-filter list, built
+ * for catalogs in the tens of thousands), this catalog is small enough to
+ * render in full by default -- there's no `MIN_SEARCH_LENGTH` gate, and
+ * `groupByCategory`'s existing grouping stays intact (now as visible
+ * `role="group"` headings) so browsing by category still works exactly as it
+ * did through the old dropdown's `<optgroup>`s, with typing narrowing it
+ * further on top. */
+
+import { useState } from 'react'
 import type { SkillRequirement } from '../search-engine/types'
 
 export interface SkillTierOption {
@@ -65,14 +78,18 @@ export function SkillPicker({
   onChange,
   addLabel = 'Add a skill',
 }: SkillPickerProps) {
+  const [search, setSearch] = useState('')
   const skillOf = (skillId: number) => skills.find((s) => s.id === skillId)
   const nameOf = (skillId: number) => skillOf(skillId)?.name ?? `Skill ${skillId}`
   const pickedIds = new Set(requirements.map((r) => r.skillId))
   const available = skills.filter((s) => !pickedIds.has(s.id))
+  const query = search.trim().toLowerCase()
+  const matching = query ? available.filter((s) => s.name.toLowerCase().includes(query)) : available
 
   function addSkill(skillId: number): void {
     const tiers = skillOf(skillId)?.tiers ?? []
     onChange([...requirements, { skillId, minPoints: defaultMinPoints(tiers) }])
+    setSearch('')
   }
 
   function setMinPoints(skillId: number, minPoints: number): void {
@@ -128,27 +145,34 @@ export function SkillPicker({
         })}
       </ul>
 
-      <select
-        className="form-select mt-2"
-        aria-label={addLabel}
-        value=""
-        onChange={(e) => {
-          if (e.target.value) addSkill(Number(e.target.value))
-        }}
-      >
-        <option value="" disabled>
-          {addLabel}…
-        </option>
-        {groupByCategory(available).map(([category, categorySkills]) => (
-          <optgroup key={category} label={category}>
-            {categorySkills.map((skill) => (
-              <option key={skill.id} value={skill.id}>
-                {skill.name}
-              </option>
-            ))}
-          </optgroup>
-        ))}
-      </select>
+      <div className="skill-add mt-2">
+        <input
+          type="text"
+          className="form-control"
+          aria-label={addLabel}
+          placeholder={`${addLabel}…`}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <div className="skill-add-results">
+          {matching.length === 0 && <div className="skill-add-empty">No matches.</div>}
+          {groupByCategory(matching).map(([category, categorySkills]) => (
+            <div key={category} className="skill-add-group" role="group" aria-label={category}>
+              <div className="skill-add-group-label">{category}</div>
+              {categorySkills.map((skill) => (
+                <button
+                  key={skill.id}
+                  type="button"
+                  className="skill-add-option"
+                  onClick={() => addSkill(skill.id)}
+                >
+                  {skill.name}
+                </button>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }

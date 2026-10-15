@@ -62,6 +62,13 @@
 
 body {
   margin: 0;
+  /* Real Bootstrap's own Reboot CSS (unlike the broken 6.0-alpha build this
+   * previously vendored) sets its own opaque `body` background, which
+   * otherwise paints over the dark-mode background `:root` sets on `<html>`
+   * -- same specificity as this rule, so source order (this file loads
+   * after bootstrap.min.css) is what makes this win. */
+  background: var(--bg);
+  color: var(--text);
 }
 
 h1,
@@ -120,10 +127,6 @@ code {
   background: var(--bg);
   overflow: hidden;
   text-align: left;
-}
-
-.disclosure + .disclosure {
-  margin-top: 10px;
 }
 
 .disclosure-header {
@@ -194,8 +197,18 @@ code {
 }
 
 .disclosure-body[data-open='true'] .disclosure-body-inner {
-  padding: 2px 18px 18px;
+  padding: 14px 18px 20px;
   border-top: 1px solid var(--border);
+}
+
+/* Consistent vertical rhythm between a section's own sub-blocks (e.g. the
+ * Weapon section's Hunter-type select / Zenith-skill checklist / slot-count
+ * select) -- a `gap`-based wrapper instead of per-element margin utility
+ * classes, so it never fights a Bootstrap `.mt-*`/`.mb-*` class already
+ * sitting on one of those same elements (equal-specificity rules are decided
+ * by source order, and this project's own CSS loads after Bootstrap's). */
+.app-field-group + .app-field-group {
+  margin-top: 16px;
 }
 
 /* -- App shell ---------------------------------------------------------- */
@@ -211,8 +224,32 @@ code {
   max-width: 60ch;
 }
 
-.app-section-stack > * + * {
-  margin-top: 10px;
+/* Three-column search form (2026-10-15, per the project owner): skill-related
+ * sections (Skills, Zenith skills) on the left, gear-related sections (pin
+ * armor/cuffs, category filters) in the middle, everything else (today, just
+ * Weapon) on the right. The middle column gets more width than the other two
+ * -- it holds the most content (5 of the page's 7 sections) and ArmorPicker's
+ * own search/badge rows need the room most. Collapses to one column below
+ * `--app-columns-breakpoint` rather than squeezing three narrow columns onto
+ * a phone-width viewport. */
+.app-columns {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr 1fr;
+  align-items: start;
+  gap: 20px;
+}
+
+.app-column {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+@media (max-width: 860px) {
+  .app-columns {
+    grid-template-columns: 1fr;
+  }
 }
 
 .app-action-bar {
@@ -244,4 +281,153 @@ code {
 
 .app-results {
   margin-top: 24px;
+}
+
+/* -- Form controls -------------------------------------------------------
+ * Restyles native `<select>`/`<input>`/checkbox elements to match this
+ * page's own accent/border tokens (2026-10-15, per the project owner: the
+ * dropdowns "still look a little weird"). This vendored Bootstrap build
+ * turns out not to include its own `.form-select` rules at all (confirmed
+ * directly: the class string isn't present in bootstrap.min.css) -- every
+ * `<select className="form-select">` in this app was rendering as a bare,
+ * unstyled native widget the whole time, which is the actual "weird" look.
+ * `.form-control` IS a real Bootstrap class (text inputs already had some
+ * base styling), but is restyled here too so both share one consistent
+ * look. Since there's no Bootstrap base to inherit `appearance`/background
+ * positioning from, this rule sets all of it explicitly rather than only
+ * overriding colors as a "restyle" might otherwise assume it could. */
+
+.form-select,
+.form-control {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background-color: var(--bg);
+  color: var(--text-h);
+  padding: 7px 12px;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.form-select {
+  appearance: none;
+  padding-right: 2.25rem;
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 12px 12px;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%236b6375' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+}
+
+@media (prefers-color-scheme: dark) {
+  .form-select {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+  }
+}
+
+.form-select:focus,
+.form-control:focus {
+  border-color: var(--accent);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+.form-check-input {
+  accent-color: var(--accent);
+}
+
+.form-check-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+/* Bootstrap's own `.btn-primary` is a fixed blue, clashing with this page's
+ * purple accent used everywhere else (disclosure chevrons, focus rings, the
+ * "Search" button being the one truly primary action on the page).
+ * Overriding its own per-component custom properties (Bootstrap 5.3's own
+ * theming mechanism) rather than hand-rewriting the whole rule keeps its
+ * hover/active/disabled states working automatically. `--bs-btn-focus-
+ * shadow-rgb` needs a literal RGB triplet (not a `var()` referencing a hex
+ * color), hence the light/dark duplication -- everything else already
+ * reads `--accent` directly, so it re-themes for free under dark mode. */
+.btn-primary {
+  --bs-btn-bg: var(--accent);
+  --bs-btn-border-color: var(--accent);
+  --bs-btn-hover-bg: color-mix(in srgb, var(--accent) 85%, black);
+  --bs-btn-hover-border-color: color-mix(in srgb, var(--accent) 85%, black);
+  --bs-btn-active-bg: color-mix(in srgb, var(--accent) 75%, black);
+  --bs-btn-active-border-color: color-mix(in srgb, var(--accent) 75%, black);
+  --bs-btn-disabled-bg: var(--accent);
+  --bs-btn-disabled-border-color: var(--accent);
+  --bs-btn-focus-shadow-rgb: 170, 59, 255;
+}
+
+@media (prefers-color-scheme: dark) {
+  .btn-primary {
+    --bs-btn-focus-shadow-rgb: 192, 132, 252;
+  }
+}
+
+.form-label {
+  color: var(--text-h);
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.form-text {
+  color: var(--text);
+  font-size: 13px;
+}
+
+/* -- Skill search/add control (components/SkillPicker.tsx) --------------
+ * A live-filtered, always-grouped list replacing the old flat `<select>` --
+ * see SkillPicker.tsx's own docstring. Rendered inline, in normal page flow
+ * (not an absolutely-positioned overlay), matching the same "type above, see
+ * matches below" shape ArmorPicker/CuffPicker's own search inputs already
+ * use elsewhere in this app -- scrolls instead of growing unbounded, since
+ * the full catalog (~194 skills) is shown by default, not just while typing.
+ */
+
+.skill-add-results {
+  margin-top: 8px;
+  max-height: 260px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px;
+}
+
+.skill-add-group + .skill-add-group {
+  margin-top: 6px;
+}
+
+.skill-add-group-label {
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text);
+}
+
+.skill-add-option {
+  all: unset;
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--text-h);
+}
+
+.skill-add-option:hover,
+.skill-add-option:focus-visible {
+  background: var(--accent-bg);
+  outline: none;
+}
+
+.skill-add-empty {
+  padding: 6px 8px;
+  color: var(--text);
+  font-size: 14px;
 }
