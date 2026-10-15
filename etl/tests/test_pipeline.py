@@ -35,14 +35,66 @@ def test_load_equipment_reports_accurate_counts(tmp_path: Path) -> None:
     )
 
     # 3 head + 2 each of body/arm/wst/leg + Ranvuo Helm (Tower) + Espinas Z
-    # Brain (Zenith) = 13; 2 real decorations + Status Res Gem III (Tower
-    # Gem) = 3; Attack II PA1/PA2 (regular) + SnS・Basic (Hiden) + Skill
-    # Slots Up Sigil (Zenith) = 4 cuffs; 1 distinct Zenith skill (both
-    # Espinas Z Brain and the Zenith Cuff grant "Skill Slots Up+1").
-    assert summary.equipment_count == 13
+    # Brain (Zenith) + Barioth Helm (Exotic) = 14; 2 real decorations +
+    # Status Res Gem III (Tower Gem) = 3; Attack II PA1/PA2 (regular) +
+    # SnS・Basic (Hiden) + Skill Slots Up Sigil (Zenith) = 4 cuffs; 1 distinct
+    # Zenith skill (both Espinas Z Brain and the Zenith Cuff grant "Skill
+    # Slots Up+1").
+    assert summary.equipment_count == 14
     assert summary.decoration_count == 3
     assert summary.cuff_count == 4
     assert summary.zenith_skill_count == 1
+    assert summary.exotic_grant_count == 1
+    assert summary.unmatched_exotic_markers == ()
+
+
+def test_load_equipment_applies_an_exotic_armors_bonus_skill_grant(tmp_path: Path) -> None:
+    # Real "Barioth Helm" row (CLASS "O") -- its own listed skills (64, 21,
+    # 18, 191, 148, all 5 points) plus a bonus "Ice Attack" grant from its
+    # Exotic Armor marker, resolved via EXOTIC_ARMOR_SKILL_GRANTS to 20
+    # points ("Ice Attack (Large)"'s own tier threshold).
+    conn = _conn(tmp_path)
+
+    load_equipment(
+        conn,
+        skillform_source=_skillform_source(),
+        equip_source=_combined_equip_source(),
+        source_url="https://example.test/equip.js",
+    )
+
+    equipment = repo.get_equipment_by_external_id(conn, "head:2821")
+    assert equipment is not None
+    skills = repo.get_equipment_skills(conn, equipment.id)
+    skill_points = {sp.skill.name: sp.points for sp in skills}
+    assert skill_points["Ice Attack"] == 20
+
+
+def test_load_equipment_reports_an_exotic_marker_not_in_the_grants_dict(tmp_path: Path) -> None:
+    # Same "report, don't guess" convention as SkillTierLoadSummary/
+    # SkillPriorityLoadSummary -- a future re-scrape could expose a new
+    # Exotic monster family EXOTIC_ARMOR_SKILL_GRANTS hasn't been taught
+    # about yet; it should be surfaced, not silently dropped.
+    conn = _conn(tmp_path)
+    defs = (FIXTURES_DIR / "def_patterns.js").read_text(encoding="utf-8")
+    equip_source = (
+        'SkillForm.setEquip("head", {"9999":"Fake Exotic,0,0,1,,,,,,,,,,,,,,,,,,,,,,,7,0,0,,00,,,'
+        '1-,,O,,,fake flavor text≪Exotic Armor：Totally Unknown Skill≫"})\n'
+        'SkillForm.setEquip("body", {})\n'
+        'SkillForm.setEquip("arm", {})\n'
+        'SkillForm.setEquip("wst", {})\n'
+        'SkillForm.setEquip("leg", {})\n'
+        'SkillForm.setEquip("deco", {})\n'
+    ) + defs
+
+    summary = load_equipment(
+        conn,
+        skillform_source=_skillform_source(),
+        equip_source=equip_source,
+        source_url="https://example.test/equip.js",
+    )
+
+    assert summary.exotic_grant_count == 0
+    assert summary.unmatched_exotic_markers == ("Totally Unknown Skill",)
 
 
 def test_load_equipment_resolves_real_skill_names_when_known(tmp_path: Path) -> None:

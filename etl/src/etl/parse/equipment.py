@@ -8,6 +8,7 @@ see docs/data-format-notes.md for the full writeup this module implements.
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import IntEnum
@@ -69,6 +70,7 @@ class Field(IntEnum):
     DEC = 34
     CLASS = 35
     TENI = 37
+    DOC = 38
 
 
 _SKILL_FIELD_PAIRS = (
@@ -109,6 +111,12 @@ class ParsedEquipmentRow:
     # buckets) mix below-G-rank and G-rank-or-later pieces together and can't
     # be used for this on their own -- see `is_grank_or_later_equipment`.
     grank_or_later: bool = False
+    # "Exotic" equipment (CLASS "O") grants a fixed bonus to one *normal*
+    # skill just by being equipped, in addition to `skills` above -- this is
+    # the raw marker text still unresolved to a skill id/points value (see
+    # `_extract_exotic_skill_marker`); resolution happens in pipeline.py,
+    # which has DB access to get-or-create the granted skill by name.
+    exotic_skill_marker: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -190,6 +198,22 @@ def _int_or_none(value: str) -> int | None:
     return int(value) if value != "" else None
 
 
+# "Exotic" equipment (CLASS "O") grants a fixed bonus to one *normal* skill
+# just by being equipped, in addition to its own listed skills -- confirmed
+# via the site's own SkillForm.js (its "遷悠"/senyu branch), which forces a
+# skill active at a specific tier by extracting its name from a bracketed
+# marker embedded in the DOC (flavor text) field: "≪Exotic Armor：<skill tier
+# label>≫". See docs/data-format-notes.md "Exotic armor". Confirmed 1:1 with
+# CLASS == "O" across the real dataset (688/688 rows, 0 mismatches either
+# direction) and confined to the 5 armor buckets (0 occurrences in "deco").
+_EXOTIC_SKILL_MARKER_RE = re.compile(r"Exotic Armor[:：](.+?)≫")
+
+
+def _extract_exotic_skill_marker(fields: list[str]) -> str | None:
+    match = _EXOTIC_SKILL_MARKER_RE.search(_field(fields, Field.DOC))
+    return match.group(1) if match else None
+
+
 def _extract_skills(fields: list[str]) -> tuple[tuple[int, int], ...]:
     """Collect (skill_id, points) across the 5 SN/SP slots, summing duplicates.
 
@@ -248,6 +272,7 @@ def parse_equipment_bucket(
                 zenith_skill_id=_int_or_none(_field(fields, Field.TENI)),
                 category=classify_equipment_category(fields),
                 grank_or_later=is_grank_or_later_equipment(fields),
+                exotic_skill_marker=_extract_exotic_skill_marker(fields),
             )
         )
     return parsed

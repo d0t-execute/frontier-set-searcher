@@ -266,6 +266,36 @@ def test_parses_zenith_armor() -> None:
     assert rows[0].skills == ((161, 4), (205, 4), (200, 4), (214, 4), (189, 4))
 
 
+def test_parses_exotic_armors_bonus_skill_marker() -> None:
+    # CLASS="O" -- real "Barioth Helm" row. "Exotic" equipment grants a fixed
+    # bonus to one normal skill just by being equipped, encoded as a bracketed
+    # marker in the DOC (flavor text) field: "≪Exotic Armor：<skill tier
+    # label>≫" -- resolving that label to a skill id/points value happens in
+    # pipeline.py (needs DB access), so this layer just extracts the raw text.
+    bucket_json = (
+        '{"2821":"Barioth Helm,0,0,7,,-8,0,-2,0,15,64,5,21,5,18,5,191,5,148,5,,'
+        "304A5R 304B5 304C3 304F3,100,0DBB,7,100000,113,1,3,0B,04,02,0,1-,,O,,,"
+        '氷牙竜の素材で作られた頭用装備。≪Exotic Armor：Ice Attack 【Large】≫"}'
+    )
+
+    def_patterns = ["100,100,100,100,100,100,100"] * 5  # DEFPTN "04" -> index 4
+    rows = parse_equipment_bucket("head", bucket_json, def_patterns=def_patterns)
+
+    assert rows[0].exotic_skill_marker == "Ice Attack 【Large】"
+    assert rows[0].category.startswith("grank_exotic")
+
+
+def test_exotic_skill_marker_is_none_for_a_non_exotic_row() -> None:
+    bucket_json = (
+        '{"0001":"Leather Helm,0,0,1,,0,0,0,0,0,22,3,63,3,80,3,,,,,,'
+        '01521R,1,0000,7,100,2,0,1,01,00,0B,0,1-,,,,,軽い素材で作られた頭用装備。,0"}'
+    )
+
+    rows = parse_equipment_bucket("head", bucket_json, def_patterns=["100,120,120,120,120,120,120"])
+
+    assert rows[0].exotic_skill_marker is None
+
+
 def test_parses_a_decoration_row() -> None:
     bucket_json = (
         '{"031F":"Paralysis 1 Deco,0,0,4,,,,,,,57,2,46,-2,,,,,,,,'

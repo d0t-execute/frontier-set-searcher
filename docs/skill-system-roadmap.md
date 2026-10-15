@@ -191,26 +191,60 @@ phrasing below once speculated. That meant this could reuse the search engine's 
 
 ## 3. Exotic skills
 
-**Status (2026-10-15): RESOLVED -- does not exist as a distinct mechanic. No implementation needed;
-this TODO is closed as a naming confusion, not a missing feature.**
+**Status: COMPLETE and verified (2026-10-15).** The original "RESOLVED -- does not exist" conclusion
+below was wrong (or at least incomplete) -- the project owner corrected it directly: "exotic armor is
+also still unimplemented. the way it works is that some pieces of armor, those gotten from 'exotic'
+monsters, will simply give the maximum tier of a specific skill. for example, equipping any barioth
+armor piece will grant ice attack up large in addition to its other skills." There *is* a real
+mechanic here; it just isn't a separate skill pool the way Zenith is (which is what the original
+research was specifically checking for and correctly found nothing of).
 
-- "Exotic" (CLASS O) is documented only as an equipment origin tier, same family as G/GX/Exotic GX
-  ([gear-category-taxonomy.md](gear-category-taxonomy.md)). No special field analogous to
-  Zenith's `Teni`/`TENINAME` is documented for it, and no `exotic_skill`-style table exists anywhere
-  in the ETL/DB models.
-- Exotic gear in the exported data carries only normal skills.
-- Fresh research against the source site (2026-10-15, per the project owner's standing instruction
-  to verify rather than assume before closing a thin item): the same `mertna.github.io/MHFZ-Skills`
-  site this project already treats as authoritative for normal skills, Zenith skills, and the
-  activation-priority table (TODO #1) has no "Exotic" section, tab, or skill list anywhere on it --
-  checked live. Web search for any MHF/MHF-Z community documentation of an "Exotic skill" mechanic
-  (as opposed to "Exotic armor/equipment," the tier) turned up nothing; every real hit was about
-  unrelated games (Destiny 2, The Division) coincidentally also using the word "exotic." This is the
-  same rigor the Zenith-skill finding required, applied here with the opposite conclusion: Zenith
-  turned out to be real and got built (TODO #2); Exotic does not, so there is nothing to build.
-  Conclusion: "Exotic" in this game is purely the equipment-tier name (CLASS O, same family as
-  G/GX), and this roadmap item most likely originated from conflating that tier name with a
-  Zenith-style separate skill pool that doesn't actually exist for it.
+- Investigated the raw data directly rather than guessing from the correction alone (full write-up:
+  [data-format-notes.md](data-format-notes.md)'s new "Exotic armor" section). Found: Exotic equipment
+  (`CLASS="O"`) embeds a bracketed bonus-skill marker in its own flavor-text field (`DOC`, index 38),
+  e.g. `≪Exotic Armor：Ice Attack 【Large】≫` -- confirmed against the site's own `SkillForm.js`, which
+  extracts this text and forces that *normal* skill (from the same catalog as every other skill, not
+  a separate pool like Zenith's `Teni`/`TENINAME`) active at that tier, unconditionally. Confirmed 1:1
+  with `CLASS="O"` across the full real dataset (688/688 rows, 0 mismatches either direction),
+  confined to the 5 armor buckets (0 in `deco`), and exactly 17 distinct markers total -- one fixed
+  skill per Exotic monster family, identical across every piece/forge-tier within a family (checked
+  all of Barioth's own rows).
+- Each of the 17 raw markers was manually cross-referenced against its target skill's own existing
+  tier-threshold points already in `skills.json` (e.g. `Ice Attack 【Large】` -> the "Ice Attack"
+  skill's "Ice Attack (Large)" tier, 20 points) -- not guessed, and not resolved dynamically against
+  `skill_tier` at load time, since that data isn't loaded until *after* equipment in `pipeline.py`'s
+  `main()`. Resolved instead via a new fixed `EXOTIC_ARMOR_SKILL_GRANTS` dict (marker -> (skill name,
+  points)), the same "confirmed-by-inspection, hardcoded" pattern already used elsewhere in this
+  codebase (e.g. `ZENITH_SKILL_MAX_LEVEL`).
+- **Modeled as a plain extra entry in the piece's own exported `skills` array**, summed with its
+  normal `SN1-5` contributions if they happen to coincide on the same skill id -- not a new column,
+  constraint, or search-engine mechanism. This reuses the engine's existing additive skill-point
+  machinery completely unchanged (same reasoning TODO #2's Zenith-skill implementation already
+  established: reuse what already works instead of building a parallel system), and matches the
+  project owner's own framing exactly ("in addition to its other skills"). A deliberate
+  simplification of the source site's own "force active unconditionally, don't double-count"
+  semantics, which only matters to that site's own point-*display* UI, not to this project's solver.
+- `etl/src/etl/parse/equipment.py`: new `Field.DOC = 38`, `_extract_exotic_skill_marker` (regex
+  extraction only, no DB access -- resolution needs the skill catalog, which this layer doesn't
+  have), `ParsedEquipmentRow.exotic_skill_marker: str | None`.
+- `etl/src/etl/pipeline.py`: `EXOTIC_ARMOR_SKILL_GRANTS` dict; `load_equipment`'s per-row loop now
+  sums every skill contribution (normal + the resolved Exotic grant, if any) into one dict before
+  calling `add_equipment_skill`, avoiding a primary-key collision on `(equipment_id, skill_id)` when
+  a grant coincides with one of the piece's own listed skills. `LoadSummary` gained
+  `exotic_grant_count`/`unmatched_exotic_markers` (the latter surfaced, not silently dropped, same
+  "report, don't guess" convention as `SkillTierLoadSummary`/`SkillPriorityLoadSummary` -- a future
+  re-scrape could expose a new Exotic monster family this dict hasn't been taught about yet).
+- No frontend changes needed at all -- `export.py`'s existing `_export_equipment` already serializes
+  whatever's in each piece's own skill-points join, so the new contributions flow through for free.
+- Verification: 2 new parse-layer tests (extracts the real "Barioth Helm" marker; `None` for a
+  non-Exotic row) and 3 new pipeline-layer tests (applies the grant, correctly summed into the real
+  skill catalog; reports an unmatched marker rather than dropping it silently; the shared fixture's
+  new Barioth Helm row bumps `equipment_count` 13 -> 14) all pass. Full ETL suite: 289/289 tests pass,
+  ruff clean. DB rebuilt from scratch (`.bak-pre-exotic-armor-grants` preserves the prior DB;
+  "Applied 688 Exotic-armor bonus-skill grants" with 0 unmatched markers on the real rebuild), bundle
+  re-exported and confirmed directly against the regenerated `equipment/head.json`: every real
+  Barioth Helm variant (8 pieces, every forge tier) now lists `"Ice Attack": 20` alongside its own
+  normal skills, exactly matching the project owner's own example.
 
 ## 4. "Go Skill Boost"
 
@@ -746,6 +780,50 @@ and present it in a way that doesn't feel as overwhelming, while feeling modern 
   cards") is also not attempted here -- left for a follow-up once the project owner has a specific
   site or mockup in mind to match, consistent with this TODO's own original note that the exact
   visual direction needed their input rather than being guessed at.
+
+**Follow-up (2026-10-15): Result-card redesign, three-column layout.** The project owner supplied a
+concept mockup for exactly the "`ResultsList.tsx`'s result cards were left visually as-is" gap noted
+above -- saved at [result-card-mockup.png](result-card-mockup.png). **Status: Not started.** Full spec,
+in the project owner's own words plus what the mockup shows:
+
+- **Three-column layout per result card.**
+  - **Left column -- skills**: each active skill shown as its actual *level* in brackets, not a raw
+    point total, alongside its current points over the threshold that crossed it, e.g. `Stylish +1
+    (17/15)` and `Sword Saint (30/30)` (the mockup's own examples). A skill that hasn't crossed any
+    threshold yet should still show its progress the same way (e.g. `8/10`). Skills that are either
+    below their own first threshold or force-disabled by the active-skill cap (`active-skill-cap.ts`'s
+    existing `disabled` list) should render **grayed out**, visually distinct from active ones --
+    today's plain comma-joined list with a parenthetical `(disabled)` suffix doesn't make this
+    distinction visually, just textually.
+  - **Middle column -- picks**: the armor pieces and weapon, same information already shown today
+    (`ResultsList.tsx`'s per-slot `<dl>`), but each piece's own decorations shown as its own small
+    sub-list under it (the mockup shows "Helmet" with "Deco 1/Deco 2/Deco 3" indented beneath) rather
+    than inline as today's `" + <deco name>"` suffix.
+  - **Right column -- stats**: new info not shown anywhere today -- **total armor** (the actual
+    summed defense stat across all equipped pieces, not yet modeled/exported anywhere in this
+    pipeline for a *build* total, only per-piece `defense_base`/`defense_max`), **all five
+    resistances** (Fire/Water/Thunder/Ice/Dragon, summed the same way), and room for other
+    at-a-glance totals the project owner called out as "nice to have" without pinning down an exact
+    list yet (floated "total skill cap" as one example -- already computed today via
+    `determineActiveSkills`'s `cap`, just not shown in this column).
+- **Hover tooltips on picks**: hovering an armor piece or a placed decoration in the middle column
+  pops up its own individual skill-point contributions (which skills, how many points each) -- today
+  nothing shows a piece's own contribution in isolation, only the build's already-summed
+  `skillTotals`.
+- **Scope note, not yet investigated**: a per-build "total armor"/resistance total needs summing
+  defense/resistance across the solver's own chosen picks at render time (straightforward, all the
+  per-piece data already exists in `NamedCandidate`... except resistances aren't parsed/exported at
+  all yet -- `docs/data-format-notes.md`'s own column layout table lists fields 5-9 (`F, W, T, D, I`)
+  as "Fire/Water/Thunder/Dragon/Ice resistance" but marks them out of scope today, same as several
+  other still-deferred fields). Getting resistances into result cards therefore has an ETL
+  prerequisite (parse + export those 5 fields per piece) before any frontend work can show them --
+  not optional polish, a blocking dependency.
+- Per-piece skill contributions for the hover tooltip are already fully available
+  (`NamedCandidate.skills`/`NamedDecoration.skills`) -- no new data plumbing needed there, purely a
+  new UI affordance.
+- Nothing about this changes the search engine itself (constraints, objective, solver) -- purely a
+  display/presentation redesign of an already-complete `BuildResult`, same category of change as
+  TODO #16's Zenith-skill split.
 
 ## 11. Decoration tier include/exclude filter
 

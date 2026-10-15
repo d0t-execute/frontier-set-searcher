@@ -65,7 +65,7 @@ length.
 | 35 | **CLASS** | **Equipment category signifier #2** — origin/rarity tier (full table in "Equipment taxonomy"). Distinguishes e.g. a Hiden Cuff (`"L"`) from a regular one, and Tower (`"N"`) / Zenith (`"P"`/`"Q"`) equipment from normal gear |
 | 36 | TrSLOT | Out of scope |
 | 37 | **Teni** | **Zenith skill** carried by `CLASS="P"`/`"Q"` equipment (armor or Cuff) — an *additional* skill beyond SN1–5, resolved through a third lookup array, `TENINAME`, not `MST_Skill`. See "Equipment taxonomy" |
-| 38 | DOC | Flavor text — often names the category outright, e.g. `≪天廊防具≫` ("Tower Armor") or `≪辿異防具≫` ("Zenith Armor") |
+| 38 | DOC | Flavor text — often names the category outright, e.g. `≪天廊防具≫` ("Tower Armor") or `≪辿異防具≫` ("Zenith Armor"). **Exotic equipment** (`CLASS="O"`) additionally embeds a bracketed bonus-skill marker here, `≪Exotic Armor：<skill tier label>≫` — see "Exotic armor" below |
 | 39 | IMG | Image reference (out of scope) |
 
 **Important**: skill points (SP1–SP5) are fixed per piece — they do **not**
@@ -314,6 +314,68 @@ origin categories with no shared lineage, consistent with their flavor text
 (Tower: generic "ancient techniques discovered in the Tenrou" lore; Zenith
 `P`: monster-material crafting; Zenith `Q`: unrelated foreign-land/hero-
 legend/luxury themes — see above).
+
+### Exotic armor (`CLASS="O"`, bonus skill marker in `DOC`)
+
+A fixed bonus to one **normal** skill (from the same `MST_Skill` catalog as
+every other skill, not a separate pool like Zenith's `Teni`), granted just by
+equipping any piece from an "Exotic" monster-material armor family — e.g.
+every `Barioth`-series piece (Helm/Mail/Vest/Arms, every forge tier) grants
+"Ice Attack (Large)" (20 points), *in addition to* its own normal `SN1–5`
+skills. Reported by the project owner, confirmed against the raw data and the
+site's own `SkillForm.js` (its "遷悠"/senyu-class branch):
+
+```js
+if (eq[I_bCLASS] === "O") { //遷悠
+    var sen_skill_name = eq[I_bDOC].split("≪Exotic Armor：")[1].split("≫")[0]...;
+    // ...matched against MST_Skill's own tier-name table, then forces that
+    // skill active at that tier, unconditionally (not added as SN/SP points)
+}
+```
+
+Confirmed **1:1 with `CLASS="O"`** across the full real dataset: exactly
+688/688 `CLASS="O"` rows have the marker, 0 mismatches either direction, and
+it's confined to the 5 armor buckets (0 occurrences in `deco`). Exactly **17
+distinct markers** exist across the whole dataset (one fixed skill per Exotic
+monster family, confirmed identical across every piece/forge-tier within a
+family by checking all of Barioth's own rows) — each one manually
+cross-referenced against that skill's own existing tier-threshold points
+already in the `skill_tier` table (e.g. `Ice Attack 【Large】` → the "Ice
+Attack" skill's "Ice Attack (Large)" tier, 20 points):
+
+| Raw marker | Granted skill | Points |
+|---|---|---|
+| `Bomber` | Bomb Boost | 10 |
+| `Critical Eye +5` | Expert | 50 |
+| `Dragon Attack 【Large】` | Dragon Attack | 20 |
+| `Evade+2` | Evasion | 20 |
+| `Focus+2` | Focus | 20 |
+| `Great Luck` | Fate | 20 |
+| `Guard+2` | Guard | 20 |
+| `Ice Attack 【Large】` | Ice Attack | 20 |
+| `Maximum Bullets` | Ammo Combiner | 10 |
+| `Pierce/Pierce Up` | Pierce Shot Up | 10 |
+| `S. Immunity (Myriad)` | Status Res | 30 |
+| `Sharpening Artisan` | Sharpening | 20 |
+| `Starving Wolf+2` | Fasting | 20 |
+| `Status Attack Up` | Status Attack | 10 |
+| `Thunder Attack 【Large】` | Thunder Attack | 20 |
+| `Water Attack 【Large】` | Water Attack | 20 |
+| `Wide-Area+3` | Wide-Area | 30 |
+
+**Modeled as a plain extra entry in the piece's own exported `skills` array**
+(merged with its normal SN/SP contributions, summed if they happen to
+coincide on the same skill id) rather than a new column/mechanism — this
+reuses the search engine's existing additive skill-point machinery unchanged,
+matching the "in addition to its other skills" framing directly. This is a
+deliberate simplification of the site's own "force active at this tier,
+unconditionally, don't double-count" semantics (relevant only to that site's
+own point-display UI, not to this project's search engine) — see
+`etl/src/etl/pipeline.py`'s `EXOTIC_ARMOR_SKILL_GRANTS` (the fixed
+marker → (skill name, points) dict, resolved at `load_equipment` time rather
+than dynamically against `skill_tier`, since tier data isn't loaded until
+*after* equipment in `main()`) and `etl/src/etl/parse/equipment.py`'s
+`_extract_exotic_skill_marker`.
 
 ### Tower Armor (`CLASS="N"` in the armor buckets)
 

@@ -53,7 +53,7 @@ const DEFAULT_MAX_RESULTS = 5
 // (see above), so the options stay in the same cheap-to-expensive range the
 // old hardcoded default lived in rather than letting an arbitrary number
 // stall the page.
-const MAX_RESULTS_OPTIONS = [1, 3, 5, 10, 20] as const
+const MAX_RESULTS_OPTIONS = [1, 3, 5, 10, 20, 50] as const
 
 // A piece/cuff that's unobtainable in the real game (removed, unimplemented,
 // or training-quest-only) is never worth surfacing by default -- these start

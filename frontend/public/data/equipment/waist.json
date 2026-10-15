@@ -225417,6 +225417,10 @@
       {
         "skillId": 41,
         "points": 4
+      },
+      {
+        "skillId": 45,
+        "points": 20
       }
     ],
     "openSlotCount": 3,
@@ -225438,6 +225442,10 @@
       {
         "skillId": 124,
         "points": 4
+      },
+      {
+        "skillId": 45,
+        "points": 20
       },
       {
         "skillId": 111,
@@ -225469,6 +225477,10 @@
         "points": 5
       },
       {
+        "skillId": 45,
+        "points": 20
+      },
+      {
         "skillId": 111,
         "points": 2
       },
@@ -225496,6 +225508,10 @@
       {
         "skillId": 124,
         "points": 5
+      },
+      {
+        "skillId": 45,
+        "points": 20
       },
       {
         "skillId": 111,
@@ -225618,6 +225634,10 @@
         "points": 4
       },
       {
+        "skillId": 45,
+        "points": 20
+      },
+      {
         "skillId": 58,
         "points": 5
       }
@@ -225641,6 +225661,10 @@
       {
         "skillId": 124,
         "points": 4
+      },
+      {
+        "skillId": 45,
+        "points": 20
       },
       {
         "skillId": 111,
@@ -225672,6 +225696,10 @@
         "points": 5
       },
       {
+        "skillId": 45,
+        "points": 20
+      },
+      {
         "skillId": 111,
         "points": 2
       },
@@ -225699,6 +225727,10 @@
       {
         "skillId": 124,
         "points": 5
+      },
+      {
+        "skillId": 45,
+        "points": 20
       },
       {
         "skillId": 111,
@@ -230651,6 +230683,10 @@
       {
         "skillId": 99,
         "points": 5
+      },
+      {
+        "skillId": 79,
+        "points": 20
       }
     ],
     "openSlotCount": 3,
@@ -230680,6 +230716,10 @@
       {
         "skillId": 111,
         "points": 2
+      },
+      {
+        "skillId": 79,
+        "points": 20
       }
     ],
     "openSlotCount": 3,
@@ -230709,6 +230749,10 @@
       {
         "skillId": 111,
         "points": 3
+      },
+      {
+        "skillId": 79,
+        "points": 20
       }
     ],
     "openSlotCount": 3,
@@ -230738,6 +230782,10 @@
       {
         "skillId": 111,
         "points": 4
+      },
+      {
+        "skillId": 79,
+        "points": 20
       }
     ],
     "openSlotCount": 3,
@@ -230767,6 +230815,10 @@
       {
         "skillId": 21,
         "points": 5
+      },
+      {
+        "skillId": 79,
+        "points": 20
       }
     ],
     "openSlotCount": 3,
@@ -230796,6 +230848,10 @@
       {
         "skillId": 21,
         "points": 5
+      },
+      {
+        "skillId": 79,
+        "points": 20
       }
     ],
     "openSlotCount": 3,
@@ -230825,6 +230881,10 @@
       {
         "skillId": 21,
         "points": 6
+      },
+      {
+        "skillId": 79,
+        "points": 20
       }
     ],
     "openSlotCount": 3,
@@ -230854,6 +230914,10 @@
       {
         "skillId": 21,
         "points": 6
+      },
+      {
+        "skillId": 79,
+        "points": 20
       }
     ],
     "openSlotCount": 3,
@@ -236593,6 +236657,10 @@
       {
         "skillId": 22,
         "points": 5
+      },
+      {
+        "skillId": 53,
+        "points": 10
       }
     ],
     "openSlotCount": 3,
@@ -236618,6 +236686,10 @@
       {
         "skillId": 111,
         "points": 2
+      },
+      {
+        "skillId": 53,
+        "points": 10
       },
       {
         "skillId": 141,
@@ -236649,6 +236721,10 @@
         "points": 2
       },
       {
+        "skillId": 53,
+        "points": 10
+      },
+      {
         "skillId": 141,
         "points": 4
       }
@@ -236676,6 +236752,10 @@
       {
         "skillId": 111,
         "points": 3
+      },
+      {
+        "skillId": 53,
+        "points": 10
       },
       {
         "skillId": 141,
@@ -236709,6 +236789,10 @@
       {
         "skillId": 21,
         "points": 5
+      },
+      {
+        "skillId": 53,
+        "points": 10
       }
     ],
     "openSlotCount": 3,
@@ -236734,6 +236818,10 @@
       {
         "skillId": 67,
         "points": 5
+      },
+      {
+        "skillId": 53,
+        "points": 10
       },
       {
         "skillId": 141,
@@ -236765,6 +236853,10 @@
         "points": 6
       },
       {
+        "skillId": 53,
+        "points": 10
+      },
+      {
         "skillId": 141,
         "points": 4
       }
@@ -236792,6 +236884,10 @@
       {
         "skillId": 67,
         "points": 6
+      },
+      {
+        "skillId": 53,
+        "points": 10
       },
       {
         "skillId": 141,
@@ -236825,6 +236921,10 @@
       {
         "skillId": 22,
         "points": 5
+      },
+      {
+        "skillId": 53,
+        "points": 10
       }
     ],
     "openSlotCount": 3,
@@ -236850,6 +236950,10 @@
       {
         "skillId": 111,
         "points": 2
+      },
+      {
+        "skillId": 53,
+        "points": 10
       },
       {
         "skillId": 141,
@@ -236881,6 +236985,10 @@
         "points": 2
       },
       {
+        "skillId": 53,
+        "points": 10
+      },
+      {
         "skillId": 141,
         "points": 4
       }
@@ -236908,6 +237016,10 @@
       {
         "skillId": 111,
         "points": 3
+      },
+      {
+        "skillId": 53,
+        "points": 10
       },
       {
         "skillId": 141,
@@ -236941,6 +237053,10 @@
       {
         "skillId": 21,
         "points": 5
+      },
+      {
+        "skillId": 53,
+        "points": 10
       }
     ],
     "openSlotCount": 3,
@@ -236966,6 +237082,10 @@
       {
         "skillId": 67,
         "points": 5
+      },
+      {
+        "skillId": 53,
+        "points": 10
       },
       {
         "skillId": 141,
@@ -236997,6 +237117,10 @@
         "points": 6
       },
       {
+        "skillId": 53,
+        "points": 10
+      },
+      {
         "skillId": 141,
         "points": 4
       }
@@ -237024,6 +237148,10 @@
       {
         "skillId": 67,
         "points": 6
+      },
+      {
+        "skillId": 53,
+        "points": 10
       },
       {
         "skillId": 141,
@@ -239531,6 +239659,10 @@
         "points": 5
       },
       {
+        "skillId": 80,
+        "points": 20
+      },
+      {
         "skillId": 62,
         "points": 5
       }
@@ -239550,6 +239682,10 @@
       {
         "skillId": 128,
         "points": 3
+      },
+      {
+        "skillId": 80,
+        "points": 20
       },
       {
         "skillId": 111,
@@ -239581,6 +239717,10 @@
         "points": 4
       },
       {
+        "skillId": 80,
+        "points": 20
+      },
+      {
         "skillId": 111,
         "points": 3
       },
@@ -239608,6 +239748,10 @@
       {
         "skillId": 128,
         "points": 5
+      },
+      {
+        "skillId": 80,
+        "points": 20
       },
       {
         "skillId": 111,
@@ -239647,6 +239791,10 @@
         "points": 5
       },
       {
+        "skillId": 80,
+        "points": 20
+      },
+      {
         "skillId": 21,
         "points": 5
       }
@@ -239670,6 +239818,10 @@
       {
         "skillId": 128,
         "points": 3
+      },
+      {
+        "skillId": 80,
+        "points": 20
       },
       {
         "skillId": 111,
@@ -239701,6 +239853,10 @@
         "points": 4
       },
       {
+        "skillId": 80,
+        "points": 20
+      },
+      {
         "skillId": 111,
         "points": 3
       },
@@ -239728,6 +239884,10 @@
       {
         "skillId": 128,
         "points": 5
+      },
+      {
+        "skillId": 80,
+        "points": 20
       },
       {
         "skillId": 111,
@@ -240103,6 +240263,10 @@
         "points": 5
       },
       {
+        "skillId": 52,
+        "points": 10
+      },
+      {
         "skillId": 41,
         "points": 5
       },
@@ -240126,6 +240290,10 @@
       {
         "skillId": 158,
         "points": 4
+      },
+      {
+        "skillId": 52,
+        "points": 10
       },
       {
         "skillId": 172,
@@ -240157,6 +240325,10 @@
         "points": 5
       },
       {
+        "skillId": 52,
+        "points": 10
+      },
+      {
         "skillId": 172,
         "points": 5
       },
@@ -240184,6 +240356,10 @@
       {
         "skillId": 158,
         "points": 6
+      },
+      {
+        "skillId": 52,
+        "points": 10
       },
       {
         "skillId": 172,
@@ -240219,6 +240395,10 @@
         "points": 5
       },
       {
+        "skillId": 52,
+        "points": 10
+      },
+      {
         "skillId": 41,
         "points": 5
       },
@@ -240242,6 +240422,10 @@
       {
         "skillId": 158,
         "points": 4
+      },
+      {
+        "skillId": 52,
+        "points": 10
       },
       {
         "skillId": 172,
@@ -240273,6 +240457,10 @@
         "points": 5
       },
       {
+        "skillId": 52,
+        "points": 10
+      },
+      {
         "skillId": 172,
         "points": 5
       },
@@ -240300,6 +240488,10 @@
       {
         "skillId": 158,
         "points": 6
+      },
+      {
+        "skillId": 52,
+        "points": 10
       },
       {
         "skillId": 172,
@@ -242175,6 +242367,10 @@
       {
         "skillId": 117,
         "points": 5
+      },
+      {
+        "skillId": 40,
+        "points": 30
       }
     ],
     "openSlotCount": 3,
@@ -242204,6 +242400,10 @@
       {
         "skillId": 117,
         "points": 5
+      },
+      {
+        "skillId": 40,
+        "points": 30
       }
     ],
     "openSlotCount": 3,
@@ -242233,6 +242433,10 @@
       {
         "skillId": 117,
         "points": 10
+      },
+      {
+        "skillId": 40,
+        "points": 30
       }
     ],
     "openSlotCount": 3,
@@ -242262,6 +242466,10 @@
       {
         "skillId": 117,
         "points": 10
+      },
+      {
+        "skillId": 40,
+        "points": 30
       }
     ],
     "openSlotCount": 3,
@@ -242291,6 +242499,10 @@
       {
         "skillId": 117,
         "points": 5
+      },
+      {
+        "skillId": 40,
+        "points": 30
       }
     ],
     "openSlotCount": 3,
@@ -242320,6 +242532,10 @@
       {
         "skillId": 117,
         "points": 5
+      },
+      {
+        "skillId": 40,
+        "points": 30
       }
     ],
     "openSlotCount": 3,
@@ -242349,6 +242565,10 @@
       {
         "skillId": 117,
         "points": 10
+      },
+      {
+        "skillId": 40,
+        "points": 30
       }
     ],
     "openSlotCount": 3,
@@ -242378,6 +242598,10 @@
       {
         "skillId": 117,
         "points": 10
+      },
+      {
+        "skillId": 40,
+        "points": 30
       }
     ],
     "openSlotCount": 3,
@@ -242407,6 +242631,10 @@
       {
         "skillId": 117,
         "points": 5
+      },
+      {
+        "skillId": 40,
+        "points": 30
       }
     ],
     "openSlotCount": 3,
@@ -242436,6 +242664,10 @@
       {
         "skillId": 117,
         "points": 5
+      },
+      {
+        "skillId": 40,
+        "points": 30
       }
     ],
     "openSlotCount": 3,
@@ -242465,6 +242697,10 @@
       {
         "skillId": 117,
         "points": 10
+      },
+      {
+        "skillId": 40,
+        "points": 30
       }
     ],
     "openSlotCount": 3,
@@ -242494,6 +242730,10 @@
       {
         "skillId": 117,
         "points": 10
+      },
+      {
+        "skillId": 40,
+        "points": 30
       }
     ],
     "openSlotCount": 3,
@@ -242523,6 +242763,10 @@
       {
         "skillId": 117,
         "points": 5
+      },
+      {
+        "skillId": 40,
+        "points": 30
       }
     ],
     "openSlotCount": 3,
@@ -242552,6 +242796,10 @@
       {
         "skillId": 117,
         "points": 5
+      },
+      {
+        "skillId": 40,
+        "points": 30
       }
     ],
     "openSlotCount": 3,
@@ -242581,6 +242829,10 @@
       {
         "skillId": 117,
         "points": 10
+      },
+      {
+        "skillId": 40,
+        "points": 30
       }
     ],
     "openSlotCount": 3,
@@ -242610,6 +242862,10 @@
       {
         "skillId": 117,
         "points": 10
+      },
+      {
+        "skillId": 40,
+        "points": 30
       }
     ],
     "openSlotCount": 3,
@@ -247540,6 +247796,10 @@
       {
         "skillId": 41,
         "points": 5
+      },
+      {
+        "skillId": 83,
+        "points": 20
       }
     ],
     "openSlotCount": 3,
@@ -247561,6 +247821,10 @@
       {
         "skillId": 23,
         "points": 6
+      },
+      {
+        "skillId": 83,
+        "points": 20
       },
       {
         "skillId": 111,
@@ -247592,6 +247856,10 @@
         "points": 6
       },
       {
+        "skillId": 83,
+        "points": 20
+      },
+      {
         "skillId": 111,
         "points": 3
       },
@@ -247619,6 +247887,10 @@
       {
         "skillId": 23,
         "points": 6
+      },
+      {
+        "skillId": 83,
+        "points": 20
       },
       {
         "skillId": 111,
@@ -247656,6 +247928,10 @@
       {
         "skillId": 41,
         "points": 5
+      },
+      {
+        "skillId": 83,
+        "points": 20
       }
     ],
     "openSlotCount": 3,
@@ -247677,6 +247953,10 @@
       {
         "skillId": 23,
         "points": 6
+      },
+      {
+        "skillId": 83,
+        "points": 20
       },
       {
         "skillId": 111,
@@ -247708,6 +247988,10 @@
         "points": 6
       },
       {
+        "skillId": 83,
+        "points": 20
+      },
+      {
         "skillId": 111,
         "points": 3
       },
@@ -247735,6 +248019,10 @@
       {
         "skillId": 23,
         "points": 6
+      },
+      {
+        "skillId": 83,
+        "points": 20
       },
       {
         "skillId": 111,
@@ -251814,6 +252102,10 @@
         "points": 5
       },
       {
+        "skillId": 24,
+        "points": 20
+      },
+      {
         "skillId": 55,
         "points": 5
       },
@@ -251841,6 +252133,10 @@
       {
         "skillId": 172,
         "points": 4
+      },
+      {
+        "skillId": 24,
+        "points": 20
       },
       {
         "skillId": 163,
@@ -251872,6 +252168,10 @@
         "points": 5
       },
       {
+        "skillId": 24,
+        "points": 20
+      },
+      {
         "skillId": 163,
         "points": 4
       },
@@ -251901,6 +252201,10 @@
         "points": 6
       },
       {
+        "skillId": 24,
+        "points": 20
+      },
+      {
         "skillId": 163,
         "points": 5
       },
@@ -251920,6 +252224,10 @@
       {
         "skillId": 46,
         "points": 4
+      },
+      {
+        "skillId": 70,
+        "points": 10
       },
       {
         "skillId": 4,
@@ -251946,6 +252254,10 @@
     "id": "wst:2631",
     "name": "Uragaan G Coat",
     "skills": [
+      {
+        "skillId": 70,
+        "points": 10
+      },
       {
         "skillId": 168,
         "points": 3
@@ -251976,6 +252288,10 @@
     "name": "Uragaan GF Coat",
     "skills": [
       {
+        "skillId": 70,
+        "points": 10
+      },
+      {
         "skillId": 168,
         "points": 4
       },
@@ -252004,6 +252320,10 @@
     "id": "wst:2633",
     "name": "Uragaan GX Coat",
     "skills": [
+      {
+        "skillId": 70,
+        "points": 10
+      },
       {
         "skillId": 168,
         "points": 5
@@ -254030,6 +254350,10 @@
         "points": 6
       },
       {
+        "skillId": 23,
+        "points": 20
+      },
+      {
         "skillId": 41,
         "points": 6
       },
@@ -254063,6 +254387,10 @@
         "points": 4
       },
       {
+        "skillId": 23,
+        "points": 20
+      },
+      {
         "skillId": 165,
         "points": 4
       },
@@ -254090,6 +254418,10 @@
       {
         "skillId": 159,
         "points": 4
+      },
+      {
+        "skillId": 23,
+        "points": 20
       },
       {
         "skillId": 165,
@@ -254121,6 +254453,10 @@
         "points": 5
       },
       {
+        "skillId": 23,
+        "points": 20
+      },
+      {
         "skillId": 165,
         "points": 4
       },
@@ -254148,6 +254484,10 @@
       {
         "skillId": 4,
         "points": 6
+      },
+      {
+        "skillId": 23,
+        "points": 20
       },
       {
         "skillId": 41,
@@ -254179,6 +254519,10 @@
         "points": 2
       },
       {
+        "skillId": 23,
+        "points": 20
+      },
+      {
         "skillId": 148,
         "points": 4
       },
@@ -254208,6 +254552,10 @@
         "points": 3
       },
       {
+        "skillId": 23,
+        "points": 20
+      },
+      {
         "skillId": 148,
         "points": 4
       },
@@ -254235,6 +254583,10 @@
       {
         "skillId": 174,
         "points": 4
+      },
+      {
+        "skillId": 23,
+        "points": 20
       },
       {
         "skillId": 148,
@@ -256712,6 +257064,10 @@
       {
         "skillId": 22,
         "points": 6
+      },
+      {
+        "skillId": 7,
+        "points": 20
       }
     ],
     "openSlotCount": 3,
@@ -256733,6 +257089,10 @@
       {
         "skillId": 111,
         "points": 3
+      },
+      {
+        "skillId": 7,
+        "points": 20
       },
       {
         "skillId": 164,
@@ -256764,6 +257124,10 @@
         "points": 3
       },
       {
+        "skillId": 7,
+        "points": 20
+      },
+      {
         "skillId": 164,
         "points": 4
       },
@@ -256791,6 +257155,10 @@
       {
         "skillId": 111,
         "points": 4
+      },
+      {
+        "skillId": 7,
+        "points": 20
       },
       {
         "skillId": 164,
@@ -256826,6 +257194,10 @@
         "points": 6
       },
       {
+        "skillId": 47,
+        "points": 10
+      },
+      {
         "skillId": 68,
         "points": 6
       }
@@ -256853,6 +257225,10 @@
       {
         "skillId": 111,
         "points": 3
+      },
+      {
+        "skillId": 47,
+        "points": 10
       },
       {
         "skillId": 141,
@@ -256884,6 +257260,10 @@
         "points": 3
       },
       {
+        "skillId": 47,
+        "points": 10
+      },
+      {
         "skillId": 141,
         "points": 5
       }
@@ -256911,6 +257291,10 @@
       {
         "skillId": 111,
         "points": 4
+      },
+      {
+        "skillId": 47,
+        "points": 10
       },
       {
         "skillId": 141,
@@ -260386,6 +260770,10 @@
       {
         "skillId": 22,
         "points": 6
+      },
+      {
+        "skillId": 7,
+        "points": 20
       }
     ],
     "openSlotCount": 3,
@@ -260407,6 +260795,10 @@
       {
         "skillId": 111,
         "points": 3
+      },
+      {
+        "skillId": 7,
+        "points": 20
       },
       {
         "skillId": 164,
@@ -260438,6 +260830,10 @@
         "points": 3
       },
       {
+        "skillId": 7,
+        "points": 20
+      },
+      {
         "skillId": 164,
         "points": 4
       },
@@ -260465,6 +260861,10 @@
       {
         "skillId": 111,
         "points": 4
+      },
+      {
+        "skillId": 7,
+        "points": 20
       },
       {
         "skillId": 164,
@@ -260500,6 +260900,10 @@
         "points": 6
       },
       {
+        "skillId": 47,
+        "points": 10
+      },
+      {
         "skillId": 68,
         "points": 6
       }
@@ -260527,6 +260931,10 @@
       {
         "skillId": 111,
         "points": 3
+      },
+      {
+        "skillId": 47,
+        "points": 10
       },
       {
         "skillId": 141,
@@ -260558,6 +260966,10 @@
         "points": 3
       },
       {
+        "skillId": 47,
+        "points": 10
+      },
+      {
         "skillId": 141,
         "points": 5
       }
@@ -260585,6 +260997,10 @@
       {
         "skillId": 111,
         "points": 4
+      },
+      {
+        "skillId": 47,
+        "points": 10
       },
       {
         "skillId": 141,
@@ -261802,6 +262218,10 @@
     "name": "Stygian Faulds",
     "skills": [
       {
+        "skillId": 98,
+        "points": 20
+      },
+      {
         "skillId": 23,
         "points": 6
       },
@@ -261835,6 +262255,10 @@
         "points": 3
       },
       {
+        "skillId": 98,
+        "points": 20
+      },
+      {
         "skillId": 172,
         "points": 5
       },
@@ -261862,6 +262286,10 @@
       {
         "skillId": 142,
         "points": 4
+      },
+      {
+        "skillId": 98,
+        "points": 20
       },
       {
         "skillId": 172,
@@ -261893,6 +262321,10 @@
         "points": 5
       },
       {
+        "skillId": 98,
+        "points": 20
+      },
+      {
         "skillId": 172,
         "points": 6
       },
@@ -261917,6 +262349,10 @@
     "id": "wst:27CC",
     "name": "Stygian Coat",
     "skills": [
+      {
+        "skillId": 98,
+        "points": 20
+      },
       {
         "skillId": 23,
         "points": 6
@@ -261947,6 +262383,10 @@
     "name": "Stygian G Coat",
     "skills": [
       {
+        "skillId": 98,
+        "points": 20
+      },
+      {
         "skillId": 172,
         "points": 5
       },
@@ -261976,6 +262416,10 @@
     "name": "Stygian GF Coat",
     "skills": [
       {
+        "skillId": 98,
+        "points": 20
+      },
+      {
         "skillId": 172,
         "points": 5
       },
@@ -262004,6 +262448,10 @@
     "id": "wst:27CF",
     "name": "Stygian GX Coat",
     "skills": [
+      {
+        "skillId": 98,
+        "points": 20
+      },
       {
         "skillId": 172,
         "points": 6
@@ -277186,6 +277634,10 @@
         "points": 6
       },
       {
+        "skillId": 99,
+        "points": 20
+      },
+      {
         "skillId": 182,
         "points": 4
       },
@@ -277209,6 +277661,10 @@
       {
         "skillId": 128,
         "points": 5
+      },
+      {
+        "skillId": 99,
+        "points": 20
       },
       {
         "skillId": 111,
@@ -277240,6 +277696,10 @@
         "points": 5
       },
       {
+        "skillId": 99,
+        "points": 20
+      },
+      {
         "skillId": 111,
         "points": 3
       },
@@ -277267,6 +277727,10 @@
       {
         "skillId": 128,
         "points": 5
+      },
+      {
+        "skillId": 99,
+        "points": 20
       },
       {
         "skillId": 111,
@@ -277302,6 +277766,10 @@
         "points": 5
       },
       {
+        "skillId": 99,
+        "points": 20
+      },
+      {
         "skillId": 39,
         "points": 6
       },
@@ -277325,6 +277793,10 @@
       {
         "skillId": 128,
         "points": 5
+      },
+      {
+        "skillId": 99,
+        "points": 20
       },
       {
         "skillId": 167,
@@ -277356,6 +277828,10 @@
         "points": 5
       },
       {
+        "skillId": 99,
+        "points": 20
+      },
+      {
         "skillId": 167,
         "points": 5
       },
@@ -277383,6 +277859,10 @@
       {
         "skillId": 128,
         "points": 5
+      },
+      {
+        "skillId": 99,
+        "points": 20
       },
       {
         "skillId": 167,
@@ -287337,6 +287817,10 @@
       {
         "skillId": 51,
         "points": 5
+      },
+      {
+        "skillId": 121,
+        "points": 30
       }
     ],
     "openSlotCount": 3,
@@ -287354,6 +287838,10 @@
       {
         "skillId": 111,
         "points": 3
+      },
+      {
+        "skillId": 121,
+        "points": 30
       },
       {
         "skillId": 125,
@@ -287385,6 +287873,10 @@
         "points": 3
       },
       {
+        "skillId": 121,
+        "points": 30
+      },
+      {
         "skillId": 125,
         "points": 4
       },
@@ -287412,6 +287904,10 @@
       {
         "skillId": 111,
         "points": 4
+      },
+      {
+        "skillId": 121,
+        "points": 30
       },
       {
         "skillId": 125,
@@ -287453,6 +287949,10 @@
       {
         "skillId": 67,
         "points": 6
+      },
+      {
+        "skillId": 121,
+        "points": 30
       }
     ],
     "openSlotCount": 3,
@@ -287478,6 +287978,10 @@
       {
         "skillId": 111,
         "points": 3
+      },
+      {
+        "skillId": 121,
+        "points": 30
       },
       {
         "skillId": 125,
@@ -287509,6 +288013,10 @@
         "points": 3
       },
       {
+        "skillId": 121,
+        "points": 30
+      },
+      {
         "skillId": 125,
         "points": 4
       }
@@ -287536,6 +288044,10 @@
       {
         "skillId": 111,
         "points": 4
+      },
+      {
+        "skillId": 121,
+        "points": 30
       },
       {
         "skillId": 125,
@@ -300866,6 +301378,10 @@
       {
         "skillId": 22,
         "points": 6
+      },
+      {
+        "skillId": 82,
+        "points": 20
       }
     ],
     "openSlotCount": 3,
@@ -300895,6 +301411,10 @@
       {
         "skillId": 154,
         "points": 4
+      },
+      {
+        "skillId": 82,
+        "points": 20
       }
     ],
     "openSlotCount": 3,
@@ -300924,6 +301444,10 @@
       {
         "skillId": 154,
         "points": 5
+      },
+      {
+        "skillId": 82,
+        "points": 20
       }
     ],
     "openSlotCount": 3,
@@ -300953,6 +301477,10 @@
       {
         "skillId": 154,
         "points": 5
+      },
+      {
+        "skillId": 82,
+        "points": 20
       }
     ],
     "openSlotCount": 3,
@@ -300982,6 +301510,10 @@
       {
         "skillId": 47,
         "points": 5
+      },
+      {
+        "skillId": 82,
+        "points": 20
       }
     ],
     "openSlotCount": 3,
@@ -301011,6 +301543,10 @@
       {
         "skillId": 125,
         "points": 4
+      },
+      {
+        "skillId": 82,
+        "points": 20
       }
     ],
     "openSlotCount": 3,
@@ -301040,6 +301576,10 @@
       {
         "skillId": 125,
         "points": 4
+      },
+      {
+        "skillId": 82,
+        "points": 20
       }
     ],
     "openSlotCount": 3,
@@ -301069,6 +301609,10 @@
       {
         "skillId": 125,
         "points": 5
+      },
+      {
+        "skillId": 82,
+        "points": 20
       }
     ],
     "openSlotCount": 3,
@@ -310404,6 +310948,10 @@
         "points": 6
       },
       {
+        "skillId": 41,
+        "points": 50
+      },
+      {
         "skillId": 120,
         "points": 6
       },
@@ -310427,6 +310975,10 @@
       {
         "skillId": 172,
         "points": 6
+      },
+      {
+        "skillId": 41,
+        "points": 50
       },
       {
         "skillId": 111,
@@ -310458,6 +311010,10 @@
         "points": 6
       },
       {
+        "skillId": 41,
+        "points": 50
+      },
+      {
         "skillId": 111,
         "points": 3
       },
@@ -310485,6 +311041,10 @@
       {
         "skillId": 172,
         "points": 6
+      },
+      {
+        "skillId": 41,
+        "points": 50
       },
       {
         "skillId": 111,
@@ -310520,6 +311080,10 @@
         "points": 6
       },
       {
+        "skillId": 41,
+        "points": 50
+      },
+      {
         "skillId": 47,
         "points": 6
       },
@@ -310536,6 +311100,10 @@
     "id": "wst:3011",
     "name": "Seregios G Coat",
     "skills": [
+      {
+        "skillId": 41,
+        "points": 50
+      },
       {
         "skillId": 111,
         "points": 3
@@ -310566,6 +311134,10 @@
     "name": "Seregios GF Coat",
     "skills": [
       {
+        "skillId": 41,
+        "points": 50
+      },
+      {
         "skillId": 111,
         "points": 3
       },
@@ -310594,6 +311166,10 @@
     "id": "wst:3013",
     "name": "Seregios GX Coat",
     "skills": [
+      {
+        "skillId": 41,
+        "points": 50
+      },
       {
         "skillId": 111,
         "points": 4

@@ -54,6 +54,42 @@ ZENITH_SKILL_WEAPON_NAME_ALIASES: dict[str, str] = {
     "C. Conversion Up+1": "Crit Conversion Up+1",
 }
 
+# "Exotic" equipment (CLASS "O") grants a fixed bonus to one normal skill
+# just by being equipped, in addition to its own listed skills -- see
+# etl/src/etl/parse/equipment.py's `_extract_exotic_skill_marker` and
+# docs/data-format-notes.md "Exotic armor". Maps a raw marker string (the
+# text already embedded in the item's own flavor text, e.g. "Ice Attack
+# 【Large】") to the catalog skill name/points it resolves to. Confirmed
+# against the real dataset: every one of these 17 distinct markers is the
+# full real set (etl/.data/cache/equip.body, 688/688 CLASS "O" rows), and
+# each (skill name, points) pair was cross-checked against that skill's own
+# tier-threshold data already in skills.json (e.g. "Ice Attack 【Large】" is
+# the "Ice Attack" skill's "Ice Attack (Large)" tier, 20 points). Resolved as
+# a fixed dict rather than dynamically against `skill_tier` at load time,
+# since tier data isn't loaded until *after* `load_equipment` runs (see
+# `load_skill_tiers`, called later in `main()`) -- same reasoning as
+# `ZENITH_SKILL_WEAPON_NAME_ALIASES` above for why this can't just be a
+# runtime lookup against data this function doesn't have yet.
+EXOTIC_ARMOR_SKILL_GRANTS: dict[str, tuple[str, int]] = {
+    "Bomber": ("Bomb Boost", 10),
+    "Critical Eye +5": ("Expert", 50),
+    "Dragon Attack 【Large】": ("Dragon Attack", 20),
+    "Evade+2": ("Evasion", 20),
+    "Focus+2": ("Focus", 20),
+    "Great Luck": ("Fate", 20),
+    "Guard+2": ("Guard", 20),
+    "Ice Attack 【Large】": ("Ice Attack", 20),
+    "Maximum Bullets": ("Ammo Combiner", 10),
+    "Pierce/Pierce Up": ("Pierce Shot Up", 10),
+    "S. Immunity (Myriad)": ("Status Res", 30),
+    "Sharpening Artisan": ("Sharpening", 20),
+    "Starving Wolf+2": ("Fasting", 20),
+    "Status Attack Up": ("Status Attack", 10),
+    "Thunder Attack 【Large】": ("Thunder Attack", 20),
+    "Water Attack 【Large】": ("Water Attack", 20),
+    "Wide-Area+3": ("Wide-Area", 30),
+}
+
 EQUIP_JS_URL = "https://xl3lackout.github.io/MHFZ-Ferias-English-Project/skill/equip.js"
 SKILLFORM_JS_URL = "https://xl3lackout.github.io/MHFZ-Ferias-English-Project/skill/SkillForm.js"
 WEAPON_BASE_URL = "https://xl3lackout.github.io/MHFZ-Ferias-English-Project/buki/"
@@ -68,6 +104,14 @@ class LoadSummary:
     cuff_count: int
     skill_count: int
     zenith_skill_count: int
+    # How many Exotic equipment rows got their bonus skill grant applied, and
+    # any raw marker text seen that `EXOTIC_ARMOR_SKILL_GRANTS` doesn't cover
+    # (surfaced rather than silently dropped, same "report, don't guess"
+    # convention as SkillTierLoadSummary/SkillPriorityLoadSummary -- a future
+    # re-scrape could expose a new Exotic monster family this dict hasn't
+    # been taught about yet).
+    exotic_grant_count: int
+    unmatched_exotic_markers: tuple[str, ...]
 
 
 def load_equipment(
@@ -79,6 +123,9 @@ def load_equipment(
 
     resolved_skills: dict[int, int] = {}
     resolved_zenith_skills: dict[int, int] = {}
+    resolved_exotic_skills: dict[str, int] = {}
+    unmatched_exotic_markers: set[str] = set()
+    exotic_grant_count = 0
 
     def resolve_skill(skill_id: int) -> int:
         if skill_id not in resolved_skills:
@@ -92,6 +139,16 @@ def load_equipment(
             name = zenith_skill_names.get(zenith_skill_id, fallback)
             resolved_zenith_skills[zenith_skill_id] = insert_zenith_skill(conn, name=name).id
         return resolved_zenith_skills[zenith_skill_id]
+
+    def resolve_exotic_grant(marker: str) -> tuple[int, int] | None:
+        mapping = EXOTIC_ARMOR_SKILL_GRANTS.get(marker)
+        if mapping is None:
+            unmatched_exotic_markers.add(marker)
+            return None
+        name, points = mapping
+        if name not in resolved_exotic_skills:
+            resolved_exotic_skills[name] = insert_skill(conn, name=name).id
+        return resolved_exotic_skills[name], points
 
     for row in parsed.equipment:
         equipment = insert_equipment(
@@ -115,10 +172,24 @@ def load_equipment(
             grank_or_later=row.grank_or_later,
             source_url=source_url,
         )
+        # Summed into one dict (keyed by the already-resolved skill id) rather
+        # than inserted straight off `row.skills` -- an Exotic grant lands on
+        # the same (equipment_id, skill_id) primary key as a piece's own
+        # listed skills whenever they happen to coincide, which would
+        # otherwise violate it (same reasoning `_extract_skills` already
+        # documents for duplicate SN/SP slots within one row).
+        skill_totals: dict[int, int] = {}
         for skill_id, points in row.skills:
-            add_equipment_skill(
-                conn, equipment_id=equipment.id, skill_id=resolve_skill(skill_id), points=points
-            )
+            resolved_id = resolve_skill(skill_id)
+            skill_totals[resolved_id] = skill_totals.get(resolved_id, 0) + points
+        if row.exotic_skill_marker is not None:
+            grant = resolve_exotic_grant(row.exotic_skill_marker)
+            if grant is not None:
+                exotic_skill_id, exotic_points = grant
+                skill_totals[exotic_skill_id] = skill_totals.get(exotic_skill_id, 0) + exotic_points
+                exotic_grant_count += 1
+        for skill_id, points in skill_totals.items():
+            add_equipment_skill(conn, equipment_id=equipment.id, skill_id=skill_id, points=points)
 
     for deco_row in parsed.decorations:
         decoration = insert_decoration(
@@ -159,6 +230,8 @@ def load_equipment(
         cuff_count=len(parsed.cuffs),
         skill_count=len(resolved_skills),
         zenith_skill_count=len(resolved_zenith_skills),
+        exotic_grant_count=exotic_grant_count,
+        unmatched_exotic_markers=tuple(sorted(unmatched_exotic_markers)),
     )
 
 
@@ -390,6 +463,12 @@ def main() -> None:  # pragma: no cover -- network-touching, run manually only
         f"{summary.zenith_skill_count} distinct Zenith skills, "
         f"{weapon_summary.weapon_count} weapons."
     )
+    print(f"Applied {summary.exotic_grant_count} Exotic-armor bonus-skill grants.")
+    if summary.unmatched_exotic_markers:
+        print(
+            "  Unmatched Exotic Armor markers (EXOTIC_ARMOR_SKILL_GRANTS needs a new entry): "
+            f"{', '.join(summary.unmatched_exotic_markers)}"
+        )
     print(
         f"Attached tiers to {tier_summary.matched_group_count} skills. "
         f"{len(tier_summary.unmatched_group_names)} tier-site groups had no matching catalog "
