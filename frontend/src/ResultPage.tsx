@@ -76,7 +76,7 @@ export function ResultPage({ state, onUseAsBase, onBackToSearch }: ResultPagePro
     setReconstructStatus('loading')
     setErrorMessage(null)
 
-    const { slots, cuffs, pinnedCuffs } = buildSearchQuery(bundle, formState)
+    const { slots, decorations, cuffs, pinnedCuffs } = buildSearchQuery(bundle, formState)
     const allRequirements = [...state.requirements, ...state.zenithRequirements]
     const skillTiers: SkillTierThresholds[] = [...bundle.skills, ...bundle.zenithSkills].map(
       (skill) => ({
@@ -90,7 +90,7 @@ export function ResultPage({ state, onUseAsBase, onBackToSearch }: ResultPagePro
     const requestId = worker.search(
       slots,
       allRequirements,
-      bundle.decorations,
+      decorations,
       {
         onResult: (found) => {
           if (cancelled) return

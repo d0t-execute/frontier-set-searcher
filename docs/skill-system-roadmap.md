@@ -113,6 +113,31 @@ not the ~26-family Zenith catalog).
 - [PLAN.md](PLAN.md) mentions a "level cap" as a Phase 5 UI placeholder, but that's a
   weapon/armor level constraint, unrelated to skill points -- don't confuse the two.
 
+**Bug fix (2026-10-15): Hiden/Tech skills exempt from the cap when cuff-sourced.** Reported by the
+project owner from a real example build: 17 active normal skills against a cap of 16, where one of
+the 17 was a "Hiden/Tech Skills"-category skill (e.g. "SnS Tech") reaching its threshold with help
+from an equipped cuff -- in that case the game doesn't count that skill against the cap at all (it
+doesn't consume one of its slots, and can never itself be force-disabled), so all 17 should display
+as active despite nominally exceeding the cap by one. A Hiden skill reached purely through
+armor/decorations, with no cuff contribution, has no such exemption and is capped normally -- this
+mechanic wasn't documented or implemented anywhere before this fix.
+
+- `frontend/src/search-engine/active-skill-cap.ts`: `determineActiveSkills` gained an optional
+  `cuffs: readonly NamedCuff[] = []` parameter (defaults to empty, so every call site that doesn't
+  pass cuffs is unaffected). A new `cuffContributedSkillIds()` helper sums each cuff's own skill
+  contributions; any active skill both in the `"Hiden/Tech Skills"` category (confirmed exact string
+  against `skills.json`) and in that set is pulled out of the cap-ranked list entirely before the
+  `rankedCapped.slice(cap)` cut, so it can never land in `disabled` -- `rankedActive`'s own docstring
+  was updated to reflect that it's no longer simply "a prefix up to `cap`" once an exemption exists.
+- `frontend/src/components/ResultsList.tsx`: passes `result.cuffs` through to `determineActiveSkills`
+  (previously unused for this computation, only for the separate "Cuffs: ..." display line).
+- Verification: 3 new `active-skill-cap.test.ts` cases (exempts a Hiden skill the cuff reaches past
+  the cap; still caps a Hiden skill with no cuff contribution; doesn't exempt a cuff-sourced skill
+  outside the Hiden/Tech category) pass, plus all 17 existing cases in that file. `tsc -b` and oxlint
+  clean. Live-browser verified: pinned a real cuff ("SnS・G", 12 points towards "SnS Tech") alongside
+  11 skill requirements sized to fill the cap, and confirmed "SnS Tech: 12" rendered with no
+  `(disabled)` tag in the result while a separate, lower-priority skill past the cap did show one.
+
 ## 2. Zenith skills as a separate filter
 
 **Status (2026-10-15): DONE, end to end.** Confirmed with the project owner: Zenith skills stack
@@ -721,3 +746,117 @@ and present it in a way that doesn't feel as overwhelming, while feeling modern 
   cards") is also not attempted here -- left for a follow-up once the project owner has a specific
   site or mockup in mind to match, consistent with this TODO's own original note that the exact
   visual direction needed their input rather than being guessed at.
+
+## 11. Decoration tier include/exclude filter
+
+**Status (2026-10-15): Not started -- added per the project owner's request.** The same
+category-level include/exclude control that already exists for armor (`GEAR_CATEGORY_GROUPS`/
+`CategoryFilter.tsx`) and cuffs (`CUFF_CATEGORY_GROUPS`) should exist for decorations too, letting
+the user exclude whole decoration tiers from the search pool rather than only individual pieces (per-
+decoration pinning already exists via `ArmorPicker.tsx`'s decoration search, but that's
+force-*include* for one slot at a time, not a pool-wide exclude). Decorations only have one
+machine-readable axis to filter on today -- `isTower` (see the "Tower-decoration bug fix" note
+below) -- not the richer multi-level category tree armor/cuffs have, so this would start narrower
+(an "Exclude Tower Gems" toggle, effectively) unless a fuller decoration category taxonomy gets
+built out first.
+
+**Bug fix (2026-10-15): Tower Gems no longer mixed into the regular decoration pool.** Reported by
+the project owner: Tower Gems (e.g. "Vampirism Gem II", "Sword God Gem II") are strictly stronger
+than their regular equivalents and were showing up in ordinary (non-Tower) searches, crowding out
+normal decorations almost every time one was relevant. `docs/data-format-notes.md` had already
+flagged the underlying exclusivity rule (Tower armor can only take Tower Gems; regular armor can't
+take them at all) as a known, unenforced gap -- the ETL already parsed and stored an `is_tower` flag
+on every decoration row, it just never reached the export.
+
+- `etl/src/etl/export.py`'s `_export_decorations()`: now includes `"isTower": decoration.is_tower`
+  (the DB/parse layer already had this -- see `etl/src/etl/parse/equipment.py`'s
+  `parse_decoration_bucket` and `models.py`'s `Decoration.is_tower`). No pipeline rebuild needed,
+  just a re-export; confirmed via a live DB query that the real "Vampirism Gem I/II" and "Sword God
+  Gem I/II" rows are flagged `true`, and the bundle now carries 173 Tower-flagged decorations.
+- `frontend/src/search-engine/load-bundle.ts`'s `NamedDecoration` gained `isTower: boolean`.
+- `frontend/src/search-engine/build-query.ts`'s new `filterOutTowerDecorations()` drops every
+  `isTower` decoration before any decoration list reaches either the solver
+  (`buildSearchQuery`'s returned `decorations`) or `ArmorPicker.tsx`'s own manual per-slot decoration
+  picker (`App.tsx`'s `pinnableDecorations`) -- so a Tower Gem can't sneak in through pinning either.
+- **This is a one-sided fix, not full bidirectional exclusivity.** It stops Tower Gems from ever
+  being offered to a non-Tower (or any) slot, but a *regular* decoration still isn't prevented from
+  being placed into an actual Tower armor piece's own open slots if one gets picked -- the engine has
+  no per-slot/per-candidate decoration-compatibility concept at all today (every slot shares one flat
+  pool, gated only by combined capacity). Fixing that fully would need real per-slot eligibility
+  modeling, a bigger change than this bug warranted; left as a known gap, not pursued here since
+  Tower armor is rare in practice and wasn't the reported complaint.
+- Verification: new `etl/tests/test_export.py::test_exports_a_tower_decoration_flag` plus the
+  existing shaped-export test updated for the new field (260 ETL tests pass, ruff/mypy clean); new
+  `frontend/src/search-engine/build-query.test.ts` (3 cases: drops every Tower-flagged decoration,
+  empty-result edge case, `buildSearchQuery` itself excludes them). Full frontend suite (225 tests),
+  `tsc -b`, and oxlint all clean. Live-browser confirmed via the real exported bundle (173 Tower
+  decorations correctly flagged, including the project owner's own two named examples).
+
+## 12. Pin a decoration into a slot without pinning the armor piece
+
+**Status (2026-10-15): Not started -- added per the project owner's request.** Today,
+`ArmorPicker.tsx`'s decoration picker only appears once a specific piece is already pinned for that
+slot (`PinnedSlot` requires a `candidateId`; see `ArmorSlotPicker`'s `candidate && !picking` gate) --
+there's no way to force a specific decoration into a slot while leaving the solver free to choose
+*which piece* goes there. Needs a design decision on how this composes with `ilp-model.ts`: a pinned
+decoration without a pinned candidate can't use the existing "narrow the slot to one synthesized
+candidate" trick (TODO #7's own mechanism), since the candidate itself is still meant to be chosen by
+the solver -- this is closer in shape to the cuff-pinning mechanism (TODO #7's "Cuff pinning"
+section: fold a fixed contribution directly into the model's row bounds) than to armor-piece pinning,
+except it also has to guarantee the decoration's `slotSize` fits within whichever candidate the
+solver ends up picking for that slot (a per-slot capacity constraint that doesn't apply to the
+cuffs' shared pool). Left open for implementation time rather than guessed at here.
+
+## 13. Let the user choose how many results to return
+
+**Status (2026-10-15): Not started -- added per the project owner's request.** `App.tsx`'s
+`MAX_RESULTS` (`App.tsx:48`) is a hardcoded constant (currently 5): `handleSearch`'s `onResult`
+callback (`App.tsx:257-271`) counts streamed results and calls `worker.cancel(requestId)` once
+`count >= MAX_RESULTS`, and the "Showing the top N results" copy (`App.tsx:466`) interpolates the
+same constant. Needs a form control (a number input or a small preset dropdown, following the
+existing `CategoryFilter.tsx`/`FilterableOptions.tsx` styling conventions) feeding a piece of
+`App.tsx` state in place of the constant, plumbed into both the cap check and the results-shown
+copy. Also needs a decision on bounds (a sensible floor so a value of 0 can't be submitted, and a
+ceiling -- the ILP solver streams results strictly worst-to-best-ranked one at a time today, so a
+much larger N mostly just costs more solver time, not correctness, but an unbounded input could let
+a user stall the page). Worth also deciding whether this should be part of `SharedSearchState`
+(TODO #9) so a shared link preserves how many results its sender was shown -- lean towards *not*
+including it, since the link only ever points at one specific `resultIndex`, not the whole list.
+
+## 14. Shorten shareable build-result links
+
+**Status (2026-10-15): Not started -- added per the project owner's request, and flagged as making
+the shared-link feature (TODO #9) not reliably usable as shipped.** The project owner reports that
+even with the current `shared-state.ts` encoding, a real link can come out far longer than what
+Discord allows a non-Nitro user to post in one message (Discord's non-Nitro message-length cap is
+2000 characters) -- confirmed independently earlier in this same project's work via a disposable
+Node.js size-check script comparing encodings, which already showed real links landing in the
+several-hundred-to-low-thousands-of-characters range depending on how many skill requirements and
+pinned pieces a query carries, so this isn't a hypothetical edge case.
+
+Where the size actually goes (per `shared-state.ts`'s `SharedSearchState` and `encodeSharedState`):
+it's a `JSON.stringify` of the *entire* query form state -- every requirement, every excluded
+category id, every pinned-armor `[slotId, PinnedSlot]` pair, pinned cuff ids, etc. -- base64url-
+encoded, which alone inflates size by ~33% on top of the JSON's own verbosity (repeated key names
+like `"excludedWeaponZenithSkillIds"` and `"requirements"` cost bytes on every link regardless of
+how little the query actually customizes). Candidate directions, roughly cheapest-to-implement
+first, not mutually exclusive:
+
+- **Compact the JSON shape first** -- shortest-path win with no architecture change: switch
+  `SharedSearchState`'s field names to short keys (or encode as a tuple/array instead of a keyed
+  object) only at the serialization boundary in `shared-state.ts`, decoding back to the same typed
+  interface everywhere else. Free size reduction proportional to how many fields a typical query
+  touches.
+- **Compress before base64**, e.g. via the browser's native `CompressionStream('deflate')` (no new
+  dependency, supported in all current evergreen browsers), base64url-encoding the compressed bytes
+  instead of the raw JSON. Likely the single biggest win given how repetitive the JSON keys/skill-id
+  arrays are, but decoding becomes `async` (`DecompressionStream` is a streams API), which ripples
+  into `readSharedStateFromLocation()` and `AppRoot.tsx`'s currently-synchronous read-on-mount.
+- **A real backend/URL-shortener**, trading away this app's current "fully static, no server"
+  property (see `shared-state.ts`'s own docstring on why the query is encoded client-side at all) --
+  out of scope unless the project owner decides a static GitHub Pages site is no longer a hard
+  requirement; flagged here only so it's not silently assumed away.
+
+No implementation attempted yet -- needs a decision on which of these (likely "compact field
+names" + "compress," done together) before writing code, since the compression approach's
+async-decode ripple touches `AppRoot.tsx`/`ResultPage.tsx` beyond just `shared-state.ts` itself.

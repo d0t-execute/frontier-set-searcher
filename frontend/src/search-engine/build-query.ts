@@ -150,6 +150,25 @@ export function cuffsAfterCategoryFilter(
   return cuffs.filter((c) => !excludedCuffCategories.has(c.category))
 }
 
+/** Tower Gems and regular decorations are strictly exclusive with each other
+ * in both directions in-game (docs/data-format-notes.md's "Decorations"
+ * section: Tower armor can only take Tower Gems, regular armor can't take
+ * them at all) -- a rule this engine doesn't model per-slot/per-candidate at
+ * all. Unconditionally excluding Tower Gems from the general pool is a
+ * partial but one-sided fix for a real bug (confirmed by the project owner,
+ * 2026-10-15): Tower Gems are strictly stronger than their regular
+ * equivalents, so leaving them in the shared pool let them crowd out normal
+ * decorations in nearly every search, not just ones that happened to pin
+ * Tower armor. The other direction -- a regular decoration ending up placed
+ * into a Tower armor piece's own open slots -- remains unenforced; see
+ * docs/skill-system-roadmap.md TODO #11 for turning this into a real,
+ * user-controlled category filter instead of this hardcoded exclusion. */
+export function filterOutTowerDecorations(
+  decorations: readonly NamedDecoration[],
+): NamedDecoration[] {
+  return decorations.filter((d) => !d.isTower)
+}
+
 /** Resolves pinned cuff ids (see `QueryFormState.pinnedCuffIds`) to their full
  * `NamedCuff` data, dropping any id no longer present in the catalog (e.g. a
  * shared link from before a data re-export changed cuff ids -- silently
@@ -168,6 +187,7 @@ export function resolvePinnedCuffs(
 
 export interface BuiltQuery {
   readonly slots: NamedSlotQuery[]
+  readonly decorations: NamedDecoration[]
   readonly cuffs: NamedCuff[]
   readonly pinnedCuffs: NamedCuff[]
 }
@@ -219,10 +239,11 @@ export function pinnedArmorFromResult(
  * single place both `App.tsx`'s live search and `ResultPage.tsx`'s
  * reconstructed one call through, so they can never drift apart. */
 export function buildSearchQuery(bundle: DataBundle, state: QueryFormState): BuiltQuery {
+  const decorations = filterOutTowerDecorations(bundle.decorations)
   const slots = [
     ...slotsAfterPinning(
       slotsAfterCategoryFilter(bundle.slots, state.excludedCategories),
-      bundle.decorations,
+      decorations,
       bundle.slots,
       state.pinnedArmor,
     ),
@@ -230,5 +251,5 @@ export function buildSearchQuery(bundle: DataBundle, state: QueryFormState): Bui
   ]
   const cuffs = cuffsAfterCategoryFilter(bundle.cuffs, state.excludedCuffCategories)
   const pinnedCuffs = resolvePinnedCuffs(bundle.cuffs, state.pinnedCuffIds)
-  return { slots, cuffs, pinnedCuffs }
+  return { slots, decorations, cuffs, pinnedCuffs }
 }

@@ -40,8 +40,8 @@ const slots = [
 ]
 
 const decorations: readonly NamedDecoration[] = [
-  { id: 'D001', name: 'Attack Jewel', slotSize: 1, skills: [{ skillId: 1, points: 3 }] },
-  { id: 'D002', name: 'Defense Jewel', slotSize: 2, skills: [{ skillId: 2, points: 3 }] },
+  { id: 'D001', name: 'Attack Jewel', slotSize: 1, skills: [{ skillId: 1, points: 3 }], isTower: false },
+  { id: 'D002', name: 'Defense Jewel', slotSize: 2, skills: [{ skillId: 2, points: 3 }], isTower: false },
 ]
 
 const skills: readonly NamedSkill[] = [

@@ -9,7 +9,11 @@ import { SkillPicker } from './components/SkillPicker'
 import type { NamedBuildResult } from './components/types'
 import { useDataBundle } from './data/useDataBundle'
 import { useSearchWorker } from './search/useSearchWorker'
-import { buildSearchQuery, WEAPON_NO_ZENITH_SKILL_KEY } from './search-engine/build-query'
+import {
+  buildSearchQuery,
+  filterOutTowerDecorations,
+  WEAPON_NO_ZENITH_SKILL_KEY,
+} from './search-engine/build-query'
 import type { QueryFormState } from './search-engine/build-query'
 import { CUFF_CATEGORY_GROUPS } from './search-engine/cuff-categories'
 import { GEAR_CATEGORY_GROUPS } from './search-engine/gear-categories'
@@ -146,6 +150,13 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
 
   const bundle = bundleQuery.data
 
+  // Tower Gems are excluded from manual pinning the same way they're
+  // excluded from the solver's own pool (see build-query.ts's
+  // `filterOutTowerDecorations`) -- otherwise a player could still pin one
+  // into a non-Tower slot through ArmorPicker even though the search itself
+  // never would.
+  const pinnableDecorations = bundle ? filterOutTowerDecorations(bundle.decorations) : []
+
   // The engine only needs each skill's point thresholds (not its name or
   // description) to tell a harmless incidental bonus point apart from one
   // that actually crosses into one of the skill's own tiers -- see
@@ -237,11 +248,11 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
 
     let count = 0
     let capped = false
-    const { slots, cuffs, pinnedCuffs } = buildSearchQuery(bundle, queryFormState)
+    const { slots, decorations, cuffs, pinnedCuffs } = buildSearchQuery(bundle, queryFormState)
     const requestId = worker.search(
       slots,
       allRequirements,
-      bundle.decorations,
+      decorations,
       {
         onResult: (result) => {
           // `worker.cancel` below races a message round-trip to the worker,
@@ -339,7 +350,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
               </p>
               <ArmorPicker
                 slots={bundle.slots}
-                decorations={bundle.decorations}
+                decorations={pinnableDecorations}
                 pinned={pinnedArmor}
                 onChange={setPinnedArmor}
                 skills={bundle.skills}

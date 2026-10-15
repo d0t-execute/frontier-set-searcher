@@ -71,6 +71,7 @@ export function ResultCard({
     result.skillTotals,
     skills,
     zenithSkills,
+    result.cuffs,
   )
   const disabledIds = new Set(disabled)
   return (

@@ -9,10 +9,19 @@
  * activation-priority table, see etl's `load_skill_priority`) are
  * force-disabled first. Scope is normal skills only -- Zenith skills are a
  * wholly separate pool, never subject to this cap.
+ *
+ * One exemption (confirmed by the project owner, 2026-10-15): a "Hiden/Tech
+ * Skills"-category skill (e.g. "SnS Tech") doesn't count against the cap at
+ * all -- doesn't consume one of its slots, and is never itself a candidate
+ * for being force-disabled -- when a cuff is what's contributing to it. A
+ * Hiden skill reached purely through armor/decorations has no such
+ * exemption and is capped normally.
  */
 
-import type { NamedCandidate, NamedSkill } from './load-bundle'
+import type { NamedCandidate, NamedCuff, NamedSkill } from './load-bundle'
 import type { SkillId } from './types'
+
+const HIDEN_SKILL_CATEGORY = 'Hiden/Tech Skills'
 
 const BASE_ACTIVE_SKILL_CAP = 10
 const SKILL_SLOTS_UP_ZENITH_SKILL_NAME = 'Skill Slots Up'
@@ -83,11 +92,16 @@ export function isSkillActive(points: number, skill: NamedSkill | undefined): bo
 
 export interface SkillActivationResult {
   readonly cap: number
-  /** Active skill ids in priority order (most-protected first) -- a prefix
-   * of this list, up to `cap`, is what actually takes effect in-game. */
+  /** Every active normal skill id, most-protected first -- any Hiden/cuff
+   * exemptions (see this module's own docstring) always sort first, since
+   * they're never force-disabled regardless of `cap`; the rest are in
+   * priority order the same as before this exemption existed. Not simply "a
+   * prefix of this list up to `cap` is what's active" anymore once an
+   * exemption exists, since an exempted skill doesn't consume a cap slot --
+   * use `disabled` to know what's actually force-disabled. */
   readonly rankedActive: readonly SkillId[]
-  /** The subset of `rankedActive` beyond `cap`, force-disabled by the game.
-   * Empty when the build's active-skill count doesn't exceed its cap. */
+  /** Every id in `rankedActive` that's force-disabled by the cap. Empty when
+   * the build's non-exempt active-skill count doesn't exceed its cap. */
   readonly disabled: readonly SkillId[]
 }
 
@@ -97,27 +111,52 @@ export interface SkillActivationResult {
  * "absent from this table." */
 const UNRANKED_SORT_RANK = Number.POSITIVE_INFINITY
 
+/** Every normal skill id a build's equipped cuffs contribute any (nonzero)
+ * points towards -- used only to find this module's own Hiden-skill cap
+ * exemption (see its docstring); a skill a cuff contributes to is still
+ * capped normally unless it's also in the Hiden/Tech category. */
+function cuffContributedSkillIds(cuffs: readonly NamedCuff[]): ReadonlySet<SkillId> {
+  const ids = new Set<SkillId>()
+  for (const cuff of cuffs) {
+    for (const { skillId, points } of cuff.skills) {
+      if (points !== 0) ids.add(skillId)
+    }
+  }
+  return ids
+}
+
 /** Determines which of a build's active normal skills survive its
  * active-skill cap, and which get force-disabled -- see this module's own
- * docstring. `skillTotals` is the build's full combined point totals
- * (`BuildResult.skillTotals`, spanning both normal and Zenith skill ids --
- * see load-bundle.ts's `DataBundle` docstring); only the entries matching an
- * id in `skills` (the normal-skill catalog) are considered, since Zenith
- * skills are a wholly separate, unaffected pool. */
+ * docstring, including the Hiden/cuff exemption. `skillTotals` is the
+ * build's full combined point totals (`BuildResult.skillTotals`, spanning
+ * both normal and Zenith skill ids -- see load-bundle.ts's `DataBundle`
+ * docstring); only the entries matching an id in `skills` (the normal-skill
+ * catalog) are considered, since Zenith skills are a wholly separate,
+ * unaffected pool. `cuffs` is the build's equipped cuffs (`BuildResult.cuffs`
+ * -- omitted defaults to none, so every existing call site without a cuff
+ * exemption to apply still behaves exactly as before). */
 export function determineActiveSkills(
   picks: ReadonlyMap<string, NamedCandidate>,
   skillTotals: ReadonlyMap<SkillId, number>,
   skills: readonly NamedSkill[],
   zenithSkills: readonly NamedSkill[],
+  cuffs: readonly NamedCuff[] = [],
 ): SkillActivationResult {
   const skillsById = new Map(skills.map((s) => [s.id, s]))
   const cap = computeActiveSkillCap(picks, skillTotals, zenithSkills)
+  const cuffSkillIds = cuffContributedSkillIds(cuffs)
 
   const active = [...skillTotals.entries()]
     .filter(([skillId]) => skillsById.has(skillId))
     .filter(([skillId, points]) => isSkillActive(points, skillsById.get(skillId)))
-  const rankedActive = active
+
+  const isCapExempt = (skillId: SkillId): boolean =>
+    skillsById.get(skillId)?.category === HIDEN_SKILL_CATEGORY && cuffSkillIds.has(skillId)
+
+  const exempt = active.map(([skillId]) => skillId).filter(isCapExempt)
+  const rankedCapped = active
     .map(([skillId]) => skillId)
+    .filter((skillId) => !isCapExempt(skillId))
     .sort((a, b) => {
       const rankA = skillsById.get(a)?.priorityRank ?? UNRANKED_SORT_RANK
       const rankB = skillsById.get(b)?.priorityRank ?? UNRANKED_SORT_RANK
@@ -126,7 +165,7 @@ export function determineActiveSkills(
 
   return {
     cap,
-    rankedActive,
-    disabled: rankedActive.slice(cap),
+    rankedActive: [...exempt, ...rankedCapped],
+    disabled: rankedCapped.slice(cap),
   }
 }

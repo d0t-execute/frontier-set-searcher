@@ -120,8 +120,23 @@ def test_exports_decorations_shaped_for_the_search_engine(tmp_path: Path) -> Non
             "name": "Attack Jewel",
             "slotSize": 2,
             "skills": [{"skillId": attack.id, "points": 3}],
+            "isTower": False,
         }
     ]
+
+
+def test_exports_a_tower_decoration_flag(tmp_path: Path) -> None:
+    conn = _conn(tmp_path)
+    repo.insert_decoration(
+        conn, external_id="D002", name="Vampirism Gem II", slot_size=2, is_tower=True
+    )
+    conn.commit()
+    out_dir = tmp_path / "bundle"
+
+    export_bundle(conn, out_dir)
+
+    decorations = _load(out_dir / "decorations.json")
+    assert decorations[0]["isTower"] is True
 
 
 def test_exports_cuffs_shaped_for_the_search_engine(tmp_path: Path) -> None:

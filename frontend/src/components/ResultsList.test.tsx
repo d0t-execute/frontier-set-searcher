@@ -80,7 +80,7 @@ describe('ResultsList', () => {
         results={[
           result({
             decorations: new Map([
-              ['head', [{ id: 'D001', name: 'Attack Jewel', slotSize: 1, skills: [] }]],
+              ['head', [{ id: 'D001', name: 'Attack Jewel', slotSize: 1, skills: [], isTower: false }]],
             ]),
           }),
         ]}
@@ -121,7 +121,7 @@ describe('ResultsList', () => {
               ['head', candidate({ id: 'head:0001', name: 'Leather Helm', openSlotCount: 3 })],
             ]),
             decorations: new Map([
-              ['head', [{ id: 'D001', name: 'Attack Jewel', slotSize: 1, skills: [] }]],
+              ['head', [{ id: 'D001', name: 'Attack Jewel', slotSize: 1, skills: [], isTower: false }]],
             ]),
           }),
         ]}
@@ -143,7 +143,7 @@ describe('ResultsList', () => {
               ['head', candidate({ id: 'head:0001', name: 'Leather Helm', openSlotCount: 1 })],
             ]),
             decorations: new Map([
-              ['head', [{ id: 'D001', name: 'Attack Jewel', slotSize: 1, skills: [] }]],
+              ['head', [{ id: 'D001', name: 'Attack Jewel', slotSize: 1, skills: [], isTower: false }]],
             ]),
           }),
         ]}

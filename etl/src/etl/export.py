@@ -249,6 +249,12 @@ def _export_decorations(conn: sqlite3.Connection) -> list[dict[str, Any]]:
             "name": decoration.name,
             "slotSize": decoration.slot_size,
             "skills": _skills_payload(get_decoration_skills(conn, decoration.id)),
+            # Tower Gems are strictly exclusive with regular decorations in
+            # both directions (docs/data-format-notes.md's "Decorations"
+            # section) -- not yet enforced per-slot by the search engine, but
+            # this flag at least lets it exclude Tower Gems from the general
+            # pool outright (see frontend's build-query.ts).
+            "isTower": decoration.is_tower,
         }
         for decoration in list_decorations(conn)
     ]

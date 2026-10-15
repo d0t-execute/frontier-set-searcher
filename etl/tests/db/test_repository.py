@@ -33,7 +33,9 @@ def test_insert_equipment_round_trips_grank_or_later(conn: sqlite3.Connection) -
     )
 
     assert created.grank_or_later is True
-    assert repo.get_equipment_by_external_id(conn, "0001").grank_or_later is True
+    fetched = repo.get_equipment_by_external_id(conn, "0001")
+    assert fetched is not None
+    assert fetched.grank_or_later is True
 
 
 def test_insert_equipment_defaults_grank_or_later_to_false(conn: sqlite3.Connection) -> None:

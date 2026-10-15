@@ -4,10 +4,14 @@ import {
   countGrankOrLaterPieces,
   determineActiveSkills,
 } from './active-skill-cap'
-import type { NamedCandidate, NamedSkill } from './load-bundle'
+import type { NamedCandidate, NamedCuff, NamedSkill } from './load-bundle'
 
 function candidate(category: string, grankOrLater = false): NamedCandidate {
   return { id: `c:${category}`, name: category, category, grankOrLater, skills: [] }
+}
+
+function cuff(id: string, skillId: number, points: number): NamedCuff {
+  return { id, name: id, slotSize: 1, category: 'cuff_standard_plain', skills: [{ skillId, points }] }
 }
 
 function skill(
@@ -164,5 +168,45 @@ describe('determineActiveSkills', () => {
     expect(result.cap).toBe(10)
     expect(result.rankedActive).toHaveLength(11)
     expect(result.disabled).toEqual([11])
+  })
+
+  it('exempts a Hiden/Tech skill from the cap when a cuff contributes to it, letting it stay active past the cap', () => {
+    const hidenId = 999
+    const normalSkills = Array.from({ length: 10 }, (_, i) => skill(i + 1, { priorityRank: i + 1 }))
+    const skills = [...normalSkills, skill(hidenId, { category: 'Hiden/Tech Skills' })]
+    const skillTotals = new Map([...normalSkills.map((s) => [s.id, 3] as const), [hidenId, 5]])
+    const cuffs = [cuff('cuff:1', hidenId, 5)]
+
+    const result = determineActiveSkills(picks, skillTotals, skills, ZENITH_SKILLS, cuffs)
+
+    expect(result.cap).toBe(10)
+    expect(result.rankedActive).toHaveLength(11)
+    expect(result.disabled).toEqual([])
+  })
+
+  it('still caps a Hiden/Tech skill normally when nothing cuff-sourced contributes to it', () => {
+    const hidenId = 999
+    const normalSkills = Array.from({ length: 10 }, (_, i) => skill(i + 1, { priorityRank: i + 1 }))
+    const skills = [
+      ...normalSkills,
+      skill(hidenId, { category: 'Hiden/Tech Skills', priorityRank: 11 }),
+    ]
+    const skillTotals = new Map([...normalSkills.map((s) => [s.id, 3] as const), [hidenId, 5]])
+
+    const result = determineActiveSkills(picks, skillTotals, skills, ZENITH_SKILLS, [])
+
+    expect(result.disabled).toEqual([hidenId])
+  })
+
+  it("doesn't exempt a cuff-sourced skill outside the Hiden/Tech category", () => {
+    const attackId = 999
+    const normalSkills = Array.from({ length: 10 }, (_, i) => skill(i + 1, { priorityRank: i + 1 }))
+    const skills = [...normalSkills, skill(attackId, { category: 'Attack Skills', priorityRank: 11 })]
+    const skillTotals = new Map([...normalSkills.map((s) => [s.id, 3] as const), [attackId, 5]])
+    const cuffs = [cuff('cuff:1', attackId, 5)]
+
+    const result = determineActiveSkills(picks, skillTotals, skills, ZENITH_SKILLS, cuffs)
+
+    expect(result.disabled).toEqual([attackId])
   })
 })
