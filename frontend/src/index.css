@@ -254,6 +254,19 @@ code {
   background: color-mix(in srgb, var(--border), var(--text) 45%);
 }
 
+/* The "View (N)" toggle next to a category leaf (docs/feedback.md Round 1 #2)
+ * -- sized and spaced to sit inline with the leaf's own checkbox label rather
+ * than reading as a separate control. */
+.category-leaf-view-toggle {
+  font-size: 0.8em;
+  text-decoration: none;
+}
+
+.category-leaf-contents {
+  margin-top: 2px;
+  margin-left: 1.5em;
+}
+
 /* Consistent vertical rhythm between a section's own sub-blocks (e.g. the
  * Weapon section's Hunter-type select / Zenith-skill checklist / slot-count
  * select) -- a `gap`-based wrapper instead of per-element margin utility

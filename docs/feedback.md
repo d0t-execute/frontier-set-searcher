@@ -16,9 +16,10 @@ demographic" for this new tool.
    set searcher uses -- today's `GEAR_CATEGORY_GROUPS` tree (`gear-categories.ts`) is presumably
    coarser than what that tool exposes. Needs the old tool's actual tree in hand to know the gap.
 
-2. **See what's actually in a category** -- armor and decorations both. Suggested UI: a button next
-   to each category-tree leaf (`CategoryFilter.tsx`) that opens a list (maybe a new tab) of every
-   piece/decoration in that leaf, so a filter's effect isn't a total guess from its name alone.
+2. **DONE** (see roadmap #27) ~~See what's actually in a category~~ -- armor and decorations both.
+   Suggested UI: a button next to each category-tree leaf (`CategoryFilter.tsx`) that opens a list
+   (maybe a new tab) of every piece/decoration in that leaf, so a filter's effect isn't a total guess
+   from its name alone. Built as an inline "View (N)" expand/collapse per leaf rather than a new tab.
 
 3. **Show a live count of selected skills**, visible even while the Skills section is collapsed (its
    `Disclosure` summary today just says "N skills", which already technically does this -- worth
@@ -69,10 +70,14 @@ demographic" for this new tool.
 13. **Mark gender-specific pieces** somewhere in the UI (some MHF-Z armor is gender-locked) -- needs
     checking whether the source data/ETL even captures gender restriction today.
 
-14. **Better feedback on why a search found nothing** -- e.g. detecting and explaining up front that
-    a request is logically impossible (the example given: requesting 8 simultaneous active Zenith
-    skills can never succeed, since the Zenith-skill-slot mechanic doesn't allow that many), plus
-    whatever else is cheaply detectable by logic before/instead of just reporting "no results."
+14. **DONE in part** (see roadmap #27) ~~Better feedback on why a search found nothing~~ -- e.g.
+    detecting and explaining up front that a request is logically impossible, plus whatever else is
+    cheaply detectable by logic before/instead of just reporting "no results." Done for the
+    data-provable case (a skill's own minimum exceeds the most any currently-includable equipment
+    could ever grant it). The example actually given -- 8 simultaneous active Zenith skills -- is
+    *not* covered: it depends on an unconfirmed game mechanic (how many Zenith skills can really be
+    simultaneously active) this engine doesn't model at all yet, left as a follow-up needing that
+    confirmation first (same caution as TODO #16).
 
 15. **No way to target a specific gear variant/tier for a slot** -- the reported case: a real build
     mixing Origin, Exotic, and GX pieces across slots couldn't be searched for, because there's
@@ -92,9 +97,10 @@ demographic" for this new tool.
     decoration cluster together (or at least sit adjacent) instead of appearing in whatever order the
     solver happened to produce, making it easier to read at a glance which decorations are used where.
 
-18. **Save a skill-set/query** for later reuse -- suggested approach: a text input mapped to a
-    specific saved query (could likely reuse the existing share-link query-encoding machinery from
-    `shared-state.ts`, scoped to just the search inputs rather than a solved result).
+18. **DONE** (see roadmap #27) ~~Save a skill-set/query for later reuse~~ -- suggested approach: a
+    text input mapped to a specific saved query. Built exactly that way, reusing
+    `shared-state.ts`'s own gzip/base64url codec (pulled out into `codec.ts`) scoped to just the
+    search inputs (`SearchFormState`) rather than a solved result.
 
 19. **DONE for pinning** (see roadmap #26) ~~Search for an armor piece by the skills it grants~~, not
     only by its name -- done for `ArmorPicker.tsx`'s piece-pin search. `EquipmentExclusionPicker.tsx`'s

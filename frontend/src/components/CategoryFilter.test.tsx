@@ -109,4 +109,56 @@ describe('CategoryFilter', () => {
     const header = screen.getByRole('checkbox', { name: 'Guild (all)' }) as HTMLInputElement
     expect(header.indeterminate).toBe(true)
   })
+
+  describe('itemsByCategory', () => {
+    const ITEMS_BY_CATEGORY = new Map([
+      ['guild_gx', [{ name: 'Guardian Mask' }, { name: 'Carnage Mask' }]],
+    ])
+
+    it('does not render a View toggle for a leaf with no itemsByCategory entry', () => {
+      render(
+        <CategoryFilter
+          groups={GROUPS}
+          excludedCategories={new Set()}
+          onChange={vi.fn()}
+          itemsByCategory={ITEMS_BY_CATEGORY}
+        />,
+      )
+
+      expect(screen.queryAllByRole('button')).toHaveLength(1)
+    })
+
+    it('shows a View toggle with the item count for a leaf with items', () => {
+      render(
+        <CategoryFilter
+          groups={GROUPS}
+          excludedCategories={new Set()}
+          onChange={vi.fn()}
+          itemsByCategory={ITEMS_BY_CATEGORY}
+        />,
+      )
+
+      expect(screen.getByRole('button', { name: 'View (2)' })).toBeInTheDocument()
+    })
+
+    it('expands to show every item name on click, and collapses again on a second click', async () => {
+      render(
+        <CategoryFilter
+          groups={GROUPS}
+          excludedCategories={new Set()}
+          onChange={vi.fn()}
+          itemsByCategory={ITEMS_BY_CATEGORY}
+        />,
+      )
+
+      expect(screen.queryByText(/Guardian Mask/)).not.toBeInTheDocument()
+
+      await userEvent.click(screen.getByRole('button', { name: 'View (2)' }))
+      expect(screen.getByText(/Guardian Mask/)).toBeInTheDocument()
+      expect(screen.getByText(/Carnage Mask/)).toBeInTheDocument()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Hide' }))
+      expect(screen.queryByText(/Guardian Mask/)).not.toBeInTheDocument()
+    })
+  })
 })

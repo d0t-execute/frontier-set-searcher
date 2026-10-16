@@ -53,8 +53,11 @@ export interface SearchFormState {
 /** Returns `null` for anything that doesn't decode into a usable
  * `SearchFormState` (missing/wrong-typed fields, e.g. a stored value from
  * before this shape last changed) -- see this module's own docstring on why
- * this fails soft instead of throwing. */
-function fromStoredValue(parsed: unknown): SearchFormState | null {
+ * this fails soft instead of throwing. Exported for `query-code.ts`'s own
+ * save/load-a-search-by-code feature (docs/feedback.md #18), which decodes
+ * into this exact shape and needs the same validation this module already
+ * does for its own `localStorage` value. */
+export function validateSearchFormState(parsed: unknown): SearchFormState | null {
   if (typeof parsed !== 'object' || parsed === null) return null
   const p = parsed as Record<string, unknown>
 
@@ -89,7 +92,7 @@ export function loadSearchFormState(): SearchFormState | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw === null) return null
-    return fromStoredValue(JSON.parse(raw))
+    return validateSearchFormState(JSON.parse(raw))
   } catch {
     return null
   }

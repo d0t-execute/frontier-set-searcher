@@ -19,7 +19,16 @@ const BUNDLE = {
         {
           id: 'head:0001',
           name: 'Leather Helm',
-          skills: [],
+          // Grants both catalog skills (not just whichever one a given test
+          // happens to request) so every test's `minPoints: 1` requirement is
+          // actually reachable -- needed once App.tsx started rejecting a
+          // provably-unreachable search before ever calling the worker (see
+          // feasibility.ts, docs/feedback.md Round 1 #14); a real empty-skills
+          // fixture would otherwise make every search here "impossible."
+          skills: [
+            { skillId: 1, points: 5 },
+            { skillId: 1000001, points: 5 },
+          ],
           category: 'standard_plain',
           grankOrLater: false,
           hunterType: 'common',

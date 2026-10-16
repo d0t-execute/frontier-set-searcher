@@ -18,8 +18,11 @@ import {
 import type { HunterTypeFilter, QueryFormState } from './search-engine/build-query'
 import { CUFF_CATEGORY_GROUPS } from './search-engine/cuff-categories'
 import { DECORATION_CATEGORY_GROUPS } from './search-engine/decoration-categories'
+import { findUnreachableRequirements } from './search-engine/feasibility'
 import { GEAR_CATEGORY_GROUPS } from './search-engine/gear-categories'
 import type { PinnedSlot } from './search-engine/pinned-armor'
+import { decodeQueryCode, encodeQueryCode } from './search-engine/query-code'
+import type { SearchFormState } from './search-engine/search-form-state'
 import { loadSearchFormState, saveSearchFormState } from './search-engine/search-form-state'
 import { buildResultUrl } from './search-engine/shared-state'
 import type { SharedSearchState } from './search-engine/shared-state'
@@ -140,6 +143,21 @@ const DECORATION_LEAF_COUNT = countLeaves(DECORATION_CATEGORY_GROUPS)
 
 function pluralize(count: number, noun: string, plural: string = `${noun}s`): string {
   return `${count} ${count === 1 ? noun : plural}`
+}
+
+/** Groups any `{category, name}`-shaped catalog (armor candidates, cuffs,
+ * decorations) by its own `category` key, for `CategoryFilter`'s "View"
+ * toggle (docs/feedback.md Round 1 #2). */
+function groupByCategory<T extends { readonly category: string; readonly name: string }>(
+  items: readonly T[],
+): ReadonlyMap<string, readonly T[]> {
+  const map = new Map<string, T[]>()
+  for (const item of items) {
+    const list = map.get(item.category)
+    if (list) list.push(item)
+    else map.set(item.category, [item])
+  }
+  return map
 }
 
 /** Every piece of the main search page's own state that a shared result's
@@ -293,6 +311,17 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
   // care which slot it happens to belong to.
   const allArmorCandidates = useMemo(
     () => bundle?.slots.flatMap((slot) => slot.candidates) ?? [],
+    [bundle],
+  )
+
+  // Grouped by category key for each category tree's own "View" toggle
+  // (docs/feedback.md Round 1 #2: "see what's actually in a category") --
+  // `CategoryFilter`'s own `itemsByCategory` prop. Armor is grouped from the
+  // already-flattened `allArmorCandidates` above rather than re-flattening.
+  const gearItemsByCategory = useMemo(() => groupByCategory(allArmorCandidates), [allArmorCandidates])
+  const cuffItemsByCategory = useMemo(() => groupByCategory(bundle?.cuffs ?? []), [bundle])
+  const decorationItemsByCategory = useMemo(
+    () => groupByCategory(bundle?.decorations ?? []),
     [bundle],
   )
 
@@ -453,14 +482,43 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
     setResults([])
     setErrorMessage(null)
     setReachedCap(false)
-    setStatus('searching')
 
-    let count = 0
-    let capped = false
     const { slots, decorations, cuffs, pinnedCuffs, pinnedSlotDecorations } = buildSearchQuery(
       bundle,
       queryFormState,
     )
+
+    // Caught before ever handing this to the solver (docs/feedback.md Round 1
+    // #14) -- a requirement flagged here is provably unreachable no matter
+    // what the solver tries, so there's no reason to spend a search round
+    // (and the player's own wait) just to rediscover that the slow way.
+    const unreachable = findUnreachableRequirements(
+      slots,
+      decorations,
+      cuffs,
+      allRequirements,
+      pinnedCuffs,
+      pinnedSlotDecorations,
+    )
+    if (unreachable.length > 0) {
+      const skillNames = bundle.skillNames
+      const description = unreachable
+        .map((u) => {
+          const name = skillNames.get(u.skillId) ?? `Skill ${u.skillId}`
+          return `${name} needs ${u.required}, but at most ${u.maxReachable} is reachable`
+        })
+        .join('; ')
+      setStatus('error')
+      setErrorMessage(
+        `This search can never succeed: ${description}. Lower the requirement, or include more equipment that grants it.`,
+      )
+      return
+    }
+
+    setStatus('searching')
+
+    let count = 0
+    let capped = false
     const requestId = worker.search(
       slots,
       allRequirements,
@@ -491,6 +549,74 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
       cuffs,
     )
     setActiveRequestId(requestId)
+  }
+
+  // Save/load this search by a pasteable text code (docs/feedback.md #18) --
+  // see query-code.ts's own docstring for how this differs from the
+  // automatic localStorage persistence above.
+  const [generatedQueryCode, setGeneratedQueryCode] = useState<string | null>(null)
+  const [isGeneratingQueryCode, setIsGeneratingQueryCode] = useState(false)
+  const [queryCodeInput, setQueryCodeInput] = useState('')
+  const [queryCodeError, setQueryCodeError] = useState<string | null>(null)
+
+  function handleGenerateQueryCode(): void {
+    setIsGeneratingQueryCode(true)
+    void encodeQueryCode({
+      requirements,
+      zenithRequirements,
+      excludedCategories: [...excludedCategories],
+      excludedCuffCategories: [...excludedCuffCategories],
+      excludedDecorationCategories: [...excludedDecorationCategories],
+      excludedWeaponZenithSkillIds: excludedWeaponZenithSkillIds
+        ? [...excludedWeaponZenithSkillIds]
+        : null,
+      weaponSlotCount,
+      hunterTypeFilter,
+      pinnedArmor: [...pinnedArmor.entries()],
+      pinnedCuffIds,
+      pinnedSlotDecorationIds: [...pinnedSlotDecorationIds.entries()],
+      excludedArmorIds: [...excludedArmorIds],
+      excludedDecorationIds: [...excludedDecorationIds],
+      excludedCuffIds: [...excludedCuffIds],
+      preferExactMatches,
+      maxResults,
+    })
+      .then(setGeneratedQueryCode)
+      .finally(() => setIsGeneratingQueryCode(false))
+  }
+
+  function applyLoadedQueryState(state: SearchFormState): void {
+    setRequirements([...state.requirements])
+    setZenithRequirements([...state.zenithRequirements])
+    setExcludedCategories(new Set(state.excludedCategories))
+    setExcludedCuffCategories(new Set(state.excludedCuffCategories))
+    setExcludedDecorationCategories(new Set(state.excludedDecorationCategories))
+    setExcludedWeaponZenithSkillIds(
+      state.excludedWeaponZenithSkillIds ? new Set(state.excludedWeaponZenithSkillIds) : null,
+    )
+    setWeaponSlotCount(state.weaponSlotCount)
+    setHunterTypeFilter(state.hunterTypeFilter)
+    setPinnedArmor(new Map(state.pinnedArmor))
+    setPinnedCuffIds([...state.pinnedCuffIds])
+    setPinnedSlotDecorationIds(new Map(state.pinnedSlotDecorationIds))
+    setExcludedArmorIds(new Set(state.excludedArmorIds))
+    setExcludedDecorationIds(new Set(state.excludedDecorationIds))
+    setExcludedCuffIds(new Set(state.excludedCuffIds))
+    setPreferExactMatches(state.preferExactMatches)
+    setMaxResults(state.maxResults)
+  }
+
+  function handleLoadQueryCode(): void {
+    setQueryCodeError(null)
+    void decodeQueryCode(queryCodeInput).then((state) => {
+      if (!state) {
+        setQueryCodeError('That code could not be read -- check it was copied in full.')
+        return
+      }
+      applyLoadedQueryState(state)
+      setQueryCodeInput('')
+      setGeneratedQueryCode(null)
+    })
   }
 
   function handleCancel(): void {
@@ -607,6 +733,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                   groups={GEAR_CATEGORY_GROUPS}
                   excludedCategories={excludedCategories}
                   onChange={setExcludedCategories}
+                  itemsByCategory={gearItemsByCategory}
                 />
               </Disclosure>
 
@@ -615,6 +742,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                   groups={CUFF_CATEGORY_GROUPS}
                   excludedCategories={excludedCuffCategories}
                   onChange={setExcludedCuffCategories}
+                  itemsByCategory={cuffItemsByCategory}
                 />
               </Disclosure>
 
@@ -627,6 +755,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                   groups={DECORATION_CATEGORY_GROUPS}
                   excludedCategories={excludedDecorationCategories}
                   onChange={setExcludedDecorationCategories}
+                  itemsByCategory={decorationItemsByCategory}
                 />
               </Disclosure>
 
@@ -658,6 +787,55 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                   excludedCuffIds={excludedCuffIds}
                   onChangeExcludedCuffIds={setExcludedCuffIds}
                 />
+              </Disclosure>
+
+              <Disclosure title="Save/load this query" summary="By text code">
+                <p className="form-text">
+                  Get a text code for every search input above, to reuse or share later -- unlike the
+                  automatic restore-on-reload, you can keep as many of these as you want.
+                </p>
+                <div className="app-field-group d-flex gap-2 align-items-start">
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-secondary"
+                    disabled={isGeneratingQueryCode}
+                    onClick={handleGenerateQueryCode}
+                  >
+                    {isGeneratingQueryCode ? 'Generating…' : 'Get a save code'}
+                  </button>
+                  {generatedQueryCode && (
+                    <input
+                      type="text"
+                      className="form-control form-control-sm"
+                      aria-label="Save code for this search"
+                      readOnly
+                      value={generatedQueryCode}
+                      onFocus={(e) => e.target.select()}
+                    />
+                  )}
+                </div>
+                <div className="app-field-group d-flex gap-2 align-items-start">
+                  <input
+                    type="text"
+                    className="form-control form-control-sm"
+                    aria-label="Save code to load"
+                    placeholder="Paste a save code…"
+                    value={queryCodeInput}
+                    onChange={(e) => {
+                      setQueryCodeInput(e.target.value)
+                      setQueryCodeError(null)
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-secondary"
+                    disabled={queryCodeInput.trim().length === 0}
+                    onClick={handleLoadQueryCode}
+                  >
+                    Load
+                  </button>
+                </div>
+                {queryCodeError && <div className="form-text text-danger">{queryCodeError}</div>}
               </Disclosure>
             </div>
 

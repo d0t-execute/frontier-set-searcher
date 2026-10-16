@@ -1613,3 +1613,61 @@ suites pass (43 tests); a live browser pass confirmed the skill-name armor searc
 granted skills (not just names), the collapse toggle works per-card, and the new result-card buttons
 render and wire up correctly (clipboard writes themselves could only be confirmed up to the
 browser's own permission prompt, which this project's sandboxed preview browser always denies).
+
+## 27. Second external-feedback batch: browse categories, impossible-search detection, save/load by code
+
+**Status (2026-10-16): COMPLETE.** The "good payoff, moderate effort" items from `docs/feedback.md`'s
+Round 1 triage (#2, #14, #18), per the project owner's go-ahead to continue past TODO #26's batch.
+
+- **#2 See what's actually in a category**: `CategoryFilter.tsx` gained an optional `itemsByCategory`
+  prop (`ReadonlyMap<categoryKey, items>`) -- when given, every leaf gets a "View (N)" toggle
+  (new `CategoryLeaf` sub-component, its own `expanded` state) that expands a comma-joined list of
+  every item's name in that category, capped at `MAX_CATEGORY_CONTENTS_SHOWN` (100, same
+  cap-and-say-how-many-more convention as `FilterableOptions`' `MAX_MATCHES_SHOWN`). `App.tsx`'s new
+  `groupByCategory` helper builds the three maps this needs (armor from the already-flattened
+  `allArmorCandidates`, cuffs from `bundle.cuffs`, decorations from `bundle.decorations`), passed into
+  the Gear levels/Poogie cuffs/Decorations `CategoryFilter` calls -- the Weapon section's Zenith-skill
+  checklist is left without one, since there's no per-item catalog to browse there (it's already a
+  flat list of Zenith skills, not a category of many items).
+- **#14 Detect an impossible search up front**: new `search-engine/feasibility.ts`'s
+  `findUnreachableRequirements` reuses `ilp-model.ts`'s own `computeAchievableRanges` (now exported,
+  along with `pointsTowards`) -- the same safe *over*-estimate of each skill's reachable total that
+  `buildModel` already relies on for its big-M sizing, so a requirement this flags is one the solver
+  could never satisfy either, not a guess. `App.tsx`'s `handleSearch` runs this immediately after
+  `buildSearchQuery` resolves the query (before ever calling `worker.search`), adding any pinned
+  cuffs'/pinned-slot-decorations' fixed contribution on top of the free pool's own bound; if anything
+  comes back unreachable, the search is skipped entirely and the existing error-message UI
+  (`status === 'error'`) shows e.g. "This search can never succeed: Attack needs 80, but at most 69 is
+  reachable. Lower the requirement, or include more equipment that grants it." Deliberately scoped to
+  only what's a pure, provable consequence of the data already on hand -- *not* the Zenith-
+  simultaneous-skill-count question the feedback item's own example raised (see
+  `findUnreachableRequirements`'s own docstring), since that depends on confirming an actual game
+  mechanic not yet modeled anywhere in this engine, the same caution TODO #16 already flagged for a
+  related Zenith question. A false "unreachable" is impossible by construction; a false "reachable" is
+  possible (the bound is deliberately loose) and just falls through to the solver as before.
+- **#18 Save/load a query by text code**: new `search-engine/query-code.ts`'s
+  `encodeQueryCode`/`decodeQueryCode`, reusing the gzip + base64url codec `shared-state.ts` already
+  had (pulled out into new `codec.ts` so both modules share it instead of duplicating it) -- applied to
+  `search-form-state.ts`'s existing `SearchFormState` shape (exported its internal validator as
+  `validateSearchFormState` for reuse) rather than a new one, since it already carries exactly the
+  search inputs this needs. Distinct from that module's own `localStorage` auto-persistence (which
+  always restores just the *last* search): this lets the player keep and reuse *any number* of
+  distinct searches via a pasted code, including sharing one with someone else. New "Save/load this
+  query" `Disclosure` in `App.tsx` (named to avoid colliding with the existing "Search" button's own
+  accessible name once both matched `/search/i` in `App.test.tsx`) with a "Get a save code" button and
+  a paste-a-code-and-Load field, surfacing a decode failure inline ("That code could not be read --
+  check it was copied in full.") rather than silently doing nothing.
+
+Verified: `tsc -b` and `oxlint` clean; new `feasibility.test.ts` (7 tests) and `query-code.test.ts` (8
+tests) pass, plus `CategoryFilter.test.tsx`'s 3 new `itemsByCategory` tests; full suite is 306/307
+(the one failure is the same pre-existing `engine.real-data.performance.test.ts` timing flake noted in
+TODO #26, unrelated to this batch). `App.test.tsx`'s fixture (`BUNDLE`) needed its "Leather Helm"
+candidate given real skill contributions -- it previously granted nothing at all, which the new
+feasibility check correctly (if inconveniently, for a fixture that never cared before) started
+rejecting as unreachable. Live-verified in the browser against the real data bundle: the category
+"View" toggles show correct real counts and contents for all three trees, a feasible search (Attack
+Up (Absolute)) still finds a result normally, and excluding every gear-level category correctly
+surfaces "This search can never succeed: Attack needs 80, but at most 69 is reachable" instead of a
+bare empty result list. Save/load-by-code round-tripped live too: generated a code, removed the
+Attack requirement, pasted the code back in, and the requirement reappeared exactly as saved; a
+malformed code correctly showed the inline error instead of silently doing nothing.

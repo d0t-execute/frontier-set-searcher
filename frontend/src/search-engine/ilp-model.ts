@@ -155,7 +155,7 @@ export interface BuiltModel {
   readonly columns: readonly ColumnMeta[]
 }
 
-function pointsTowards(skills: readonly SkillContribution[], skillId: SkillId): number {
+export function pointsTowards(skills: readonly SkillContribution[], skillId: SkillId): number {
   return skills.find((s) => s.skillId === skillId)?.points ?? 0
 }
 
@@ -209,7 +209,7 @@ function resolveTierBreakpoints(
   return breakpoints
 }
 
-interface AchievableRange {
+export interface AchievableRange {
   max: number
   min: number
 }
@@ -243,8 +243,15 @@ interface AchievableRange {
  * equipped `MAX_EQUIPPED_CUFFS` times over" is already a safe bound without
  * needing a density calculation -- which matters here specifically because a
  * free (`slotSize === 0`) cuff would otherwise divide by zero.
+ *
+ * Exported (and `AchievableRange`/`pointsTowards` alongside it) for
+ * `feasibility.ts`'s own reuse (docs/feedback.md Round 1 #14: detecting an
+ * impossible request up front) -- a requirement whose `minPoints` exceeds
+ * this same safe upper bound is provably infeasible no matter what the
+ * solver tries, for exactly the reason this bound already has to be safe for
+ * `buildModel`'s own big-M sizing to never understate what's reachable.
  */
-function computeAchievableRanges(
+export function computeAchievableRanges(
   slots: readonly SlotQuery[],
   slotDecorationGroups: readonly (readonly Decoration[])[],
   slotMaxCapacity: readonly number[],
