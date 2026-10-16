@@ -1,4 +1,4 @@
-import { toPng } from 'html-to-image'
+import { toBlob, toPng } from 'html-to-image'
 import { useRef, useState } from 'react'
 import { determineActiveSkills } from '../search-engine/active-skill-cap'
 import type { NamedCandidate, NamedResistances, NamedSkill, SkillTierRecord } from '../search-engine/load-bundle'
@@ -69,6 +69,7 @@ export function ResultsList({
             skills={skills}
             zenithSkills={zenithSkills}
             getShareUrl={getShareUrl ? () => getShareUrl(i) : undefined}
+            index={i}
           />
         </li>
       ))}
@@ -82,6 +83,12 @@ export interface ResultCardProps {
   readonly skills: readonly NamedSkill[]
   readonly zenithSkills: readonly NamedSkill[]
   readonly getShareUrl?: () => Promise<string>
+  /** This card's position in a longer results list (0-based), shown as
+   * "Result N" on its own collapse toggle so a long list of results is
+   * easier to scroll through (2026-10-16, per user feedback) -- omitted
+   * entirely (no toggle, always expanded) when there's only ever one card to
+   * show, e.g. `ResultPage.tsx`'s single shared result. */
+  readonly index?: number
 }
 
 /** A tier label that's just a bare increment ("+1", "+2", "-1", ...) --
@@ -210,6 +217,50 @@ function contributionSummary(
     .join(', ')
 }
 
+/** Plain-text rendering of a result card, for the "Copy as text" button
+ * (2026-10-16, per user feedback: "the ability to copy a set to clipboard
+ * either as image or as text") -- mirrors the card's own column layout
+ * closely enough to be useful pasted into a chat or forum post, without
+ * trying to reproduce its exact visual structure. */
+function buildResultText(
+  result: NamedBuildResult,
+  regularSkillEntries: readonly SkillDisplayEntry[],
+  exoticSkillEntries: readonly SkillDisplayEntry[],
+  zenithSkillEntries: readonly SkillDisplayEntry[],
+  cap: number,
+  disabledCount: number,
+  totalDefense: number,
+  resistances: NamedResistances,
+): string {
+  const lines: string[] = []
+
+  const renderEntries = (entries: readonly SkillDisplayEntry[]) =>
+    entries.map((e) => `  ${e.label}${e.disabled ? ' (disabled)' : ` (${e.value})`}`)
+
+  lines.push('Skills:', ...renderEntries(regularSkillEntries))
+  if (exoticSkillEntries.length > 0) lines.push('Exotic skills:', ...renderEntries(exoticSkillEntries))
+  if (zenithSkillEntries.length > 0) lines.push('Zenith skills:', ...renderEntries(zenithSkillEntries))
+
+  lines.push('', 'Picks:')
+  for (const [slotId, candidate] of result.picks.entries()) {
+    const decorations = result.decorations.get(slotId) ?? []
+    const decoText = decorations.length > 0 ? ` [${decorations.map((d) => d.name).join(', ')}]` : ''
+    lines.push(`  ${slotId}: ${candidate.name}${decoText}`)
+  }
+  if (result.cuffs.length > 0) {
+    lines.push(`Cuffs: ${result.cuffs.map((c) => c.name).join(', ')}`)
+  }
+
+  lines.push(
+    '',
+    `Active skill cap: ${cap}${disabledCount > 0 ? ` (${disabledCount} skill${disabledCount === 1 ? '' : 's'} disabled)` : ''}`,
+    `Total defense: ${totalDefense}`,
+    `Fire: ${resistances.fire}, Water: ${resistances.water}, Thunder: ${resistances.thunder}, Ice: ${resistances.ice}, Dragon: ${resistances.dragon}`,
+  )
+
+  return lines.join('\n')
+}
+
 /** Exported so `ResultPage.tsx` (a shared single-result link, see
  * docs/skill-system-roadmap.md TODO #9) can render exactly the same card the
  * main search page's results list does, instead of a second, drifting copy
@@ -220,10 +271,14 @@ export function ResultCard({
   skills,
   zenithSkills,
   getShareUrl,
+  index,
 }: ResultCardProps) {
   const [shareUrl, setShareUrl] = useState<string | null>(null)
   const [isGeneratingShareUrl, setIsGeneratingShareUrl] = useState(false)
   const [isDownloadingImage, setIsDownloadingImage] = useState(false)
+  const [isCopyingImage, setIsCopyingImage] = useState(false)
+  const [copiedText, setCopiedText] = useState(false)
+  const [collapsed, setCollapsed] = useState(false)
   const cardRef = useRef<HTMLDivElement>(null)
 
   function handleGetShareUrl(): void {
@@ -250,6 +305,25 @@ export function ResultCard({
       })
       .finally(() => setIsDownloadingImage(false))
   }
+
+  function handleCopyImage(): void {
+    const card = cardRef.current
+    if (!card || !navigator.clipboard?.write) return
+    setIsCopyingImage(true)
+    // Same rendering as "Download as image" (`handleDownloadImage`), just
+    // written to the clipboard instead of triggering a file download.
+    void toBlob(card, { backgroundColor: getComputedStyle(document.body).backgroundColor })
+      .then((blob) => {
+        if (!blob) return
+        return navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })])
+      })
+      .catch(() => {
+        // Clipboard access can be denied by the browser/OS -- nothing more
+        // to do here than leave the button clickable again.
+      })
+      .finally(() => setIsCopyingImage(false))
+  }
+
   const { cap, disabled } = determineActiveSkills(
     result.picks,
     result.skillTotals,
@@ -259,6 +333,18 @@ export function ResultCard({
   )
   const disabledIds = new Set(disabled)
   const zenithSkillIds = new Set(zenithSkills.map((s) => s.id))
+  // A skill this result's own picks grant via an Exotic-armor bonus (see
+  // `active-skill-cap.ts`'s own Exotic-cap-exemption docstring) -- determined
+  // per result from the picks themselves, not a catalog flag, since whether a
+  // skill is "Exotic" here depends on which piece granted it, not the skill
+  // itself. Split into its own column group the same way Zenith skills
+  // already are (2026-10-16, per user feedback), since it's exempt from the
+  // active-skill cap the same unconditional way a Zenith skill is.
+  const exoticSkillIds = new Set(
+    [...result.picks.values()]
+      .map((c) => c.exoticSkillId)
+      .filter((id): id is SkillId => id !== null),
+  )
   const tiersById = new Map(
     [...skills, ...zenithSkills].map((skill) => [skill.id, skill.tiers] as const),
   )
@@ -272,12 +358,39 @@ export function ResultCard({
     ),
   )
   const regularSkillEntries = skillEntries
-    .filter((e) => !zenithSkillIds.has(e.skillId))
+    .filter((e) => !zenithSkillIds.has(e.skillId) && !exoticSkillIds.has(e.skillId))
+    .sort(compareSkillEntries)
+  const exoticSkillEntries = skillEntries
+    .filter((e) => exoticSkillIds.has(e.skillId))
     .sort(compareSkillEntries)
   const zenithSkillEntries = skillEntries
     .filter((e) => zenithSkillIds.has(e.skillId))
     .sort(compareSkillEntries)
   const { totalDefense, resistances } = sumStats(result.picks)
+
+  function handleCopyText(): void {
+    navigator.clipboard
+      ?.writeText(
+        buildResultText(
+          result,
+          regularSkillEntries,
+          exoticSkillEntries,
+          zenithSkillEntries,
+          cap,
+          disabledIds.size,
+          totalDefense,
+          resistances,
+        ),
+      )
+      .then(() => {
+        setCopiedText(true)
+        setTimeout(() => setCopiedText(false), 1500)
+      })
+      .catch(() => {
+        // Clipboard access can be denied by the browser/OS -- nothing more
+        // to do here than leave the button's label unchanged.
+      })
+  }
 
   function renderSkillEntry(entry: SkillDisplayEntry, showValue = true) {
     const inactive = entry.disabled || !entry.crossed
@@ -305,10 +418,35 @@ export function ResultCard({
   }
 
   return (
-    <div className="result-card" ref={cardRef}>
-      <div className="result-column">
-        <h3 className="result-column-heading">Skills</h3>
+    <div>
+      {/* Only shown as part of a longer list (`index` given) -- lets a long
+       * results list be scrolled through more easily by collapsing cards the
+       * user isn't currently looking at (2026-10-16, per user feedback).
+       * Defaults open, so nothing changes until the user collapses one. */}
+      {typeof index === 'number' && (
+        <button
+          type="button"
+          className="disclosure-header result-card-toggle"
+          aria-expanded={!collapsed}
+          onClick={() => setCollapsed((c) => !c)}
+        >
+          <span className="disclosure-chevron" aria-hidden="true">
+            ▸
+          </span>
+          <span className="disclosure-title">Result {index + 1}</span>
+        </button>
+      )}
+      {!collapsed && (
+        <div className="result-card" ref={cardRef}>
+          <div className="result-column">
+            <h3 className="result-column-heading">Skills</h3>
         <div className="small">{regularSkillEntries.map((entry) => renderSkillEntry(entry))}</div>
+        {exoticSkillEntries.length > 0 && (
+          <div className="small mt-2">
+            <span className="fw-bold">Exotic skills:</span>
+            <div>{exoticSkillEntries.map((entry) => renderSkillEntry(entry))}</div>
+          </div>
+        )}
         {zenithSkillEntries.length > 0 && (
           <div className="small mt-2">
             <span className="fw-bold">Zenith skills:</span>
@@ -341,15 +479,21 @@ export function ResultCard({
                 </div>
                 {decorations.length > 0 && (
                   <div className="category-group-children result-decoration-list">
-                    {decorations.map((decoration, i) => (
-                      <div
-                        key={i}
-                        className="category-leaf"
-                        title={contributionSummary(decoration.skills, skillNames)}
-                      >
-                        {decoration.name}
-                      </div>
-                    ))}
+                    {/* Sorted by name, not left in whatever order the solver happened to
+                     * produce -- otherwise multiple copies of the same decoration can end
+                     * up scattered through the list instead of sitting next to each other
+                     * (2026-10-16, per user feedback). */}
+                    {[...decorations]
+                      .sort((a, b) => a.name.localeCompare(b.name))
+                      .map((decoration, i) => (
+                        <div
+                          key={i}
+                          className="category-leaf"
+                          title={contributionSummary(decoration.skills, skillNames)}
+                        >
+                          {decoration.name}
+                        </div>
+                      ))}
                   </div>
                 )}
               </div>
@@ -360,7 +504,12 @@ export function ResultCard({
         {result.cuffs.length > 0 && (
           <div className="mb-2">
             <span className="fw-bold">Cuffs:</span>{' '}
-            {result.cuffs.map((cuff) => cuff.name).join(', ')}
+            {result.cuffs.map((cuff, i) => (
+              <span key={i} title={contributionSummary(cuff.skills, skillNames)}>
+                {cuff.name}
+                {i < result.cuffs.length - 1 ? ', ' : ''}
+              </span>
+            ))}
           </div>
         )}
       </div>
@@ -420,8 +569,21 @@ export function ResultCard({
           >
             {isDownloadingImage ? 'Downloading…' : 'Download as image'}
           </button>
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-secondary"
+            disabled={isCopyingImage}
+            onClick={handleCopyImage}
+          >
+            {isCopyingImage ? 'Copying…' : 'Copy image'}
+          </button>
+          <button type="button" className="btn btn-sm btn-outline-secondary" onClick={handleCopyText}>
+            {copiedText ? 'Copied!' : 'Copy as text'}
+          </button>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }

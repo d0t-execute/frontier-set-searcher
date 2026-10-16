@@ -1570,3 +1570,46 @@ building:
   columns grouped by skill/Zenith-skill rather than one-hot per exact cuff id, a nontrivial change).
 - Where does this live in the UI -- a third mode inside `CuffPicker.tsx`'s existing per-slot picker
   (search cuffs vs. search skills, toggled somehow), or a wholly separate control?
+
+## 26. First external-feedback quick-wins batch
+
+**Status (2026-10-16): COMPLETE.** The first 6 items picked from `docs/feedback.md`'s Round 1 (items
+#5, #7, #9, #11, #17, #19), chosen for being cheap to build and high quality-of-life, per the
+project owner's go-ahead after a triage pass.
+
+- **#9 Cuff hover tooltip**: `ResultsList.tsx`'s Cuffs line now wraps each cuff name in a `title`
+  built from `contributionSummary(cuff.skills, skillNames)`, matching the tooltip every other pick/
+  decoration already had -- `CuffPicker.tsx` was never the gap, the result card's own cuff rendering
+  was.
+- **#17 Sort decorations within a result**: the per-slot decoration list in `ResultsList.tsx`'s Picks
+  column now renders `[...decorations].sort((a, b) => a.name.localeCompare(b.name))` instead of the
+  solver's own pick order, so duplicate decorations sit next to each other.
+- **#5 Exotic skills in their own result-card tab**: `ResultCard` now computes `exoticSkillIds` from
+  `result.picks`' own `exoticSkillId` field (not a catalog flag -- whether a skill is "Exotic" here
+  depends on which piece granted it), splits a new `exoticSkillEntries` list out of `regularSkillEntries`
+  the same way `zenithSkillEntries` already was, and renders it as its own "Exotic skills:" block,
+  mirroring the existing Zenith-skills block.
+- **#11 Collapsible result cards**: `ResultCard` gained a `collapsed` state and a
+  `.disclosure-header`-styled toggle button (new `.result-card-toggle` CSS rule in `index.css`,
+  negative-margined back to the card's own edge) above each card; `ResultsList` now passes an
+  `index` prop so each toggle can show "Result N".
+- **#19 Search armor pieces by skill, not just name**: `FilterableOptions.tsx` gained an optional
+  `matches` prop (defaulting to the old name-substring check) so a caller can match on more than a
+  name. `ArmorPicker.tsx`'s `ArmorSlotPicker` now builds a `candidateMatches` function from a new
+  `skillNameById` prop (threaded down from `ArmorPicker`'s own `skills` prop) that checks a
+  candidate's name *or* any of its granted skills' resolved names. Scoped to the pin search only --
+  `EquipmentExclusionPicker.tsx`'s armor-exclusion search still matches on name only, left as a
+  follow-up (its `Named` item type has no `skills` field to search on yet).
+- **#7 Copy a result to the clipboard**: `ResultCard` gained two new buttons next to the existing
+  "Download as image" -- "Copy image" (`handleCopyImage`, reusing `handleDownloadImage`'s own
+  `html-to-image` rendering via `toBlob` instead of `toPng`, written via
+  `navigator.clipboard.write([new ClipboardItem(...)])`) and "Copy as text" (`handleCopyText`, a new
+  `buildResultText` helper that renders the same skills/picks/stats the card shows as plain lines,
+  written via `navigator.clipboard.writeText`). Both silently no-op on a clipboard-permission
+  rejection (nothing meaningful to show the user beyond leaving the button clickable again).
+
+Verified: `tsc -b` and `oxlint` clean; `ArmorPicker`/`ResultsList`/`FilterableOptions`'s own Vitest
+suites pass (43 tests); a live browser pass confirmed the skill-name armor search actually matches on
+granted skills (not just names), the collapse toggle works per-card, and the new result-card buttons
+render and wire up correctly (clipboard writes themselves could only be confirmed up to the
+browser's own permission prompt, which this project's sandboxed preview browser always denies).

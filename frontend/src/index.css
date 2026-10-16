@@ -555,6 +555,16 @@ code {
   gap: 20px;
 }
 
+/* The per-result collapse toggle (2026-10-16, per user feedback) -- reuses
+ * `.disclosure-header`'s own look, but negative-margined back to the edge of
+ * its own `<li>` card (which, unlike a real `.disclosure`, supplies its own
+ * border/padding already) and given a little breathing room from the grid
+ * below it once expanded. */
+.result-card-toggle {
+  margin: -16px -16px 12px;
+  width: calc(100% + 32px);
+}
+
 @media (max-width: 860px) {
   .result-card {
     grid-template-columns: 1fr;

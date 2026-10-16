@@ -64,6 +64,7 @@ export function ArmorPicker({
   skills,
 }: ArmorPickerProps) {
   const skillsById = new Map(skills.map((s) => [s.id, s]))
+  const skillNameById = new Map(skills.map((s) => [s.id, s.name]))
   const skillTotals = computePinnedSkillTotals(pinned, slots, decorations, pinnedSlotDecorationIds)
 
   function setPin(slotId: string, pin: PinnedSlot | null): void {
@@ -99,6 +100,7 @@ export function ArmorPicker({
           onChange={(pin) => setPin(slot.slotId, pin)}
           slotDecorationIds={pinnedSlotDecorationIds.get(slot.slotId) ?? []}
           onChangeSlotDecorations={(ids) => setSlotDecorations(slot.slotId, ids)}
+          skillNameById={skillNameById}
         />
       ))}
 
@@ -127,6 +129,7 @@ function ArmorSlotPicker({
   onChange,
   slotDecorationIds,
   onChangeSlotDecorations,
+  skillNameById,
 }: {
   slotId: string
   candidates: readonly NamedCandidate[]
@@ -135,10 +138,18 @@ function ArmorSlotPicker({
   onChange: (pin: PinnedSlot | null) => void
   slotDecorationIds: readonly string[]
   onChangeSlotDecorations: (ids: readonly string[]) => void
+  /** Lets the piece search below match on a skill name too, not just the
+   * piece's own name (2026-10-16, per user feedback). */
+  skillNameById: ReadonlyMap<number, string>
 }) {
   const [picking, setPicking] = useState(false)
   const [candidateSearch, setCandidateSearch] = useState('')
   const [decorationSearch, setDecorationSearch] = useState('')
+
+  function candidateMatches(candidate: NamedCandidate, query: string): boolean {
+    if (candidate.name.toLowerCase().includes(query)) return true
+    return candidate.skills.some((s) => (skillNameById.get(s.skillId) ?? '').toLowerCase().includes(query))
+  }
 
   const candidate = pin ? candidates.find((c) => c.id === pin.candidateId) : undefined
   const usedSlots = pin
@@ -188,6 +199,7 @@ function ArmorSlotPicker({
             items={candidates}
             search={candidateSearch}
             ariaLabel={`Pieces matching search for ${slotId}`}
+            matches={candidateMatches}
             onPick={(c) => {
               onChange({ candidateId: c.id, decorationIds: [] })
               setCandidateSearch('')
