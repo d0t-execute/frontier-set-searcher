@@ -62,7 +62,6 @@ function HunterTypeToggle({
 }) {
   return (
     <div className="app-field-group app-hunter-type-field">
-
       <div
         className="hunter-type-toggle"
         role="group"
@@ -548,8 +547,15 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
     <main className="app-shell">
       <h1>Frontier Set Searcher</h1>
       <p className="app-intro">
-        Pick what your build needs, then search. Every section below is optional and remembers its
-        own settings -- open only the ones you need to change.
+        Thank you to <b>mertna</b> for the info and explanations at{' '}
+        <b>mertna.github.io/MHFZ-Skills/</b>, thank you to <b>Ferias/xl3lackout</b> for the data
+        gathered and categorized at <b>xl3lackout.github.io/MHFZ-Ferias-English-Project/</b>, and
+        thank you to the makers and maintainers of <b>MHSX2G</b> for sanity checks and
+        categorization, and for providing a basis to work from. <br />
+        <b>Nenrikido</b>'s work on <b>github.com/Nenrikido/MH-Optimizer</b> is what made the search
+        algorithm possible and actually usable for queries of this magnitude. <br />
+        For transparency, much of this project was made by or with the help of AI in a strict
+        environment based on test-driven-development.
       </p>
 
       {bundleQuery.isLoading && <p>Loading equipment data…</p>}
@@ -582,8 +588,8 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
             <div className="app-column">
               <Disclosure title="Pin specific armor" summary={pinnedArmorSummary}>
                 <p className="form-text">
-                  Pins a specific piece or decoration to force the solver to use it. Type at least
-                  2 characters to search.
+                  Pins a specific piece or decoration to force the solver to use it. Type at least 2
+                  characters to search.
                 </p>
                 <ArmorPicker
                   slots={bundle.slots}
@@ -638,8 +644,8 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
 
               <Disclosure title="Exclude specific equipment" summary={excludedEquipmentSummary}>
                 <p className="form-text">
-                  Excluded equipment never appears in a search result, unless it's also pinned
-                  above -- a pin always wins. Type at least 2 characters to search.
+                  Excluded equipment never appears in a search result, unless it's also pinned above
+                  -- a pin always wins. Type at least 2 characters to search.
                 </p>
                 <EquipmentExclusionPicker
                   armorCandidates={allArmorCandidates}

@@ -10,8 +10,7 @@
   --social-bg: rgba(244, 243, 236, 0.5);
   --shadow: rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
   --danger: #dc3545;
-  --text-muted:#9b93a5;
-
+  --text-muted: #9b93a5;
 
   --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
   --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
@@ -49,7 +48,7 @@
     --social-bg: rgba(47, 48, 58, 0.5);
     --shadow: rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
     --danger: #ff6b81;
-    --text-muted:#9397a1
+    --text-muted: #9397a1;
   }
 
   #social .button-icon {
@@ -275,7 +274,7 @@ code {
 .app-intro {
   color: var(--text);
   margin: -8px 0 24px;
-  max-width: 60ch;
+  max-width: 160ch;
 }
 
 /* Three-column search form (2026-10-15, per the project owner): skill-related

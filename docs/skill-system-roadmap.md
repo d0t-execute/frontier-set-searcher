@@ -1501,3 +1501,72 @@ anywhere else by the solver.
   decoration-only slot pin; still resolves a pinned-but-excluded cuff) -- 23/23 pass in that file.
   `search-form-state.test.ts`/`shared-state.test.ts` round-trip tests extended with the three new
   fields. `tsc -b` and `oxlint` clean across the whole frontend.
+
+## 22. Default a newly-added skill to its highest tier
+
+**Status: Not started.** The project owner: when adding a skill, it should default to its highest
+level, not its lowest.
+
+Currently `SkillPicker.tsx`'s `defaultMinPoints` (added 2026-10-15) picks the *weakest* non-penalty
+tier on purpose ("the smallest commitment that still turns the skill on") -- the opposite of what's
+being asked for now. The fix is a one-line change to that function: pick the *strongest* positive tier
+(`tiers[0]`, since `NamedSkill.tiers` is already documented elsewhere as sorted highest-threshold-
+first) instead of the weakest, falling back the same way when every tier is a penalty. Needs its own
+test update (`SkillPicker.test.tsx` likely already asserts the old "picks the weakest tier" behavior
+somewhere and will need the expected value flipped) plus a decision on whether Zenith skills (added via
+the same component, `App.tsx`'s second `SkillPicker` instance) should behave identically -- there's no
+stated reason they'd want to differ.
+
+## 23. Enter-to-add in the skill search field, refocused for rapid repeated entry
+
+**Status: Not started.** The project owner: typing a skill's name then pressing Enter should
+immediately add the top/best match and clear+refocus the search box, so adding several skills in a row
+never requires reaching for the mouse.
+
+Today (`SkillPicker.tsx`) a skill can only be added by clicking one of the `.skill-add-option` buttons
+rendered under the search box -- there's no `onKeyDown`/`onSubmit` handling on the `<input>` at all, so
+Enter currently does nothing. Needs: (a) an Enter handler that adds `matching[0]` (the first result in
+whatever order `groupByCategory` currently renders them, or a more deliberate "best match" ranking if
+exact-prefix matches should be prioritized over substring-anywhere ones -- worth clarifying with the
+project owner which), no-oping safely when `matching.length === 0`; (b) after `addSkill` runs (whether
+via Enter or a click), the search input should re-gain focus so the next keystroke continues typing
+immediately -- `addSkill` already clears `search`, but never re-focuses, so a mouse click is currently
+needed to resume typing after any addition. A `ref` on the `<input>` plus a `.focus()` call alongside
+the existing `setSearch('')` in `addSkill` should cover both the click and Enter paths with one change.
+
+## 24. Widen the app intro/credits section
+
+**Status: Not started.** The project owner wrote credits/thanks (to mertna, Ferias/xl3lackout,
+MHSX2G, and Nenrikido's MH-Optimizer -- see `App.tsx`'s `<p className="app-intro">`) into the intro
+text at the top of the page, and it's being awkwardly wrapped by `.app-intro`'s `max-width: 60ch`
+(`index.css`) -- a width chosen back when this was a short one-line tagline, not a multi-paragraph
+credits block. Needs `.app-intro`'s `max-width` relaxed (the project owner suggested full width) --
+likely dropping the `max-width` constraint entirely, or raising it enough to comfortably fit the
+credits paragraph without the cramped wrapping, while checking it still reads reasonably at both the
+mobile breakpoint and the widened desktop layout TODO #19 introduced.
+
+## 25. Pin a skill or Zenith skill instead of a specific cuff
+
+**Status: Not started.** The project owner: cuffs are partially random (same name, multiple variants
+with different exact point values/sub-skills -- confirmed by the project owner, e.g. the "SZ"/"PZ"
+Zenith cuffs' own variation), so forcing one *specific* cuff id (today's only pinning option, see TODO
+#7/`CuffPicker.tsx`) is often more rigid than what the player actually wants. Requests the ability to
+instead pin by the skill (or Zenith skill) a cuff grants, letting the solver pick *which* specific
+cuff variant best serves the rest of the build -- i.e. pinning becomes "equip some cuff that grants
+skill X" rather than "equip cuff id Y specifically," with the specific-variant pin from TODO #7 kept
+as a (presumably still-useful) separate, more precise option alongside it.
+
+Needs design, not just implementation -- open questions to raise with the project owner before
+building:
+- How is "pin a skill via a cuff" different from already just adding that skill as a normal search
+  requirement (`SkillPicker.tsx`)? The likely answer: a requirement only sets a minimum threshold the
+  *whole build* must reach from any source, while this feature specifically forces a **cuff slot** to
+  be spent on that skill regardless of whether another threshold already covers it -- worth confirming
+  this distinction is actually the intent before building it.
+- For a Zenith-skill pin specifically: does the player want "the single best cuff variant for this
+  Zenith skill" (closest in spirit to the existing per-piece pin, just chosen automatically) or "any
+  cuff of this Zenith skill, let the *decoration/armor* solver optimize around whichever variant ends
+  up best" -- these likely need different modeling (the latter would need `ilp-model.ts`'s cuff
+  columns grouped by skill/Zenith-skill rather than one-hot per exact cuff id, a nontrivial change).
+- Where does this live in the UI -- a third mode inside `CuffPicker.tsx`'s existing per-slot picker
+  (search cuffs vs. search skills, toggled somehow), or a wholly separate control?
