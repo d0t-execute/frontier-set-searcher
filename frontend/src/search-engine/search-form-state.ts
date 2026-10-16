@@ -43,6 +43,9 @@ export interface SearchFormState {
   readonly pinnedArmor: readonly (readonly [string, PinnedSlot])[]
   readonly pinnedCuffIds: readonly string[]
   readonly pinnedSlotDecorationIds: readonly (readonly [string, readonly string[]])[]
+  readonly excludedArmorIds: readonly string[]
+  readonly excludedDecorationIds: readonly string[]
+  readonly excludedCuffIds: readonly string[]
   readonly preferExactMatches: boolean
   readonly maxResults: number
 }
@@ -67,6 +70,9 @@ function fromStoredValue(parsed: unknown): SearchFormState | null {
     !Array.isArray(p.pinnedArmor) ||
     !Array.isArray(p.pinnedCuffIds) ||
     !Array.isArray(p.pinnedSlotDecorationIds) ||
+    !Array.isArray(p.excludedArmorIds) ||
+    !Array.isArray(p.excludedDecorationIds) ||
+    !Array.isArray(p.excludedCuffIds) ||
     typeof p.preferExactMatches !== 'boolean' ||
     typeof p.maxResults !== 'number'
   ) {

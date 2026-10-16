@@ -133,6 +133,9 @@ export function ResultPage({ encoded, onUseAsBase, onBackToSearch }: ResultPageP
       hunterTypeFilter: state.hunterTypeFilter,
       pinnedArmor: pinnedArmorFromResult(result.picks, result.decorations),
       pinnedCuffIds: result.cuffs.map((c) => c.id),
+      excludedArmorIds: new Set(state.excludedArmorIds),
+      excludedDecorationIds: new Set(state.excludedDecorationIds),
+      excludedCuffIds: new Set(state.excludedCuffIds),
       preferExactMatches: state.preferExactMatches,
     })
   }

@@ -4,6 +4,7 @@ import { CategoryFilter } from './components/CategoryFilter'
 import type { CategoryFilterGroup } from './components/CategoryFilter'
 import { CuffPicker } from './components/CuffPicker'
 import { Disclosure } from './components/Disclosure'
+import { EquipmentExclusionPicker } from './components/EquipmentExclusionPicker'
 import { ResultsList } from './components/ResultsList'
 import { SkillPicker } from './components/SkillPicker'
 import type { NamedBuildResult } from './components/types'
@@ -161,6 +162,9 @@ export interface AppInitialState {
   readonly pinnedArmor: ReadonlyMap<string, PinnedSlot>
   readonly pinnedCuffIds: readonly string[]
   readonly pinnedSlotDecorationIds?: ReadonlyMap<string, readonly string[]>
+  readonly excludedArmorIds?: ReadonlySet<string>
+  readonly excludedDecorationIds?: ReadonlySet<string>
+  readonly excludedCuffIds?: ReadonlySet<string>
   readonly preferExactMatches: boolean
   readonly maxResults?: number
 }
@@ -245,6 +249,18 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
     () =>
       new Map(initialState?.pinnedSlotDecorationIds ?? persisted?.pinnedSlotDecorationIds ?? []),
   )
+  // Armor/decoration/cuff ids the player never wants to see in a result at
+  // all (docs/skill-system-roadmap.md's equipment-exclusion feature) -- see
+  // EquipmentExclusionPicker.tsx's own docstring.
+  const [excludedArmorIds, setExcludedArmorIds] = useState<Set<string>>(
+    () => new Set(initialState?.excludedArmorIds ?? persisted?.excludedArmorIds ?? []),
+  )
+  const [excludedDecorationIds, setExcludedDecorationIds] = useState<Set<string>>(
+    () => new Set(initialState?.excludedDecorationIds ?? persisted?.excludedDecorationIds ?? []),
+  )
+  const [excludedCuffIds, setExcludedCuffIds] = useState<Set<string>>(
+    () => new Set(initialState?.excludedCuffIds ?? persisted?.excludedCuffIds ?? []),
+  )
   // Defaults to on (2026-10-15, per the project owner): an unrequested skill
   // reaching one of its own tiers unprompted is more often a surprise than a
   // win, so this app now ranks against that by default rather than requiring
@@ -271,6 +287,15 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
   const pinnableDecorations = bundle
     ? decorationsAfterCategoryFilter(bundle.decorations, excludedDecorationCategories)
     : []
+
+  // Flattened once for the exclusion picker (EquipmentExclusionPicker.tsx),
+  // which searches across every slot's armor at once rather than per-slot
+  // the way ArmorPicker's pinning UI does -- excluding a piece by id doesn't
+  // care which slot it happens to belong to.
+  const allArmorCandidates = useMemo(
+    () => bundle?.slots.flatMap((slot) => slot.candidates) ?? [],
+    [bundle],
+  )
 
   // The engine only needs each skill's point thresholds (not its name or
   // description) to tell a harmless incidental bonus point apart from one
@@ -335,6 +360,10 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
   })()
   const pinnedCuffsSummary =
     pinnedCuffIds.length === 0 ? 'None pinned' : `${pluralize(pinnedCuffIds.length, 'cuff')} pinned`
+  const excludedEquipmentSummary = (() => {
+    const total = excludedArmorIds.size + excludedDecorationIds.size + excludedCuffIds.size
+    return total === 0 ? 'None excluded' : `${pluralize(total, 'item')} excluded`
+  })()
   const gearLevelsSummary =
     excludedCategories.size === 0
       ? 'All included'
@@ -366,6 +395,9 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
     pinnedArmor,
     pinnedCuffIds,
     pinnedSlotDecorationIds,
+    excludedArmorIds,
+    excludedDecorationIds,
+    excludedCuffIds,
   }
 
   // Persists every search input on each change (docs/skill-system-roadmap.md
@@ -390,6 +422,9 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
       pinnedArmor: [...pinnedArmor.entries()],
       pinnedCuffIds,
       pinnedSlotDecorationIds: [...pinnedSlotDecorationIds.entries()],
+      excludedArmorIds: [...excludedArmorIds],
+      excludedDecorationIds: [...excludedDecorationIds],
+      excludedCuffIds: [...excludedCuffIds],
       preferExactMatches,
       maxResults,
     })
@@ -405,6 +440,9 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
     pinnedArmor,
     pinnedCuffIds,
     pinnedSlotDecorationIds,
+    excludedArmorIds,
+    excludedDecorationIds,
+    excludedCuffIds,
     preferExactMatches,
     maxResults,
   ])
@@ -480,6 +518,9 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
         : null,
       weaponSlotCount,
       hunterTypeFilter,
+      excludedArmorIds: [...excludedArmorIds],
+      excludedDecorationIds: [...excludedDecorationIds],
+      excludedCuffIds: [...excludedCuffIds],
       preferExactMatches,
       result: {
         picks: [...result.picks.entries()].map(([slotId, c]) => ({
@@ -592,6 +633,24 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                   cuffs={bundle.cuffs}
                   pinned={pinnedCuffIds}
                   onChange={setPinnedCuffIds}
+                />
+              </Disclosure>
+
+              <Disclosure title="Exclude specific equipment" summary={excludedEquipmentSummary}>
+                <p className="form-text">
+                  Excluded equipment never appears in a search result, unless it's also pinned
+                  above -- a pin always wins. Type at least 2 characters to search.
+                </p>
+                <EquipmentExclusionPicker
+                  armorCandidates={allArmorCandidates}
+                  decorations={bundle.decorations}
+                  cuffs={bundle.cuffs}
+                  excludedArmorIds={excludedArmorIds}
+                  onChangeExcludedArmorIds={setExcludedArmorIds}
+                  excludedDecorationIds={excludedDecorationIds}
+                  onChangeExcludedDecorationIds={setExcludedDecorationIds}
+                  excludedCuffIds={excludedCuffIds}
+                  onChangeExcludedCuffIds={setExcludedCuffIds}
                 />
               </Disclosure>
             </div>

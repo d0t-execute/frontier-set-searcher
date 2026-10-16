@@ -1423,3 +1423,81 @@ elements.
   Bootstrap's default blue; the skill search field live-narrows results by category as typed,
   clicking a result adds it and clears the field, and typing "attack" correctly narrowed to exactly
   "Attack Skills" category members.
+
+## 20. At most one Hiden cuff equipped at once
+
+**Status: COMPLETE and verified (2026-10-16).** The project owner noticed the solver could equip two
+Hiden cuffs from two different weapon-type technique trees in the same result (e.g. an `SnS・` cuff
+plus a `GS・` cuff together) -- impossible in-game, since Hiden cuffs are per-weapon-type techniques
+tied to the one weapon actually in use. Confirmed against the real dataset before fixing: a forced
+search for both "SnS Tech" and "GS Tech" returned `SnS・S. Assault` + `GS・Strong Attack` equipped
+simultaneously. Confirmed by the project owner: the rule is simply "at most 1 Hiden cuff total,
+regardless of weapon type," and since every Hiden cuff costs 0 Poogie-slot capacity
+(`CUFF_SLOT_BUDGET`), the existing slot-budget math is untouched by this.
+
+- `types.ts`'s `Cuff` (previously `type Cuff = Decoration`) is now its own interface with an optional
+  `category?: string` field -- optional so every existing test fixture/`pinnedCuffs` caller that
+  doesn't care about Hiden-ness keeps compiling unchanged (a `Decoration` without `category` still
+  structurally satisfies `Cuff`). Added `HIDEN_CUFF_CATEGORY = 'cuff_hiden'`, reused by
+  `cuff-categories.ts`'s own UI category tree instead of a second hardcoded literal.
+- `ilp-model.ts`'s `buildModel` gets a third global cuff row (`cuffHidenCountRow`, alongside the
+  existing `cuffBudgetRow`/`cuffCountRow`), capped at `MAX_EQUIPPED_HIDEN_CUFFS = 1` minus however many
+  Hiden cuffs are already pinned (same "pin reduces the free-pool budget" pattern the other two cuff
+  rows already use) -- every Hiden-category cuff column feeds this row with its own `count`, every
+  non-Hiden cuff column doesn't touch it at all, so the rule only ever constrains Hiden cuffs against
+  each other, never against a non-Hiden one.
+- A pinned Hiden cuff isn't itself blocked from coexisting with a second pinned Hiden cuff (pins are
+  unconditionally accepted everywhere else in this codebase too -- out of scope here, same as every
+  other "a pin always wins" exemption).
+- Verification: 3 new `ilp-model.test.ts` cases (rejects two free Hiden cuffs even though the general
+  item-count/budget rules alone would allow both; allows one Hiden cuff alongside one non-Hiden cuff;
+  blocks the free pool from adding a second Hiden cuff once one is already pinned) pass alongside all
+  46 existing cases in that file. Re-ran the original real-dataset repro end-to-end after the fix
+  (scratch test, not committed): across 5 distinct ranked results for the same "SnS Tech + GS Tech"
+  query, never more than one Hiden-category cuff appears in any single result -- the solver instead
+  either uses one Hiden cuff that happens to grant both skills at once (several real cuffs do, e.g.
+  `GS・Charge Up`) or reaches the second skill through armor/decorations, both legitimate in-game.
+  `tsc -b` and `oxlint` clean.
+
+## 21. Exclude specific equipment by id
+
+**Status: COMPLETE and verified (2026-10-16).** The project owner: add a section under the armor
+column letting the player permanently rule out specific armor pieces, decorations, or cuffs by name
+(one search field each) -- a stronger, per-item version of the existing category filters, for gear
+the player simply doesn't own or never wants suggested. If an excluded item is also pinned, the pin
+wins and it stays usable in that one spot; excluding a decoration that's pinned into a slot (e.g. an
+"Ice Atk G" gem) still leaves that specific pinned copy in place, it just can't be freely added
+anywhere else by the solver.
+
+- `build-query.ts`: new `QueryFormState` fields `excludedArmorIds`/`excludedDecorationIds`/
+  `excludedCuffIds` (`ReadonlySet<string>`), and three new filter functions
+  (`slotsAfterExcludedIds`/`decorationsAfterExcludedIds`/`cuffsAfterExcludedIds`) mirroring the
+  existing category-filter functions' shape. `buildSearchQuery` applies armor/cuff id-exclusion in the
+  same filter chain as the category filters, strictly before `slotsAfterPinning`/`resolvePinnedCuffs`
+  -- `slotsAfterPinning` already resolves a pin against the *unfiltered* bundle regardless of any
+  upstream filtering, so "pin wins over exclusion" falls out for free, the same mechanism that already
+  makes a pin override the category/Hunter-Type filters. Decorations needed one extra wrinkle: the
+  category-filtered-but-not-id-excluded decoration list (`pinnableDecorations`, a local in
+  `buildSearchQuery`) is what `slotsAfterPinning`/`resolvePinnedSlotDecorations` resolve pins against,
+  while the solver's own free pool additionally gets the id-exclusion filter -- otherwise an excluded
+  decoration pinned into a slot would silently disappear from that pin too (its own id would fail to
+  resolve in the filtered list `slotsAfterPinning`'s `decorationsById` is built from). Cuffs don't need
+  this care: `resolvePinnedCuffs` already reads straight from the unfiltered bundle, so a pinned cuff
+  was already structurally exempt from every pool-level cuff filter, id-exclusion included.
+- `EquipmentExclusionPicker.tsx` (new): three independent `FilterableOptions`-backed search fields
+  (Armor/Decorations/Cuffs, reusing the same type-to-filter convention `ArmorPicker`/`CuffPicker`
+  already use for these same large catalogs), each with its own excluded-ids chip list (`badge` +
+  `btn-close`, same convention as a pinned piece's decoration badges).
+- `App.tsx`: new `excludedArmorIds`/`excludedDecorationIds`/`excludedCuffIds` state (empty `Set` by
+  default -- no "obviously should start excluded" set exists for by-id exclusions, unlike the
+  category defaults), threaded through `AppInitialState`, `QueryFormState`, the localStorage
+  persistence effect (`search-form-state.ts`), and the shared-link wire format (`shared-state.ts`,
+  short keys `eai`/`edi`/`eci`) so "use as a base for a new search" restores them too. Rendered as a
+  new "Exclude specific equipment" `Disclosure` at the bottom of the middle (gear-related) column,
+  after "Pin specific cuffs".
+- Verification: new `build-query.test.ts` cases for all three filter functions plus 6 `buildSearchQuery`
+  integration cases (drops an excluded armor piece/decoration/cuff from the solver's free pool; still
+  pins an excluded armor piece into its slot; still bakes an excluded decoration into a piece pin or a
+  decoration-only slot pin; still resolves a pinned-but-excluded cuff) -- 23/23 pass in that file.
+  `search-form-state.test.ts`/`shared-state.test.ts` round-trip tests extended with the three new
+  fields. `tsc -b` and `oxlint` clean across the whole frontend.

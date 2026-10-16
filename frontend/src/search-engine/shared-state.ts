@@ -124,6 +124,13 @@ export interface SharedSearchState {
   readonly excludedWeaponZenithSkillIds: readonly string[] | null
   readonly weaponSlotCount: number
   readonly hunterTypeFilter: HunterTypeFilter
+  /** Armor/decoration/cuff ids excluded by id (docs/skill-system-roadmap.md's
+   * equipment-exclusion feature) -- same "use as a base for a new search"-only
+   * role as the category exclusions above; the result's own picks already
+   * came from whatever these were at share time regardless. */
+  readonly excludedArmorIds: readonly string[]
+  readonly excludedDecorationIds: readonly string[]
+  readonly excludedCuffIds: readonly string[]
   readonly preferExactMatches: boolean
   readonly result: SharedBuildResult
 }
@@ -143,6 +150,9 @@ interface WireFormat {
   readonly ewz: readonly string[] | null
   readonly wsc: number
   readonly htf: HunterTypeFilter
+  readonly eai: readonly string[]
+  readonly edi: readonly string[]
+  readonly eci: readonly string[]
   readonly pem: boolean
   readonly rp: readonly (readonly [
     string,
@@ -169,6 +179,9 @@ function toWireFormat(state: SharedSearchState): WireFormat {
     ewz: state.excludedWeaponZenithSkillIds,
     wsc: state.weaponSlotCount,
     htf: state.hunterTypeFilter,
+    eai: state.excludedArmorIds,
+    edi: state.excludedDecorationIds,
+    eci: state.excludedCuffIds,
     pem: state.preferExactMatches,
     rp: state.result.picks.map((p) => [
       p.slotId,
@@ -212,6 +225,9 @@ function fromWireFormat(parsed: unknown): SharedSearchState | null {
     (p.ewz !== null && !Array.isArray(p.ewz)) ||
     typeof p.wsc !== 'number' ||
     (p.htf !== 'blademaster' && p.htf !== 'gunner') ||
+    !Array.isArray(p.eai) ||
+    !Array.isArray(p.edi) ||
+    !Array.isArray(p.eci) ||
     typeof p.pem !== 'boolean' ||
     !Array.isArray(p.rp) ||
     !Array.isArray(p.rd) ||
@@ -231,6 +247,9 @@ function fromWireFormat(parsed: unknown): SharedSearchState | null {
     excludedWeaponZenithSkillIds: w.ewz,
     weaponSlotCount: w.wsc,
     hunterTypeFilter: w.htf,
+    excludedArmorIds: w.eai,
+    excludedDecorationIds: w.edi,
+    excludedCuffIds: w.eci,
     preferExactMatches: w.pem,
     result: {
       picks: w.rp.map(

@@ -14,6 +14,9 @@ const STATE: SearchFormState = {
   pinnedArmor: [['head', { candidateId: 'head:0001', decorationIds: ['D001'] }]],
   pinnedCuffIds: ['cuff:C001'],
   pinnedSlotDecorationIds: [['chest', ['D002', 'D002']]],
+  excludedArmorIds: ['head:0002'],
+  excludedDecorationIds: ['D003'],
+  excludedCuffIds: ['cuff:C002'],
   preferExactMatches: true,
   maxResults: 10,
 }

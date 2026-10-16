@@ -16,6 +16,7 @@
  */
 
 import type { GearCategoryGroup } from './gear-categories'
+import { HIDEN_CUFF_CATEGORY } from './types'
 
 export const CUFF_CATEGORY_GROUPS: readonly GearCategoryGroup[] = [
   {
@@ -47,6 +48,6 @@ export const CUFF_CATEGORY_GROUPS: readonly GearCategoryGroup[] = [
   },
   {
     label: 'Hiden Cuffs',
-    categories: [{ key: 'cuff_hiden', label: 'Hiden' }],
+    categories: [{ key: HIDEN_CUFF_CATEGORY, label: 'Hiden' }],
   },
 ]

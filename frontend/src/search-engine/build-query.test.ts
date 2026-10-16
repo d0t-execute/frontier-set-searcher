@@ -1,18 +1,32 @@
 import { describe, expect, it } from 'vitest'
 import {
   buildSearchQuery,
+  cuffsAfterExcludedIds,
   decorationsAfterCategoryFilter,
+  decorationsAfterExcludedIds,
   resolvePinnedSlotDecorations,
+  slotsAfterExcludedIds,
   slotsAfterHunterTypeFilter,
 } from './build-query'
 import type { QueryFormState } from './build-query'
-import type { DataBundle, HunterType, NamedCandidate, NamedDecoration, NamedSlotQuery } from './load-bundle'
+import type {
+  DataBundle,
+  HunterType,
+  NamedCandidate,
+  NamedCuff,
+  NamedDecoration,
+  NamedSlotQuery,
+} from './load-bundle'
+
+function cuffFixture(id: string, category = 'cuff_standard_tier1'): NamedCuff {
+  return { id, name: id, slotSize: 1, skills: [], category }
+}
 
 function deco(id: string, isTower: boolean, category = 'deco_standard'): NamedDecoration {
   return { id, name: id, slotSize: 1, skills: [], isTower, category }
 }
 
-function candidate(id: string, hunterType: HunterType): NamedCandidate {
+function candidate(id: string, hunterType: HunterType, openSlotCount = 0): NamedCandidate {
   return {
     id,
     name: id,
@@ -23,6 +37,7 @@ function candidate(id: string, hunterType: HunterType): NamedCandidate {
     defenseMax: null,
     resistances: { fire: 0, water: 0, thunder: 0, ice: 0, dragon: 0 },
     skills: [],
+    openSlotCount,
   }
 }
 
@@ -36,6 +51,9 @@ const EMPTY_FORM_STATE: QueryFormState = {
   pinnedArmor: new Map(),
   pinnedCuffIds: [],
   pinnedSlotDecorationIds: new Map(),
+  excludedArmorIds: new Set(),
+  excludedDecorationIds: new Set(),
+  excludedCuffIds: new Set(),
 }
 
 const BUNDLE: DataBundle = {
@@ -112,6 +130,36 @@ describe('slotsAfterHunterTypeFilter', () => {
   })
 })
 
+describe('slotsAfterExcludedIds', () => {
+  const slots: readonly NamedSlotQuery[] = [
+    { slotId: 'body', candidates: [candidate('a', 'common'), candidate('b', 'common')] },
+  ]
+
+  it('drops candidates whose id is excluded', () => {
+    const result = slotsAfterExcludedIds(slots, new Set(['a']))
+    expect(result[0].candidates.map((c) => c.id)).toEqual(['b'])
+  })
+
+  it('returns an equivalent copy when nothing is excluded', () => {
+    const result = slotsAfterExcludedIds(slots, new Set())
+    expect(result[0].candidates.map((c) => c.id)).toEqual(['a', 'b'])
+  })
+})
+
+describe('decorationsAfterExcludedIds', () => {
+  it('drops decorations whose id is excluded', () => {
+    const result = decorationsAfterExcludedIds([deco('a', false), deco('b', false)], new Set(['a']))
+    expect(result.map((d) => d.id)).toEqual(['b'])
+  })
+})
+
+describe('cuffsAfterExcludedIds', () => {
+  it('drops cuffs whose id is excluded', () => {
+    const result = cuffsAfterExcludedIds([cuffFixture('a'), cuffFixture('b')], new Set(['a']))
+    expect(result.map((c) => c.id)).toEqual(['b'])
+  })
+})
+
 describe('buildSearchQuery', () => {
   it("excludes Tower Gems from the decorations it hands to the solver, even though they're in the bundle", () => {
     const query = buildSearchQuery(BUNDLE, EMPTY_FORM_STATE)
@@ -150,6 +198,80 @@ describe('buildSearchQuery', () => {
     })
 
     expect(query.pinnedSlotDecorations.get('head')?.map((d) => d.id)).toEqual(['regular'])
+  })
+
+  it('drops an excluded armor piece from the solver pool', () => {
+    const bundleWithArmor: DataBundle = {
+      ...BUNDLE,
+      slots: [{ slotId: 'head', candidates: [candidate('a', 'common'), candidate('b', 'common')] }],
+    }
+    const query = buildSearchQuery(bundleWithArmor, {
+      ...EMPTY_FORM_STATE,
+      excludedArmorIds: new Set(['a']),
+    })
+
+    expect(query.slots.find((s) => s.slotId === 'head')?.candidates.map((c) => c.id)).toEqual(['b'])
+  })
+
+  it('still pins an excluded armor piece into its slot, since a pin always wins', () => {
+    const bundleWithArmor: DataBundle = {
+      ...BUNDLE,
+      slots: [{ slotId: 'head', candidates: [candidate('a', 'common'), candidate('b', 'common')] }],
+    }
+    const query = buildSearchQuery(bundleWithArmor, {
+      ...EMPTY_FORM_STATE,
+      excludedArmorIds: new Set(['a']),
+      pinnedArmor: new Map([['head', { candidateId: 'a', decorationIds: [] }]]),
+    })
+
+    const headSlot = query.slots.find((s) => s.slotId === 'head')
+    expect(headSlot?.candidates.map((c) => c.id)).toEqual(['a'])
+  })
+
+  it('drops an excluded decoration from the solver pool', () => {
+    const query = buildSearchQuery(BUNDLE, { ...EMPTY_FORM_STATE, excludedDecorationIds: new Set(['regular']) })
+
+    expect(query.decorations.map((d) => d.id)).toEqual([])
+  })
+
+  it('still bakes an excluded decoration into a slot pin, since a pin always wins', () => {
+    const bundleWithArmor: DataBundle = {
+      ...BUNDLE,
+      slots: [{ slotId: 'head', candidates: [candidate('a', 'common', 1)] }],
+    }
+    const query = buildSearchQuery(bundleWithArmor, {
+      ...EMPTY_FORM_STATE,
+      excludedDecorationIds: new Set(['regular']),
+      pinnedArmor: new Map([['head', { candidateId: 'a', decorationIds: ['regular'] }]]),
+    })
+
+    const headSlot = query.slots.find((s) => s.slotId === 'head')
+    expect(headSlot?.candidates[0]?.name).toContain('regular')
+  })
+
+  it('still resolves an excluded decoration forced into a slot without a piece pin', () => {
+    const query = buildSearchQuery(BUNDLE, {
+      ...EMPTY_FORM_STATE,
+      excludedDecorationIds: new Set(['regular']),
+      pinnedSlotDecorationIds: new Map([['head', ['regular']]]),
+    })
+
+    expect(query.pinnedSlotDecorations.get('head')?.map((d) => d.id)).toEqual(['regular'])
+  })
+
+  it('drops an excluded cuff from the free pool but keeps resolving it when pinned', () => {
+    const bundleWithCuffs: DataBundle = {
+      ...BUNDLE,
+      cuffs: [cuffFixture('a'), cuffFixture('b')],
+    }
+    const query = buildSearchQuery(bundleWithCuffs, {
+      ...EMPTY_FORM_STATE,
+      excludedCuffIds: new Set(['a']),
+      pinnedCuffIds: ['a'],
+    })
+
+    expect(query.cuffs.map((c) => c.id)).toEqual(['b'])
+    expect(query.pinnedCuffs.map((c) => c.id)).toEqual(['a'])
   })
 })
 

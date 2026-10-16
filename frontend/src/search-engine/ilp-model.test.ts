@@ -8,7 +8,8 @@ import {
   isUsableResult,
   OPEN_SLOT_WEIGHT,
 } from './ilp-model'
-import type { Candidate, Decoration, SlotQuery } from './types'
+import { HIDEN_CUFF_CATEGORY } from './types'
+import type { Candidate, Cuff, Decoration, SlotQuery } from './types'
 
 function candidate(id: string, skills: Record<number, number>, openSlotCount = 0): Candidate {
   return {
@@ -32,10 +33,16 @@ function deco(id: string, slotSize: number, skills: Record<number, number>): Dec
   }
 }
 
-// A Cuff is shaped identically to a Decoration (see types.ts's `Cuff` alias),
-// so this just reuses `deco`'s shape under its own name for readability at
-// cuff-specific call sites.
+// A Cuff is shaped identically to a Decoration plus an optional `category`
+// (see types.ts's `Cuff` interface), so this just reuses `deco`'s shape under
+// its own name for readability at cuff-specific call sites.
 const cuff = deco
+
+function hidenCuff(id: string, skills: Record<number, number>): Cuff {
+  // Every real Hiden cuff costs 0 Poogie-slot capacity (confirmed by the
+  // project owner -- see docs/data-format-notes.md's "Cuffs" section).
+  return { ...deco(id, 0, skills), category: HIDEN_CUFF_CATEGORY }
+}
 
 let highs: Highs
 
@@ -485,6 +492,76 @@ describe('buildModel with cuffs', () => {
     expect(new Set(decoded.cuffs.map((c) => c.id))).toEqual(
       new Set(['Skill Slots Up SZ', 'SnS - Basic']),
     )
+    native.dispose()
+  })
+})
+
+describe('buildModel with Hiden cuffs', () => {
+  it('rejects two Hiden cuffs even though both are free and the item-count limit allows 2', () => {
+    const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Helm', { 1: 3 })] }]
+    // Different weapon-type technique trees, each free -- the general "at
+    // most 2 cuffs"/budget rules alone would allow both.
+    const cuffs = [hidenCuff('SnS - Basic', { 2: 5 }), hidenCuff('GS - Basic', { 3: 5 })]
+    const { model } = buildModel(
+      highs,
+      slots,
+      [],
+      [
+        { skillId: 1, minPoints: 3 },
+        { skillId: 2, minPoints: 5 },
+        { skillId: 3, minPoints: 5 },
+      ],
+      {},
+      cuffs,
+    )
+
+    const { modelStatus, native } = solve(model)
+    expect(modelStatus).toBe(highs.constants.modelStatus.infeasible)
+    native.dispose()
+  })
+
+  it('allows one Hiden cuff alongside a non-Hiden cuff', () => {
+    const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Helm', { 1: 3 })] }]
+    const cuffs = [hidenCuff('SnS - Basic', { 2: 5 }), cuff('Sharpening PC1', 1, { 3: 5 })]
+    const { model, columns } = buildModel(
+      highs,
+      slots,
+      [],
+      [
+        { skillId: 1, minPoints: 3 },
+        { skillId: 2, minPoints: 5 },
+        { skillId: 3, minPoints: 5 },
+      ],
+      {},
+      cuffs,
+    )
+
+    const { modelStatus, colValue, native } = solve(model)
+    expect(modelStatus).toBe(highs.constants.modelStatus.optimal)
+    const decoded = decodeSolution(columns, colValue)
+    expect(new Set(decoded.cuffs.map((c) => c.id))).toEqual(
+      new Set(['SnS - Basic', 'Sharpening PC1']),
+    )
+    native.dispose()
+  })
+
+  it('blocks a free-pool Hiden cuff entirely once a Hiden cuff is already pinned', () => {
+    const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Helm', { 1: 3 })] }]
+    const pinnedCuffs = [hidenCuff('SnS - Basic', { 2: 5 })]
+    const freeCuffs = [hidenCuff('GS - Basic', { 3: 5 })]
+    const { model, columns } = buildModel(
+      highs,
+      slots,
+      [],
+      [{ skillId: 1, minPoints: 3 }],
+      { pinnedCuffs },
+      freeCuffs,
+    )
+
+    const { modelStatus, colValue, native } = solve(model)
+    expect(modelStatus).toBe(highs.constants.modelStatus.optimal)
+    const decoded = decodeSolution(columns, colValue)
+    expect(decoded.cuffs).toEqual([])
     native.dispose()
   })
 })

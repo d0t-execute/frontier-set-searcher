@@ -50,10 +50,29 @@ export interface SlotQuery {
  * etl/src/etl/export.py's `_export_cuffs` -- but spent from a wholly separate
  * "Poogie slot" budget shared across at most 2 equipped cuffs, not an armor
  * piece's own open slots (confirmed by the project owner; see
- * docs/data-format-notes.md's "Cuffs" section). Kept as its own alias rather
- * than used as `Decoration` directly so a call site reads correctly even
- * though the shapes match today. */
-export type Cuff = Decoration
+ * docs/data-format-notes.md's "Cuffs" section). Kept as its own interface
+ * rather than used as `Decoration` directly so a call site reads correctly
+ * even though the shapes match today.
+ *
+ * `category` is optional -- unlike every other `Cuff` field, it exists only
+ * so `ilp-model.ts` can identify a Hiden cuff (`HIDEN_CUFF_CATEGORY`) for the
+ * game's own "at most 1 Hiden cuff equipped" rule; a caller that doesn't care
+ * about that rule (most existing test fixtures, `SearchOptions.pinnedCuffs`
+ * built without one) can simply omit it, same as omitting `openSlotCount` on
+ * a `Candidate` with no open slots. */
+export interface Cuff extends Decoration {
+  readonly category?: string
+}
+
+/** The cuff category key identifying a "Hiden" cuff -- a per-weapon-type
+ * technique tree (`slotSize` always 0, confirmed by the project owner against
+ * the real dataset -- see docs/data-format-notes.md's "Cuffs" section). The
+ * game allows at most one Hiden cuff equipped at a time, regardless of which
+ * weapon type's tree it's from (confirmed by the project owner, 2026-10-16) --
+ * enforced by `ilp-model.ts`'s `buildModel` via a dedicated row, the same way
+ * `MAX_EQUIPPED_CUFFS`/`CUFF_SLOT_BUDGET` enforce the game's other two
+ * cuff-count rules. Matches `cuff-categories.ts`'s own `cuff_hiden` key. */
+export const HIDEN_CUFF_CATEGORY = 'cuff_hiden'
 
 export interface SkillTierThresholds {
   readonly skillId: SkillId

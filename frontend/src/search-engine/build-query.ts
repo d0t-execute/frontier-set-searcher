@@ -63,6 +63,20 @@ export interface QueryFormState {
    * `pinnedArmor` already bakes its own decorations in and takes priority --
    * see `resolvePinnedSlotDecorations`. */
   readonly pinnedSlotDecorationIds: ReadonlyMap<string, readonly string[]>
+  /** Armor/decoration/cuff ids the player never wants to see in a result at
+   * all (docs/skill-system-roadmap.md's equipment-exclusion feature) -- a
+   * stronger, per-item version of the existing category exclusions above.
+   * Like every other exclusion, a pin always wins over it: an excluded piece
+   * or decoration the player has explicitly pinned into a slot still shows
+   * up there, since `slotsAfterPinning`/`resolvePinnedSlotDecorations` are
+   * resolved against the category-filtered (not id-excluded) pool -- see
+   * `buildSearchQuery`. An excluded cuff has no such carve-out to make: a
+   * pinned cuff is already structurally exempt from every pool-level filter
+   * (`resolvePinnedCuffs` reads straight from the unfiltered bundle), so
+   * nothing extra is needed there either. */
+  readonly excludedArmorIds: ReadonlySet<string>
+  readonly excludedDecorationIds: ReadonlySet<string>
+  readonly excludedCuffIds: ReadonlySet<string>
 }
 
 // The weapon slot is virtual (see etl/src/etl/export.py's module docstring --
@@ -151,6 +165,25 @@ export function slotsAfterHunterTypeFilter(
   }))
 }
 
+/** Drops every candidate the player has explicitly excluded by id (docs/
+ * skill-system-roadmap.md's equipment-exclusion feature) -- unlike the
+ * category filter above, this is never meant to be overridable by a pinned
+ * piece on its own: `slotsAfterPinning` (applied after this, same ordering as
+ * the category/Hunter-Type filters) resolves a pin against the *unfiltered*
+ * bundle regardless, so a piece the player pinned and then also excluded
+ * still wins, the same "pin always wins" behavior every other filter here
+ * already has. */
+export function slotsAfterExcludedIds(
+  slots: readonly NamedSlotQuery[],
+  excludedIds: ReadonlySet<string>,
+): NamedSlotQuery[] {
+  if (excludedIds.size === 0) return [...slots]
+  return slots.map((slot) => ({
+    ...slot,
+    candidates: slot.candidates.filter((c) => !excludedIds.has(c.id)),
+  }))
+}
+
 // A pinned slot is forced by narrowing its candidate list down to exactly one
 // synthesized candidate -- the same technique `buildWeaponSlot` already uses,
 // not new ILP machinery (see docs/skill-system-roadmap.md TODO #7):
@@ -216,6 +249,20 @@ export function cuffsAfterCategoryFilter(
   return cuffs.filter((c) => !excludedCuffCategories.has(c.category))
 }
 
+/** Drops every cuff the player has explicitly excluded by id (docs/skill-
+ * system-roadmap.md's equipment-exclusion feature) -- only ever applied to
+ * the free pool (see `buildSearchQuery`): a pinned cuff is resolved straight
+ * from the unfiltered bundle by `resolvePinnedCuffs`, so it's already
+ * structurally exempt from this (and every other) pool-level cuff filter,
+ * with no extra carve-out needed here. */
+export function cuffsAfterExcludedIds(
+  cuffs: readonly NamedCuff[],
+  excludedIds: ReadonlySet<string>,
+): NamedCuff[] {
+  if (excludedIds.size === 0) return [...cuffs]
+  return cuffs.filter((c) => !excludedIds.has(c.id))
+}
+
 /** Tower Gems and regular decorations are strictly exclusive with each other
  * in both directions in-game (docs/data-format-notes.md's "Decorations"
  * section: Tower armor can only take Tower Gems, regular armor can't take
@@ -240,6 +287,21 @@ export function decorationsAfterCategoryFilter(
     if (d.isTower) return false
     return !excludedCategories.has(d.category)
   })
+}
+
+/** Drops every decoration the player has explicitly excluded by id (docs/
+ * skill-system-roadmap.md's equipment-exclusion feature) -- only ever applied
+ * to the solver's free decoration pool (see `buildSearchQuery`), never to the
+ * list `slotsAfterPinning`/`resolvePinnedSlotDecorations` resolve a pin
+ * against: a decoration the player pinned into a slot and then also excluded
+ * still gets baked into that slot, the same "pin always wins" behavior every
+ * other filter here already has. */
+export function decorationsAfterExcludedIds(
+  decorations: readonly NamedDecoration[],
+  excludedIds: ReadonlySet<string>,
+): NamedDecoration[] {
+  if (excludedIds.size === 0) return [...decorations]
+  return decorations.filter((d) => !excludedIds.has(d.id))
 }
 
 /** Resolves pinned cuff ids (see `QueryFormState.pinnedCuffIds`) to their full
@@ -342,26 +404,36 @@ export function pinnedArmorFromResult(
  * single place both `App.tsx`'s live search and `ResultPage.tsx`'s
  * reconstructed one call through, so they can never drift apart. */
 export function buildSearchQuery(bundle: DataBundle, state: QueryFormState): BuiltQuery {
-  const decorations = decorationsAfterCategoryFilter(
+  // Pinning is always resolved against this category-filtered-only pool, not
+  // the by-id-excluded one below -- see `decorationsAfterExcludedIds`'s own
+  // docstring for why a pinned decoration must survive its own exclusion.
+  const pinnableDecorations = decorationsAfterCategoryFilter(
     bundle.decorations,
     state.excludedDecorationCategories,
   )
+  const decorations = decorationsAfterExcludedIds(pinnableDecorations, state.excludedDecorationIds)
   const slots = [
     ...slotsAfterPinning(
       slotsAfterHunterTypeFilter(
-        slotsAfterCategoryFilter(bundle.slots, state.excludedCategories),
+        slotsAfterExcludedIds(
+          slotsAfterCategoryFilter(bundle.slots, state.excludedCategories),
+          state.excludedArmorIds,
+        ),
         state.hunterTypeFilter,
       ),
-      decorations,
+      pinnableDecorations,
       bundle.slots,
       state.pinnedArmor,
     ),
     buildWeaponSlot(bundle, state),
   ]
-  const cuffs = cuffsAfterCategoryFilter(bundle.cuffs, state.excludedCuffCategories)
+  const cuffs = cuffsAfterExcludedIds(
+    cuffsAfterCategoryFilter(bundle.cuffs, state.excludedCuffCategories),
+    state.excludedCuffIds,
+  )
   const pinnedCuffs = resolvePinnedCuffs(bundle.cuffs, state.pinnedCuffIds)
   const pinnedSlotDecorations = resolvePinnedSlotDecorations(
-    decorations,
+    pinnableDecorations,
     state.pinnedSlotDecorationIds,
     state.pinnedArmor,
   )

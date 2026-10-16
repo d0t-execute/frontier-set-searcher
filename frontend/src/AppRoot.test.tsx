@@ -31,6 +31,9 @@ const STATE: SharedSearchState = {
   excludedWeaponZenithSkillIds: null,
   weaponSlotCount: 0,
   hunterTypeFilter: 'blademaster',
+  excludedArmorIds: [],
+  excludedDecorationIds: [],
+  excludedCuffIds: [],
   preferExactMatches: true,
   result: {
     picks: [],

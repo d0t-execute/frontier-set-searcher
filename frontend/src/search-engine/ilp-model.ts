@@ -53,11 +53,12 @@
  * condition as the auxiliary columns above) a handful of rows per bonus
  * skill wiring its accounting column to the real choice columns and to its
  * tier-crossing indicator column(s), then one cuff-group row per relevant
- * cuff plus two rows global to every cuff (combined slot-cost budget and
- * item count -- see `buildModel`'s own docstring).
+ * cuff plus three rows global to every cuff (combined slot-cost budget, item
+ * count, and Hiden-cuff count -- see `buildModel`'s own docstring).
  */
 
 import type { Highs, ModelData, ModelStatusCode, VariableType } from 'highs'
+import { HIDEN_CUFF_CATEGORY } from './types'
 import type {
   Candidate,
   Cuff,
@@ -98,6 +99,12 @@ export const EXACT_MATCH_SKILL_PENALTY = 1
  * rule doesn't silently affect the other. */
 export const MAX_EQUIPPED_CUFFS = 2
 export const CUFF_SLOT_BUDGET = 2
+
+/** The game's "at most 1 Hiden cuff equipped" rule (see `HIDEN_CUFF_CATEGORY`'s
+ * own docstring) -- a third, independent cuff-count limit alongside
+ * `MAX_EQUIPPED_CUFFS`/`CUFF_SLOT_BUDGET`, scoped only to cuffs in that one
+ * category rather than every cuff. */
+export const MAX_EQUIPPED_HIDEN_CUFFS = 1
 
 export interface CandidateColumn {
   readonly kind: 'candidate'
@@ -341,12 +348,16 @@ interface TierMachinery {
  *
  * `cuffs` is a wholly separate pool from `decorations`, one-hot-encoded the
  * same way (see this module's own docstring) but global instead of per-slot:
- * two global rows (`cuffBudgetRow`/`cuffCountRow`) cap, respectively, the
- * summed `Cuff.slotSize` and the raw count of equipped cuffs at
- * `CUFF_SLOT_BUDGET`/`MAX_EQUIPPED_CUFFS` (today the same number, but
- * independent rules -- see those constants' doc comments). Like decorations,
- * each cuff is expected to already be filtered to ones relevant to
- * `requirements` before this is called.
+ * three global rows (`cuffBudgetRow`/`cuffCountRow`/`cuffHidenCountRow`) cap,
+ * respectively, the summed `Cuff.slotSize`, the raw count of equipped cuffs,
+ * and the count equipped from the Hiden category specifically, at
+ * `CUFF_SLOT_BUDGET`/`MAX_EQUIPPED_CUFFS`/`MAX_EQUIPPED_HIDEN_CUFFS` (the
+ * first two share a number today, but are independent rules -- see those
+ * constants' doc comments; the Hiden row only ever constrains a subset of the
+ * same columns the count row already does, so it never changes which cuffs
+ * are *possible*, only how many of the Hiden ones may be chosen together).
+ * Like decorations, each cuff is expected to already be filtered to ones
+ * relevant to `requirements` before this is called.
  *
  * `options.pinnedCuffs` are folded into the row bounds directly rather than
  * modeled as columns -- see this function's own local comment above where
@@ -389,6 +400,7 @@ export function buildModel(
   const pinnedCuffs = options.pinnedCuffs ?? []
   const pinnedCuffSlotCost = pinnedCuffs.reduce((sum, c) => sum + c.slotSize, 0)
   const pinnedCuffCount = pinnedCuffs.length
+  const pinnedHidenCuffCount = pinnedCuffs.filter((c) => c.category === HIDEN_CUFF_CATEGORY).length
   function pinnedPointsTowards(skillId: SkillId): number {
     let total = 0
     for (const c of pinnedCuffs) total += pointsTowards(c.skills, skillId)
@@ -489,6 +501,7 @@ export function buildModel(
   const cuffGroupRowOf: number[] = cuffs.map(() => rowCursor++)
   const cuffBudgetRow = cuffs.length > 0 ? rowCursor++ : -1
   const cuffCountRow = cuffs.length > 0 ? rowCursor++ : -1
+  const cuffHidenCountRow = cuffs.length > 0 ? rowCursor++ : -1
   const numRows = rowCursor
 
   const rowLower = new Array<number>(numRows)
@@ -528,6 +541,8 @@ export function buildModel(
     rowUpper[cuffBudgetRow] = Math.max(0, CUFF_SLOT_BUDGET - pinnedCuffSlotCost)
     rowLower[cuffCountRow] = -highs.infinity
     rowUpper[cuffCountRow] = Math.max(0, MAX_EQUIPPED_CUFFS - pinnedCuffCount)
+    rowLower[cuffHidenCountRow] = -highs.infinity
+    rowUpper[cuffHidenCountRow] = Math.max(0, MAX_EQUIPPED_HIDEN_CUFFS - pinnedHidenCuffCount)
   }
 
   const columns: ColumnMeta[] = []
@@ -636,6 +651,7 @@ export function buildModel(
       if (count > 0) {
         if (cuff.slotSize !== 0) entries.set(cuffBudgetRow, count * cuff.slotSize)
         entries.set(cuffCountRow, count)
+        if (cuff.category === HIDEN_CUFF_CATEGORY) entries.set(cuffHidenCountRow, count)
         requirements.forEach((req, r) => {
           const points = pointsTowards(cuff.skills, req.skillId)
           if (points !== 0) entries.set(skillRow(r), count * points)
