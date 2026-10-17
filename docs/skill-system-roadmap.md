@@ -1916,3 +1916,36 @@ bundle: excluding "Attack" under Skills, then requiring 10 points of Attack and 
 produced "This search can never succeed: Attack needs 10, but at most 0 is reachable" -- confirming
 every Attack-granting piece, decoration, and cuff was actually dropped from the pool, not just hidden
 from the exclusion list's own search.
+
+## 33. "Pin specific armor" should only search/pin pieces from included gear-level categories
+
+**Status: Not started.** The project owner: the armor search and pinning feature ("Pin specific
+armor") should only offer gear from the categories currently selected to be included -- not every
+piece regardless of the "Gear levels" filter.
+
+Today (`App.tsx`) `ArmorPicker` is handed `bundle.slots` straight from the loaded bundle, completely
+unfiltered by `excludedCategories` (the "Gear levels" `CategoryFilter`):
+```
+<ArmorPicker
+  slots={bundle.slots}
+  decorations={pinnableDecorations}
+  ...
+```
+So a piece from a category the player has explicitly excluded (e.g. "Unavailable") can still be
+found and pinned here, even though the free search would never suggest it. This is inconsistent with
+how decorations already work on this same picker -- `pinnableDecorations` (passed as `decorations`
+above) is already `decorationsAfterCategoryFilter(bundle.decorations, excludedDecorationCategories)`,
+so the decoration-add search here is already scoped to included categories; only the piece search
+isn't.
+
+The fix is to pass `ArmorPicker` a `slots` list run through `slotsAfterCategoryFilter(bundle.slots,
+excludedCategories)` (`build-query.ts`, already used identically inside `buildSearchQuery` for the
+real search) instead of `bundle.slots` directly -- likely a `pinnableSlots` `useMemo` mirroring the
+existing `pinnableDecorations` one, recomputed when `excludedCategories` changes. Needs a decision
+(worth confirming with the project owner) on what happens to an *already-pinned* piece whose category
+is excluded after the fact -- `EquipmentExclusionPicker`'s id-based exclusion precedent is "a pin
+always wins" (the solver still honors it, see `slotsAfterPinning`'s own docstring), so the most
+consistent behavior is likely: keep an existing pin even if its category becomes excluded, but don't
+let the *search* surface that category's pieces as new options to pin. Also needs a test in
+`ArmorPicker.test.tsx` (or `App.test.tsx`, wherever the filtered list gets threaded through) asserting
+an excluded-category piece doesn't appear in the piece search results.
