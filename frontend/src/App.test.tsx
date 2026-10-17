@@ -664,4 +664,93 @@ describe('App', () => {
     expect(screen.getAllByText(/helm \d+/i).length).toBeLessThan(25)
     expect(worker.cancel).toHaveBeenCalledWith('req-1')
   })
+
+  describe('"Pin specific armor" scoping (docs/skill-system-roadmap.md #33/#35)', () => {
+    it('excludes a piece from an excluded gear-level category from the piece search', async () => {
+      const user = userEvent.setup()
+      render(<App />)
+
+      await user.click(screen.getByRole('button', { name: /gear levels/i }))
+      await user.click(screen.getByLabelText('Premium Kit'))
+
+      await user.click(screen.getByRole('button', { name: /pin specific armor/i }))
+      await user.type(screen.getByLabelText('Search pieces for head'), 'Mask')
+
+      expect(screen.getByText('No matches.')).toBeInTheDocument()
+      expect(screen.queryByRole('option', { name: 'White Cat Mask' })).not.toBeInTheDocument()
+    })
+
+    it('still searches/pins a piece from a category not excluded', async () => {
+      const user = userEvent.setup()
+      render(<App />)
+
+      await user.click(screen.getByRole('button', { name: /gear levels/i }))
+      await user.click(screen.getByLabelText('Premium Kit'))
+
+      await user.click(screen.getByRole('button', { name: /pin specific armor/i }))
+      await user.type(screen.getByLabelText('Search pieces for head'), 'Leather')
+
+      expect(screen.getByRole('option', { name: 'Leather Helm' })).toBeInTheDocument()
+    })
+
+    it('excludes a piece restricted to the other Hunter Type from the piece search', async () => {
+      const bundleWithGunnerPiece = {
+        ...BUNDLE,
+        slots: [
+          {
+            ...BUNDLE.slots[0],
+            candidates: [
+              ...BUNDLE.slots[0].candidates,
+              {
+                id: 'head:0003',
+                name: 'Gunner Only Mask',
+                skills: [],
+                category: 'standard_plain',
+                grankOrLater: false,
+                hunterType: 'gunner',
+                exoticSkillId: null,
+                defenseMax: null,
+                resistances: { fire: 0, water: 0, thunder: 0, ice: 0, dragon: 0 },
+              },
+            ],
+          },
+        ],
+      }
+      mockUseDataBundle.mockReturnValue({
+        isLoading: false,
+        isError: false,
+        data: bundleWithGunnerPiece,
+      } as unknown as ReturnType<typeof useDataBundle>)
+      const user = userEvent.setup()
+      render(<App />) // Hunter Type defaults to Blademaster.
+
+      await user.click(screen.getByRole('button', { name: /pin specific armor/i }))
+      await user.type(screen.getByLabelText('Search pieces for head'), 'Gunner')
+
+      expect(screen.getByText('No matches.')).toBeInTheDocument()
+
+      await user.click(screen.getByRole('button', { name: 'Gunner' }))
+
+      expect(screen.getByRole('option', { name: 'Gunner Only Mask' })).toBeInTheDocument()
+    })
+
+    it('keeps an already-pinned piece visible after its category is excluded', async () => {
+      const user = userEvent.setup()
+      render(<App />)
+
+      await user.click(screen.getByRole('button', { name: /pin specific armor/i }))
+      await user.type(screen.getByLabelText('Search pieces for head'), 'Mask')
+      await user.selectOptions(screen.getByRole('option', { name: 'White Cat Mask' }).closest('select')!, [
+        'head:0002',
+      ])
+
+      expect(screen.getByText('White Cat Mask')).toBeInTheDocument()
+
+      await user.click(screen.getByRole('button', { name: /gear levels/i }))
+      await user.click(screen.getByLabelText('Premium Kit'))
+
+      expect(screen.getByText('White Cat Mask')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Clear' })).toBeInTheDocument()
+    })
+  })
 })

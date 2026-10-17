@@ -13,6 +13,8 @@ import { useSearchWorker } from './search/useSearchWorker'
 import {
   buildSearchQuery,
   decorationsAfterCategoryFilter,
+  slotsAfterCategoryFilter,
+  slotsAfterHunterTypeFilter,
   WEAPON_NO_ZENITH_SKILL_KEY,
 } from './search-engine/build-query'
 import type { HunterTypeFilter, QueryFormState } from './search-engine/build-query'
@@ -337,6 +339,34 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
   // even though the search itself never would.
   const pinnableDecorations = bundle
     ? decorationsAfterCategoryFilter(bundle.decorations, excludedDecorationCategories)
+    : []
+
+  // Same reasoning, for "Pin specific armor" itself (docs/skill-system-
+  // roadmap.md TODOs #33/#35): without this, the piece search/pin could
+  // still find and pin a piece from an excluded Gear-level category, or one
+  // restricted to the Hunter Type the build isn't using, even though the
+  // free search would never suggest either. Deliberately NOT applied to
+  // `allArmorCandidates` below -- the equipment-exclusion picker excludes a
+  // specific item by id regardless of category, a broader net than this.
+  //
+  // An already-pinned piece is kept available even if a later category/
+  // Hunter Type change would now exclude it, so the picker keeps showing it
+  // (with its Change/Clear controls) instead of silently acting as if
+  // nothing were pinned there -- the actual search still honors the pin
+  // either way, since `slotsAfterPinning` resolves it from the unfiltered
+  // `bundle.slots`.
+  const pinnableSlots = bundle
+    ? slotsAfterHunterTypeFilter(
+        slotsAfterCategoryFilter(bundle.slots, excludedCategories),
+        hunterTypeFilter,
+      ).map((slot) => {
+        const pin = pinnedArmor.get(slot.slotId)
+        if (!pin || slot.candidates.some((c) => c.id === pin.candidateId)) return slot
+        const pinnedCandidate = bundle.slots
+          .find((s) => s.slotId === slot.slotId)
+          ?.candidates.find((c) => c.id === pin.candidateId)
+        return pinnedCandidate ? { ...slot, candidates: [...slot.candidates, pinnedCandidate] } : slot
+      })
     : []
 
   // Flattened once for the exclusion picker (EquipmentExclusionPicker.tsx),
@@ -810,7 +840,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                   characters to search.
                 </p>
                 <ArmorPicker
-                  slots={bundle.slots}
+                  slots={pinnableSlots}
                   decorations={pinnableDecorations}
                   pinned={pinnedArmor}
                   onChange={setPinnedArmor}

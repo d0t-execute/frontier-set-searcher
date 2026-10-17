@@ -1919,36 +1919,38 @@ from the exclusion list's own search.
 
 ## 33. "Pin specific armor" should only search/pin pieces from included gear-level categories
 
-**Status: Not started.** The project owner: the armor search and pinning feature ("Pin specific
-armor") should only offer gear from the categories currently selected to be included -- not every
-piece regardless of the "Gear levels" filter.
-
-Today (`App.tsx`) `ArmorPicker` is handed `bundle.slots` straight from the loaded bundle, completely
-unfiltered by `excludedCategories` (the "Gear levels" `CategoryFilter`):
+**Status (2026-10-17): COMPLETE**, implemented together with TODO #35 since both narrow the exact
+same list. `App.tsx` now computes a `pinnableSlots` value (mirroring the existing `pinnableDecorations`
+one) and hands that to `ArmorPicker` instead of `bundle.slots` directly:
+```ts
+const pinnableSlots = bundle
+  ? slotsAfterHunterTypeFilter(
+      slotsAfterCategoryFilter(bundle.slots, excludedCategories),
+      hunterTypeFilter,
+    ).map((slot) => {
+      const pin = pinnedArmor.get(slot.slotId)
+      if (!pin || slot.candidates.some((c) => c.id === pin.candidateId)) return slot
+      const pinnedCandidate = bundle.slots
+        .find((s) => s.slotId === slot.slotId)
+        ?.candidates.find((c) => c.id === pin.candidateId)
+      return pinnedCandidate ? { ...slot, candidates: [...slot.candidates, pinnedCandidate] } : slot
+    })
+  : []
 ```
-<ArmorPicker
-  slots={bundle.slots}
-  decorations={pinnableDecorations}
-  ...
-```
-So a piece from a category the player has explicitly excluded (e.g. "Unavailable") can still be
-found and pinned here, even though the free search would never suggest it. This is inconsistent with
-how decorations already work on this same picker -- `pinnableDecorations` (passed as `decorations`
-above) is already `decorationsAfterCategoryFilter(bundle.decorations, excludedDecorationCategories)`,
-so the decoration-add search here is already scoped to included categories; only the piece search
-isn't.
+Resolved the "what happens to an already-pinned piece whose category is excluded after the fact"
+question flagged below in favor of the more consistent option: the piece search itself is scoped to
+included categories (so an excluded category's pieces are never offered as *new* pins), but an
+already-pinned piece is explicitly kept available in its own slot's candidate list even if it would
+otherwise be filtered out -- so `ArmorPicker`'s own "already pinned here" display (name, Change/Clear
+buttons) keeps working rather than silently acting as if nothing were pinned. The real search was
+never at risk either way, since `slotsAfterPinning` (`build-query.ts`) always resolves an existing pin
+from the unfiltered `bundle.slots`.
 
-The fix is to pass `ArmorPicker` a `slots` list run through `slotsAfterCategoryFilter(bundle.slots,
-excludedCategories)` (`build-query.ts`, already used identically inside `buildSearchQuery` for the
-real search) instead of `bundle.slots` directly -- likely a `pinnableSlots` `useMemo` mirroring the
-existing `pinnableDecorations` one, recomputed when `excludedCategories` changes. Needs a decision
-(worth confirming with the project owner) on what happens to an *already-pinned* piece whose category
-is excluded after the fact -- `EquipmentExclusionPicker`'s id-based exclusion precedent is "a pin
-always wins" (the solver still honors it, see `slotsAfterPinning`'s own docstring), so the most
-consistent behavior is likely: keep an existing pin even if its category becomes excluded, but don't
-let the *search* surface that category's pieces as new options to pin. Also needs a test in
-`ArmorPicker.test.tsx` (or `App.test.tsx`, wherever the filtered list gets threaded through) asserting
-an excluded-category piece doesn't appear in the piece search results.
+Verified: `App.test.tsx`'s `'"Pin specific armor" scoping'` describe block (an excluded-category piece
+is absent from the piece search; a non-excluded one still appears; an already-pinned piece whose
+category then gets excluded stays visible with its Clear button intact). Live-verified against the
+real dataset: excluding "Premium Kit" dropped the head-slot "Helm" search's match count from 2636 to
+2104.
 
 ## 34. Fold SkillPicker's own "N skills selected" line back into the Disclosure summary spot
 
@@ -1974,27 +1976,17 @@ Decorations, Exclusions, etc.) reads sensibly once always-visible too, since thi
 
 ## 35. "Pin specific armor" should also only search/pin pieces legal for the current Hunter Type
 
-**Status: Not started.** The project owner: the armor search/pin feature should only offer pieces
-that are actually legal to equip as the build's current Hunter Type (Blademaster/Gunner) -- not also
-pieces restricted to the other one -- confirmed not already the case.
+**Status (2026-10-17): COMPLETE**, implemented together with TODO #33 -- see that entry for the
+shared `pinnableSlots` implementation (`slotsAfterHunterTypeFilter` composed with
+`slotsAfterCategoryFilter`, both from `build-query.ts`, plus the already-pinned-piece preservation).
 
-Same shape of gap as TODO #33, a different filter: `App.tsx` passes `ArmorPicker` `slots={bundle.slots}`
-directly, with no Hunter Type filtering applied at all (`hunterTypeFilter` state exists and is read
-into `queryFormState`, but never reaches `ArmorPicker`). `build-query.ts` already has
-`slotsAfterHunterTypeFilter(slots, hunterTypeFilter)` -- used inside `buildSearchQuery` for the real
-search, dropping every candidate whose own `hunterType` is neither `'common'` nor the build's current
-filter -- but that function is never applied to the list handed to the picker, so e.g. a Gunner-only
-helmet can still be found and pinned while the build is set to Blademaster (and the solver would
-presumably still honor that pin regardless, the same "pin always wins" precedent as every other
-filter here).
-
-Likely belongs alongside TODO #33's fix, in the same `pinnableSlots`-style `useMemo`: `slots =
-slotsAfterHunterTypeFilter(slotsAfterCategoryFilter(bundle.slots, excludedCategories),
-hunterTypeFilter)`, recomputed whenever `hunterTypeFilter` (or `excludedCategories`) changes, since
-both filters narrow the exact same `slots` list before it reaches `ArmorPicker`. Needs a test (likely
-in `App.test.tsx`, since the fixture bundle needs more than one Hunter Type candidate to exercise
-this) asserting a Gunner-restricted piece doesn't appear in the piece search while Blademaster is
-selected, and vice versa.
+Verified: `App.test.tsx`'s `'"Pin specific armor" scoping'` describe block covers a synthetic
+Gunner-only piece disappearing from the head-slot search while Blademaster is selected, then appearing
+once switched to Gunner. Live-verified against the real dataset too: the dataset's one `hunterType:
+'gunner'` head piece ("Rockman Cap") is absent from the piece search under Blademaster and present
+under Gunner (its own default-excluded "Training Only" category had to be temporarily re-included to
+observe this, since it's otherwise filtered out by TODO #33's category scoping regardless of Hunter
+Type).
 
 ## 36. SkillPicker's category order shifts around as skills get picked
 
@@ -2063,14 +2055,17 @@ confirming with the project owner instead of building the offset) the query laye
 to let the player pin a cuff/piece/decoration that *by itself* already crosses the excluded skill's
 own threshold, sidestepping the offset math entirely.
 
+**Decided (2026-10-17, per the project owner): this REPLACES TODO #32's "ban every piece that grants
+it" behavior outright, rather than coexisting as a second mode.** Same stored `excludedSkillIds`, same
+`EquipmentExclusionPicker.tsx` "Skills" list and UI, only the solver-side meaning of an excluded skill
+id changes -- no new per-item mode concept, no second list, no per-badge toggle needed.
+
 Threading: a new solver-facing `SearchOptions` field (e.g. `excludedActiveSkillIds: readonly
 SkillId[]`), converted from a plain `Set<string>` App state only at the `search()` call site --
 mirroring exactly how `resistanceFloors` itself is derived from `nonNegativeResistances` today, not
-threaded as a raw solver-shaped field through persistence. The UI-facing `excludedSkillIds` set
-already has its full persistence thread shipped (TODO #32: `AppInitialState`, `search-form-state.ts`,
-`shared-state.ts`, `query-code.ts`) -- worth deciding with the project owner whether this REPLACES
-that thread's meaning outright (same stored ids, new solver behavior) or needs to EXIST ALONGSIDE it
-as a second, distinct option (old "ban the equipment" mode vs. new "cap below active" mode) --
-`EquipmentExclusionPicker.tsx`'s "Skills" list today has no per-item mode concept at all, only a flat
-excluded/not-excluded Set, so offering both would need real new UI (a second list, or a per-badge
-toggle), not just a backend change.
+threaded as a raw solver-shaped field through persistence. The UI-facing `excludedSkillIds` set already
+has its full persistence thread shipped (TODO #32: `AppInitialState`, `search-form-state.ts`,
+`shared-state.ts`, `query-code.ts`) and keeps that thread as-is. `build-query.ts`'s
+`slotsAfterExcludedSkills`/`decorationsAfterExcludedSkills`/`cuffsAfterExcludedSkills` (the old
+candidate-pool filtering from TODO #32) get removed once the new hard-constraint rows take over --
+their wholesale pool-filtering is exactly the blunt behavior being replaced.
