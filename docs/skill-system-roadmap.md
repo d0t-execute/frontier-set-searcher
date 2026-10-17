@@ -1871,3 +1871,48 @@ items selected, the empty-state message, numbering order via `getAllByRole('list
 keyboard-only-selection block: Enter-adds-first-match, arrow-then-Enter, wrap-around past the last
 match, highlight resets when the search text changes, no-op Enter with no matches); full suite
 341/341 (the same two known-flaky timing tests excluded, per TODO #28).
+
+## 32. Exclude specific skills; "Exclude specific equipment" reworded to "Exclusions"
+
+**Status (2026-10-18): COMPLETE.** Per the project owner: "add the ability to exclude specific
+skills. You can just add that to the exclude specific equipment and maybe reword that to
+exclusions." Excluding a skill drops every armor piece, decoration, or cuff that grants it from the
+solver's pool entirely -- the same effect as excluding that specific item by id, just picked by what
+it grants rather than by its own name. It is NOT a tweak to the skill requirements search above (it
+doesn't touch `requirements`/`zenithRequirements` at all); it only narrows which equipment the
+solver is allowed to consider.
+
+`build-query.ts` gained a fourth `QueryFormState` field, `excludedSkillIds: ReadonlySet<string>`
+(stringified skill ids, same convention as the other three exclusion sets), plus three new filter
+functions mirroring the existing id-based ones: `slotsAfterExcludedSkills`,
+`decorationsAfterExcludedSkills`, `cuffsAfterExcludedSkills` -- each drops a candidate whenever
+`candidate.skills.some(s => excludedSkillIds.has(String(s.skillId)))`. Wired into `buildSearchQuery`
+right alongside the id-based exclusion, with the same "pin always wins" ordering: applied to the
+pre-pinning pool, so a piece/decoration/cuff the player explicitly pinned keeps granting its skills
+even if one of them is also excluded.
+
+`EquipmentExclusionPicker.tsx` gained a fourth `ExclusionList` ("Skills"), reusing the same generic
+component unchanged -- a skill is just fed in as `{id: String(skillId), name}`. `App.tsx` builds this
+list once via `useMemo` from `bundle.skills` (normal skills only; Zenith skills are only ever granted
+by the weapon slot, which isn't part of this picker's candidate pools, so they're left out rather than
+offered as a dead-end exclusion). The section's title changed from "Exclude specific equipment" to
+"Exclusions" (`excludedEquipmentSummary` renamed to `exclusionsSummary`, now summing all four sets),
+and its intro paragraph now explains the skill-exclusion effect separately from the item-exclusion
+one, so it doesn't read as a shortcut for "don't count this skill."
+
+`excludedSkillIds` was threaded through every place the other three exclusion sets already go:
+`AppInitialState`, `localStorage` persistence (`search-form-state.ts`'s `SearchFormState`), shared
+result links (`shared-state.ts`'s `SharedSearchState`/wire format, new `esi` key), and the
+human-readable save/load codes (`query-code.ts`'s new "Excluded skills" section, resolved through the
+same `skillIndex` already built for skill requirements).
+
+Verified: `tsc -b` and `oxlint` clean; new `build-query.test.ts` tests for all three filter functions
+plus two `buildSearchQuery` integration tests (drops every piece/decoration/cuff granting an excluded
+skill; still pins/places one that does, since a pin always wins); new `EquipmentExclusionPicker.test.tsx`
+tests (the Skills list shows a match by name, excludes it once picked via the dropdown and via
+Enter-to-pick, and an already-excluded skill shows as a named badge); full suite 352/352 (the same two
+known-flaky timing tests excluded, per TODO #28). Live-verified in the browser against the real data
+bundle: excluding "Attack" under Skills, then requiring 10 points of Attack and searching, correctly
+produced "This search can never succeed: Attack needs 10, but at most 0 is reachable" -- confirming
+every Attack-granting piece, decoration, and cuff was actually dropped from the pool, not just hidden
+from the exclusion list's own search.

@@ -1,20 +1,25 @@
 /**
- * Lets the player permanently rule out specific armor pieces, decorations, or
- * cuffs by id -- a stronger, per-item version of the existing category
+ * Lets the player permanently rule out specific armor pieces, decorations,
+ * cuffs, or skills -- a stronger, per-item version of the existing category
  * filters (Gear levels/Poogie cuffs/Decorations), for something the player
  * simply doesn't own or doesn't want suggested regardless of category (docs/
  * skill-system-roadmap.md's equipment-exclusion feature, 2026-10-16, per the
- * project owner). An excluded item never appears in a search result -- except
- * that pinning always wins over exclusion, the same way a pin already
- * overrides every other filter on this page (`build-query.ts`'s
- * `buildSearchQuery`): a pinned piece or decoration stays usable even after
- * being added here, so excluding e.g. "Ice Atk G" doesn't strip it back out
- * of a slot the player explicitly pinned it into.
+ * project owner). Excluding a skill drops every piece/decoration/cuff that
+ * grants it (`build-query.ts`'s `excludedSkillIds`, 2026-10-18 per the
+ * project owner: "add the ability to exclude specific skills... add that to
+ * the exclude specific equipment") -- it's equipment-level, not a tweak to
+ * the skill requirements search above. An excluded item never appears in a
+ * search result -- except that pinning always wins over exclusion, the same
+ * way a pin already overrides every other filter on this page
+ * (`build-query.ts`'s `buildSearchQuery`): a pinned piece or decoration stays
+ * usable even after being added here, so excluding e.g. "Ice Atk G" doesn't
+ * strip it back out of a slot the player explicitly pinned it into.
  *
  * Reuses `FilterableOptions`' type-to-filter search (same convention as
  * `ArmorPicker`/`CuffPicker`, needed for the same reason -- these catalogs run
- * into the tens of thousands) for all three lists, since armor candidates,
- * decorations, and cuffs all already share the `{id, name}` shape it needs.
+ * into the tens of thousands) for all four lists, since armor candidates,
+ * decorations, cuffs, and skills all already share (or can be mapped onto)
+ * the `{id, name}` shape it needs.
  */
 
 import { useMemo, useState } from 'react'
@@ -35,12 +40,19 @@ export interface EquipmentExclusionPickerProps {
   readonly armorCandidates: readonly Named[]
   readonly decorations: readonly Named[]
   readonly cuffs: readonly Named[]
+  /** `{id, name}` pairs for every normal (non-Zenith) skill -- Zenith skills
+   * are only ever granted by the weapon slot, which isn't part of the
+   * armor/decoration/cuff pools this exclusion list filters, so they're left
+   * out here rather than offered as a dead-end exclusion. */
+  readonly skills: readonly Named[]
   readonly excludedArmorIds: ReadonlySet<string>
   readonly onChangeExcludedArmorIds: (next: Set<string>) => void
   readonly excludedDecorationIds: ReadonlySet<string>
   readonly onChangeExcludedDecorationIds: (next: Set<string>) => void
   readonly excludedCuffIds: ReadonlySet<string>
   readonly onChangeExcludedCuffIds: (next: Set<string>) => void
+  readonly excludedSkillIds: ReadonlySet<string>
+  readonly onChangeExcludedSkillIds: (next: Set<string>) => void
   readonly skillNameById: ReadonlyMap<SkillId, string>
 }
 
@@ -48,12 +60,15 @@ export function EquipmentExclusionPicker({
   armorCandidates,
   decorations,
   cuffs,
+  skills,
   excludedArmorIds,
   onChangeExcludedArmorIds,
   excludedDecorationIds,
   onChangeExcludedDecorationIds,
   excludedCuffIds,
   onChangeExcludedCuffIds,
+  excludedSkillIds,
+  onChangeExcludedSkillIds,
   skillNameById,
 }: EquipmentExclusionPickerProps) {
   return (
@@ -80,6 +95,14 @@ export function EquipmentExclusionPicker({
         items={cuffs}
         excludedIds={excludedCuffIds}
         onChange={onChangeExcludedCuffIds}
+        skillNameById={skillNameById}
+      />
+      <ExclusionList
+        label="Skills"
+        searchAriaLabel="Search skills to exclude"
+        items={skills}
+        excludedIds={excludedSkillIds}
+        onChange={onChangeExcludedSkillIds}
         skillNameById={skillNameById}
       />
     </div>

@@ -194,6 +194,7 @@ export interface AppInitialState {
   readonly excludedArmorIds?: ReadonlySet<string>
   readonly excludedDecorationIds?: ReadonlySet<string>
   readonly excludedCuffIds?: ReadonlySet<string>
+  readonly excludedSkillIds?: ReadonlySet<string>
   /** Elements required to stay at or above zero, summed across every chosen
    * candidate (docs/feedback.md Round 1 #4) -- optional, same "not every
    * seed source has an opinion on every field" convention as the other
@@ -295,6 +296,13 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
   const [excludedCuffIds, setExcludedCuffIds] = useState<Set<string>>(
     () => new Set(initialState?.excludedCuffIds ?? persisted?.excludedCuffIds ?? []),
   )
+  // Skill ids (stringified) excluded the same way -- any armor piece,
+  // decoration, or cuff granting one of these is dropped entirely (docs/
+  // skill-system-roadmap.md's exclusions generalization, 2026-10-18 per the
+  // project owner).
+  const [excludedSkillIds, setExcludedSkillIds] = useState<Set<string>>(
+    () => new Set(initialState?.excludedSkillIds ?? persisted?.excludedSkillIds ?? []),
+  )
   // Elements required to stay at or above zero (docs/feedback.md Round 1 #4)
   // -- empty by default, same "don't silently assume a new feature's most
   // restrictive state" precedent as `DEFAULT_EXCLUDED_CUFF_CATEGORIES`, just
@@ -337,6 +345,15 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
   // care which slot it happens to belong to.
   const allArmorCandidates = useMemo(
     () => bundle?.slots.flatMap((slot) => slot.candidates) ?? [],
+    [bundle],
+  )
+
+  // {id, name} pairs for the "Skills" exclusion list (EquipmentExclusionPicker.tsx)
+  // -- ids are stringified to match every other exclusion set's convention
+  // (see AppInitialState.excludedSkillIds's own docstring), converted back to
+  // numbers only where build-query.ts actually filters by skill id.
+  const excludableSkillOptions = useMemo(
+    () => (bundle?.skills ?? []).map((s) => ({ id: String(s.id), name: s.name })),
     [bundle],
   )
 
@@ -436,8 +453,9 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
   })()
   const pinnedCuffsSummary =
     pinnedCuffIds.length === 0 ? 'None pinned' : `${pluralize(pinnedCuffIds.length, 'cuff')} pinned`
-  const excludedEquipmentSummary = (() => {
-    const total = excludedArmorIds.size + excludedDecorationIds.size + excludedCuffIds.size
+  const exclusionsSummary = (() => {
+    const total =
+      excludedArmorIds.size + excludedDecorationIds.size + excludedCuffIds.size + excludedSkillIds.size
     return total === 0 ? 'None excluded' : `${pluralize(total, 'item')} excluded`
   })()
   const resistancesSummary =
@@ -478,6 +496,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
     excludedArmorIds,
     excludedDecorationIds,
     excludedCuffIds,
+    excludedSkillIds,
   }
 
   // Persists every search input on each change (docs/skill-system-roadmap.md
@@ -505,6 +524,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
       excludedArmorIds: [...excludedArmorIds],
       excludedDecorationIds: [...excludedDecorationIds],
       excludedCuffIds: [...excludedCuffIds],
+      excludedSkillIds: [...excludedSkillIds],
       nonNegativeResistances: [...nonNegativeResistances],
       preferExactMatches,
       maxResults,
@@ -525,6 +545,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
     excludedArmorIds,
     excludedDecorationIds,
     excludedCuffIds,
+    excludedSkillIds,
     preferExactMatches,
     maxResults,
   ])
@@ -640,6 +661,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
         excludedArmorIds: [...excludedArmorIds],
         excludedDecorationIds: [...excludedDecorationIds],
         excludedCuffIds: [...excludedCuffIds],
+        excludedSkillIds: [...excludedSkillIds],
         nonNegativeResistances: [...nonNegativeResistances],
         preferExactMatches,
         maxResults,
@@ -667,6 +689,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
     setExcludedArmorIds(new Set(state.excludedArmorIds))
     setExcludedDecorationIds(new Set(state.excludedDecorationIds))
     setExcludedCuffIds(new Set(state.excludedCuffIds))
+    setExcludedSkillIds(new Set(state.excludedSkillIds))
     setNonNegativeResistances(new Set(state.nonNegativeResistances))
     setPreferExactMatches(state.preferExactMatches)
     setMaxResults(state.maxResults)
@@ -713,6 +736,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
       excludedArmorIds: [...excludedArmorIds],
       excludedDecorationIds: [...excludedDecorationIds],
       excludedCuffIds: [...excludedCuffIds],
+      excludedSkillIds: [...excludedSkillIds],
       nonNegativeResistances: [...nonNegativeResistances],
       preferExactMatches,
       result: {
@@ -840,21 +864,25 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                 />
               </Disclosure>
 
-              <Disclosure title="Exclude specific equipment" summary={excludedEquipmentSummary}>
+              <Disclosure title="Exclusions" summary={exclusionsSummary}>
                 <p className="form-text">
-                  Excluded equipment never appears in a search result, unless it's also pinned above
-                  -- a pin always wins. Type at least 2 characters to search.
+                  Excluded armor, decorations, and cuffs never appear in a search result, unless also
+                  pinned above -- a pin always wins. Excluding a skill drops every piece, decoration,
+                  or cuff that grants it. Type at least 2 characters to search.
                 </p>
                 <EquipmentExclusionPicker
                   armorCandidates={allArmorCandidates}
                   decorations={bundle.decorations}
                   cuffs={bundle.cuffs}
+                  skills={excludableSkillOptions}
                   excludedArmorIds={excludedArmorIds}
                   onChangeExcludedArmorIds={setExcludedArmorIds}
                   excludedDecorationIds={excludedDecorationIds}
                   onChangeExcludedDecorationIds={setExcludedDecorationIds}
                   excludedCuffIds={excludedCuffIds}
                   onChangeExcludedCuffIds={setExcludedCuffIds}
+                  excludedSkillIds={excludedSkillIds}
+                  onChangeExcludedSkillIds={setExcludedSkillIds}
                   skillNameById={bundle.skillNames}
                 />
               </Disclosure>

@@ -134,6 +134,7 @@ export interface SharedSearchState {
   readonly excludedArmorIds: readonly string[]
   readonly excludedDecorationIds: readonly string[]
   readonly excludedCuffIds: readonly string[]
+  readonly excludedSkillIds: readonly string[]
   /** Elements the original search required to stay at or above zero
    * (docs/feedback.md Round 1 #4) -- same "use as a base for a new
    * search"-only role as the exclusions above. */
@@ -160,6 +161,7 @@ interface WireFormat {
   readonly eai: readonly string[]
   readonly edi: readonly string[]
   readonly eci: readonly string[]
+  readonly esi: readonly string[]
   readonly nnr: readonly ResistanceElement[]
   readonly pem: boolean
   readonly rp: readonly (readonly [
@@ -190,6 +192,7 @@ function toWireFormat(state: SharedSearchState): WireFormat {
     eai: state.excludedArmorIds,
     edi: state.excludedDecorationIds,
     eci: state.excludedCuffIds,
+    esi: state.excludedSkillIds,
     nnr: state.nonNegativeResistances,
     pem: state.preferExactMatches,
     rp: state.result.picks.map((p) => [
@@ -237,6 +240,7 @@ function fromWireFormat(parsed: unknown): SharedSearchState | null {
     !Array.isArray(p.eai) ||
     !Array.isArray(p.edi) ||
     !Array.isArray(p.eci) ||
+    !Array.isArray(p.esi) ||
     !Array.isArray(p.nnr) ||
     !p.nnr.every((e) => RESISTANCE_ELEMENTS.includes(e)) ||
     typeof p.pem !== 'boolean' ||
@@ -261,6 +265,7 @@ function fromWireFormat(parsed: unknown): SharedSearchState | null {
     excludedArmorIds: w.eai,
     excludedDecorationIds: w.edi,
     excludedCuffIds: w.eci,
+    excludedSkillIds: w.esi,
     nonNegativeResistances: w.nnr,
     preferExactMatches: w.pem,
     result: {

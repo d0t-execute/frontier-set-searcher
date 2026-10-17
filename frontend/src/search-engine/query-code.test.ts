@@ -57,6 +57,7 @@ const state: SearchFormState = {
   excludedArmorIds: ['head:9999'],
   excludedDecorationIds: ['D099'],
   excludedCuffIds: ['cuff:C099'],
+  excludedSkillIds: ['2'],
   nonNegativeResistances: ['fire', 'dragon'],
   preferExactMatches: true,
   maxResults: 5,
@@ -100,6 +101,7 @@ describe('encodeQueryCode / decodeQueryCode', () => {
       excludedArmorIds: [],
       excludedDecorationIds: [],
       excludedCuffIds: [],
+      excludedSkillIds: [],
       nonNegativeResistances: [],
       preferExactMatches: true,
       maxResults: 5,
@@ -114,6 +116,12 @@ describe('encodeQueryCode / decodeQueryCode', () => {
     expect(encoded).toContain('Leather Helm')
     expect(encoded).toContain('Not Implemented')
     expect(encoded).not.toMatch(/[A-Za-z0-9+/]{40,}={0,2}/) // no long base64-looking blob
+  })
+
+  it('resolves an excluded skill id to its real name', async () => {
+    const encoded = await encodeQueryCode(state, catalog)
+    expect(encoded).toContain('Excluded skills:')
+    expect(encoded).toContain('- Sharpness')
   })
 
   it('disambiguates two items that share a display name with their own id, and keeps a legitimate parenthetical label intact', async () => {

@@ -2,10 +2,13 @@ import { describe, expect, it } from 'vitest'
 import {
   buildSearchQuery,
   cuffsAfterExcludedIds,
+  cuffsAfterExcludedSkills,
   decorationsAfterCategoryFilter,
   decorationsAfterExcludedIds,
+  decorationsAfterExcludedSkills,
   resolvePinnedSlotDecorations,
   slotsAfterExcludedIds,
+  slotsAfterExcludedSkills,
   slotsAfterHunterTypeFilter,
 } from './build-query'
 import type { QueryFormState } from './build-query'
@@ -17,16 +20,31 @@ import type {
   NamedDecoration,
   NamedSlotQuery,
 } from './load-bundle'
+import type { SkillContribution } from './types'
 
-function cuffFixture(id: string, category = 'cuff_standard_tier1'): NamedCuff {
-  return { id, name: id, slotSize: 1, skills: [], category }
+function cuffFixture(
+  id: string,
+  category = 'cuff_standard_tier1',
+  skills: readonly SkillContribution[] = [],
+): NamedCuff {
+  return { id, name: id, slotSize: 1, skills, category }
 }
 
-function deco(id: string, isTower: boolean, category = 'deco_standard'): NamedDecoration {
-  return { id, name: id, slotSize: 1, skills: [], isTower, category }
+function deco(
+  id: string,
+  isTower: boolean,
+  category = 'deco_standard',
+  skills: readonly SkillContribution[] = [],
+): NamedDecoration {
+  return { id, name: id, slotSize: 1, skills, isTower, category }
 }
 
-function candidate(id: string, hunterType: HunterType, openSlotCount = 0): NamedCandidate {
+function candidate(
+  id: string,
+  hunterType: HunterType,
+  openSlotCount = 0,
+  skills: readonly SkillContribution[] = [],
+): NamedCandidate {
   return {
     id,
     name: id,
@@ -36,7 +54,7 @@ function candidate(id: string, hunterType: HunterType, openSlotCount = 0): Named
     exoticSkillId: null,
     defenseMax: null,
     resistances: { fire: 0, water: 0, thunder: 0, ice: 0, dragon: 0 },
-    skills: [],
+    skills,
     openSlotCount,
   }
 }
@@ -54,6 +72,7 @@ const EMPTY_FORM_STATE: QueryFormState = {
   excludedArmorIds: new Set(),
   excludedDecorationIds: new Set(),
   excludedCuffIds: new Set(),
+  excludedSkillIds: new Set(),
 }
 
 const BUNDLE: DataBundle = {
@@ -156,6 +175,48 @@ describe('decorationsAfterExcludedIds', () => {
 describe('cuffsAfterExcludedIds', () => {
   it('drops cuffs whose id is excluded', () => {
     const result = cuffsAfterExcludedIds([cuffFixture('a'), cuffFixture('b')], new Set(['a']))
+    expect(result.map((c) => c.id)).toEqual(['b'])
+  })
+})
+
+describe('slotsAfterExcludedSkills', () => {
+  const slots: readonly NamedSlotQuery[] = [
+    {
+      slotId: 'body',
+      candidates: [
+        candidate('a', 'common', 0, [{ skillId: 1, points: 5 }]),
+        candidate('b', 'common', 0, [{ skillId: 2, points: 5 }]),
+      ],
+    },
+  ]
+
+  it('drops every candidate that grants an excluded skill', () => {
+    const result = slotsAfterExcludedSkills(slots, new Set(['1']))
+    expect(result[0].candidates.map((c) => c.id)).toEqual(['b'])
+  })
+
+  it('returns an equivalent copy when nothing is excluded', () => {
+    const result = slotsAfterExcludedSkills(slots, new Set())
+    expect(result[0].candidates.map((c) => c.id)).toEqual(['a', 'b'])
+  })
+})
+
+describe('decorationsAfterExcludedSkills', () => {
+  it('drops decorations that grant an excluded skill', () => {
+    const result = decorationsAfterExcludedSkills(
+      [deco('a', false, 'deco_standard', [{ skillId: 1, points: 3 }]), deco('b', false)],
+      new Set(['1']),
+    )
+    expect(result.map((d) => d.id)).toEqual(['b'])
+  })
+})
+
+describe('cuffsAfterExcludedSkills', () => {
+  it('drops cuffs that grant an excluded skill', () => {
+    const result = cuffsAfterExcludedSkills(
+      [cuffFixture('a', undefined, [{ skillId: 1, points: 5 }]), cuffFixture('b')],
+      new Set(['1']),
+    )
     expect(result.map((c) => c.id)).toEqual(['b'])
   })
 })
@@ -271,6 +332,54 @@ describe('buildSearchQuery', () => {
     })
 
     expect(query.cuffs.map((c) => c.id)).toEqual(['b'])
+    expect(query.pinnedCuffs.map((c) => c.id)).toEqual(['a'])
+  })
+
+  it('drops every armor piece, decoration, and cuff that grants an excluded skill', () => {
+    const bundleWithSkills: DataBundle = {
+      ...BUNDLE,
+      slots: [
+        {
+          slotId: 'head',
+          candidates: [
+            candidate('a', 'common', 0, [{ skillId: 1, points: 5 }]),
+            candidate('b', 'common'),
+          ],
+        },
+      ],
+      decorations: [
+        deco('regular', false, 'deco_standard', [{ skillId: 1, points: 3 }]),
+        deco('tower', true),
+      ],
+      cuffs: [cuffFixture('a', undefined, [{ skillId: 1, points: 5 }]), cuffFixture('b')],
+    }
+    const query = buildSearchQuery(bundleWithSkills, {
+      ...EMPTY_FORM_STATE,
+      excludedSkillIds: new Set(['1']),
+    })
+
+    expect(query.slots.find((s) => s.slotId === 'head')?.candidates.map((c) => c.id)).toEqual(['b'])
+    expect(query.decorations.map((d) => d.id)).toEqual([])
+    expect(query.cuffs.map((c) => c.id)).toEqual(['b'])
+  })
+
+  it('still pins a piece/decoration/cuff that grants an excluded skill, since a pin always wins', () => {
+    const bundleWithSkills: DataBundle = {
+      ...BUNDLE,
+      slots: [{ slotId: 'head', candidates: [candidate('a', 'common', 1, [{ skillId: 1, points: 5 }])] }],
+      decorations: [deco('regular', false, 'deco_standard', [{ skillId: 1, points: 3 }])],
+      cuffs: [cuffFixture('a', undefined, [{ skillId: 1, points: 5 }])],
+    }
+    const query = buildSearchQuery(bundleWithSkills, {
+      ...EMPTY_FORM_STATE,
+      excludedSkillIds: new Set(['1']),
+      pinnedArmor: new Map([['head', { candidateId: 'a', decorationIds: ['regular'] }]]),
+      pinnedCuffIds: ['a'],
+    })
+
+    const headSlot = query.slots.find((s) => s.slotId === 'head')
+    expect(headSlot?.candidates.map((c) => c.id)).toEqual(['a'])
+    expect(headSlot?.candidates[0]?.name).toContain('regular')
     expect(query.pinnedCuffs.map((c) => c.id)).toEqual(['a'])
   })
 })

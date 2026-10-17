@@ -210,6 +210,7 @@ export async function encodeQueryCode(state: SearchFormState, catalog: QueryCode
     renderList('Excluded armor', state.excludedArmorIds.map((id) => armorIdx.nameFor(id))),
     renderList('Excluded decorations', state.excludedDecorationIds.map((id) => decorationIdx.nameFor(id))),
     renderList('Excluded cuffs', state.excludedCuffIds.map((id) => cuffIdx.nameFor(id))),
+    renderList('Excluded skills', state.excludedSkillIds.map((id) => skillIdx.nameFor(id))),
   ]
 
   // Async only to keep this a drop-in replacement for the old gzip-based
@@ -408,6 +409,7 @@ export async function decodeQueryCode(
   const excludedArmorIds = decodeIdList(doc.sections.get('Excluded armor') ?? [], armorIdx)
   const excludedDecorationIds = decodeIdList(doc.sections.get('Excluded decorations') ?? [], decorationIdx)
   const excludedCuffIds = decodeIdList(doc.sections.get('Excluded cuffs') ?? [], cuffIdx)
+  const excludedSkillIds = decodeIdList(doc.sections.get('Excluded skills') ?? [], skillIdx)
 
   if (
     requirements === null ||
@@ -423,7 +425,8 @@ export async function decodeQueryCode(
     slotDecorationPairs === null ||
     excludedArmorIds === null ||
     excludedDecorationIds === null ||
-    excludedCuffIds === null
+    excludedCuffIds === null ||
+    excludedSkillIds === null
   ) {
     return null
   }
@@ -451,6 +454,7 @@ export async function decodeQueryCode(
     excludedArmorIds,
     excludedDecorationIds,
     excludedCuffIds,
+    excludedSkillIds,
     nonNegativeResistances,
     preferExactMatches,
     maxResults,

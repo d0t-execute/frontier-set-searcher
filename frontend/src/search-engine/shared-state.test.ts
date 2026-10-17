@@ -20,6 +20,7 @@ const state: SharedSearchState = {
   excludedArmorIds: ['head:9999'],
   excludedDecorationIds: ['D099'],
   excludedCuffIds: ['cuff:C099'],
+  excludedSkillIds: ['5'],
   nonNegativeResistances: ['ice', 'thunder'],
   preferExactMatches: true,
   result: {

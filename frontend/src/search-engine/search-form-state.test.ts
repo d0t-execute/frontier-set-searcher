@@ -17,6 +17,7 @@ const STATE: SearchFormState = {
   excludedArmorIds: ['head:0002'],
   excludedDecorationIds: ['D003'],
   excludedCuffIds: ['cuff:C002'],
+  excludedSkillIds: ['5'],
   nonNegativeResistances: ['water'],
   preferExactMatches: true,
   maxResults: 10,
