@@ -1995,3 +1995,32 @@ both filters narrow the exact same `slots` list before it reaches `ArmorPicker`.
 in `App.test.tsx`, since the fixture bundle needs more than one Hunter Type candidate to exercise
 this) asserting a Gunner-restricted piece doesn't appear in the piece search while Blademaster is
 selected, and vice versa.
+
+## 36. SkillPicker's category order shifts around as skills get picked
+
+**Status: Not started.** The project owner: picking a skill from the "Add a skill" list shouldn't
+reshuffle the remaining categories -- the order should stay the same, not have categories move
+around.
+
+Confirmed in the code: `SkillPicker.tsx`'s `groupByCategory` (its own docstring: "preserving each
+category's first-seen order... rather than resorting alphabetically") determines each category's
+position by the order its *first* skill appears in whatever array it's given -- but it's called on
+`matching` (`available` skills filtered by search text, where `available` is `skills` with already-
+picked ones already removed), not on the full, stable `skills` catalog. So a category's effective
+position actually depends on which of its skills are still pickable: if a category's first-appearing
+skill in the master `skills` order gets picked (removed from `available`), that category's "first
+seen" position shifts to wherever its next remaining skill happens to sit, which can be well after
+some other category that used to render below it -- visibly swapping the two categories' order the
+moment a skill is picked, even though nothing about the *catalog's* own order changed.
+
+The fix is to decouple ordering from filtering: compute the category order once from the full,
+unfiltered `skills` prop (stable for the lifetime of the component, never shrinks as things are
+picked), then group the already-filtered `matching` list using that fixed order instead of
+recomputing order from `matching` itself -- e.g. a `categoryOrder` built once (or memoized) from
+`skills`, with `groupByCategory` taking that order as a second argument and bucketing `matching`'s
+skills into it, dropping any category that ends up with zero remaining matches entirely (a category
+should still disappear once nothing in it is left to pick -- only the *relative order* of the
+categories that remain needs to stay fixed). Needs a `SkillPicker.test.tsx` test: pick the only
+visible skill from whichever category renders first, then assert the remaining categories still
+render in their original relative order (not reshuffled to whatever order their own first remaining
+skill happens to occupy).
