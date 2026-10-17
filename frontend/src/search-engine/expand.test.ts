@@ -50,4 +50,12 @@ describe('filterRelevantCuffs', () => {
 
     expect(filterRelevantCuffs([attack, irrelevant], requirements)).toEqual([attack])
   })
+
+  it('also keeps a cuff relevant only to an extraSkillId, e.g. a pinned-by-skill cuff (docs/skill-system-roadmap.md TODO #25)', () => {
+    const sharpening = deco('Sharpening PC1', { 2: 5 })
+    const irrelevant = deco('Gathering PB1', { 99: 3 })
+    const requirements: SkillRequirement[] = [{ skillId: 1, minPoints: 1 }]
+
+    expect(filterRelevantCuffs([sharpening, irrelevant], requirements, [2])).toEqual([sharpening])
+  })
 })

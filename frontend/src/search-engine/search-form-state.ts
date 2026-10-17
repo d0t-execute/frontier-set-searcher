@@ -22,7 +22,7 @@
  * losing if it silently falls back to defaults.
  */
 
-import type { HunterTypeFilter } from './build-query'
+import type { HunterTypeFilter, PinnedCuffSlot } from './build-query'
 import type { PinnedSlot } from './pinned-armor'
 import type { ResistanceElement, SkillRequirement } from './types'
 
@@ -43,7 +43,7 @@ export interface SearchFormState {
   readonly weaponSlotCount: number
   readonly hunterTypeFilter: HunterTypeFilter
   readonly pinnedArmor: readonly (readonly [string, PinnedSlot])[]
-  readonly pinnedCuffIds: readonly string[]
+  readonly pinnedCuffSlots: readonly PinnedCuffSlot[]
   readonly pinnedSlotDecorationIds: readonly (readonly [string, readonly string[]])[]
   readonly excludedArmorIds: readonly string[]
   readonly excludedDecorationIds: readonly string[]
@@ -61,6 +61,14 @@ export interface SearchFormState {
  * save/load-a-search-by-code feature (docs/feedback.md #18), which decodes
  * into this exact shape and needs the same validation this module already
  * does for its own `localStorage` value. */
+function isPinnedCuffSlot(value: unknown): value is PinnedCuffSlot {
+  if (typeof value !== 'object' || value === null) return false
+  const v = value as Record<string, unknown>
+  if (v.mode === 'exact') return typeof v.cuffId === 'string'
+  if (v.mode === 'skill') return typeof v.skillId === 'number'
+  return false
+}
+
 export function validateSearchFormState(parsed: unknown): SearchFormState | null {
   if (typeof parsed !== 'object' || parsed === null) return null
   const p = parsed as Record<string, unknown>
@@ -75,7 +83,8 @@ export function validateSearchFormState(parsed: unknown): SearchFormState | null
     typeof p.weaponSlotCount !== 'number' ||
     (p.hunterTypeFilter !== 'blademaster' && p.hunterTypeFilter !== 'gunner') ||
     !Array.isArray(p.pinnedArmor) ||
-    !Array.isArray(p.pinnedCuffIds) ||
+    !Array.isArray(p.pinnedCuffSlots) ||
+    !p.pinnedCuffSlots.every(isPinnedCuffSlot) ||
     !Array.isArray(p.pinnedSlotDecorationIds) ||
     !Array.isArray(p.excludedArmorIds) ||
     !Array.isArray(p.excludedDecorationIds) ||

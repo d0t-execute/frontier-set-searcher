@@ -114,7 +114,7 @@ describe('ResultPage', () => {
       candidateId: 'head:0001',
       decorationIds: [],
     })
-    expect(initialState.pinnedCuffIds).toEqual(['cuff:C001'])
+    expect(initialState.pinnedCuffSlots).toEqual([{ mode: 'exact', cuffId: 'cuff:C001' }])
     expect(initialState.requirements).toEqual(STATE.requirements)
   })
 

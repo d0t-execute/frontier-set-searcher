@@ -563,6 +563,28 @@ export function buildModel(
   const cuffBudgetRow = cuffs.length > 0 ? rowCursor++ : -1
   const cuffCountRow = cuffs.length > 0 ? rowCursor++ : -1
   const cuffHidenCountRow = cuffs.length > 0 ? rowCursor++ : -1
+
+  // One row per distinct skill pinned to a cuff slot (docs/skill-system-
+  // roadmap.md TODO #25) -- "pin a cuff slot to skill X" doesn't narrow down
+  // *which* cuff variant, only requires the free pool to supply at least as
+  // many equipped cuffs granting that skill as it was pinned that many times
+  // (duplicates allowed, same convention as `pinnedCuffs`/`PinnedSlot`'s own
+  // decoration lists -- pinning the same skill twice needs two qualifying
+  // cuffs, which may or may not be the same variant). A plain `>= required`
+  // row, same shape as a skill requirement row, fed by every relevant cuff's
+  // own equipped *count* (not just whether it's chosen at all) -- mirrors
+  // `cuffCountRow`'s own per-column entries exactly, since both are counting
+  // equipped cuff units. Offset by however many already-pinned (exact-id)
+  // cuffs already grant this skill, the same `pinnedPointsTowards`-style
+  // adjustment a skill requirement row gets.
+  const pinnedCuffSkillCounts = new Map<SkillId, number>()
+  for (const skillId of options.pinnedCuffSkillIds ?? []) {
+    pinnedCuffSkillCounts.set(skillId, (pinnedCuffSkillCounts.get(skillId) ?? 0) + 1)
+  }
+  const pinnedCuffSkillIds = [...pinnedCuffSkillCounts.keys()]
+  const pinnedCuffSkillRowOf = new Map(pinnedCuffSkillIds.map((id, i) => [id, rowCursor + i]))
+  rowCursor += pinnedCuffSkillIds.length
+
   const numRows = rowCursor
 
   const rowLower = new Array<number>(numRows)
@@ -613,6 +635,12 @@ export function buildModel(
     rowUpper[cuffCountRow] = Math.max(0, MAX_EQUIPPED_CUFFS - pinnedCuffCount)
     rowLower[cuffHidenCountRow] = -highs.infinity
     rowUpper[cuffHidenCountRow] = Math.max(0, MAX_EQUIPPED_HIDEN_CUFFS - pinnedHidenCuffCount)
+  }
+  for (const skillId of pinnedCuffSkillIds) {
+    const required = pinnedCuffSkillCounts.get(skillId)!
+    const alreadyPinned = pinnedCuffs.filter((c) => pointsTowards(c.skills, skillId) !== 0).length
+    rowLower[pinnedCuffSkillRowOf.get(skillId)!] = required - alreadyPinned
+    rowUpper[pinnedCuffSkillRowOf.get(skillId)!] = highs.infinity
   }
 
   const columns: ColumnMeta[] = []
@@ -742,6 +770,11 @@ export function buildModel(
           const points = pointsTowards(cuff.skills, skillId)
           if (points !== 0) entries.set(excludedSkillRow(j), count * points)
         })
+        for (const skillId of pinnedCuffSkillIds) {
+          if (pointsTowards(cuff.skills, skillId) !== 0) {
+            entries.set(pinnedCuffSkillRowOf.get(skillId)!, count)
+          }
+        }
         for (const m of tierMachinery) {
           const points = pointsTowards(cuff.skills, m.skillId)
           if (points !== 0) entries.set(totalRowOf.get(m.skillId)!, count * points)

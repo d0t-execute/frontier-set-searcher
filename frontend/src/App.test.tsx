@@ -195,6 +195,7 @@ describe('App', () => {
         pinnedSlotDecorations: new Map(),
         resistanceFloors: [],
         excludedActiveSkillIds: [],
+        pinnedCuffSkillIds: [],
       },
       // The "Unavailable"-leaf cuff is excluded by default (see App.tsx's
       // DEFAULT_EXCLUDED_CUFF_CATEGORIES) -- both real ones pass.
@@ -227,6 +228,7 @@ describe('App', () => {
         pinnedSlotDecorations: new Map(),
         resistanceFloors: [],
         excludedActiveSkillIds: [],
+        pinnedCuffSkillIds: [],
       },
       [BUNDLE.cuffs[0], BUNDLE.cuffs[1]],
     )

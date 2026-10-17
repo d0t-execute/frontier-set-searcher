@@ -64,7 +64,7 @@ const EMPTY_FORM_STATE: QueryFormState = {
   weaponSlotCount: 0,
   hunterTypeFilter: 'blademaster',
   pinnedArmor: new Map(),
-  pinnedCuffIds: [],
+  pinnedCuffSlots: [],
   pinnedSlotDecorationIds: new Map(),
   excludedArmorIds: new Set(),
   excludedDecorationIds: new Set(),
@@ -283,7 +283,7 @@ describe('buildSearchQuery', () => {
     const query = buildSearchQuery(bundleWithCuffs, {
       ...EMPTY_FORM_STATE,
       excludedCuffIds: new Set(['a']),
-      pinnedCuffIds: ['a'],
+      pinnedCuffSlots: [{ mode: 'exact', cuffId: 'a' }],
     })
 
     expect(query.cuffs.map((c) => c.id)).toEqual(['b'])

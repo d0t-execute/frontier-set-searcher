@@ -830,6 +830,106 @@ describe('buildModel with options.excludedActiveSkillIds (docs/skill-system-road
   })
 })
 
+describe('buildModel with options.pinnedCuffSkillIds (docs/skill-system-roadmap.md TODO #25)', () => {
+  it('rejects a build when no free cuff grants the pinned skill', () => {
+    const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Helm', { 1: 3 })] }]
+    const { model } = buildModel(highs, slots, [], [{ skillId: 1, minPoints: 3 }], {
+      pinnedCuffSkillIds: [2],
+    })
+
+    const { modelStatus, native } = solve(model)
+    expect(modelStatus).toBe(highs.constants.modelStatus.infeasible)
+    native.dispose()
+  })
+
+  it('equips the only cuff granting the pinned skill, without naming it by id', () => {
+    const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Helm', { 1: 3 })] }]
+    const cuffs = [cuff('Sharpening PC1', 1, { 2: 5 })]
+    const { model, columns } = buildModel(
+      highs,
+      slots,
+      [],
+      [{ skillId: 1, minPoints: 3 }],
+      { pinnedCuffSkillIds: [2] },
+      cuffs,
+    )
+
+    const { modelStatus, colValue, native } = solve(model)
+    expect(modelStatus).toBe(highs.constants.modelStatus.optimal)
+    const decoded = decodeSolution(columns, colValue)
+    expect(decoded.cuffs.map((c) => c.id)).toEqual(['Sharpening PC1'])
+    native.dispose()
+  })
+
+  it('lets the solver pick whichever matching cuff variant serves the rest of the build best', () => {
+    const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Helm', { 1: 3 })] }]
+    // Both cost the full slot-cost budget (2 each), so only one can ever be
+    // equipped at once -- a genuine choice between variants, not "equip both."
+    const cuffs = [cuff('Sharpening PC1', 2, { 2: 5 }), cuff('Sharpening PC2', 2, { 2: 5, 3: 10 })]
+    const { model, columns } = buildModel(
+      highs,
+      slots,
+      [],
+      [{ skillId: 1, minPoints: 3 }],
+      { pinnedCuffSkillIds: [2] },
+      cuffs,
+    )
+
+    // Both grant the pinned skill, but PC2 also grants bonus points nobody
+    // asked for -- the default (non-exact-matches) ranking prefers it.
+    const { modelStatus, colValue, native } = solve(model)
+    expect(modelStatus).toBe(highs.constants.modelStatus.optimal)
+    const decoded = decodeSolution(columns, colValue)
+    expect(decoded.cuffs.map((c) => c.id)).toEqual(['Sharpening PC2'])
+    native.dispose()
+  })
+
+  it('requires two distinct equipped units when the same skill is pinned to both cuff slots', () => {
+    const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Helm', { 1: 3 })] }]
+    const cuffs = [cuff('Sharpening PC1', 0, { 2: 5 })]
+    const { model, columns } = buildModel(
+      highs,
+      slots,
+      [],
+      [{ skillId: 1, minPoints: 3 }],
+      { pinnedCuffSkillIds: [2, 2] },
+      cuffs,
+    )
+
+    const { modelStatus, colValue, native } = solve(model)
+    expect(modelStatus).toBe(highs.constants.modelStatus.optimal)
+    const decoded = decodeSolution(columns, colValue)
+    expect(decoded.cuffs.map((c) => c.id)).toEqual(['Sharpening PC1', 'Sharpening PC1'])
+    native.dispose()
+  })
+
+  it('counts an already-pinned (exact-id) cuff that happens to grant the pinned skill, needing no free cuff', () => {
+    const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Helm', { 1: 3 })] }]
+    const pinnedCuffs = [cuff('Sharpening PC1', 1, { 2: 5 })]
+    const { model } = buildModel(highs, slots, [], [{ skillId: 1, minPoints: 3 }], {
+      pinnedCuffSkillIds: [2],
+      pinnedCuffs,
+    })
+
+    const { modelStatus, native } = solve(model)
+    expect(modelStatus).toBe(highs.constants.modelStatus.optimal)
+    native.dispose()
+  })
+
+  it("still requires a free cuff when the already-pinned exact cuff doesn't grant the pinned skill", () => {
+    const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Helm', { 1: 3 })] }]
+    const pinnedCuffs = [cuff('Guard Up SZ', 1, { 3: 5 })]
+    const { model } = buildModel(highs, slots, [], [{ skillId: 1, minPoints: 3 }], {
+      pinnedCuffSkillIds: [2],
+      pinnedCuffs,
+    })
+
+    const { modelStatus, native } = solve(model)
+    expect(modelStatus).toBe(highs.constants.modelStatus.infeasible)
+    native.dispose()
+  })
+})
+
 describe('buildModel with options.pinnedCuffs', () => {
   it("credits a pinned cuff's skills toward a requirement without any cuff column existing", () => {
     const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Helm', { 1: 3 })] }]

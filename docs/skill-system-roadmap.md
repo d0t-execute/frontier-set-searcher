@@ -1540,29 +1540,59 @@ directly against the current codebase while triaging this doc's other "Not start
 
 ## 25. Pin a skill or Zenith skill instead of a specific cuff
 
-**Status: Not started.** The project owner: cuffs are partially random (same name, multiple variants
-with different exact point values/sub-skills -- confirmed by the project owner, e.g. the "SZ"/"PZ"
-Zenith cuffs' own variation), so forcing one *specific* cuff id (today's only pinning option, see TODO
-#7/`CuffPicker.tsx`) is often more rigid than what the player actually wants. Requests the ability to
-instead pin by the skill (or Zenith skill) a cuff grants, letting the solver pick *which* specific
-cuff variant best serves the rest of the build -- i.e. pinning becomes "equip some cuff that grants
-skill X" rather than "equip cuff id Y specifically," with the specific-variant pin from TODO #7 kept
-as a (presumably still-useful) separate, more precise option alongside it.
+**Status (2026-10-18): COMPLETE.** The project owner: cuffs are partially random (same name, multiple
+variants with different exact point values/sub-skills -- confirmed by the project owner, e.g. the
+"SZ"/"PZ" Zenith cuffs' own variation), so forcing one *specific* cuff id (the existing TODO #7
+pin) is often more rigid than what the player actually wants. Adds a second per-slot pin mode:
+pin by the skill (or Zenith skill) a cuff grants, letting the solver pick *which* specific cuff
+variant best serves the rest of the build, additive alongside the exact-cuff pin rather than
+replacing it.
 
-Needs design, not just implementation -- open questions to raise with the project owner before
-building:
-- How is "pin a skill via a cuff" different from already just adding that skill as a normal search
-  requirement (`SkillPicker.tsx`)? The likely answer: a requirement only sets a minimum threshold the
-  *whole build* must reach from any source, while this feature specifically forces a **cuff slot** to
-  be spent on that skill regardless of whether another threshold already covers it -- worth confirming
-  this distinction is actually the intent before building it.
-- For a Zenith-skill pin specifically: does the player want "the single best cuff variant for this
-  Zenith skill" (closest in spirit to the existing per-piece pin, just chosen automatically) or "any
-  cuff of this Zenith skill, let the *decoration/armor* solver optimize around whichever variant ends
-  up best" -- these likely need different modeling (the latter would need `ilp-model.ts`'s cuff
-  columns grouped by skill/Zenith-skill rather than one-hot per exact cuff id, a nontrivial change).
-- Where does this live in the UI -- a third mode inside `CuffPicker.tsx`'s existing per-slot picker
-  (search cuffs vs. search skills, toggled somehow), or a wholly separate control?
+The three open design questions from this entry's original draft, resolved by the project owner:
+1. A skill-mode cuff pin is distinct from adding that skill as a normal search requirement, exactly
+   as drafted: a requirement sets a build-wide minimum from any source, while this pin specifically
+   forces a **cuff slot** to be spent on that skill regardless of whether another source already
+   covers the threshold.
+2. For a Zenith-skill pin, the solver should freely choose whichever qualifying cuff variant best
+   serves the rest of the build, not auto-pick a single "best" one up front -- this needed real
+   solver modeling, not a shortcut.
+3. The UI reuses the existing `CuffPicker.tsx`, with a new per-slot mode toggle rather than a
+   separate control.
+
+Implementation, bottom-up:
+- **`types.ts`**: new `SearchOptions.pinnedCuffSkillIds` -- a flat list of pinned skill ids
+  (duplicates allowed, same "repeats = count" convention as `pinnedCuffs`).
+- **`ilp-model.ts`**: cuffs are already modeled as a shared, unordered pool (not discrete numbered
+  slots), bounded only by aggregate budget/count/Hiden-count rows -- so this needed no new per-slot
+  column machinery. One new row per distinct pinned skill id requires the summed equipped-count of
+  cuffs granting that skill to reach however many times it was pinned (offset by any already-pinned
+  exact cuff that happens to also grant it), reusing the same per-column coefficient convention
+  `cuffCountRow` already uses.
+- **`expand.ts`**: `filterRelevantDecorations`/`filterRelevantCuffs` gained an optional
+  `extraSkillIds` parameter so a cuff relevant *only* to a pinned skill (not a search requirement)
+  still reaches the solver; `engine.ts` passes `options.pinnedCuffSkillIds` through.
+- **`build-query.ts`**: new `PinnedCuffSlot = {mode: 'exact'; cuffId} | {mode: 'skill'; skillId}`
+  discriminated union; `QueryFormState.pinnedCuffIds: string[]` became `pinnedCuffSlots:
+  PinnedCuffSlot[]`; `resolvePinnedCuffs` now returns `{pinnedCuffs, pinnedCuffSkillIds}`, splitting
+  the two pin kinds apart for `buildSearchQuery` to pass to the solver separately.
+- **`CuffPicker.tsx`**: each slot gained an "Exact cuff"/"By skill" toggle (only shown while nothing
+  is pinned yet or "Change" was clicked); a skill-mode pin displays as "Any cuff granting X" instead
+  of a resolved cuff name. Took a new `pinnableSkills` prop covering both normal and Zenith skills,
+  since a cuff can grant either.
+- **`search-form-state.ts`** / **`query-code.ts`**: both persistence paths updated for the renamed
+  field and its new shape -- the human-readable query code represents a skill-mode pin as a
+  `"Skill: <name>"`-prefixed line in the existing "Pinned cuffs" section, resolved against a combined
+  skill+Zenith-skill index (`cuffSkillIndex`), distinct from a plain cuff-name line.
+- **`ResultPage.tsx`**: "Use as a base for a new search" now reconstructs a shared result's own
+  cuffs as exact-mode pins (a solved result names specific cuffs, never a skill).
+
+Verified: `tsc -b` and `oxlint` clean; the full Vitest suite passes (373 tests, including new
+`ilp-model.test.ts` coverage for the pinned-cuff-skill row -- rejecting with no matching free cuff,
+picking the better of two matching variants under the cuff budget, requiring two distinct equipped
+units when the same skill is pinned twice, and crediting an already-pinned exact cuff that also
+grants the skill); a live browser pass pinned Cuff slot 1 to "Sharpness" by skill, searched for a
+`Sharpening Artisan` requirement, and confirmed the solver equipped a real cuff (Incitement PC1)
+that grants Sharpness to satisfy the pin, without that cuff being named anywhere in the search.
 
 ## 26. First external-feedback quick-wins batch
 

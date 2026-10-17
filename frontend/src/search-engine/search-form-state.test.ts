@@ -12,7 +12,10 @@ const STATE: SearchFormState = {
   weaponSlotCount: 2,
   hunterTypeFilter: 'gunner',
   pinnedArmor: [['head', { candidateId: 'head:0001', decorationIds: ['D001'] }]],
-  pinnedCuffIds: ['cuff:C001'],
+  pinnedCuffSlots: [
+    { mode: 'exact', cuffId: 'cuff:C001' },
+    { mode: 'skill', skillId: 5 },
+  ],
   pinnedSlotDecorationIds: [['chest', ['D002', 'D002']]],
   excludedArmorIds: ['head:0002'],
   excludedDecorationIds: ['D003'],

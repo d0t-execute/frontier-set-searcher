@@ -33,7 +33,7 @@
  */
 
 import { WEAPON_NO_ZENITH_SKILL_KEY } from './build-query'
-import type { HunterTypeFilter } from './build-query'
+import type { HunterTypeFilter, PinnedCuffSlot } from './build-query'
 import type { GearCategoryGroup } from './gear-categories'
 import type { PinnedSlot } from './pinned-armor'
 import { validateSearchFormState } from './search-form-state'
@@ -110,6 +110,17 @@ function weaponZenithIndex(zenithSkills: readonly { readonly id: number; readonl
   ])
 }
 
+/** Resolves a cuff skill-mode pin's skill id (docs/skill-system-roadmap.md
+ * TODO #25) -- a cuff can grant either a normal or a Zenith skill, so this
+ * combines both catalogs, same convention `App.tsx`'s own
+ * `pinnableCuffSkillOptions` already uses for the picker itself. */
+function cuffSkillIndex(catalog: QueryCodeCatalog): NameIndex {
+  return buildNameIndex([
+    ...catalog.skills.map((s) => ({ id: String(s.id), name: s.name })),
+    ...catalog.zenithSkills.map((s) => ({ id: String(s.id), name: s.name })),
+  ])
+}
+
 function flattenCategoryGroups(groups: readonly GearCategoryGroup[]): NameIndex {
   return buildNameIndex(groups.flatMap((g) => g.categories.map((c) => ({ id: c.key, name: c.label }))))
 }
@@ -146,6 +157,7 @@ export async function encodeQueryCode(state: SearchFormState, catalog: QueryCode
   const armorIdx = buildNameIndex(catalog.armorCandidates)
   const decorationIdx = buildNameIndex(catalog.decorations)
   const cuffIdx = buildNameIndex(catalog.cuffs)
+  const cuffSkillIdx = cuffSkillIndex(catalog)
   const gearCategoryIdx = flattenCategoryGroups(catalog.gearCategories)
   const cuffCategoryIdx = flattenCategoryGroups(catalog.cuffCategories)
   const decorationCategoryIdx = flattenCategoryGroups(catalog.decorationCategories)
@@ -199,7 +211,11 @@ export async function encodeQueryCode(state: SearchFormState, catalog: QueryCode
     ),
     renderList(
       'Pinned cuffs',
-      state.pinnedCuffIds.map((id, i) => `slot ${i + 1}: ${cuffIdx.nameFor(id)}`),
+      state.pinnedCuffSlots.map((slot, i) =>
+        slot.mode === 'exact'
+          ? `slot ${i + 1}: ${cuffIdx.nameFor(slot.cuffId)}`
+          : `slot ${i + 1}: Skill: ${cuffSkillIdx.nameFor(String(slot.skillId))}`,
+      ),
     ),
     renderList(
       'Pinned slot decorations (no piece pinned)',
@@ -321,6 +337,36 @@ function decodeSlotNamePairs(
   return result
 }
 
+/** Decodes the "Pinned cuffs" section's `"slot N: <value>"` lines into
+ * `PinnedCuffSlot`s (docs/skill-system-roadmap.md TODO #25) -- a `"Skill: "`
+ * prefixed value is a skill-mode pin (resolved against `skillIdx`, which
+ * covers both normal and Zenith skills via `cuffSkillIndex`); anything else
+ * is an exact-cuff pin (resolved against `cuffIdx`). The leading `"slot N: "`
+ * itself only reflects array order on encode and carries no information back
+ * in, same as `pinnedCuffIds`'s own former flat-list convention. */
+function decodePinnedCuffSlots(
+  lines: readonly string[],
+  cuffIdx: NameIndex,
+  skillIdx: NameIndex,
+): readonly PinnedCuffSlot[] | null {
+  const result: PinnedCuffSlot[] = []
+  for (const line of lines) {
+    const sep = line.indexOf(': ')
+    if (sep === -1) return null
+    const value = line.slice(sep + 2)
+    if (value.startsWith('Skill: ')) {
+      const skillId = skillIdx.idFor(value.slice('Skill: '.length))
+      if (skillId === null) return null
+      result.push({ mode: 'skill', skillId: Number(skillId) })
+    } else {
+      const cuffId = cuffIdx.idFor(value)
+      if (cuffId === null) return null
+      result.push({ mode: 'exact', cuffId })
+    }
+  }
+  return result
+}
+
 function groupBySlot(pairs: readonly (readonly [string, string])[]): ReadonlyMap<string, readonly string[]> {
   const bySlot = new Map<string, string[]>()
   for (const [slotId, id] of pairs) {
@@ -349,6 +395,7 @@ export async function decodeQueryCode(
   const armorIdx = buildNameIndex(catalog.armorCandidates)
   const decorationIdx = buildNameIndex(catalog.decorations)
   const cuffIdx = buildNameIndex(catalog.cuffs)
+  const cuffSkillIdx = cuffSkillIndex(catalog)
   const gearCategoryIdx = flattenCategoryGroups(catalog.gearCategories)
   const cuffCategoryIdx = flattenCategoryGroups(catalog.cuffCategories)
   const decorationCategoryIdx = flattenCategoryGroups(catalog.decorationCategories)
@@ -401,7 +448,7 @@ export async function decodeQueryCode(
     doc.sections.get('Decorations in pinned armor') ?? [],
     decorationIdx,
   )
-  const pinnedCuffPairs = decodeSlotNamePairs(doc.sections.get('Pinned cuffs') ?? [], cuffIdx)
+  const pinnedCuffSlots = decodePinnedCuffSlots(doc.sections.get('Pinned cuffs') ?? [], cuffIdx, cuffSkillIdx)
   const slotDecorationPairs = decodeSlotNamePairs(
     doc.sections.get('Pinned slot decorations (no piece pinned)') ?? [],
     decorationIdx,
@@ -421,7 +468,7 @@ export async function decodeQueryCode(
     (weaponZenithSection !== undefined && excludedWeaponZenithSkillIds === null) ||
     pinnedArmorPieces === null ||
     pinnedArmorDecorations === null ||
-    pinnedCuffPairs === null ||
+    pinnedCuffSlots === null ||
     slotDecorationPairs === null ||
     excludedArmorIds === null ||
     excludedDecorationIds === null ||
@@ -436,7 +483,6 @@ export async function decodeQueryCode(
     slotId,
     { candidateId, decorationIds: decorationsBySlot.get(slotId) ?? [] },
   ])
-  const pinnedCuffIds = pinnedCuffPairs.map(([, id]) => id)
   const pinnedSlotDecorationIds = [...groupBySlot(slotDecorationPairs).entries()]
 
   return validateSearchFormState({
@@ -449,7 +495,7 @@ export async function decodeQueryCode(
     weaponSlotCount,
     hunterTypeFilter,
     pinnedArmor,
-    pinnedCuffIds,
+    pinnedCuffSlots,
     pinnedSlotDecorationIds,
     excludedArmorIds,
     excludedDecorationIds,

@@ -17,7 +17,7 @@ import {
   slotsAfterHunterTypeFilter,
   WEAPON_NO_ZENITH_SKILL_KEY,
 } from './search-engine/build-query'
-import type { HunterTypeFilter, QueryFormState } from './search-engine/build-query'
+import type { HunterTypeFilter, PinnedCuffSlot, QueryFormState } from './search-engine/build-query'
 import { CUFF_CATEGORY_GROUPS } from './search-engine/cuff-categories'
 import { DECORATION_CATEGORY_GROUPS } from './search-engine/decoration-categories'
 import { findUnreachableRequirements } from './search-engine/feasibility'
@@ -191,7 +191,7 @@ export interface AppInitialState {
   readonly weaponSlotCount: number
   readonly hunterTypeFilter?: HunterTypeFilter
   readonly pinnedArmor: ReadonlyMap<string, PinnedSlot>
-  readonly pinnedCuffIds: readonly string[]
+  readonly pinnedCuffSlots: readonly PinnedCuffSlot[]
   readonly pinnedSlotDecorationIds?: ReadonlyMap<string, readonly string[]>
   readonly excludedArmorIds?: ReadonlySet<string>
   readonly excludedDecorationIds?: ReadonlySet<string>
@@ -273,10 +273,10 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
   const [pinnedArmor, setPinnedArmor] = useState<ReadonlyMap<string, PinnedSlot>>(
     () => new Map(initialState?.pinnedArmor ?? persisted?.pinnedArmor ?? []),
   )
-  // Up to MAX_EQUIPPED_CUFFS (2) cuff ids, index 0 = cuff slot 1 -- see
-  // CuffPicker's own docstring and SearchOptions.pinnedCuffs.
-  const [pinnedCuffIds, setPinnedCuffIds] = useState<readonly string[]>(() => [
-    ...(initialState?.pinnedCuffIds ?? persisted?.pinnedCuffIds ?? []),
+  // Up to MAX_EQUIPPED_CUFFS (2) pins, index 0 = cuff slot 1 -- see
+  // CuffPicker's own docstring and PinnedCuffSlot.
+  const [pinnedCuffSlots, setPinnedCuffSlots] = useState<readonly PinnedCuffSlot[]>(() => [
+    ...(initialState?.pinnedCuffSlots ?? persisted?.pinnedCuffSlots ?? []),
   ])
   // Decorations forced into a slot without pinning its piece (TODO #12) --
   // see ArmorPicker.tsx's own docstring.
@@ -387,6 +387,19 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
     [bundle],
   )
 
+  // {id, name} pairs for CuffPicker's "By skill" pin mode (docs/skill-system-
+  // roadmap.md TODO #25) -- unlike excludableSkillOptions above, includes
+  // Zenith skills too (the project owner: "pin a skill or Zenith skill
+  // instead of a specific cuff"), since a cuff can grant either.
+  const pinnableCuffSkillOptions = useMemo(
+    () =>
+      [...(bundle?.skills ?? []), ...(bundle?.zenithSkills ?? [])].map((s) => ({
+        id: String(s.id),
+        name: s.name,
+      })),
+    [bundle],
+  )
+
   // Lets query-code.ts resolve every id it stores (skills, armor,
   // decorations, cuffs) to its real name and back -- see that module's own
   // docstring (2026-10-17, per the project owner: "human readable... instead
@@ -482,7 +495,9 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
     return parts.join(', ')
   })()
   const pinnedCuffsSummary =
-    pinnedCuffIds.length === 0 ? 'None pinned' : `${pluralize(pinnedCuffIds.length, 'cuff')} pinned`
+    pinnedCuffSlots.length === 0
+      ? 'None pinned'
+      : `${pluralize(pinnedCuffSlots.length, 'cuff')} pinned`
   const exclusionsSummary = (() => {
     const total =
       excludedArmorIds.size + excludedDecorationIds.size + excludedCuffIds.size + excludedSkillIds.size
@@ -521,7 +536,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
     weaponSlotCount,
     hunterTypeFilter,
     pinnedArmor,
-    pinnedCuffIds,
+    pinnedCuffSlots,
     pinnedSlotDecorationIds,
     excludedArmorIds,
     excludedDecorationIds,
@@ -549,7 +564,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
       weaponSlotCount,
       hunterTypeFilter,
       pinnedArmor: [...pinnedArmor.entries()],
-      pinnedCuffIds,
+      pinnedCuffSlots,
       pinnedSlotDecorationIds: [...pinnedSlotDecorationIds.entries()],
       excludedArmorIds: [...excludedArmorIds],
       excludedDecorationIds: [...excludedDecorationIds],
@@ -569,7 +584,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
     weaponSlotCount,
     hunterTypeFilter,
     pinnedArmor,
-    pinnedCuffIds,
+    pinnedCuffSlots,
     pinnedSlotDecorationIds,
     nonNegativeResistances,
     excludedArmorIds,
@@ -588,8 +603,15 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
     setErrorMessage(null)
     setReachedCap(false)
 
-    const { slots, decorations, cuffs, pinnedCuffs, pinnedSlotDecorations, excludedActiveSkillIds } =
-      buildSearchQuery(bundle, queryFormState)
+    const {
+      slots,
+      decorations,
+      cuffs,
+      pinnedCuffs,
+      pinnedSlotDecorations,
+      excludedActiveSkillIds,
+      pinnedCuffSkillIds,
+    } = buildSearchQuery(bundle, queryFormState)
 
     // Caught before ever handing this to the solver (docs/feedback.md Round 1
     // #14) -- a requirement flagged here is provably unreachable no matter
@@ -655,6 +677,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
         pinnedSlotDecorations,
         resistanceFloors: [...nonNegativeResistances].map((element) => ({ element, minTotal: 0 })),
         excludedActiveSkillIds,
+        pinnedCuffSkillIds,
       },
       cuffs,
     )
@@ -685,7 +708,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
         weaponSlotCount,
         hunterTypeFilter,
         pinnedArmor: [...pinnedArmor.entries()],
-        pinnedCuffIds,
+        pinnedCuffSlots,
         pinnedSlotDecorationIds: [...pinnedSlotDecorationIds.entries()],
         excludedArmorIds: [...excludedArmorIds],
         excludedDecorationIds: [...excludedDecorationIds],
@@ -713,7 +736,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
     setWeaponSlotCount(state.weaponSlotCount)
     setHunterTypeFilter(state.hunterTypeFilter)
     setPinnedArmor(new Map(state.pinnedArmor))
-    setPinnedCuffIds([...state.pinnedCuffIds])
+    setPinnedCuffSlots([...state.pinnedCuffSlots])
     setPinnedSlotDecorationIds(new Map(state.pinnedSlotDecorationIds))
     setExcludedArmorIds(new Set(state.excludedArmorIds))
     setExcludedDecorationIds(new Set(state.excludedDecorationIds))
@@ -882,14 +905,16 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
 
               <Disclosure title="Pin specific cuffs" summary={pinnedCuffsSummary}>
                 <p className="form-text">
-                  Pins a specific cuff to force the solver to use it. Type at least 2 characters to
-                  search.
+                  Pins a cuff slot to an exact cuff, or just to a skill (or Zenith skill) -- letting
+                  the solver pick whichever cuff variant best serves the rest of the build. Type at
+                  least 2 characters to search.
                 </p>
                 <CuffPicker
                   cuffs={bundle.cuffs}
-                  pinned={pinnedCuffIds}
-                  onChange={setPinnedCuffIds}
+                  pinned={pinnedCuffSlots}
+                  onChange={setPinnedCuffSlots}
                   skillNameById={bundle.skillNames}
+                  pinnableSkills={pinnableCuffSkillOptions}
                 />
               </Disclosure>
 

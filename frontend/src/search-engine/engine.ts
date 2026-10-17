@@ -143,7 +143,7 @@ export async function* search(
     for (const d of list) relevantDecorationsById.set(d.id, d)
   }
   const relevantDecorations = [...relevantDecorationsById.values()]
-  const relevantCuffs = filterRelevantCuffs(cuffs, requirements)
+  const relevantCuffs = filterRelevantCuffs(cuffs, requirements, options.pinnedCuffSkillIds ?? [])
   const highs = await getHighs()
   const { model, columns } = buildModel(
     highs,

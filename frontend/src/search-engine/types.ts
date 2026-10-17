@@ -182,6 +182,22 @@ export interface SearchOptions {
    * same "unknown defaults to the plain fallback" convention `skillTiers`
    * itself already uses. */
   readonly excludedActiveSkillIds?: readonly SkillId[]
+  /** Skill ids a cuff slot is pinned to (docs/skill-system-roadmap.md TODO
+   * #25) -- unlike `pinnedCuffs`, this doesn't name a specific cuff, only
+   * requires the free cuff pool to supply at least one equipped cuff granting
+   * this skill, letting the solver pick whichever variant serves the rest of
+   * the build best (cuffs are "partially random": the same name can carry
+   * different exact point values across copies). Duplicates allowed, same
+   * "flat list, repeats = count" convention as `pinnedCuffs`/a `PinnedSlot`'s
+   * own `decorationIds` -- pinning the same skill to both cuff slots requires
+   * two qualifying cuffs (which may or may not be the same variant), modeled
+   * by `ilp-model.ts`'s `buildModel` as one hard-constraint row per distinct
+   * skill id requiring its summed equipped count to reach however many times
+   * it was pinned, offset by any already-pinned (`pinnedCuffs`) cuff that
+   * happens to also grant it. The specific-cuff pin from `pinnedCuffs` stays
+   * available as a separate, more precise alternative -- this is additive,
+   * not a replacement. */
+  readonly pinnedCuffSkillIds?: readonly SkillId[]
 }
 
 export interface BuildResult {

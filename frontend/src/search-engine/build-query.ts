@@ -42,6 +42,19 @@ export type HunterTypeFilter = 'blademaster' | 'gunner'
  * collide with one. */
 export const WEAPON_NO_ZENITH_SKILL_KEY = 'none'
 
+/** One cuff slot's pin (docs/skill-system-roadmap.md TODO #25) -- either a
+ * specific cuff id (the original, precise TODO #7 pin, kept as-is) or a skill
+ * (normal or Zenith -- both share one numeric id space, see `DataBundle`'s
+ * own `skillNames`) the slot should be spent on without committing to which
+ * exact cuff variant grants it, since real cuffs are "partially random" (the
+ * same display name can carry different exact point values across copies).
+ * `CuffPicker.tsx` renders this as a per-slot mode toggle; `resolvePinnedCuffs`
+ * splits a list of these back into the solver's own `pinnedCuffs` (for
+ * `'exact'`) and `pinnedCuffSkillIds` (for `'skill'`). */
+export type PinnedCuffSlot =
+  | { readonly mode: 'exact'; readonly cuffId: string }
+  | { readonly mode: 'skill'; readonly skillId: number }
+
 /** Every control that shapes a query besides the skill requirements
  * themselves (kept separate since requirements are passed to `search()`
  * directly, untouched by any of this). */
@@ -53,9 +66,9 @@ export interface QueryFormState {
   readonly weaponSlotCount: number
   readonly hunterTypeFilter: HunterTypeFilter
   readonly pinnedArmor: ReadonlyMap<string, PinnedSlot>
-  /** Up to `MAX_EQUIPPED_CUFFS` cuff ids, index 0 = cuff slot 1 -- see
-   * `CuffPicker.tsx`'s own docstring. */
-  readonly pinnedCuffIds: readonly string[]
+  /** Up to `MAX_EQUIPPED_CUFFS` pins, index 0 = cuff slot 1 -- see
+   * `CuffPicker.tsx`'s own docstring and `PinnedCuffSlot`. */
+  readonly pinnedCuffSlots: readonly PinnedCuffSlot[]
   /** Decorations forced into a slot without pinning which candidate fills it
    * (docs/skill-system-roadmap.md TODO #12) -- keyed by `slotId`, a flat list
    * of decoration ids with duplicates allowed for multiple copies, same
@@ -319,20 +332,40 @@ export function decorationsAfterExcludedIds(
   return decorations.filter((d) => !excludedIds.has(d.id))
 }
 
-/** Resolves pinned cuff ids (see `QueryFormState.pinnedCuffIds`) to their full
- * `NamedCuff` data, dropping any id no longer present in the catalog (e.g. a
- * shared link from before a data re-export changed cuff ids -- silently
- * ignored rather than failing the whole query, same spirit as a pinned armor
- * piece that no longer resolves in `slotsAfterPinning` falling back to the
- * unpinned slot). */
+export interface ResolvedPinnedCuffs {
+  /** Exact-id pins (see `PinnedCuffSlot`), resolved to their full `NamedCuff`
+   * data -- `SearchOptions.pinnedCuffs`. */
+  readonly pinnedCuffs: NamedCuff[]
+  /** Skill-mode pins (see `PinnedCuffSlot`), as plain numeric skill ids --
+   * `SearchOptions.pinnedCuffSkillIds`. Duplicates preserved (pinning the
+   * same skill to both cuff slots needs two qualifying cuffs). */
+  readonly pinnedCuffSkillIds: number[]
+}
+
+/** Resolves `QueryFormState.pinnedCuffSlots` into the two shapes `search()`
+ * takes -- an `'exact'` pin becomes a full `NamedCuff` (dropping any id no
+ * longer present in the catalog, e.g. a shared link from before a data
+ * re-export changed cuff ids, silently ignored rather than failing the whole
+ * query, same spirit as a pinned armor piece that no longer resolves in
+ * `slotsAfterPinning` falling back to the unpinned slot); a `'skill'` pin
+ * passes its skill id straight through untouched, since there's no specific
+ * item to resolve or drop in the first place. */
 export function resolvePinnedCuffs(
   cuffs: readonly NamedCuff[],
-  pinnedCuffIds: readonly string[],
-): NamedCuff[] {
+  pinnedCuffSlots: readonly PinnedCuffSlot[],
+): ResolvedPinnedCuffs {
   const cuffsById = new Map(cuffs.map((c) => [c.id, c]))
-  return pinnedCuffIds
-    .map((id) => cuffsById.get(id))
-    .filter((c): c is NamedCuff => c !== undefined)
+  const pinnedCuffs: NamedCuff[] = []
+  const pinnedCuffSkillIds: number[] = []
+  for (const slot of pinnedCuffSlots) {
+    if (slot.mode === 'exact') {
+      const cuff = cuffsById.get(slot.cuffId)
+      if (cuff) pinnedCuffs.push(cuff)
+    } else {
+      pinnedCuffSkillIds.push(slot.skillId)
+    }
+  }
+  return { pinnedCuffs, pinnedCuffSkillIds }
 }
 
 /** Resolves `QueryFormState.pinnedSlotDecorationIds` into the
@@ -375,6 +408,10 @@ export interface BuiltQuery {
    * `QueryFormState.excludedSkillIds`'s own docstring for why this is a
    * solver constraint rather than another pool filter here). */
   readonly excludedActiveSkillIds: number[]
+  /** `state.pinnedCuffSlots`'s `'skill'`-mode entries, as plain numeric skill
+   * ids -- handed straight through to `SearchOptions.pinnedCuffSkillIds` (see
+   * `PinnedCuffSlot`'s own docstring). */
+  readonly pinnedCuffSkillIds: number[]
 }
 
 /** The inverse direction of `buildWeaponSlot`: given which weapon candidate a
@@ -451,12 +488,20 @@ export function buildSearchQuery(bundle: DataBundle, state: QueryFormState): Bui
     cuffsAfterCategoryFilter(bundle.cuffs, state.excludedCuffCategories),
     state.excludedCuffIds,
   )
-  const pinnedCuffs = resolvePinnedCuffs(bundle.cuffs, state.pinnedCuffIds)
+  const { pinnedCuffs, pinnedCuffSkillIds } = resolvePinnedCuffs(bundle.cuffs, state.pinnedCuffSlots)
   const pinnedSlotDecorations = resolvePinnedSlotDecorations(
     pinnableDecorations,
     state.pinnedSlotDecorationIds,
     state.pinnedArmor,
   )
   const excludedActiveSkillIds = [...state.excludedSkillIds].map(Number)
-  return { slots, decorations, cuffs, pinnedCuffs, pinnedSlotDecorations, excludedActiveSkillIds }
+  return {
+    slots,
+    decorations,
+    cuffs,
+    pinnedCuffs,
+    pinnedSlotDecorations,
+    excludedActiveSkillIds,
+    pinnedCuffSkillIds,
+  }
 }

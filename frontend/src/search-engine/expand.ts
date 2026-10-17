@@ -1,4 +1,4 @@
-import type { Cuff, Decoration, SkillRequirement } from './types'
+import type { Cuff, Decoration, SkillId, SkillRequirement } from './types'
 
 /**
  * A decoration that contributes to none of the requested skills can never
@@ -8,12 +8,21 @@ import type { Cuff, Decoration, SkillRequirement } from './types'
  * it, every slot gets decoration columns for *every* decoration in the
  * catalog (hundreds in the real dataset) regardless of relevance, which
  * inflates the model with columns that can only ever sit at "place none."
+ *
+ * `extraSkillIds` (docs/skill-system-roadmap.md TODO #25) widens "relevant"
+ * beyond the requested skills -- a cuff pinned to a skill by
+ * `SearchOptions.pinnedCuffSkillIds` needs its own matching cuffs to reach
+ * `buildModel` as real columns even when that skill was never also asked for
+ * as a search requirement, since it's the *only* way the solver could ever
+ * satisfy that pin. Decorations have no equivalent pin-by-skill feature
+ * today, so every `filterRelevantDecorations` call site simply omits this.
  */
 export function filterRelevantDecorations(
   decorations: readonly Decoration[],
   requirements: readonly SkillRequirement[],
+  extraSkillIds: readonly SkillId[] = [],
 ): Decoration[] {
-  const requestedSkillIds = new Set(requirements.map((r) => r.skillId))
+  const requestedSkillIds = new Set([...requirements.map((r) => r.skillId), ...extraSkillIds])
   return decorations.filter((d) => d.skills.some((s) => requestedSkillIds.has(s.skillId)))
 }
 
@@ -25,6 +34,7 @@ export function filterRelevantDecorations(
 export function filterRelevantCuffs(
   cuffs: readonly Cuff[],
   requirements: readonly SkillRequirement[],
+  extraSkillIds: readonly SkillId[] = [],
 ): Cuff[] {
-  return filterRelevantDecorations(cuffs, requirements)
+  return filterRelevantDecorations(cuffs, requirements, extraSkillIds)
 }

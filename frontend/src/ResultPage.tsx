@@ -132,7 +132,7 @@ export function ResultPage({ encoded, onUseAsBase, onBackToSearch }: ResultPageP
       weaponSlotCount: state.weaponSlotCount,
       hunterTypeFilter: state.hunterTypeFilter,
       pinnedArmor: pinnedArmorFromResult(result.picks, result.decorations),
-      pinnedCuffIds: result.cuffs.map((c) => c.id),
+      pinnedCuffSlots: result.cuffs.map((c) => ({ mode: 'exact' as const, cuffId: c.id })),
       excludedArmorIds: new Set(state.excludedArmorIds),
       excludedDecorationIds: new Set(state.excludedDecorationIds),
       excludedCuffIds: new Set(state.excludedCuffIds),
