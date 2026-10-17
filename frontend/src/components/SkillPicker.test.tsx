@@ -39,6 +39,15 @@ describe('SkillPicker', () => {
     expect(onChange).toHaveBeenCalledWith([{ skillId: 1, minPoints: 1 }])
   })
 
+  it('refocuses the search field after a click, so adding several skills never needs the mouse (docs/skill-system-roadmap.md TODO #23)', async () => {
+    const user = userEvent.setup()
+    render(<SkillPicker skills={SKILLS} requirements={[]} onChange={vi.fn()} />)
+
+    await user.click(screen.getByRole('button', { name: 'Attack' }))
+
+    expect(screen.getByRole('textbox', { name: /add a skill/i })).toHaveFocus()
+  })
+
   it('renders an existing requirement as a row with the skill name and its points', () => {
     render(
       <SkillPicker
@@ -326,14 +335,14 @@ describe('SkillPicker', () => {
       expect(onChange).toHaveBeenCalledWith([{ skillId: 1, minPoints: 20 }])
     })
 
-    it('defaults a newly-added leveled skill to its weakest non-penalty tier', async () => {
+    it('defaults a newly-added leveled skill to its strongest non-penalty tier (docs/skill-system-roadmap.md TODO #22)', async () => {
       const onChange = vi.fn()
       const user = userEvent.setup()
       render(<SkillPicker skills={LEVELED_SKILLS} requirements={[]} onChange={onChange} />)
 
       await user.click(screen.getByRole('button', { name: 'Vampirism' }))
 
-      expect(onChange).toHaveBeenCalledWith([{ skillId: 1, minPoints: 10 }])
+      expect(onChange).toHaveBeenCalledWith([{ skillId: 1, minPoints: 20 }])
     })
 
     it('defaults to the first tier when every tier is a penalty (negative threshold)', async () => {

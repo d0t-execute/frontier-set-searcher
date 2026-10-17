@@ -10,7 +10,7 @@
  * did through the old dropdown's `<optgroup>`s, with typing narrowing it
  * further on top. */
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import type { KeyboardEvent } from 'react'
 import type { SkillRequirement } from '../search-engine/types'
 
@@ -42,13 +42,18 @@ const DEFAULT_MIN_POINTS = 1
 
 const UNCATEGORIZED = 'Other'
 
-/** The level to default a newly-added skill to: its weakest non-penalty
- * tier, since that's the smallest commitment that still turns the skill on
- * -- falling back to the first tier only if every tier is a penalty. */
+/** The level to default a newly-added skill to: its strongest non-penalty
+ * tier (docs/skill-system-roadmap.md TODO #22, 2026-10-18 per the project
+ * owner -- reversing TODO #15's original "weakest commitment that still
+ * turns the skill on" default) -- falling back to the first tier if every
+ * tier is a penalty. `tiers` comes pre-sorted highest-threshold-first
+ * (confirmed against the real `skills.json`, e.g. Attack's `[80, 50, 25, 15,
+ * 10]`), so the strongest positive tier is simply the first non-negative
+ * entry encountered. */
 function defaultMinPoints(tiers: readonly SkillTierOption[]): number {
   if (tiers.length === 0) return DEFAULT_MIN_POINTS
-  const weakestPositive = [...tiers].reverse().find((t) => t.minPoints >= 0)
-  return (weakestPositive ?? tiers[0]).minPoints
+  const strongestPositive = tiers.find((t) => t.minPoints >= 0)
+  return (strongestPositive ?? tiers[0]).minPoints
 }
 
 /** The category display order, fixed once from the *full* skill catalog
@@ -97,6 +102,13 @@ export function SkillPicker({
   addLabel = 'Add a skill',
 }: SkillPickerProps) {
   const [search, setSearch] = useState('')
+  // Refocused after every `addSkill` (docs/skill-system-roadmap.md TODO #23)
+  // so clicking a suggestion doesn't lose focus to that button -- adding
+  // several skills in a row (via Enter *or* a click) never needs reaching
+  // for the mouse in between. Enter itself never loses focus in the first
+  // place (the keydown fires on this same input), but a click does, so this
+  // covers both paths uniformly.
+  const searchInputRef = useRef<HTMLInputElement>(null)
   // Which of `flatMatches` below is the keyboard/mouse-highlighted one --
   // lets Enter add a skill without the mouse (2026-10-17, per the project
   // owner: "type a skill name, enter... rather than having to... click on
@@ -119,6 +131,7 @@ export function SkillPicker({
     onChange([...requirements, { skillId, minPoints: defaultMinPoints(tiers) }])
     setSearch('')
     setActiveIndex(0)
+    searchInputRef.current?.focus()
   }
 
   function handleSearchKeyDown(e: KeyboardEvent<HTMLInputElement>): void {
@@ -192,6 +205,7 @@ export function SkillPicker({
 
       <div className="skill-add mt-2">
         <input
+          ref={searchInputRef}
           type="text"
           className="form-control"
           aria-label={addLabel}

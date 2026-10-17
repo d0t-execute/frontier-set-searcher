@@ -1504,35 +1504,29 @@ anywhere else by the solver.
 
 ## 22. Default a newly-added skill to its highest tier
 
-**Status: Not started.** The project owner: when adding a skill, it should default to its highest
-level, not its lowest.
+**Status (2026-10-18): COMPLETE.** `SkillPicker.tsx`'s `defaultMinPoints` now picks the *strongest*
+positive tier (the first non-negative entry in `tiers`, confirmed pre-sorted highest-threshold-first
+against the real `skills.json`, e.g. Attack's `[80, 50, 25, 15, 10]`) instead of the weakest, falling
+back to `tiers[0]` the same way when every tier is a penalty. Applies identically to both `SkillPicker`
+instances (normal and Zenith skills) since they share the same component and function, with no stated
+reason they'd want to differ.
 
-Currently `SkillPicker.tsx`'s `defaultMinPoints` (added 2026-10-15) picks the *weakest* non-penalty
-tier on purpose ("the smallest commitment that still turns the skill on") -- the opposite of what's
-being asked for now. The fix is a one-line change to that function: pick the *strongest* positive tier
-(`tiers[0]`, since `NamedSkill.tiers` is already documented elsewhere as sorted highest-threshold-
-first) instead of the weakest, falling back the same way when every tier is a penalty. Needs its own
-test update (`SkillPicker.test.tsx` likely already asserts the old "picks the weakest tier" behavior
-somewhere and will need the expected value flipped) plus a decision on whether Zenith skills (added via
-the same component, `App.tsx`'s second `SkillPicker` instance) should behave identically -- there's no
-stated reason they'd want to differ.
+Verified: `SkillPicker.test.tsx`'s tier-default test updated to expect the strongest tier
+(`Vampirism+2`/20, not `Vampirism+1`/10); live-verified against the real dataset -- adding "Gather"
+now defaults to "Gathering+2" (15) rather than "Gathering+1" (10).
 
 ## 23. Enter-to-add in the skill search field, refocused for rapid repeated entry
 
-**Status: Not started.** The project owner: typing a skill's name then pressing Enter should
-immediately add the top/best match and clear+refocus the search box, so adding several skills in a row
-never requires reaching for the mouse.
+**Status (2026-10-18): COMPLETE.** Enter-to-add itself already shipped as part of TODO #31's keyboard
+navigation (`handleSearchKeyDown` adds whichever match is arrow-key-highlighted, defaulting to the top
+one) -- that path already never loses focus, since the keydown fires on the search `<input>` itself.
+The one remaining gap TODO #31 didn't cover: clicking a `.skill-add-option` button moves focus to that
+button, so resuming typing needed a mouse click. Fixed with a `ref` on the search input and a
+`.focus()` call added alongside `addSkill`'s existing `setSearch('')`/`setActiveIndex(0)`, covering
+both the click and Enter paths uniformly.
 
-Today (`SkillPicker.tsx`) a skill can only be added by clicking one of the `.skill-add-option` buttons
-rendered under the search box -- there's no `onKeyDown`/`onSubmit` handling on the `<input>` at all, so
-Enter currently does nothing. Needs: (a) an Enter handler that adds `matching[0]` (the first result in
-whatever order `groupByCategory` currently renders them, or a more deliberate "best match" ranking if
-exact-prefix matches should be prioritized over substring-anywhere ones -- worth clarifying with the
-project owner which), no-oping safely when `matching.length === 0`; (b) after `addSkill` runs (whether
-via Enter or a click), the search input should re-gain focus so the next keystroke continues typing
-immediately -- `addSkill` already clears `search`, but never re-focuses, so a mouse click is currently
-needed to resume typing after any addition. A `ref` on the `<input>` plus a `.focus()` call alongside
-the existing `setSearch('')` in `addSkill` should cover both the click and Enter paths with one change.
+Verified: `SkillPicker.test.tsx`'s new test asserts the search field has focus immediately after
+clicking a suggestion; live-verified in the browser.
 
 ## 24. Widen the app intro/credits section
 
