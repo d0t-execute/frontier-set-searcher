@@ -51,13 +51,31 @@ function defaultMinPoints(tiers: readonly SkillTierOption[]): number {
   return (weakestPositive ?? tiers[0]).minPoints
 }
 
-/** Groups skills by category, preserving each category's first-seen order
- * (which mirrors the source site's own curated section order, e.g. "Health
- * and Stamina" before "Attack Skills") rather than resorting alphabetically.
- * Uncategorized skills are grouped under "Other", placed last regardless of
- * where they were first seen, so stragglers don't interrupt that order. */
+/** The category display order, fixed once from the *full* skill catalog
+ * (first-seen order, which mirrors the source site's own curated section
+ * order, e.g. "Health and Stamina" before "Attack Skills") -- uncategorized
+ * skills are grouped under "Other", placed last regardless of where they were
+ * first seen. Computed separately from `groupByCategory` below (see
+ * docs/skill-system-roadmap.md TODO #36) so a category's position stays fixed
+ * even as picking skills shrinks the *filtered* list it buckets -- otherwise
+ * a category would jump around (or vanish and reappear) depending on which of
+ * its skills are still unpicked/matching. */
+function categoryOrder(skills: readonly SkillOption[]): readonly string[] {
+  const seen: string[] = []
+  for (const skill of skills) {
+    const category = skill.category ?? UNCATEGORIZED
+    if (!seen.includes(category)) seen.push(category)
+  }
+  return [...seen.filter((c) => c !== UNCATEGORIZED), ...(seen.includes(UNCATEGORIZED) ? [UNCATEGORIZED] : [])]
+}
+
+/** Buckets `skills` into the given, already-fixed category `order`, dropping
+ * any category with nothing left in this (filtered) list -- a category still
+ * disappears once nothing in it is left to pick/match, but the *relative*
+ * order of whatever remains never changes. */
 function groupByCategory(
   skills: readonly SkillOption[],
+  order: readonly string[],
 ): readonly (readonly [string, SkillOption[]])[] {
   const groups = new Map<string, SkillOption[]>()
   for (const skill of skills) {
@@ -66,11 +84,10 @@ function groupByCategory(
     if (existing) existing.push(skill)
     else groups.set(category, [skill])
   }
-  const uncategorized = groups.get(UNCATEGORIZED)
-  groups.delete(UNCATEGORIZED)
-  const ordered = [...groups.entries()]
-  if (uncategorized) ordered.push([UNCATEGORIZED, uncategorized])
-  return ordered
+  return order.flatMap((category) => {
+    const items = groups.get(category)
+    return items ? [[category, items] as const] : []
+  })
 }
 
 export function SkillPicker({
@@ -93,7 +110,7 @@ export function SkillPicker({
   const available = skills.filter((s) => !pickedIds.has(s.id))
   const query = search.trim().toLowerCase()
   const matching = query ? available.filter((s) => s.name.toLowerCase().includes(query)) : available
-  const groupedMatches = groupByCategory(matching)
+  const groupedMatches = groupByCategory(matching, categoryOrder(skills))
   const flatMatches = groupedMatches.flatMap(([, categorySkills]) => categorySkills)
   const clampedActiveIndex = flatMatches.length === 0 ? -1 : Math.min(activeIndex, flatMatches.length - 1)
 

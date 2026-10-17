@@ -250,6 +250,35 @@ describe('SkillPicker', () => {
       const otherGroup = screen.getByRole('group', { name: 'Other' })
       expect(within(otherGroup).getByRole('button', { name: 'Mystery Skill' })).toBeInTheDocument()
     })
+
+    it('keeps category order fixed as a category loses its first-listed skill (docs/skill-system-roadmap.md #36)', () => {
+      // Interleaved on purpose: "Health" (Health and Stamina) comes before
+      // "Attack" (Attack Skills) in the catalog, but "Vampirism" (also Health
+      // and Stamina) comes after it -- so once "Health" is picked and
+      // filtered out, the old order-from-the-filtered-list grouping would see
+      // Attack Skills' member before Health and Stamina's remaining member
+      // and swap their order.
+      const INTERLEAVED_SKILLS = [
+        skill(1, 'Health', { category: 'Health and Stamina' }),
+        skill(2, 'Attack', { category: 'Attack Skills' }),
+        skill(3, 'Vampirism', { category: 'Health and Stamina' }),
+      ]
+      const groupNames = () => screen.getAllByRole('group').map((g) => g.getAttribute('aria-label'))
+
+      const { rerender } = render(
+        <SkillPicker skills={INTERLEAVED_SKILLS} requirements={[]} onChange={vi.fn()} />,
+      )
+      expect(groupNames()).toEqual(['Health and Stamina', 'Attack Skills'])
+
+      rerender(
+        <SkillPicker
+          skills={INTERLEAVED_SKILLS}
+          requirements={[{ skillId: 1, minPoints: 1 }]}
+          onChange={vi.fn()}
+        />,
+      )
+      expect(groupNames()).toEqual(['Health and Stamina', 'Attack Skills'])
+    })
   })
 
   describe('leveled skills', () => {
