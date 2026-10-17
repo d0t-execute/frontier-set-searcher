@@ -26,11 +26,11 @@ demographic" for this new tool.
    confirming with the reporter whether the ask is about the collapsed summary specifically, a
    per-skill running index as you add them ("first skill -> shows 1, second -> shows 2"), or both).
 
-4. **Force elemental resistances to be non-negative** -- as a floor on the total build (avoid a
-   glaring elemental weakness), and ideally toggle-able per element (fire/water/thunder/ice/dragon)
-   rather than only all-or-nothing. `ResultsList.tsx` already sums and displays per-build
-   resistances (TODO #21's prerequisite work) -- this asks for that sum to become an enforced solver
-   constraint, not just a display.
+4. **DONE** (see roadmap #28) ~~Force elemental resistances to be non-negative~~ -- as a floor on the
+   total build (avoid a glaring elemental weakness), and ideally toggle-able per element
+   (fire/water/thunder/ice/dragon) rather than only all-or-nothing. `ResultsList.tsx` already sums and
+   displays per-build resistances (TODO #21's prerequisite work) -- this asks for that sum to become an
+   enforced solver constraint, not just a display.
 
 5. **DONE** (see roadmap #26) ~~Exotic skills in their own result-card tab~~, the same way Zenith
    skills already get split out from regular skills (TODO #16).

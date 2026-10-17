@@ -154,12 +154,19 @@ interface GroupCheckboxProps {
   readonly checked: boolean
   readonly indeterminate: boolean
   readonly onChange: (checked: boolean) => void
+  /** Overrides the default `${label} (all)` accessible name -- needed only
+   * when a leaf doesn't share the group's own display text (e.g.
+   * `App.tsx`'s "Resistances" toggle-all checkbox, 2026-10-17 per user
+   * feedback, whose leaves are "Fire"/"Water"/etc, not "Resistances"). */
+  readonly ariaLabel?: string
 }
 
 /** A checkbox whose `indeterminate` visual state (neither fully checked nor
  * unchecked) is DOM-only -- React has no prop for it, so it has to be set
- * imperatively via a ref, matching the platform's own checkbox behavior. */
-function GroupCheckbox({ label, checked, indeterminate, onChange }: GroupCheckboxProps) {
+ * imperatively via a ref, matching the platform's own checkbox behavior.
+ * Exported for reuse anywhere else a "toggle every leaf below" control over
+ * a flat set of checkboxes is needed, not just a `CategoryFilter` group. */
+export function GroupCheckbox({ label, checked, indeterminate, onChange, ariaLabel }: GroupCheckboxProps) {
   const ref = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -179,7 +186,7 @@ function GroupCheckbox({ label, checked, indeterminate, onChange }: GroupCheckbo
           // (e.g. group "Guild" has a plain "Guild" leaf) -- aria-label
           // keeps this checkbox's accessible name distinct from any leaf's,
           // without changing what's shown on screen.
-          aria-label={`${label} (all)`}
+          aria-label={ariaLabel ?? `${label} (all)`}
         />
         {label}
       </label>

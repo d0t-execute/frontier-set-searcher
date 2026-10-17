@@ -47,7 +47,9 @@
 
 import type { HunterTypeFilter } from './build-query'
 import { fromBase64Url, gunzip, gzip, toBase64Url } from './codec'
-import type { SkillContribution, SkillRequirement } from './types'
+import type { ResistanceElement, SkillContribution, SkillRequirement } from './types'
+
+const RESISTANCE_ELEMENTS: readonly ResistanceElement[] = ['fire', 'water', 'thunder', 'ice', 'dragon']
 
 /** One of a result's armor/weapon-slot picks -- just enough of `NamedCandidate`
  * to render `ResultCard` and feed `active-skill-cap.ts`'s piece-counting rule
@@ -132,6 +134,10 @@ export interface SharedSearchState {
   readonly excludedArmorIds: readonly string[]
   readonly excludedDecorationIds: readonly string[]
   readonly excludedCuffIds: readonly string[]
+  /** Elements the original search required to stay at or above zero
+   * (docs/feedback.md Round 1 #4) -- same "use as a base for a new
+   * search"-only role as the exclusions above. */
+  readonly nonNegativeResistances: readonly ResistanceElement[]
   readonly preferExactMatches: boolean
   readonly result: SharedBuildResult
 }
@@ -154,6 +160,7 @@ interface WireFormat {
   readonly eai: readonly string[]
   readonly edi: readonly string[]
   readonly eci: readonly string[]
+  readonly nnr: readonly ResistanceElement[]
   readonly pem: boolean
   readonly rp: readonly (readonly [
     string,
@@ -183,6 +190,7 @@ function toWireFormat(state: SharedSearchState): WireFormat {
     eai: state.excludedArmorIds,
     edi: state.excludedDecorationIds,
     eci: state.excludedCuffIds,
+    nnr: state.nonNegativeResistances,
     pem: state.preferExactMatches,
     rp: state.result.picks.map((p) => [
       p.slotId,
@@ -229,6 +237,8 @@ function fromWireFormat(parsed: unknown): SharedSearchState | null {
     !Array.isArray(p.eai) ||
     !Array.isArray(p.edi) ||
     !Array.isArray(p.eci) ||
+    !Array.isArray(p.nnr) ||
+    !p.nnr.every((e) => RESISTANCE_ELEMENTS.includes(e)) ||
     typeof p.pem !== 'boolean' ||
     !Array.isArray(p.rp) ||
     !Array.isArray(p.rd) ||
@@ -251,6 +261,7 @@ function fromWireFormat(parsed: unknown): SharedSearchState | null {
     excludedArmorIds: w.eai,
     excludedDecorationIds: w.edi,
     excludedCuffIds: w.eci,
+    nonNegativeResistances: w.nnr,
     preferExactMatches: w.pem,
     result: {
       picks: w.rp.map(

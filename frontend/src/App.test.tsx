@@ -193,6 +193,7 @@ describe('App', () => {
         ],
         pinnedCuffs: [],
         pinnedSlotDecorations: new Map(),
+        resistanceFloors: [],
       },
       // The "Unavailable"-leaf cuff is excluded by default (see App.tsx's
       // DEFAULT_EXCLUDED_CUFF_CATEGORIES) -- both real ones pass.
@@ -223,8 +224,84 @@ describe('App', () => {
         ],
         pinnedCuffs: [],
         pinnedSlotDecorations: new Map(),
+        resistanceFloors: [],
       },
       [BUNDLE.cuffs[0], BUNDLE.cuffs[1]],
+    )
+  })
+
+  it('passes a resistanceFloors entry once an element checkbox is checked', async () => {
+    const worker = makeWorker()
+    mockUseSearchWorker.mockReturnValue(worker as unknown as ReturnType<typeof useSearchWorker>)
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.click(screen.getByRole('button', { name: 'Attack' }))
+    await user.click(screen.getByRole('checkbox', { name: 'Fire' }))
+    await user.click(screen.getByRole('checkbox', { name: 'Dragon' }))
+    await user.click(screen.getByRole('button', { name: /search/i }))
+
+    expect(worker.search).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      expect.objectContaining({
+        resistanceFloors: [
+          { element: 'fire', minTotal: 0 },
+          { element: 'dragon', minTotal: 0 },
+        ],
+      }),
+      expect.anything(),
+    )
+  })
+
+  it('checking "All" under Resistances requires every element', async () => {
+    const worker = makeWorker()
+    mockUseSearchWorker.mockReturnValue(worker as unknown as ReturnType<typeof useSearchWorker>)
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.click(screen.getByRole('button', { name: 'Attack' }))
+    await user.click(screen.getByRole('checkbox', { name: 'All resistances' }))
+    await user.click(screen.getByRole('button', { name: /search/i }))
+
+    expect(worker.search).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      expect.objectContaining({
+        resistanceFloors: [
+          { element: 'fire', minTotal: 0 },
+          { element: 'water', minTotal: 0 },
+          { element: 'thunder', minTotal: 0 },
+          { element: 'ice', minTotal: 0 },
+          { element: 'dragon', minTotal: 0 },
+        ],
+      }),
+      expect.anything(),
+    )
+  })
+
+  it('unchecking "All" under Resistances after every element was checked clears them all', async () => {
+    const worker = makeWorker()
+    mockUseSearchWorker.mockReturnValue(worker as unknown as ReturnType<typeof useSearchWorker>)
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.click(screen.getByRole('button', { name: 'Attack' }))
+    await user.click(screen.getByRole('checkbox', { name: 'All resistances' }))
+    await user.click(screen.getByRole('checkbox', { name: 'All resistances' }))
+    await user.click(screen.getByRole('button', { name: /search/i }))
+
+    expect(worker.search).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      expect.objectContaining({ resistanceFloors: [] }),
+      expect.anything(),
     )
   })
 

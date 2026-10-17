@@ -6,7 +6,7 @@
  * responses, with no live network access (per docs/PLAN.md §3).
  */
 
-import type { Candidate, Decoration, SkillContribution } from './types'
+import type { Candidate, Decoration, Resistances, SkillContribution } from './types'
 
 /** The slice of the global `fetch` this module relies on. */
 export type FetchLike = (
@@ -58,16 +58,14 @@ export type HunterType = 'common' | 'blademaster' | 'gunner'
 
 /** A piece's elemental resistances (etl's `resistance_*` columns, from the
  * raw F/W/T/D/I fields) -- flat per piece, not forge-level scaled (see
- * docs/data-format-notes.md's column table). Display-only, like
- * `defenseMax` on `NamedCandidate` -- the search engine has no concept of
- * either. */
-export interface NamedResistances {
-  readonly fire: number
-  readonly water: number
-  readonly thunder: number
-  readonly ice: number
-  readonly dragon: number
-}
+ * docs/data-format-notes.md's column table). A plain alias for `types.ts`'s
+ * own `Resistances`, kept under its own Named* name for consistency with
+ * this module's other Named* types -- unlike `defenseMax` on `NamedCandidate`
+ * (still purely display-only), resistances are now also a real solver
+ * constraint (`SearchOptions.resistanceFloors`, docs/feedback.md Round 1 #4),
+ * so this alias is what lets `NamedCandidate.resistances` satisfy
+ * `Candidate.resistances?` with no cast. */
+export type NamedResistances = Resistances
 
 export interface NamedCandidate extends Candidate {
   readonly name: string

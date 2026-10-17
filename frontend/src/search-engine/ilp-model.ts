@@ -49,12 +49,16 @@
  * the chosen candidate's open slots), one decoration-group row per (slot,
  * relevant decoration) pair (exactly one count column chosen for it), one
  * row per skill requirement (the summed contribution across every chosen
- * candidate and placed decoration must reach its minimum), then (same
- * condition as the auxiliary columns above) a handful of rows per bonus
- * skill wiring its accounting column to the real choice columns and to its
- * tier-crossing indicator column(s), then one cuff-group row per relevant
- * cuff plus three rows global to every cuff (combined slot-cost budget, item
- * count, and Hiden-cuff count -- see `buildModel`'s own docstring).
+ * candidate and placed decoration must reach its minimum), one row per
+ * requested resistance floor (`options.resistanceFloors`, docs/feedback.md
+ * Round 1 #4 -- the summed contribution across every chosen *candidate only*
+ * must reach its own minimum, since decorations/cuffs carry no resistance
+ * data at all), then (same condition as the auxiliary columns above) a
+ * handful of rows per bonus skill wiring its accounting column to the real
+ * choice columns and to its tier-crossing indicator column(s), then one
+ * cuff-group row per relevant cuff plus three rows global to every cuff
+ * (combined slot-cost budget, item count, and Hiden-cuff count -- see
+ * `buildModel`'s own docstring).
  */
 
 import type { Highs, ModelData, ModelStatusCode, VariableType } from 'highs'
@@ -63,6 +67,7 @@ import type {
   Candidate,
   Cuff,
   Decoration,
+  ResistanceFloor,
   SearchOptions,
   SkillContribution,
   SkillId,
@@ -461,7 +466,16 @@ export function buildModel(
   const groupRowOf: number[][] = slotDecorationGroups.map((group) => group.map(() => rowCursor++))
   const skillRowBase = rowCursor
   const skillRow = (requirementIndex: number): number => skillRowBase + requirementIndex
-  const baseNumRows = skillRowBase + requirements.length
+
+  // One row per requested resistance floor (docs/feedback.md Round 1 #4) --
+  // only ever fed by candidate columns below, since decorations and cuffs
+  // carry no resistance data at all (see `Candidate.resistances`'s own
+  // docstring). A plain `>= minTotal` row, same shape as a skill requirement
+  // row but without a pinned-cuff offset (cuffs can never contribute here).
+  const resistanceFloors: readonly ResistanceFloor[] = options.resistanceFloors ?? []
+  const resistanceRowBase = skillRowBase + requirements.length
+  const resistanceRow = (floorIndex: number): number => resistanceRowBase + floorIndex
+  const baseNumRows = resistanceRowBase + resistanceFloors.length
 
   // Tier machinery (see this function's own docstring) -- resolved before
   // row layout is finalized, since its row/column counts depend on which
@@ -527,6 +541,10 @@ export function buildModel(
     rowLower[skillRow(r)] = req.minPoints - pinnedPointsTowards(req.skillId)
     rowUpper[skillRow(r)] = highs.infinity
   })
+  resistanceFloors.forEach((floor, i) => {
+    rowLower[resistanceRow(i)] = floor.minTotal
+    rowUpper[resistanceRow(i)] = highs.infinity
+  })
   for (const m of tierMachinery) {
     rowLower[totalRowOf.get(m.skillId)!] = 0
     rowUpper[totalRowOf.get(m.skillId)!] = 0
@@ -586,6 +604,10 @@ export function buildModel(
       requirements.forEach((req, r) => {
         const points = pointsTowards(candidate.skills, req.skillId)
         if (points !== 0) entries.set(skillRow(r), points)
+      })
+      resistanceFloors.forEach((floor, i) => {
+        const amount = candidate.resistances?.[floor.element] ?? 0
+        if (amount !== 0) entries.set(resistanceRow(i), amount)
       })
       for (const m of tierMachinery) {
         const points = pointsTowards(candidate.skills, m.skillId)

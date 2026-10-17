@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ArmorPicker } from './components/ArmorPicker'
-import { CategoryFilter } from './components/CategoryFilter'
+import { CategoryFilter, GroupCheckbox } from './components/CategoryFilter'
 import type { CategoryFilterGroup } from './components/CategoryFilter'
 import { CuffPicker } from './components/CuffPicker'
 import { Disclosure } from './components/Disclosure'
@@ -26,7 +26,7 @@ import type { SearchFormState } from './search-engine/search-form-state'
 import { loadSearchFormState, saveSearchFormState } from './search-engine/search-form-state'
 import { buildResultUrl } from './search-engine/shared-state'
 import type { SharedSearchState } from './search-engine/shared-state'
-import type { SkillRequirement, SkillTierThresholds } from './search-engine/types'
+import type { ResistanceElement, SkillRequirement, SkillTierThresholds } from './search-engine/types'
 
 /** How many of a weapon's (always up to 3, confirmed against the real
  * dataset -- every Zenith-infused weapon has exactly 3, and a plain one can
@@ -44,6 +44,17 @@ const HUNTER_TYPE_FILTER_OPTIONS: readonly {
 }[] = [
   { value: 'blademaster', label: 'Blademaster' },
   { value: 'gunner', label: 'Gunner' },
+]
+
+/** The 5 elements `SearchOptions.resistanceFloors` can constrain (docs/
+ * feedback.md Round 1 #4) -- labels capitalized for display, values matching
+ * `ResistanceElement` exactly. */
+const RESISTANCE_ELEMENT_OPTIONS: readonly { readonly value: ResistanceElement; readonly label: string }[] = [
+  { value: 'fire', label: 'Fire' },
+  { value: 'water', label: 'Water' },
+  { value: 'thunder', label: 'Thunder' },
+  { value: 'ice', label: 'Ice' },
+  { value: 'dragon', label: 'Dragon' },
 ]
 
 /** A two-position slider standing in for a plain `<select>` (2026-10-15, per
@@ -182,6 +193,11 @@ export interface AppInitialState {
   readonly excludedArmorIds?: ReadonlySet<string>
   readonly excludedDecorationIds?: ReadonlySet<string>
   readonly excludedCuffIds?: ReadonlySet<string>
+  /** Elements required to stay at or above zero, summed across every chosen
+   * candidate (docs/feedback.md Round 1 #4) -- optional, same "not every
+   * seed source has an opinion on every field" convention as the other
+   * optional fields here. */
+  readonly nonNegativeResistances?: ReadonlySet<ResistanceElement>
   readonly preferExactMatches: boolean
   readonly maxResults?: number
 }
@@ -277,6 +293,15 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
   )
   const [excludedCuffIds, setExcludedCuffIds] = useState<Set<string>>(
     () => new Set(initialState?.excludedCuffIds ?? persisted?.excludedCuffIds ?? []),
+  )
+  // Elements required to stay at or above zero (docs/feedback.md Round 1 #4)
+  // -- empty by default, same "don't silently assume a new feature's most
+  // restrictive state" precedent as `DEFAULT_EXCLUDED_CUFF_CATEGORIES`, just
+  // in the opposite direction (nothing constrained until the player opts an
+  // element in).
+  const [nonNegativeResistances, setNonNegativeResistances] = useState<Set<ResistanceElement>>(
+    () =>
+      new Set(initialState?.nonNegativeResistances ?? persisted?.nonNegativeResistances ?? []),
   )
   // Defaults to on (2026-10-15, per the project owner): an unrequested skill
   // reaching one of its own tiers unprompted is more often a surprise than a
@@ -392,6 +417,10 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
     const total = excludedArmorIds.size + excludedDecorationIds.size + excludedCuffIds.size
     return total === 0 ? 'None excluded' : `${pluralize(total, 'item')} excluded`
   })()
+  const resistancesSummary =
+    nonNegativeResistances.size === 0
+      ? 'None required'
+      : `${pluralize(nonNegativeResistances.size, 'element')} required ≥ 0`
   const gearLevelsSummary =
     excludedCategories.size === 0
       ? 'All included'
@@ -453,6 +482,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
       excludedArmorIds: [...excludedArmorIds],
       excludedDecorationIds: [...excludedDecorationIds],
       excludedCuffIds: [...excludedCuffIds],
+      nonNegativeResistances: [...nonNegativeResistances],
       preferExactMatches,
       maxResults,
     })
@@ -468,6 +498,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
     pinnedArmor,
     pinnedCuffIds,
     pinnedSlotDecorationIds,
+    nonNegativeResistances,
     excludedArmorIds,
     excludedDecorationIds,
     excludedCuffIds,
@@ -545,7 +576,13 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
           setErrorMessage(message)
         },
       },
-      { preferExactMatches, skillTiers, pinnedCuffs, pinnedSlotDecorations },
+      {
+        preferExactMatches,
+        skillTiers,
+        pinnedCuffs,
+        pinnedSlotDecorations,
+        resistanceFloors: [...nonNegativeResistances].map((element) => ({ element, minTotal: 0 })),
+      },
       cuffs,
     )
     setActiveRequestId(requestId)
@@ -578,6 +615,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
       excludedArmorIds: [...excludedArmorIds],
       excludedDecorationIds: [...excludedDecorationIds],
       excludedCuffIds: [...excludedCuffIds],
+      nonNegativeResistances: [...nonNegativeResistances],
       preferExactMatches,
       maxResults,
     })
@@ -602,6 +640,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
     setExcludedArmorIds(new Set(state.excludedArmorIds))
     setExcludedDecorationIds(new Set(state.excludedDecorationIds))
     setExcludedCuffIds(new Set(state.excludedCuffIds))
+    setNonNegativeResistances(new Set(state.nonNegativeResistances))
     setPreferExactMatches(state.preferExactMatches)
     setMaxResults(state.maxResults)
   }
@@ -646,6 +685,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
       excludedArmorIds: [...excludedArmorIds],
       excludedDecorationIds: [...excludedDecorationIds],
       excludedCuffIds: [...excludedCuffIds],
+      nonNegativeResistances: [...nonNegativeResistances],
       preferExactMatches,
       result: {
         picks: [...result.picks.entries()].map(([slotId, c]) => ({
@@ -788,6 +828,79 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                   onChangeExcludedCuffIds={setExcludedCuffIds}
                 />
               </Disclosure>
+            </div>
+
+            <div className="app-column">
+              <HunterTypeToggle value={hunterTypeFilter} onChange={setHunterTypeFilter} />
+
+              <Disclosure title="Weapon" summary={weaponSummary}>
+                <div className="app-field-group">
+                  <CategoryFilter
+                    groups={weaponZenithSkillGroups}
+                    excludedCategories={effectiveExcludedWeaponZenithSkillIds}
+                    onChange={setExcludedWeaponZenithSkillIds}
+                  />
+                </div>
+                <div className="app-field-group">
+                  <label className="form-label" htmlFor="weapon-slot-count">
+                    Weapon slots to use for decorations
+                  </label>
+                  <select
+                    id="weapon-slot-count"
+                    className="form-select w-auto"
+                    value={weaponSlotCount}
+                    onChange={(e) => setWeaponSlotCount(Number(e.target.value))}
+                  >
+                    {WEAPON_SLOT_COUNT_OPTIONS.map((count) => (
+                      <option key={count} value={count}>
+                        {count}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </Disclosure>
+
+              <Disclosure title="Resistances" summary={resistancesSummary}>
+                <p className="form-text">
+                  Force a result's summed resistance to never drop below zero for the elements checked
+                  below -- avoids a build with a glaring elemental weakness.
+                </p>
+                <div className="app-field-group d-flex flex-column gap-1">
+                  <GroupCheckbox
+                    label="All"
+                    ariaLabel="All resistances"
+                    checked={nonNegativeResistances.size === RESISTANCE_ELEMENT_OPTIONS.length}
+                    indeterminate={
+                      nonNegativeResistances.size > 0 &&
+                      nonNegativeResistances.size < RESISTANCE_ELEMENT_OPTIONS.length
+                    }
+                    onChange={(checked) =>
+                      setNonNegativeResistances(
+                        checked ? new Set(RESISTANCE_ELEMENT_OPTIONS.map((o) => o.value)) : new Set(),
+                      )
+                    }
+                  />
+                  {RESISTANCE_ELEMENT_OPTIONS.map((option) => (
+                    <div className="form-check" key={option.value}>
+                      <input
+                        type="checkbox"
+                        className="form-check-input"
+                        id={`resistance-${option.value}`}
+                        checked={nonNegativeResistances.has(option.value)}
+                        onChange={(e) => {
+                          const next = new Set(nonNegativeResistances)
+                          if (e.target.checked) next.add(option.value)
+                          else next.delete(option.value)
+                          setNonNegativeResistances(next)
+                        }}
+                      />
+                      <label className="form-check-label" htmlFor={`resistance-${option.value}`}>
+                        {option.label}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </Disclosure>
 
               <Disclosure title="Save/load this query" summary="By text code">
                 <p className="form-text">
@@ -836,37 +949,6 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                   </button>
                 </div>
                 {queryCodeError && <div className="form-text text-danger">{queryCodeError}</div>}
-              </Disclosure>
-            </div>
-
-            <div className="app-column">
-              <HunterTypeToggle value={hunterTypeFilter} onChange={setHunterTypeFilter} />
-
-              <Disclosure title="Weapon" summary={weaponSummary}>
-                <div className="app-field-group">
-                  <CategoryFilter
-                    groups={weaponZenithSkillGroups}
-                    excludedCategories={effectiveExcludedWeaponZenithSkillIds}
-                    onChange={setExcludedWeaponZenithSkillIds}
-                  />
-                </div>
-                <div className="app-field-group">
-                  <label className="form-label" htmlFor="weapon-slot-count">
-                    Weapon slots to use for decorations
-                  </label>
-                  <select
-                    id="weapon-slot-count"
-                    className="form-select w-auto"
-                    value={weaponSlotCount}
-                    onChange={(e) => setWeaponSlotCount(Number(e.target.value))}
-                  >
-                    {WEAPON_SLOT_COUNT_OPTIONS.map((count) => (
-                      <option key={count} value={count}>
-                        {count}
-                      </option>
-                    ))}
-                  </select>
-                </div>
               </Disclosure>
             </div>
           </div>

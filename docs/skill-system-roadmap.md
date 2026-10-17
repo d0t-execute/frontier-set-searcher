@@ -1671,3 +1671,58 @@ surfaces "This search can never succeed: Attack needs 80, but at most 69 is reac
 bare empty result list. Save/load-by-code round-tripped live too: generated a code, removed the
 Attack requirement, pasted the code back in, and the requirement reappeared exactly as saved; a
 malformed code correctly showed the inline error instead of silently doing nothing.
+
+## 28. Non-negative resistance floors (per element)
+
+**Status (2026-10-16): COMPLETE.** `docs/feedback.md` Round 1 #4, the last of the "good payoff,
+moderate effort" items (#2/#14/#18 done in roadmap #27) -- the project owner's go-ahead to continue
+past that batch. The one item of the four that needed a real solver change rather than a UI/display
+feature.
+
+Modeled as a hard constraint, exactly like a skill-requirement row: for each element the player
+checks, a new row is added with `rowLower = 0, rowUpper = +infinity`, summing that element's
+resistance contribution across every chosen armor candidate. `types.ts` gained `Resistances` (the
+five elements) and `ResistanceElement`; `Candidate.resistances?` is optional, following the same
+"absent = no contribution" convention as `Candidate.openSlotCount?` -- decorations and cuffs never
+carry resistance data (per `docs/data-format-notes.md` and `build-query.ts`'s existing
+`NO_RESISTANCES` constant), so only the candidate-column loop in `ilp-model.ts`'s `buildModel` gets
+entries for these rows, never the decoration or cuff loops. `load-bundle.ts`'s `NamedResistances` is
+now just `export type NamedResistances = Resistances` (a type alias, not a separate interface), so
+the already-existing named-candidate resistance data satisfies the new field automatically.
+`SearchOptions.resistanceFloors?: readonly ResistanceFloor[]` threads through the existing options
+pipeline unchanged (`App.tsx` -> `useSearchWorker` -> `worker-client.ts` -> `worker-protocol.ts` ->
+`worker-handler.ts` -> `engine.ts` -> `buildModel`), since every intermediate layer was already
+generic over `SearchOptions`.
+
+New "Resistances" `Disclosure` in `App.tsx` between "Exclude specific equipment" and "Save/load this
+query": five checkboxes (Fire/Water/Thunder/Ice/Dragon), each checked element becoming a
+`{ element, minTotal: 0 }` entry in `resistanceFloors`. Threaded through the same three places every
+other search-input field goes: `AppInitialState.nonNegativeResistances` (seed for "use as a base for
+a new search", read in `ResultPage.tsx`'s `handleUseAsBase`), `SearchFormState.nonNegativeResistances`
+(localStorage auto-persist and save/load-by-code reuse, `search-form-state.ts`), and
+`SharedSearchState.nonNegativeResistances` (full shareable-result links, `shared-state.ts`'s wire
+format as `nnr`). Deliberately not wired into `feasibility.ts`'s `findUnreachableRequirements`
+(TODO #27's impossible-search pre-check) -- an infeasible resistance-floor combination just falls
+through to the solver as zero results, the same acceptable scope boundary TODO #27 itself drew around
+what that check does and doesn't cover.
+
+Verified: `tsc -b` and `oxlint` clean; `ilp-model.test.ts` gained 6 new tests covering a floor
+rejecting a candidate that dips an element below it, meeting a floor exactly, combining contributions
+across slots, only constraining the requested element, a candidate with no `resistances` field
+counting as zero, and decorations/cuffs not interfering (55/55 in that file). `App.test.tsx` gained a
+test confirming checking Fire and Dragon produces the matching `resistanceFloors` entries in the
+`worker.search` call (19/19 in that file). Live-verified in the browser against the real data bundle:
+checked "Fire", added an Attack requirement, and the result changed (different picks, Fire resistance
+9) from the same search with no resistance floor checked -- confirming the constraint actually
+changes the solver's chosen build rather than being a no-op.
+
+**Follow-up (2026-10-17), per the project owner:** two refinements, both on top of the still-unpushed
+work above. First, the "Resistances" and "Save/load this query" `Disclosure`s moved from the middle
+column to the right column (below "Weapon"), purely a layout change -- no behavior difference, and
+`App.test.tsx` queries by role/name rather than DOM order so nothing needed updating there. Second, a
+"toggle all" control: `CategoryFilter.tsx`'s own `GroupCheckbox` (the same checked/indeterminate
+parent-checkbox widget its category groups already use) is now exported, with a new optional
+`ariaLabel` override (defaulting to its old `${label} (all)`, used as-is by `CategoryFilter` itself)
+since "Resistances"' own five leaves don't share a group label the way a category tree's do. `App.tsx`
+renders one above the five element checkboxes, checked when all five are required, indeterminate when
+some are, and clicking it sets the full five-element set or clears it entirely.

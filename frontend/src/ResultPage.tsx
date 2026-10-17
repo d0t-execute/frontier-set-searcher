@@ -136,6 +136,7 @@ export function ResultPage({ encoded, onUseAsBase, onBackToSearch }: ResultPageP
       excludedArmorIds: new Set(state.excludedArmorIds),
       excludedDecorationIds: new Set(state.excludedDecorationIds),
       excludedCuffIds: new Set(state.excludedCuffIds),
+      nonNegativeResistances: new Set(state.nonNegativeResistances),
       preferExactMatches: state.preferExactMatches,
     })
   }

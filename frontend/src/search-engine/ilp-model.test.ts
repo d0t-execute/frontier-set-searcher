@@ -9,9 +9,14 @@ import {
   OPEN_SLOT_WEIGHT,
 } from './ilp-model'
 import { HIDEN_CUFF_CATEGORY } from './types'
-import type { Candidate, Cuff, Decoration, SlotQuery } from './types'
+import type { Candidate, Cuff, Decoration, Resistances, SlotQuery } from './types'
 
-function candidate(id: string, skills: Record<number, number>, openSlotCount = 0): Candidate {
+function candidate(
+  id: string,
+  skills: Record<number, number>,
+  openSlotCount = 0,
+  resistances?: Resistances,
+): Candidate {
   return {
     id,
     skills: Object.entries(skills).map(([skillId, points]) => ({
@@ -19,7 +24,12 @@ function candidate(id: string, skills: Record<number, number>, openSlotCount = 0
       points,
     })),
     openSlotCount,
+    resistances,
   }
+}
+
+function resistances(partial: Partial<Resistances>): Resistances {
+  return { fire: 0, water: 0, thunder: 0, ice: 0, dragon: 0, ...partial }
 }
 
 function deco(id: string, slotSize: number, skills: Record<number, number>): Decoration {
@@ -562,6 +572,117 @@ describe('buildModel with Hiden cuffs', () => {
     expect(modelStatus).toBe(highs.constants.modelStatus.optimal)
     const decoded = decodeSolution(columns, colValue)
     expect(decoded.cuffs).toEqual([])
+    native.dispose()
+  })
+})
+
+describe('buildModel with options.resistanceFloors', () => {
+  it('rejects a build whose only candidate dips a required element below the floor', () => {
+    const slots: SlotQuery[] = [
+      {
+        slotId: 'head',
+        candidates: [candidate('Weak Helm', { 1: 5 }, 0, resistances({ fire: -5 }))],
+      },
+    ]
+    const { model } = buildModel(highs, slots, [], [{ skillId: 1, minPoints: 3 }], {
+      resistanceFloors: [{ element: 'fire', minTotal: 0 }],
+    })
+
+    const { modelStatus, native } = solve(model)
+    expect(modelStatus).toBe(highs.constants.modelStatus.infeasible)
+    native.dispose()
+  })
+
+  it('accepts a build that meets the floor exactly', () => {
+    const slots: SlotQuery[] = [
+      {
+        slotId: 'head',
+        candidates: [candidate('Neutral Helm', { 1: 5 }, 0, resistances({ fire: 0 }))],
+      },
+    ]
+    const { model, columns } = buildModel(highs, slots, [], [{ skillId: 1, minPoints: 3 }], {
+      resistanceFloors: [{ element: 'fire', minTotal: 0 }],
+    })
+
+    const { modelStatus, colValue, native } = solve(model)
+    expect(modelStatus).toBe(highs.constants.modelStatus.optimal)
+    const decoded = decodeSolution(columns, colValue)
+    expect(decoded.picks.get('head')?.id).toBe('Neutral Helm')
+    native.dispose()
+  })
+
+  it('combines resistances across every chosen candidate, not just one slot', () => {
+    const slots: SlotQuery[] = [
+      {
+        slotId: 'head',
+        candidates: [candidate('Helm', { 1: 2 }, 0, resistances({ fire: -3 }))],
+      },
+      {
+        slotId: 'chest',
+        candidates: [candidate('Mail', { 1: 2 }, 0, resistances({ fire: 3 }))],
+      },
+    ]
+    const { model, columns } = buildModel(highs, slots, [], [{ skillId: 1, minPoints: 3 }], {
+      resistanceFloors: [{ element: 'fire', minTotal: 0 }],
+    })
+
+    const { modelStatus, colValue, native } = solve(model)
+    expect(modelStatus).toBe(highs.constants.modelStatus.optimal)
+    const decoded = decodeSolution(columns, colValue)
+    expect(decoded.picks.get('head')?.id).toBe('Helm')
+    expect(decoded.picks.get('chest')?.id).toBe('Mail')
+    native.dispose()
+  })
+
+  it('only constrains the specifically requested element, leaving others free', () => {
+    const slots: SlotQuery[] = [
+      {
+        slotId: 'head',
+        candidates: [candidate('Helm', { 1: 5 }, 0, resistances({ fire: 0, water: -10 }))],
+      },
+    ]
+    const { model } = buildModel(highs, slots, [], [{ skillId: 1, minPoints: 3 }], {
+      resistanceFloors: [{ element: 'fire', minTotal: 0 }],
+    })
+
+    const { modelStatus, native } = solve(model)
+    expect(modelStatus).toBe(highs.constants.modelStatus.optimal)
+    native.dispose()
+  })
+
+  it('ignores a candidate with no resistances field at all (treated as zero)', () => {
+    const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Helm', { 1: 5 })] }]
+    const { model } = buildModel(highs, slots, [], [{ skillId: 1, minPoints: 3 }], {
+      resistanceFloors: [{ element: 'fire', minTotal: 0 }],
+    })
+
+    const { modelStatus, native } = solve(model)
+    expect(modelStatus).toBe(highs.constants.modelStatus.optimal)
+    native.dispose()
+  })
+
+  it('is unaffected by decorations or cuffs, which never carry resistance data', () => {
+    const slots: SlotQuery[] = [
+      {
+        slotId: 'head',
+        candidates: [candidate('Helm', {}, 1, resistances({ fire: 0 }))],
+      },
+    ]
+    const decorations = [deco('D1', 1, { 1: 5 })]
+    const cuffs = [cuff('C1', 0, {})]
+    const { model, columns } = buildModel(
+      highs,
+      slots,
+      decorations,
+      [{ skillId: 1, minPoints: 3 }],
+      { resistanceFloors: [{ element: 'fire', minTotal: 0 }] },
+      cuffs,
+    )
+
+    const { modelStatus, colValue, native } = solve(model)
+    expect(modelStatus).toBe(highs.constants.modelStatus.optimal)
+    const decoded = decodeSolution(columns, colValue)
+    expect(decoded.picks.get('head')?.id).toBe('Helm')
     native.dispose()
   })
 })

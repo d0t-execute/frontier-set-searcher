@@ -24,7 +24,9 @@
 
 import type { HunterTypeFilter } from './build-query'
 import type { PinnedSlot } from './pinned-armor'
-import type { SkillRequirement } from './types'
+import type { ResistanceElement, SkillRequirement } from './types'
+
+const RESISTANCE_ELEMENTS: readonly ResistanceElement[] = ['fire', 'water', 'thunder', 'ice', 'dragon']
 
 const STORAGE_KEY = 'frontier-set-searcher:search-form-state:v1'
 
@@ -46,6 +48,7 @@ export interface SearchFormState {
   readonly excludedArmorIds: readonly string[]
   readonly excludedDecorationIds: readonly string[]
   readonly excludedCuffIds: readonly string[]
+  readonly nonNegativeResistances: readonly ResistanceElement[]
   readonly preferExactMatches: boolean
   readonly maxResults: number
 }
@@ -76,6 +79,8 @@ export function validateSearchFormState(parsed: unknown): SearchFormState | null
     !Array.isArray(p.excludedArmorIds) ||
     !Array.isArray(p.excludedDecorationIds) ||
     !Array.isArray(p.excludedCuffIds) ||
+    !Array.isArray(p.nonNegativeResistances) ||
+    !p.nonNegativeResistances.every((e) => RESISTANCE_ELEMENTS.includes(e)) ||
     typeof p.preferExactMatches !== 'boolean' ||
     typeof p.maxResults !== 'number'
   ) {

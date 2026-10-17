@@ -21,6 +21,24 @@ export interface SkillContribution {
   readonly points: number
 }
 
+/** The 5 elemental resistance stats every real armor piece carries (see
+ * `load-bundle.ts`'s `NamedResistances`, which this type mirrors so the
+ * engine doesn't have to import the display-facing Named* layer just to
+ * reference the same 5 field names -- same separation `SkillContribution`/
+ * `NamedSkill` already keep). Decorations and cuffs never carry resistance
+ * data at all (confirmed against the real dataset -- see `build-query.ts`'s
+ * `NO_RESISTANCES` and its own docstring), so only `Candidate` has this
+ * field. */
+export type ResistanceElement = 'fire' | 'water' | 'thunder' | 'ice' | 'dragon'
+
+export interface Resistances {
+  readonly fire: number
+  readonly water: number
+  readonly thunder: number
+  readonly ice: number
+  readonly dragon: number
+}
+
 export interface Candidate {
   readonly id: string
   readonly skills: readonly SkillContribution[]
@@ -29,6 +47,12 @@ export interface Candidate {
    * count is not a list of individually-sized slots. Omitted or 0 means no
    * open slots. */
   readonly openSlotCount?: number
+  /** This piece's own elemental resistances, for `SearchOptions.resistanceFloors`
+   * (docs/feedback.md Round 1 #4) -- omitted (same convention as
+   * `openSlotCount`) means zero contribution, for a candidate with no
+   * resistance data (a synthetic test fixture, or a context that never
+   * populates it at all). */
+  readonly resistances?: Resistances
 }
 
 export interface Decoration {
@@ -84,6 +108,16 @@ export interface SkillTierThresholds {
   readonly tierThresholds: readonly number[]
 }
 
+export interface ResistanceFloor {
+  readonly element: ResistanceElement
+  /** The minimum summed total this element's resistance must reach or
+   * exceed across every chosen candidate -- typically 0 (docs/feedback.md
+   * Round 1 #4: "force elemental resistances to be at least zero"), but left
+   * as a caller-chosen floor rather than hardcoded, in case a stricter floor
+   * ever turns out to be wanted. */
+  readonly minTotal: number
+}
+
 export interface SearchOptions {
   /** When true, changes the ranking tie-break (see `ilp-model.ts`'s
    * `buildModel`) from rewarding unrequested ("bonus") skill points to
@@ -127,6 +161,14 @@ export interface SearchOptions {
    * mutually exclusive per slot (see `build-query.ts`'s
    * `resolvePinnedSlotDecorations`). */
   readonly pinnedSlotDecorations?: ReadonlyMap<string, readonly Decoration[]>
+  /** Elements the caller requires to stay at or above their own `minTotal`
+   * (summed across every chosen candidate), modeled by `ilp-model.ts`'s
+   * `buildModel` as one additional hard-constraint row per entry (see its own
+   * docstring) -- same "absent = no requirement" convention as
+   * `pinnedCuffs`/`skillTiers`. Only candidates ever contribute; decorations
+   * and cuffs carry no resistance data at all (see `Candidate.resistances`'s
+   * own docstring). */
+  readonly resistanceFloors?: readonly ResistanceFloor[]
 }
 
 export interface BuildResult {

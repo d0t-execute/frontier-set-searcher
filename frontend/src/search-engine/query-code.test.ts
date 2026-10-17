@@ -17,6 +17,7 @@ const state: SearchFormState = {
   excludedArmorIds: ['head:9999'],
   excludedDecorationIds: ['D099'],
   excludedCuffIds: ['cuff:C099'],
+  nonNegativeResistances: ['water'],
   preferExactMatches: true,
   maxResults: 5,
 }
@@ -52,6 +53,7 @@ describe('encodeQueryCode / decodeQueryCode', () => {
       excludedArmorIds: [],
       excludedDecorationIds: [],
       excludedCuffIds: [],
+      nonNegativeResistances: [],
       preferExactMatches: true,
       maxResults: 5,
     }
