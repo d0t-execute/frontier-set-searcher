@@ -11,6 +11,7 @@
  * further on top. */
 
 import { useState } from 'react'
+import type { KeyboardEvent } from 'react'
 import type { SkillRequirement } from '../search-engine/types'
 
 export interface SkillTierOption {
@@ -79,17 +80,42 @@ export function SkillPicker({
   addLabel = 'Add a skill',
 }: SkillPickerProps) {
   const [search, setSearch] = useState('')
+  // Which of `flatMatches` below is the keyboard/mouse-highlighted one --
+  // lets Enter add a skill without the mouse (2026-10-17, per the project
+  // owner: "type a skill name, enter... rather than having to... click on
+  // the result"). Reset to the first match on every search change (and after
+  // adding one) so the common type-then-Enter flow always lands on what's
+  // on top, the same way a browser address bar's own autocomplete does.
+  const [activeIndex, setActiveIndex] = useState(0)
   const skillOf = (skillId: number) => skills.find((s) => s.id === skillId)
   const nameOf = (skillId: number) => skillOf(skillId)?.name ?? `Skill ${skillId}`
   const pickedIds = new Set(requirements.map((r) => r.skillId))
   const available = skills.filter((s) => !pickedIds.has(s.id))
   const query = search.trim().toLowerCase()
   const matching = query ? available.filter((s) => s.name.toLowerCase().includes(query)) : available
+  const groupedMatches = groupByCategory(matching)
+  const flatMatches = groupedMatches.flatMap(([, categorySkills]) => categorySkills)
+  const clampedActiveIndex = flatMatches.length === 0 ? -1 : Math.min(activeIndex, flatMatches.length - 1)
 
   function addSkill(skillId: number): void {
     const tiers = skillOf(skillId)?.tiers ?? []
     onChange([...requirements, { skillId, minPoints: defaultMinPoints(tiers) }])
     setSearch('')
+    setActiveIndex(0)
+  }
+
+  function handleSearchKeyDown(e: KeyboardEvent<HTMLInputElement>): void {
+    if (flatMatches.length === 0) return
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setActiveIndex((i) => (i + 1) % flatMatches.length)
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setActiveIndex((i) => (i - 1 + flatMatches.length) % flatMatches.length)
+    } else if (e.key === 'Enter') {
+      e.preventDefault()
+      addSkill(flatMatches[clampedActiveIndex].id)
+    }
   }
 
   function setMinPoints(skillId: number, minPoints: number): void {
@@ -102,12 +128,22 @@ export function SkillPicker({
 
   return (
     <div>
+      {/* Stays visible once the section is open too (2026-10-17, per the
+          project owner) -- unlike the collapsed Disclosure summary above
+          this, which hides itself once there's nothing left to summarize. */}
+      <div className="small text-muted mb-1">
+        {requirements.length === 0
+          ? 'No skills selected yet.'
+          : `${requirements.length} skill${requirements.length === 1 ? '' : 's'} selected`}
+      </div>
       <ul className="list-unstyled d-flex flex-column gap-2">
-        {requirements.map((requirement) => {
+        {requirements.map((requirement, index) => {
           const tiers = skillOf(requirement.skillId)?.tiers ?? []
           return (
             <li key={requirement.skillId} className="d-flex align-items-center gap-2">
-              <span className="flex-grow-1">{nameOf(requirement.skillId)}</span>
+              <span className="flex-grow-1">
+                {index + 1}. <span>{nameOf(requirement.skillId)}</span>
+              </span>
               {tiers.length > 0 ? (
                 <select
                   className="form-select"
@@ -152,23 +188,32 @@ export function SkillPicker({
           aria-label={addLabel}
           placeholder={`${addLabel}…`}
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => {
+            setSearch(e.target.value)
+            setActiveIndex(0)
+          }}
+          onKeyDown={handleSearchKeyDown}
         />
         <div className="skill-add-results">
           {matching.length === 0 && <div className="skill-add-empty">No matches.</div>}
-          {groupByCategory(matching).map(([category, categorySkills]) => (
+          {groupedMatches.map(([category, categorySkills]) => (
             <div key={category} className="skill-add-group" role="group" aria-label={category}>
               <div className="skill-add-group-label">{category}</div>
-              {categorySkills.map((skill) => (
-                <button
-                  key={skill.id}
-                  type="button"
-                  className="skill-add-option"
-                  onClick={() => addSkill(skill.id)}
-                >
-                  {skill.name}
-                </button>
-              ))}
+              {categorySkills.map((skill) => {
+                const flatIndex = flatMatches.indexOf(skill)
+                const active = flatIndex === clampedActiveIndex
+                return (
+                  <button
+                    key={skill.id}
+                    type="button"
+                    className={active ? 'skill-add-option skill-add-option-active' : 'skill-add-option'}
+                    onMouseEnter={() => setActiveIndex(flatIndex)}
+                    onClick={() => addSkill(skill.id)}
+                  >
+                    {skill.name}
+                  </button>
+                )
+              })}
             </div>
           ))}
         </div>

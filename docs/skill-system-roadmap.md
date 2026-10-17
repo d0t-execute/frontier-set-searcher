@@ -1843,3 +1843,31 @@ tests excluded, per TODO #28/#29). Live-verified in the browser against the real
 generated code reads as plain English (skill names, "Not Implemented"/"Standard (Unavailable)"-style
 category labels, real armor piece names), and pasting it back in after removing a skill requirement
 correctly restored it along with every other field, with no decode error shown.
+
+## 31. SkillPicker: persistent count, numbered list, and keyboard navigation
+
+**Status (2026-10-17): COMPLETE.** Per the project owner, two small `SkillPicker` usability requests:
+the "N skills selected" count line used to only exist inside the search dropdown's own header and
+disappeared once that section collapsed, and the requirements list had no running index ("it would be
+great to type a skill name, enter, type a skill name, enter" also motivated the keyboard work below).
+
+- Moved the count to a persistent line above the requirements list itself (`"No skills selected
+  yet."` when empty), so it's visible regardless of whether the add-a-skill search is open.
+- Each requirement row is now numbered (`1. `, `2. `, ...), with the skill name kept in its own nested
+  `<span>` so existing `getByText(name)` test assertions still match exactly (numbering text lives
+  outside that span).
+- Added real keyboard navigation to the search dropdown: `activeIndex` state tracks a highlighted
+  match across the flattened (ungrouped) match list; ArrowUp/ArrowDown wrap around; Enter adds the
+  active match; typing or changing the search text resets the highlight to the first match. Mouse
+  hover still works too (`onMouseEnter` sets `activeIndex` to that option's flat index), so keyboard
+  and mouse stay in sync rather than being two disconnected ways to pick. `index.css` extended the
+  existing hover/focus-visible highlight rule to also cover the new `.skill-add-option-active` class.
+
+This same "type + Enter picks the top match" pattern was then generalized to every other
+type-to-filter picker on the page -- see TODO #29's own follow-up note.
+
+Verified: `tsc -b` and `oxlint` clean; 13 new `SkillPicker.test.tsx` tests (persistent count with
+items selected, the empty-state message, numbering order via `getAllByRole('listitem')`, and a
+keyboard-only-selection block: Enter-adds-first-match, arrow-then-Enter, wrap-around past the last
+match, highlight resets when the search text changes, no-op Enter with no matches); full suite
+341/341 (the same two known-flaky timing tests excluded, per TODO #28).

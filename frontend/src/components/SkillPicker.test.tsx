@@ -139,6 +139,108 @@ describe('SkillPicker', () => {
     expect(addControl).toHaveValue('')
   })
 
+  it('shows a running count of selected skills that stays visible alongside the list', () => {
+    render(
+      <SkillPicker
+        skills={SKILLS}
+        requirements={[
+          { skillId: 1, minPoints: 5 },
+          { skillId: 2, minPoints: 10 },
+        ]}
+        onChange={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByText('2 skills selected')).toBeInTheDocument()
+  })
+
+  it('says no skills are selected yet when the list is empty', () => {
+    render(<SkillPicker skills={SKILLS} requirements={[]} onChange={vi.fn()} />)
+
+    expect(screen.getByText('No skills selected yet.')).toBeInTheDocument()
+  })
+
+  it('numbers each selected skill in order', () => {
+    render(
+      <SkillPicker
+        skills={SKILLS}
+        requirements={[
+          { skillId: 2, minPoints: 5 },
+          { skillId: 1, minPoints: 10 },
+        ]}
+        onChange={vi.fn()}
+      />,
+    )
+
+    const rows = screen.getAllByRole('listitem')
+    expect(rows[0]).toHaveTextContent('1. Defense')
+    expect(rows[1]).toHaveTextContent('2. Attack')
+  })
+
+  describe('keyboard-only selection', () => {
+    it('adds the first match when Enter is pressed after typing', async () => {
+      const onChange = vi.fn()
+      const user = userEvent.setup()
+      render(<SkillPicker skills={SKILLS} requirements={[]} onChange={onChange} />)
+
+      await user.type(screen.getByRole('textbox', { name: /add a skill/i }), 'eva{Enter}')
+
+      expect(onChange).toHaveBeenCalledWith([{ skillId: 3, minPoints: 1 }])
+    })
+
+    it('moves the highlighted match with the arrow keys before accepting it with Enter', async () => {
+      const onChange = vi.fn()
+      const user = userEvent.setup()
+      render(<SkillPicker skills={SKILLS} requirements={[]} onChange={onChange} />)
+
+      const addControl = screen.getByRole('textbox', { name: /add a skill/i })
+      await user.click(addControl)
+      await user.keyboard('{ArrowDown}{ArrowDown}{Enter}')
+
+      // Attack, Defense, Evasion in that order -- two ArrowDowns from the
+      // first (Attack) lands on the third (Evasion).
+      expect(onChange).toHaveBeenCalledWith([{ skillId: 3, minPoints: 1 }])
+    })
+
+    it('wraps back to the first match after arrowing past the last one', async () => {
+      const onChange = vi.fn()
+      const user = userEvent.setup()
+      render(<SkillPicker skills={SKILLS} requirements={[]} onChange={onChange} />)
+
+      const addControl = screen.getByRole('textbox', { name: /add a skill/i })
+      await user.click(addControl)
+      await user.keyboard('{ArrowDown}{ArrowDown}{ArrowDown}{Enter}')
+
+      expect(onChange).toHaveBeenCalledWith([{ skillId: 1, minPoints: 1 }])
+    })
+
+    it('resets the highlighted match back to the first one after the search text changes', async () => {
+      const onChange = vi.fn()
+      const user = userEvent.setup()
+      render(<SkillPicker skills={SKILLS} requirements={[]} onChange={onChange} />)
+
+      const addControl = screen.getByRole('textbox', { name: /add a skill/i })
+      await user.click(addControl)
+      await user.keyboard('{ArrowDown}{ArrowDown}')
+      await user.type(addControl, 'a')
+      await user.keyboard('{Enter}')
+
+      // Narrowing to "a" leaves Attack and Evasion -- Enter should pick the
+      // first of those, not whatever was highlighted before typing.
+      expect(onChange).toHaveBeenCalledWith([{ skillId: 1, minPoints: 1 }])
+    })
+
+    it('does nothing on Enter when there are no matches', async () => {
+      const onChange = vi.fn()
+      const user = userEvent.setup()
+      render(<SkillPicker skills={SKILLS} requirements={[]} onChange={onChange} />)
+
+      await user.type(screen.getByRole('textbox', { name: /add a skill/i }), 'zzz{Enter}')
+
+      expect(onChange).not.toHaveBeenCalled()
+    })
+  })
+
   describe('categorization', () => {
     const CATEGORIZED_SKILLS = [
       skill(1, 'Health', { category: 'Health and Stamina' }),
