@@ -2024,3 +2024,53 @@ categories that remain needs to stay fixed). Needs a `SkillPicker.test.tsx` test
 visible skill from whichever category renders first, then assert the remaining categories still
 render in their original relative order (not reshuffled to whatever order their own first remaining
 skill happens to occupy).
+
+## 37. Rework skill exclusion to cap a skill below "active" instead of banning every piece that grants it
+
+**Status: Not started.** The project owner: TODO #32's skill exclusion is too blunt -- rather than
+dropping every piece/decoration/cuff that grants any points in the excluded skill, a search result
+should just be disallowed from making that skill *active*. "There are edge cases where it might be
+preferable to get a few points in a skill, but not have it activate rather than having no points in
+it at all. To be able to use decorations that give multiple different skills, for example" -- e.g. a
+decoration granting both Attack and Sharpness should still be usable for its Sharpness even while
+Attack is "excluded," as long as the build's total Attack points stay below Attack's own activation
+threshold.
+
+This is a genuine rework, not a tweak: TODO #32's `slotsAfterExcludedSkills`/
+`decorationsAfterExcludedSkills`/`cuffsAfterExcludedSkills` (`build-query.ts`) filter the candidate
+*pool* before the solver ever runs; the new behavior instead needs a hard *constraint on the solved
+result's own totals*, the same shape as `ilp-model.ts`'s existing `resistanceFloors` row (one row per
+excluded skill, fed by every column that contributes points to it) -- except as an upper bound
+instead of a lower one, and fed by decorations/cuffs too, not just candidates (resistances only ever
+come from candidates; skill points come from all three).
+
+"Active" is already precisely defined twice in the codebase and needs to be reused, not
+reinvented: `active-skill-cap.ts`'s `isSkillActive(points, skill)` --
+`points >= the smallest positive tier threshold`, OR `points <= the largest (closest-to-zero)
+negative/penalty tier threshold` if the skill has one, falling back to `points > 0` for an untiered
+skill. `ilp-model.ts`'s own `resolveTierBreakpoints` already reduces a skill's raw
+`SkillTierThresholds.tierThresholds` to exactly this `{posThreshold, negThreshold}` pair (used today
+only for `preferExactMatches`' objective-only tie-break scoring, never as a hard feasibility bound) --
+that reduction is directly reusable. The new row(s) would enforce: `total <= posThreshold - 1` when a
+positive tier exists, and `total >= negThreshold + 1` when a negative one does (both, if the skill has
+both) -- the inverse of `isSkillActive`'s own check.
+
+One wrinkle `resistanceFloors` doesn't have: a pinned cuff's fixed skill contribution. Skill
+requirement rows already subtract a pinned cuff's own contribution from their lower bound via
+`pinnedPointsTowards(skillId)` (`ilp-model.ts`) before applying the solver's own freedom on top -- an
+excluded-active upper bound would need the same offset subtracted, or (simpler, and maybe worth just
+confirming with the project owner instead of building the offset) the query layer could simply refuse
+to let the player pin a cuff/piece/decoration that *by itself* already crosses the excluded skill's
+own threshold, sidestepping the offset math entirely.
+
+Threading: a new solver-facing `SearchOptions` field (e.g. `excludedActiveSkillIds: readonly
+SkillId[]`), converted from a plain `Set<string>` App state only at the `search()` call site --
+mirroring exactly how `resistanceFloors` itself is derived from `nonNegativeResistances` today, not
+threaded as a raw solver-shaped field through persistence. The UI-facing `excludedSkillIds` set
+already has its full persistence thread shipped (TODO #32: `AppInitialState`, `search-form-state.ts`,
+`shared-state.ts`, `query-code.ts`) -- worth deciding with the project owner whether this REPLACES
+that thread's meaning outright (same stored ids, new solver behavior) or needs to EXIST ALONGSIDE it
+as a second, distinct option (old "ban the equipment" mode vs. new "cap below active" mode) --
+`EquipmentExclusionPicker.tsx`'s "Skills" list today has no per-item mode concept at all, only a flat
+excluded/not-excluded Set, so offering both would need real new UI (a second list, or a per-badge
+toggle), not just a backend change.
