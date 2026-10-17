@@ -35,10 +35,13 @@
 
 import { useState } from 'react'
 import { isSkillActive } from '../search-engine/active-skill-cap'
+import { contributionSummary } from '../search-engine/contribution-summary'
 import type { NamedCandidate, NamedDecoration, NamedSkill } from '../search-engine/load-bundle'
 import type { PinnedSlot } from '../search-engine/pinned-armor'
 import { computePinnedSkillTotals } from '../search-engine/pinned-armor'
+import type { SkillId } from '../search-engine/types'
 import { FilterableOptions } from './FilterableOptions'
+import { handleEnterToPickFirst } from './pick-first-match'
 
 export type { PinnedSlot } from '../search-engine/pinned-armor'
 
@@ -151,6 +154,17 @@ function ArmorSlotPicker({
     return candidate.skills.some((s) => (skillNameById.get(s.skillId) ?? '').toLowerCase().includes(query))
   }
 
+  function pickCandidate(c: NamedCandidate): void {
+    onChange({ candidateId: c.id, decorationIds: [] })
+    setCandidateSearch('')
+    setPicking(false)
+  }
+
+  function pickSlotDecoration(d: NamedDecoration): void {
+    onChange({ candidateId: pin!.candidateId, decorationIds: [...pin!.decorationIds, d.id] })
+    setDecorationSearch('')
+  }
+
   const candidate = pin ? candidates.find((c) => c.id === pin.candidateId) : undefined
   const usedSlots = pin
     ? pin.decorationIds.reduce((sum, id) => {
@@ -169,7 +183,7 @@ function ArmorSlotPicker({
 
       {candidate && !picking ? (
         <div className="d-flex align-items-center gap-2">
-          <span>{candidate.name}</span>
+          <span title={contributionSummary(candidate.skills, skillNameById)}>{candidate.name}</span>
           <button
             type="button"
             className="btn btn-sm btn-outline-secondary"
@@ -194,17 +208,17 @@ function ArmorSlotPicker({
             placeholder="Type to search pieces…"
             value={candidateSearch}
             onChange={(e) => setCandidateSearch(e.target.value)}
+            onKeyDown={(e) =>
+              handleEnterToPickFirst(e, candidates, candidateSearch, pickCandidate, candidateMatches)
+            }
           />
           <FilterableOptions
             items={candidates}
             search={candidateSearch}
             ariaLabel={`Pieces matching search for ${slotId}`}
             matches={candidateMatches}
-            onPick={(c) => {
-              onChange({ candidateId: c.id, decorationIds: [] })
-              setCandidateSearch('')
-              setPicking(false)
-            }}
+            describe={(c) => contributionSummary(c.skills, skillNameById)}
+            onPick={pickCandidate}
           />
           {pin && (
             <button
@@ -226,7 +240,11 @@ function ArmorSlotPicker({
           {pin!.decorationIds.map((decorationId, i) => {
             const decoration = decorations.find((d) => d.id === decorationId)
             return (
-              <span key={i} className="badge text-bg-secondary me-1">
+              <span
+                key={i}
+                className="badge text-bg-secondary me-1"
+                title={decoration && contributionSummary(decoration.skills, skillNameById)}
+              >
                 {decoration?.name ?? decorationId}{' '}
                 <button
                   type="button"
@@ -253,18 +271,16 @@ function ArmorSlotPicker({
                 placeholder="Type to search decorations…"
                 value={decorationSearch}
                 onChange={(e) => setDecorationSearch(e.target.value)}
+                onKeyDown={(e) =>
+                  handleEnterToPickFirst(e, fittableDecorations, decorationSearch, pickSlotDecoration)
+                }
               />
               <FilterableOptions
                 items={fittableDecorations}
                 search={decorationSearch}
                 ariaLabel={`Add a decoration to ${slotId}`}
-                onPick={(d) => {
-                  onChange({
-                    candidateId: pin!.candidateId,
-                    decorationIds: [...pin!.decorationIds, d.id],
-                  })
-                  setDecorationSearch('')
-                }}
+                describe={(d) => contributionSummary(d.skills, skillNameById)}
+                onPick={pickSlotDecoration}
               />
             </div>
           )}
@@ -279,6 +295,7 @@ function ArmorSlotPicker({
           decorations={decorations}
           pinnedIds={slotDecorationIds}
           onChange={onChangeSlotDecorations}
+          skillNameById={skillNameById}
         />
       )}
     </div>
@@ -296,12 +313,14 @@ function SlotDecorationOnlyPicker({
   decorations,
   pinnedIds,
   onChange,
+  skillNameById,
 }: {
   slotId: string
   candidates: readonly NamedCandidate[]
   decorations: readonly NamedDecoration[]
   pinnedIds: readonly string[]
   onChange: (ids: readonly string[]) => void
+  skillNameById: ReadonlyMap<SkillId, string>
 }) {
   const [search, setSearch] = useState('')
 
@@ -319,12 +338,21 @@ function SlotDecorationOnlyPicker({
     (d) => d.slotSize > 0 && d.slotSize <= remainingCapacity,
   )
 
+  function pickDecoration(d: NamedDecoration): void {
+    onChange([...pinnedIds, d.id])
+    setSearch('')
+  }
+
   return (
     <div className="ms-2 mt-1">
       {pinnedIds.map((decorationId, i) => {
         const decoration = decorations.find((d) => d.id === decorationId)
         return (
-          <span key={i} className="badge text-bg-secondary me-1">
+          <span
+            key={i}
+            className="badge text-bg-secondary me-1"
+            title={decoration && contributionSummary(decoration.skills, skillNameById)}
+          >
             {decoration?.name ?? decorationId}{' '}
             <button
               type="button"
@@ -346,15 +374,14 @@ function SlotDecorationOnlyPicker({
             placeholder="Type to search decorations…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={(e) => handleEnterToPickFirst(e, fittableDecorations, search, pickDecoration)}
           />
           <FilterableOptions
             items={fittableDecorations}
             search={search}
             ariaLabel={`Force a decoration into ${slotId}`}
-            onPick={(d) => {
-              onChange([...pinnedIds, d.id])
-              setSearch('')
-            }}
+            describe={(d) => contributionSummary(d.skills, skillNameById)}
+            onPick={pickDecoration}
           />
         </div>
       )}

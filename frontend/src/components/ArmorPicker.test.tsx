@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { ArmorPicker } from './ArmorPicker'
 import type { NamedCandidate, NamedDecoration, NamedSkill } from '../search-engine/load-bundle'
@@ -412,5 +413,105 @@ describe('ArmorPicker', () => {
     })
 
     expect(onChangeSlotDecorations).toHaveBeenCalledWith(new Map())
+  })
+
+  it('shows the skills a piece grants as a hover tooltip on its search option and once pinned', () => {
+    render(
+      <ArmorPicker
+        slots={slots}
+        decorations={decorations}
+        pinned={pinHead('head:0001')}
+        onChange={() => {}}
+        pinnedSlotDecorationIds={new Map()}
+        onChangeSlotDecorations={() => {}}
+        skills={skills}
+      />,
+    )
+
+    expect(screen.getByText('Leather Helm')).toHaveAttribute('title', 'Attack: 5')
+  })
+
+  it('shows the skills a decoration grants as a hover tooltip on its search option and once placed', () => {
+    render(
+      <ArmorPicker
+        slots={slots}
+        decorations={decorations}
+        pinned={pinHead('head:0001')}
+        onChange={() => {}}
+        pinnedSlotDecorationIds={new Map()}
+        onChangeSlotDecorations={() => {}}
+        skills={skills}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText('Search decorations for head'), {
+      target: { value: 'Attack' },
+    })
+
+    expect(screen.getByRole('option', { name: 'Attack Jewel' })).toHaveAttribute('title', 'Attack: 3')
+  })
+
+  describe('keyboard-only picking', () => {
+    it('pins the top-matching piece when Enter is pressed in the piece search', async () => {
+      const onChange = vi.fn()
+      const user = userEvent.setup()
+      render(
+        <ArmorPicker
+          slots={slots}
+          decorations={decorations}
+          pinned={new Map()}
+          onChange={onChange}
+          pinnedSlotDecorationIds={new Map()}
+          onChangeSlotDecorations={() => {}}
+          skills={skills}
+        />,
+      )
+
+      await user.type(screen.getByLabelText('Search pieces for head'), 'leather{Enter}')
+
+      expect(onChange).toHaveBeenCalledWith(pinHead('head:0001'))
+    })
+
+    it('places the top-matching decoration when Enter is pressed in the decoration search', async () => {
+      const onChange = vi.fn()
+      const user = userEvent.setup()
+      render(
+        <ArmorPicker
+          slots={slots}
+          decorations={decorations}
+          pinned={pinHead('head:0001')}
+          onChange={onChange}
+          pinnedSlotDecorationIds={new Map()}
+          onChangeSlotDecorations={() => {}}
+          skills={skills}
+        />,
+      )
+
+      await user.type(screen.getByLabelText('Search decorations for head'), 'attack{Enter}')
+
+      expect(onChange).toHaveBeenCalledWith(
+        new Map([['head', { candidateId: 'head:0001', decorationIds: ['D001'] }]]),
+      )
+    })
+
+    it('does nothing on Enter when there is no match in the piece search', async () => {
+      const onChange = vi.fn()
+      const user = userEvent.setup()
+      render(
+        <ArmorPicker
+          slots={slots}
+          decorations={decorations}
+          pinned={new Map()}
+          onChange={onChange}
+          pinnedSlotDecorationIds={new Map()}
+          onChangeSlotDecorations={() => {}}
+          skills={skills}
+        />,
+      )
+
+      await user.type(screen.getByLabelText('Search pieces for head'), 'zzz{Enter}')
+
+      expect(onChange).not.toHaveBeenCalled()
+    })
   })
 })

@@ -808,6 +808,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                   cuffs={bundle.cuffs}
                   pinned={pinnedCuffIds}
                   onChange={setPinnedCuffIds}
+                  skillNameById={bundle.skillNames}
                 />
               </Disclosure>
 
@@ -826,6 +827,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                   onChangeExcludedDecorationIds={setExcludedDecorationIds}
                   excludedCuffIds={excludedCuffIds}
                   onChangeExcludedCuffIds={setExcludedCuffIds}
+                  skillNameById={bundle.skillNames}
                 />
               </Disclosure>
             </div>

@@ -15,9 +15,12 @@
  */
 
 import { useState } from 'react'
+import { contributionSummary } from '../search-engine/contribution-summary'
 import { MAX_EQUIPPED_CUFFS } from '../search-engine/ilp-model'
 import type { NamedCuff } from '../search-engine/load-bundle'
+import type { SkillId } from '../search-engine/types'
 import { FilterableOptions } from './FilterableOptions'
+import { handleEnterToPickFirst } from './pick-first-match'
 
 export interface CuffPickerProps {
   readonly cuffs: readonly NamedCuff[]
@@ -27,9 +30,13 @@ export interface CuffPickerProps {
    * however many slots are actually pinned. */
   readonly pinned: readonly string[]
   readonly onChange: (next: readonly string[]) => void
+  /** Resolves a cuff's own skill contributions to names, for the hover
+   * tooltip on each search result and already-pinned cuff (2026-10-17, per
+   * user feedback). */
+  readonly skillNameById: ReadonlyMap<SkillId, string>
 }
 
-export function CuffPicker({ cuffs, pinned, onChange }: CuffPickerProps) {
+export function CuffPicker({ cuffs, pinned, onChange, skillNameById }: CuffPickerProps) {
   function setSlot(index: number, cuffId: string | null): void {
     const next = [...pinned]
     if (cuffId) next[index] = cuffId
@@ -46,6 +53,7 @@ export function CuffPicker({ cuffs, pinned, onChange }: CuffPickerProps) {
           cuffs={cuffs}
           cuffId={pinned[i] ?? null}
           onChange={(cuffId) => setSlot(i, cuffId)}
+          skillNameById={skillNameById}
         />
       ))}
     </div>
@@ -57,15 +65,23 @@ function CuffSlotPicker({
   cuffs,
   cuffId,
   onChange,
+  skillNameById,
 }: {
   label: string
   cuffs: readonly NamedCuff[]
   cuffId: string | null
   onChange: (cuffId: string | null) => void
+  skillNameById: ReadonlyMap<SkillId, string>
 }) {
   const [picking, setPicking] = useState(false)
   const [search, setSearch] = useState('')
   const cuff = cuffId ? cuffs.find((c) => c.id === cuffId) : undefined
+
+  function pickCuff(c: NamedCuff): void {
+    onChange(c.id)
+    setSearch('')
+    setPicking(false)
+  }
 
   return (
     <div>
@@ -73,7 +89,7 @@ function CuffSlotPicker({
 
       {cuff && !picking ? (
         <div className="d-flex align-items-center gap-2">
-          <span>{cuff.name}</span>
+          <span title={contributionSummary(cuff.skills, skillNameById)}>{cuff.name}</span>
           <button
             type="button"
             className="btn btn-sm btn-outline-secondary"
@@ -98,16 +114,14 @@ function CuffSlotPicker({
             placeholder="Type to search cuffs…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={(e) => handleEnterToPickFirst(e, cuffs, search, pickCuff)}
           />
           <FilterableOptions
             items={cuffs}
             search={search}
             ariaLabel={`Cuffs matching search for ${label}`}
-            onPick={(c) => {
-              onChange(c.id)
-              setSearch('')
-              setPicking(false)
-            }}
+            describe={(c) => contributionSummary(c.skills, skillNameById)}
+            onPick={pickCuff}
           />
           {cuff && (
             <button

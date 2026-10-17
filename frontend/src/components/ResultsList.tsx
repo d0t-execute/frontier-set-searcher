@@ -1,8 +1,9 @@
 import { toBlob, toPng } from 'html-to-image'
 import { useRef, useState } from 'react'
 import { determineActiveSkills } from '../search-engine/active-skill-cap'
+import { contributionSummary } from '../search-engine/contribution-summary'
 import type { NamedCandidate, NamedResistances, NamedSkill, SkillTierRecord } from '../search-engine/load-bundle'
-import type { SkillContribution, SkillId } from '../search-engine/types'
+import type { SkillId } from '../search-engine/types'
 import type { NamedBuildResult } from './types'
 
 /** Summed across every pick in a result (armor, weapon, cuffs aren't picks
@@ -205,16 +206,6 @@ function compareSkillEntries(a: SkillDisplayEntry, b: SkillDisplayEntry): number
   const rank = (e: SkillDisplayEntry) => (e.disabled ? 1 : e.crossed ? 0 : 2)
   const rankDiff = rank(a) - rank(b)
   return rankDiff !== 0 ? rankDiff : b.points - a.points
-}
-
-function contributionSummary(
-  contributions: readonly SkillContribution[],
-  skillNames: ReadonlyMap<SkillId, string>,
-): string | undefined {
-  if (contributions.length === 0) return undefined
-  return contributions
-    .map((c) => `${skillNames.get(c.skillId) ?? `Skill ${c.skillId}`}: ${c.points}`)
-    .join(', ')
 }
 
 /** Plain-text rendering of a result card, for the "Copy as text" button

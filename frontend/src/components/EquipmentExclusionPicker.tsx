@@ -18,11 +18,17 @@
  */
 
 import { useMemo, useState } from 'react'
+import { contributionSummary } from '../search-engine/contribution-summary'
+import type { SkillContribution, SkillId } from '../search-engine/types'
 import { FilterableOptions } from './FilterableOptions'
+import { handleEnterToPickFirst } from './pick-first-match'
 
 interface Named {
   readonly id: string
   readonly name: string
+  /** Absent for a catalog with nothing to show here (none exist today) --
+   * when present, shown as a hover tooltip (2026-10-17, per user feedback). */
+  readonly skills?: readonly SkillContribution[]
 }
 
 export interface EquipmentExclusionPickerProps {
@@ -35,6 +41,7 @@ export interface EquipmentExclusionPickerProps {
   readonly onChangeExcludedDecorationIds: (next: Set<string>) => void
   readonly excludedCuffIds: ReadonlySet<string>
   readonly onChangeExcludedCuffIds: (next: Set<string>) => void
+  readonly skillNameById: ReadonlyMap<SkillId, string>
 }
 
 export function EquipmentExclusionPicker({
@@ -47,6 +54,7 @@ export function EquipmentExclusionPicker({
   onChangeExcludedDecorationIds,
   excludedCuffIds,
   onChangeExcludedCuffIds,
+  skillNameById,
 }: EquipmentExclusionPickerProps) {
   return (
     <div className="d-flex flex-column gap-3">
@@ -56,6 +64,7 @@ export function EquipmentExclusionPicker({
         items={armorCandidates}
         excludedIds={excludedArmorIds}
         onChange={onChangeExcludedArmorIds}
+        skillNameById={skillNameById}
       />
       <ExclusionList
         label="Decorations"
@@ -63,6 +72,7 @@ export function EquipmentExclusionPicker({
         items={decorations}
         excludedIds={excludedDecorationIds}
         onChange={onChangeExcludedDecorationIds}
+        skillNameById={skillNameById}
       />
       <ExclusionList
         label="Cuffs"
@@ -70,6 +80,7 @@ export function EquipmentExclusionPicker({
         items={cuffs}
         excludedIds={excludedCuffIds}
         onChange={onChangeExcludedCuffIds}
+        skillNameById={skillNameById}
       />
     </div>
   )
@@ -81,12 +92,14 @@ function ExclusionList<T extends Named>({
   items,
   excludedIds,
   onChange,
+  skillNameById,
 }: {
   label: string
   searchAriaLabel: string
   items: readonly T[]
   excludedIds: ReadonlySet<string>
   onChange: (next: Set<string>) => void
+  skillNameById: ReadonlyMap<SkillId, string>
 }) {
   const [search, setSearch] = useState('')
   const itemsById = useMemo(() => new Map(items.map((i) => [i.id, i])), [items])
@@ -119,7 +132,11 @@ function ExclusionList<T extends Named>({
             const item = itemsById.get(id)
             const name = item?.name ?? id
             return (
-              <span key={id} className="badge text-bg-secondary me-1">
+              <span
+                key={id}
+                className="badge text-bg-secondary me-1"
+                title={item?.skills && contributionSummary(item.skills, skillNameById)}
+              >
                 {name}{' '}
                 <button
                   type="button"
@@ -140,11 +157,13 @@ function ExclusionList<T extends Named>({
         placeholder="Type to search…"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
+        onKeyDown={(e) => handleEnterToPickFirst(e, pickableItems, search, (item) => add(item.id))}
       />
       <FilterableOptions
         items={pickableItems}
         search={search}
         ariaLabel={`${label} matching search`}
+        describe={(item) => item.skills && contributionSummary(item.skills, skillNameById)}
         onPick={(item) => add(item.id)}
       />
     </div>

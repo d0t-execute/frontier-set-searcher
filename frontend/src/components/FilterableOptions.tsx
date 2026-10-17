@@ -2,10 +2,10 @@
  * A type-to-filter `<select>`: renders nothing until `search` reaches
  * `MIN_SEARCH_LENGTH`, then at most `MAX_MATCHES_SHOWN` case-insensitive
  * substring matches, with a note when more exist than fit. Shared by
- * ArmorPicker and CuffPicker -- both need to pick one item out of a catalog
- * too large for a plain `<select>` to be usable (a real armor slot: tens of
- * thousands of pieces; the cuff catalog: thousands -- see ArmorPicker's own
- * docstring).
+ * ArmorPicker, CuffPicker and EquipmentExclusionPicker -- all three need to
+ * pick one item out of a catalog too large for a plain `<select>` to be
+ * usable (a real armor slot: tens of thousands of pieces; the cuff catalog:
+ * thousands -- see ArmorPicker's own docstring).
  *
  * Renders nothing at all below `MIN_SEARCH_LENGTH` (2026-10-15, per the
  * project owner) -- this used to print its own "Type at least 2 characters
@@ -33,6 +33,7 @@ export function FilterableOptions<T extends { readonly id: string; readonly name
   onPick,
   ariaLabel,
   matches = defaultMatches,
+  describe,
 }: {
   items: readonly T[]
   search: string
@@ -41,6 +42,12 @@ export function FilterableOptions<T extends { readonly id: string; readonly name
   /** Overrides the default name-substring match rule -- `query` is already
    * trimmed and lowercased the same way the default rule's own check is. */
   matches?: (item: T, query: string) => boolean
+  /** Rendered as each `<option>`'s `title`, shown on hover -- e.g. the
+   * skills a piece/decoration/cuff grants (2026-10-17, per user feedback:
+   * "hovering over it would also show the skills that it has"). Omitted
+   * entirely by a caller with nothing meaningful to show (e.g. no skill
+   * catalog in scope). */
+  describe?: (item: T) => string | undefined
 }) {
   if (search.trim().length < MIN_SEARCH_LENGTH) {
     return null
@@ -68,7 +75,7 @@ export function FilterableOptions<T extends { readonly id: string; readonly name
       >
         <option value="" disabled hidden />
         {shown.map((item) => (
-          <option key={item.id} value={item.id}>
+          <option key={item.id} value={item.id} title={describe?.(item)}>
             {item.name}
           </option>
         ))}

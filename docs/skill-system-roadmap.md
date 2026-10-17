@@ -1726,3 +1726,69 @@ parent-checkbox widget its category groups already use) is now exported, with a 
 since "Resistances"' own five leaves don't share a group label the way a category tree's do. `App.tsx`
 renders one above the five element checkboxes, checked when all five are required, indeterminate when
 some are, and clicking it sets the full five-element set or clears it entirely.
+
+## 29. Hover tooltip for a piece/decoration/cuff's own skills, in every pin/exclude picker
+
+**Status (2026-10-17): COMPLETE.** Per the project owner, while reviewing the still-unpushed work
+above: "Pin specific armor"/"Pin specific cuffs"/"Exclude specific equipment" (`ArmorPicker.tsx`,
+`CuffPicker.tsx`, `EquipmentExclusionPicker.tsx`) only ever showed an item's bare name while picking
+it, unlike a result card's own Picks list (`ResultsList.tsx`), which has shown this as a hover tooltip
+since the original cuff/decoration/armor result display work. Generalizes that same tooltip to every
+other place a specific piece, decoration, or cuff is chosen by name, not just where one ends up in a
+result.
+
+`ResultsList.tsx`'s own `contributionSummary` (builds a "Skill: points, Skill: points" string from a
+`SkillContribution[]` and a skill-name lookup) moved out into new, shared
+`search-engine/contribution-summary.ts` rather than staying private to that one file.
+`FilterableOptions.tsx` gained an optional `describe?: (item: T) => string | undefined` prop (the same
+shape as its existing `matches` override), rendered as each `<option>`'s own `title` -- native
+`<option title>` tooltips, no extra UI. Every caller that has a skill catalog in scope now passes
+`describe={(item) => contributionSummary(item.skills, skillNameById)}`:
+
+- `ArmorPicker.tsx` already built a `skillNameById` map for its own armor-by-skill search (TODO #26's
+  #19); reused here for both the piece search and the decoration search (both the per-slot one and
+  `SlotDecorationOnlyPicker`'s TODO #12 one), plus the already-chosen piece `<span>` and placed-
+  decoration badges once picked.
+- `CuffPicker.tsx` gained a new required `skillNameById` prop (threaded from `App.tsx` as
+  `bundle.skillNames`, an existing ready-made map -- no new one needed), applied the same way to its
+  search and its already-pinned cuff display.
+- `EquipmentExclusionPicker.tsx`'s internal `Named` type gained an optional `skills` field (several of
+  this component's three catalogs -- armor/decorations/cuffs -- already carry it; optional rather than
+  required keeps the type honest about a hypothetical future catalog that doesn't), plus the same new
+  `skillNameById` prop, applied to its search and its already-excluded badges.
+
+Verified: `tsc -b` and `oxlint` clean; new tests in `ArmorPicker.test.tsx` (piece and decoration
+tooltips, both in-search and once chosen), `CuffPicker.test.tsx` (cuff tooltip, in-search and once
+pinned), and a new `EquipmentExclusionPicker.test.tsx` (this component had no dedicated test file
+before -- both its search and its excluded-badge tooltips), plus the full suite (321/321, excluding
+the same two known-flaky timing tests `engine.real-data.performance.test.ts`/
+`engine.property.test.ts` noted in TODO #28's own verification). Live-verified in the browser against
+the real data bundle: searching "Leather" in the head-piece pin search shows each option's own real
+skill grants on hover (e.g. "Leather R Helm" -- "Attack: 5, Fate: 4, Fire Sword: 5, Quake Res: -3,
+Stamina: 3").
+
+**Follow-up (2026-10-17): keyboard-only picking in every one of these pickers.** Per the project
+owner: "the main thing that I would still really like to implement is being able to use everything
+through keyboard... type a skill name, enter... rather than having to... click on the result."
+`ArmorPicker.tsx`, `CuffPicker.tsx`, and `EquipmentExclusionPicker.tsx` each pair a plain search
+`<input>` with a `FilterableOptions`-rendered `<select>` listbox, but previously did nothing with
+Enter in that input -- reaching the listbox at all needed a Tab out of the text field first. Two
+shared pure functions, `firstMatch`/`handleEnterToPickFirst`, now live in a new
+`components/pick-first-match.ts` (not in `FilterableOptions.tsx` itself -- oxlint's Fast-Refresh
+`only-export-components` rule flags a component file exporting plain functions, the same reason
+`pinned-armor.ts` already gives for keeping helpers out of its own component file). Every affected
+search input's `onKeyDown` and its sibling `FilterableOptions`' `onPick` now call the same named
+pick-function (`pickCandidate`/`pickSlotDecoration` in `ArmorPicker.tsx`, `pickCuff` in
+`CuffPicker.tsx`, the inline `add`/`pickDecoration` in `EquipmentExclusionPicker.tsx`), so keyboard and
+mouse selection can never drift apart.
+
+Verified: `tsc -b` and `oxlint` clean; new `describe('keyboard-only picking', ...)` blocks in
+`ArmorPicker.test.tsx` (pin a piece via Enter, place a decoration via Enter, no-op with no match),
+`CuffPicker.test.tsx` (pin a cuff via Enter, no-op with no match), and
+`EquipmentExclusionPicker.test.tsx` (exclude an item via Enter, no-op with no match); full suite
+328/328 (the same two known-flaky timing tests excluded, per TODO #28). Live-verified in the browser
+against the real data bundle: typing "Leather" then Enter in the head-piece pin search pinned "Leather
+Helm" with no mouse click, typing "attack" then Enter in that slot's decoration search placed "Attack
+1 Deco", typing "Sharpen" then Enter in cuff slot 1 pinned "Sharpening PC1", and typing "attack" then
+Enter in the decoration-exclusion search excluded "Attack 1 Deco" -- all four reverted afterward to
+leave the page's saved state unchanged.
