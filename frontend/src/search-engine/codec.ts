@@ -1,11 +1,12 @@
 /**
- * Generic byte<->text codec shared by every "encode some JSON-safe state as a
- * short, pasteable string" feature this project has -- `shared-state.ts`'s
- * build-result links and `query-code.ts`'s save-this-search codes both just
- * gzip their own JSON and base64url-encode the result. Split out from
- * `shared-state.ts` (which originally had this inline) once `query-code.ts`
- * needed the exact same codec for a differently-shaped payload, rather than
- * duplicating it.
+ * Generic byte<->text codec for "encode some JSON-safe state as a short,
+ * pasteable string" -- `shared-state.ts`'s build-result links gzip their own
+ * JSON and base64url-encode the result, needed since a full solved result is
+ * too large for a URL fragment otherwise. Originally shared with
+ * `query-code.ts`'s save-this-search codes too, until those switched to a
+ * human-readable text format instead (2026-10-17, per the project owner) --
+ * a `SearchFormState` has no URL-length budget to economize for the way a
+ * share link does, so compactness stopped being worth the unreadability.
  */
 
 export function toBase64Url(bytes: Uint8Array): string {

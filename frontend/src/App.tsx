@@ -22,6 +22,7 @@ import { findUnreachableRequirements } from './search-engine/feasibility'
 import { GEAR_CATEGORY_GROUPS } from './search-engine/gear-categories'
 import type { PinnedSlot } from './search-engine/pinned-armor'
 import { decodeQueryCode, encodeQueryCode } from './search-engine/query-code'
+import type { QueryCodeCatalog } from './search-engine/query-code'
 import type { SearchFormState } from './search-engine/search-form-state'
 import { loadSearchFormState, saveSearchFormState } from './search-engine/search-form-state'
 import { buildResultUrl } from './search-engine/shared-state'
@@ -339,6 +340,28 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
     [bundle],
   )
 
+  // Lets query-code.ts resolve every id it stores (skills, armor,
+  // decorations, cuffs) to its real name and back -- see that module's own
+  // docstring (2026-10-17, per the project owner: "human readable... instead
+  // of base64 encoded"). `null` while the bundle hasn't loaded yet, same as
+  // `worker` above; the Save/load section is only ever reachable once it has.
+  const queryCodeCatalog = useMemo<QueryCodeCatalog | null>(
+    () =>
+      bundle
+        ? {
+            skills: bundle.skills,
+            zenithSkills: bundle.zenithSkills,
+            armorCandidates: allArmorCandidates,
+            decorations: bundle.decorations,
+            cuffs: bundle.cuffs,
+            gearCategories: GEAR_CATEGORY_GROUPS,
+            cuffCategories: CUFF_CATEGORY_GROUPS,
+            decorationCategories: DECORATION_CATEGORY_GROUPS,
+          }
+        : null,
+    [bundle, allArmorCandidates],
+  )
+
   // Grouped by category key for each category tree's own "View" toggle
   // (docs/feedback.md Round 1 #2: "see what's actually in a category") --
   // `CategoryFilter`'s own `itemsByCategory` prop. Armor is grouped from the
@@ -597,28 +620,32 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
   const [queryCodeError, setQueryCodeError] = useState<string | null>(null)
 
   function handleGenerateQueryCode(): void {
+    if (!queryCodeCatalog) return
     setIsGeneratingQueryCode(true)
-    void encodeQueryCode({
-      requirements,
-      zenithRequirements,
-      excludedCategories: [...excludedCategories],
-      excludedCuffCategories: [...excludedCuffCategories],
-      excludedDecorationCategories: [...excludedDecorationCategories],
-      excludedWeaponZenithSkillIds: excludedWeaponZenithSkillIds
-        ? [...excludedWeaponZenithSkillIds]
-        : null,
-      weaponSlotCount,
-      hunterTypeFilter,
-      pinnedArmor: [...pinnedArmor.entries()],
-      pinnedCuffIds,
-      pinnedSlotDecorationIds: [...pinnedSlotDecorationIds.entries()],
-      excludedArmorIds: [...excludedArmorIds],
-      excludedDecorationIds: [...excludedDecorationIds],
-      excludedCuffIds: [...excludedCuffIds],
-      nonNegativeResistances: [...nonNegativeResistances],
-      preferExactMatches,
-      maxResults,
-    })
+    void encodeQueryCode(
+      {
+        requirements,
+        zenithRequirements,
+        excludedCategories: [...excludedCategories],
+        excludedCuffCategories: [...excludedCuffCategories],
+        excludedDecorationCategories: [...excludedDecorationCategories],
+        excludedWeaponZenithSkillIds: excludedWeaponZenithSkillIds
+          ? [...excludedWeaponZenithSkillIds]
+          : null,
+        weaponSlotCount,
+        hunterTypeFilter,
+        pinnedArmor: [...pinnedArmor.entries()],
+        pinnedCuffIds,
+        pinnedSlotDecorationIds: [...pinnedSlotDecorationIds.entries()],
+        excludedArmorIds: [...excludedArmorIds],
+        excludedDecorationIds: [...excludedDecorationIds],
+        excludedCuffIds: [...excludedCuffIds],
+        nonNegativeResistances: [...nonNegativeResistances],
+        preferExactMatches,
+        maxResults,
+      },
+      queryCodeCatalog,
+    )
       .then(setGeneratedQueryCode)
       .finally(() => setIsGeneratingQueryCode(false))
   }
@@ -646,8 +673,9 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
   }
 
   function handleLoadQueryCode(): void {
+    if (!queryCodeCatalog) return
     setQueryCodeError(null)
-    void decodeQueryCode(queryCodeInput).then((state) => {
+    void decodeQueryCode(queryCodeInput, queryCodeCatalog).then((state) => {
       if (!state) {
         setQueryCodeError('That code could not be read -- check it was copied in full.')
         return
@@ -909,32 +937,32 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                   Get a text code for every search input above, to reuse or share later -- unlike the
                   automatic restore-on-reload, you can keep as many of these as you want.
                 </p>
-                <div className="app-field-group d-flex gap-2 align-items-start">
+                <div className="app-field-group d-flex flex-column gap-1">
                   <button
                     type="button"
-                    className="btn btn-sm btn-outline-secondary"
+                    className="btn btn-sm btn-outline-secondary align-self-start"
                     disabled={isGeneratingQueryCode}
                     onClick={handleGenerateQueryCode}
                   >
                     {isGeneratingQueryCode ? 'Generating…' : 'Get a save code'}
                   </button>
                   {generatedQueryCode && (
-                    <input
-                      type="text"
+                    <textarea
                       className="form-control form-control-sm"
                       aria-label="Save code for this search"
                       readOnly
+                      rows={10}
                       value={generatedQueryCode}
                       onFocus={(e) => e.target.select()}
                     />
                   )}
                 </div>
-                <div className="app-field-group d-flex gap-2 align-items-start">
-                  <input
-                    type="text"
+                <div className="app-field-group d-flex flex-column gap-1">
+                  <textarea
                     className="form-control form-control-sm"
                     aria-label="Save code to load"
                     placeholder="Paste a save code…"
+                    rows={10}
                     value={queryCodeInput}
                     onChange={(e) => {
                       setQueryCodeInput(e.target.value)
@@ -943,7 +971,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                   />
                   <button
                     type="button"
-                    className="btn btn-sm btn-outline-secondary"
+                    className="btn btn-sm btn-outline-secondary align-self-start"
                     disabled={queryCodeInput.trim().length === 0}
                     onClick={handleLoadQueryCode}
                   >

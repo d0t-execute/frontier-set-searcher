@@ -1792,3 +1792,54 @@ Helm" with no mouse click, typing "attack" then Enter in that slot's decoration 
 1 Deco", typing "Sharpen" then Enter in cuff slot 1 pinned "Sharpening PC1", and typing "attack" then
 Enter in the decoration-exclusion search excluded "Attack 1 Deco" -- all four reverted afterward to
 leave the page's saved state unchanged.
+
+## 30. Human-readable save/load query codes
+
+**Status (2026-10-17): COMPLETE.** Per the project owner, while reviewing the save/load-by-code
+feature from TODO #27: the gzip+base64url code it produced looked like gibberish -- every id (skill,
+category, armor/decoration/cuff) should instead resolve to its real name, both generating a code and
+reading one back in.
+
+`query-code.ts` was rewritten from a compressed binary codec to a plain, line-based text format:
+every value gets its own line, either a flat `"Label: value"` line or a `"Label:"` section header
+followed by `"- value"` item lines -- never multiple values packed onto one comma-separated line.
+This wasn't a style choice: checking the real data turned up armor piece names containing commas,
+colons, brackets and parentheses (e.g. `"Plug Head:01"`, `"Akahara Reisou・胴: Bow Red"`,
+`"Mizuha [Eboshi 】"` -- 193 of ~13,000 head pieces alone), any of which could be swallowed by an
+inline delimiter. One name per line means the entire rest of a line (after a known, colon-free prefix
+like an armor slot id) is always the value, nothing left to escape -- `decodeSlotNamePairs` splits on
+only the *first* `": "` for exactly this reason, since the prefix vocabulary (a slot id) never
+contains one.
+
+A name that isn't unique within its own catalog (e.g. two different armor pieces sharing a display
+name) is disambiguated with its own id in parentheses, e.g. `"Iron Helm (head:0002)"`, resolved back
+by that id rather than by name -- the one case "real names" can't fully avoid showing an id. A real
+label that already happens to contain a legitimate parenthetical (e.g. `"Standard (Unavailable)"`)
+round-trips as plain text, never mistaken for the disambiguation suffix (`idFor` tries an exact label
+match before the suffix pattern).
+
+New `QueryCodeCatalog` parameter (both `encodeQueryCode` and `decodeQueryCode` now take one, alongside
+the existing `SearchFormState`/code argument) carries every `{id, name}` list this module needs to
+resolve: skills, Zenith skills, armor candidates, decorations, cuffs, plus the three category trees
+(`GEAR_CATEGORY_GROUPS`/`CUFF_CATEGORY_GROUPS`/`DECORATION_CATEGORY_GROUPS`) -- taken as data here
+rather than imported directly, even though they're static, so this module's own tests exercise the
+collision/disambiguation logic against a small fixture tree instead of coupling to real production
+category keys. `App.tsx` builds the real one once via `useMemo` (`queryCodeCatalog`, alongside the
+existing `allArmorCandidates`) and passes it to both `handleGenerateQueryCode` and
+`handleLoadQueryCode`.
+
+Caught during live verification, not before: the "Save code for this search"/"Save code to load"
+fields were still single-line `<input>` elements from TODO #27 -- a browser silently strips `\n`
+characters from a single-line text input's value, which was quietly corrupting the now-multi-line code
+on generation (and would have made a copy-pasted code unparseable on load, since the whole format
+leans on line structure). Fixed by switching both to `<textarea>`.
+
+Verified: `tsc -b` and `oxlint` clean; `query-code.test.ts` fully rewritten against a small fixture
+`QueryCodeCatalog` (13 tests: full round-trip, the nullable-vs-empty `excludedWeaponZenithSkillIds`
+distinction, an entirely empty search, name disambiguation for a collision, a legitimate parenthetical
+label staying plain, an embedded colon in a name, missing/squashed blank lines between sections, and
+several malformed-input cases returning `null`); full suite 326/326 (the same two known-flaky timing
+tests excluded, per TODO #28/#29). Live-verified in the browser against the real data bundle: a
+generated code reads as plain English (skill names, "Not Implemented"/"Standard (Unavailable)"-style
+category labels, real armor piece names), and pasting it back in after removing a skill requirement
+correctly restored it along with every other field, with no decode error shown.
