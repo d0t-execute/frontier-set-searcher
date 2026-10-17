@@ -1954,25 +1954,21 @@ real dataset: excluding "Premium Kit" dropped the head-slot "Helm" search's matc
 
 ## 34. Fold SkillPicker's own "N skills selected" line back into the Disclosure summary spot
 
-**Status: Not started.** The project owner: the skill count (currently its own line inside
-`SkillPicker.tsx`, see TODO #31) shouldn't be a separate field -- it should just live where it already
-does when the section is closed, i.e. the Disclosure header's own summary text.
+**Status (2026-10-17): COMPLETE.** `Disclosure.tsx` now always renders its `summary` span (dropped the
+`!open &&` guard, updated its own docstring), so `SkillPicker.tsx`'s own redundant `"N skills
+selected"`/`"No skills selected yet."` line (added for TODO #31) was deleted entirely, along with its
+two dedicated tests in `SkillPicker.test.tsx` -- `App.tsx`'s existing `skillsSummary`/
+`zenithSkillsSummary` (unchanged) now does this job alone, visible in the Disclosure header whether the
+section is open or closed.
 
-Today `Disclosure.tsx` only shows its `summary` prop while collapsed (`{!open && summary && ...}`,
-per its own docstring: "Hidden once the section is open, since the full content already shows that").
-TODO #31 worked around that by having `SkillPicker.tsx` render its own always-visible `"N skills
-selected"`/`"No skills selected yet."` line at the top of its body -- which now duplicates
-`App.tsx`'s existing `skillsSummary`/`zenithSkillsSummary` (the exact same count, already computed for
-the Disclosure header) once the section is open, as two separate pieces of UI showing the same thing.
+Checked every other `Disclosure` user (Gear levels, Poogie cuffs, Decorations, Pin specific cuffs,
+Exclusions, Weapon, Resistances) -- each summary (e.g. "2 categories of 63 excluded") reads sensibly
+staying visible once open too, since none of them duplicate it elsewhere in their own body the way
+`SkillPicker` did.
 
-The fix likely belongs in `Disclosure.tsx` itself: stop hiding `summary` once open (drop the `!open
-&&` guard, always render the `<span className="disclosure-summary">`, update its own docstring
-accordingly) -- then `SkillPicker.tsx`'s own redundant count line can be deleted entirely, along with
-its dedicated tests in `SkillPicker.test.tsx` (the persistent-count assertions), since `App.test.tsx`
-(or a `Disclosure.test.tsx`, if one gets added) would cover the header summary staying visible while
-open instead. Worth checking whether every other section's own summary (Gear levels, Poogie cuffs,
-Decorations, Exclusions, etc.) reads sensibly once always-visible too, since this would be a
-`Disclosure`-wide behavior change, not something scoped to just the two `SkillPicker` instances.
+Verified: `Disclosure.test.tsx`'s "shows the summary only while closed" test rewritten to assert the
+summary stays visible after opening; live-verified in the browser -- picking a skill updates the
+"Skills" Disclosure header to "1 skill" and the body no longer shows a separate count line.
 
 ## 35. "Pin specific armor" should also only search/pin pieces legal for the current Hunter Type
 

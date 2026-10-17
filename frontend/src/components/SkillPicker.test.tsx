@@ -139,27 +139,6 @@ describe('SkillPicker', () => {
     expect(addControl).toHaveValue('')
   })
 
-  it('shows a running count of selected skills that stays visible alongside the list', () => {
-    render(
-      <SkillPicker
-        skills={SKILLS}
-        requirements={[
-          { skillId: 1, minPoints: 5 },
-          { skillId: 2, minPoints: 10 },
-        ]}
-        onChange={vi.fn()}
-      />,
-    )
-
-    expect(screen.getByText('2 skills selected')).toBeInTheDocument()
-  })
-
-  it('says no skills are selected yet when the list is empty', () => {
-    render(<SkillPicker skills={SKILLS} requirements={[]} onChange={vi.fn()} />)
-
-    expect(screen.getByText('No skills selected yet.')).toBeInTheDocument()
-  })
-
   it('numbers each selected skill in order', () => {
     render(
       <SkillPicker

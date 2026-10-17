@@ -4,10 +4,13 @@ import type { ReactNode } from 'react'
 export interface DisclosureProps {
   readonly title: string
   /** One-line description of the section's current state, shown next to the
-   * title while collapsed (e.g. "2 skills required", "3 categories
-   * excluded") -- lets a collapsed section still communicate what's active
-   * without having to open it. Hidden once the section is open, since the
-   * full content already shows that. */
+   * title (e.g. "2 skills required", "3 categories excluded") -- lets a
+   * collapsed section still communicate what's active without having to open
+   * it. Stays visible once open too (2026-10-17, per the project owner: a
+   * section's own body shouldn't need to duplicate this as a separate line --
+   * see docs/skill-system-roadmap.md TODO #34), so a caller with content that
+   * already restates this once expanded (e.g. `SkillPicker`'s picked-count
+   * line) should drop its own copy rather than show the same count twice. */
   readonly summary?: string
   readonly defaultOpen?: boolean
   readonly children: ReactNode
@@ -42,7 +45,7 @@ export function Disclosure({ title, summary, defaultOpen = false, children }: Di
           ▸
         </span>
         <span className="disclosure-title">{title}</span>
-        {!open && summary && <span className="disclosure-summary">{summary}</span>}
+        {summary && <span className="disclosure-summary">{summary}</span>}
       </button>
       <div className="disclosure-body" data-open={open} id={contentId}>
         <div className="disclosure-body-inner">{children}</div>

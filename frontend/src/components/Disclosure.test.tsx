@@ -46,7 +46,7 @@ describe('Disclosure', () => {
     expect(header).toHaveAttribute('aria-expanded', 'false')
   })
 
-  it('shows the summary only while closed', async () => {
+  it('shows the summary whether the section is open or closed', async () => {
     const user = userEvent.setup()
     render(
       <Disclosure title="Weapon" summary="No Zenith skill, 0 slots">
@@ -58,7 +58,7 @@ describe('Disclosure', () => {
 
     await user.click(screen.getByRole('button', { name: /weapon/i }))
 
-    expect(screen.queryByText('No Zenith skill, 0 slots')).not.toBeInTheDocument()
+    expect(screen.getByText('No Zenith skill, 0 slots')).toBeInTheDocument()
   })
 
   it('keeps its content reachable even while closed', () => {

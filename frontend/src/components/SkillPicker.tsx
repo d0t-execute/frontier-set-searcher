@@ -128,14 +128,6 @@ export function SkillPicker({
 
   return (
     <div>
-      {/* Stays visible once the section is open too (2026-10-17, per the
-          project owner) -- unlike the collapsed Disclosure summary above
-          this, which hides itself once there's nothing left to summarize. */}
-      <div className="small text-muted mb-1">
-        {requirements.length === 0
-          ? 'No skills selected yet.'
-          : `${requirements.length} skill${requirements.length === 1 ? '' : 's'} selected`}
-      </div>
       <ul className="list-unstyled d-flex flex-column gap-2">
         {requirements.map((requirement, index) => {
           const tiers = skillOf(requirement.skillId)?.tiers ?? []
