@@ -1530,14 +1530,13 @@ clicking a suggestion; live-verified in the browser.
 
 ## 24. Widen the app intro/credits section
 
-**Status: Not started.** The project owner wrote credits/thanks (to mertna, Ferias/xl3lackout,
-MHSX2G, and Nenrikido's MH-Optimizer -- see `App.tsx`'s `<p className="app-intro">`) into the intro
-text at the top of the page, and it's being awkwardly wrapped by `.app-intro`'s `max-width: 60ch`
-(`index.css`) -- a width chosen back when this was a short one-line tagline, not a multi-paragraph
-credits block. Needs `.app-intro`'s `max-width` relaxed (the project owner suggested full width) --
-likely dropping the `max-width` constraint entirely, or raising it enough to comfortably fit the
-credits paragraph without the cramped wrapping, while checking it still reads reasonably at both the
-mobile breakpoint and the widened desktop layout TODO #19 introduced.
+**Status (2026-10-16): COMPLETE** (fixed in the same commit that originally logged this entry --
+`51df931`, "Widen the app intro for the credits text" -- this status line just wasn't updated at the
+time). `.app-intro`'s `max-width` (`index.css`) was raised from `60ch` to `160ch`, wide enough that the
+credits paragraph no longer wraps awkwardly at the widened desktop layout TODO #19 introduced. Verified
+directly against the current codebase while triaging this doc's other "Not started" entries
+(2026-10-18): confirmed the 160ch rule is still in place and matches the paragraph rendered in
+`App.tsx`'s `<p className="app-intro">`.
 
 ## 25. Pin a skill or Zenith skill instead of a specific cuff
 
