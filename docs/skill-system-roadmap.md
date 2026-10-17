@@ -1949,3 +1949,25 @@ consistent behavior is likely: keep an existing pin even if its category becomes
 let the *search* surface that category's pieces as new options to pin. Also needs a test in
 `ArmorPicker.test.tsx` (or `App.test.tsx`, wherever the filtered list gets threaded through) asserting
 an excluded-category piece doesn't appear in the piece search results.
+
+## 34. Fold SkillPicker's own "N skills selected" line back into the Disclosure summary spot
+
+**Status: Not started.** The project owner: the skill count (currently its own line inside
+`SkillPicker.tsx`, see TODO #31) shouldn't be a separate field -- it should just live where it already
+does when the section is closed, i.e. the Disclosure header's own summary text.
+
+Today `Disclosure.tsx` only shows its `summary` prop while collapsed (`{!open && summary && ...}`,
+per its own docstring: "Hidden once the section is open, since the full content already shows that").
+TODO #31 worked around that by having `SkillPicker.tsx` render its own always-visible `"N skills
+selected"`/`"No skills selected yet."` line at the top of its body -- which now duplicates
+`App.tsx`'s existing `skillsSummary`/`zenithSkillsSummary` (the exact same count, already computed for
+the Disclosure header) once the section is open, as two separate pieces of UI showing the same thing.
+
+The fix likely belongs in `Disclosure.tsx` itself: stop hiding `summary` once open (drop the `!open
+&&` guard, always render the `<span className="disclosure-summary">`, update its own docstring
+accordingly) -- then `SkillPicker.tsx`'s own redundant count line can be deleted entirely, along with
+its dedicated tests in `SkillPicker.test.tsx` (the persistent-count assertions), since `App.test.tsx`
+(or a `Disclosure.test.tsx`, if one gets added) would cover the header summary staying visible while
+open instead. Worth checking whether every other section's own summary (Gear levels, Poogie cuffs,
+Decorations, Exclusions, etc.) reads sensibly once always-visible too, since this would be a
+`Disclosure`-wide behavior change, not something scoped to just the two `SkillPicker` instances.
