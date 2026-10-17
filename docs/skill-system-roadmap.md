@@ -1971,3 +1971,27 @@ its dedicated tests in `SkillPicker.test.tsx` (the persistent-count assertions),
 open instead. Worth checking whether every other section's own summary (Gear levels, Poogie cuffs,
 Decorations, Exclusions, etc.) reads sensibly once always-visible too, since this would be a
 `Disclosure`-wide behavior change, not something scoped to just the two `SkillPicker` instances.
+
+## 35. "Pin specific armor" should also only search/pin pieces legal for the current Hunter Type
+
+**Status: Not started.** The project owner: the armor search/pin feature should only offer pieces
+that are actually legal to equip as the build's current Hunter Type (Blademaster/Gunner) -- not also
+pieces restricted to the other one -- confirmed not already the case.
+
+Same shape of gap as TODO #33, a different filter: `App.tsx` passes `ArmorPicker` `slots={bundle.slots}`
+directly, with no Hunter Type filtering applied at all (`hunterTypeFilter` state exists and is read
+into `queryFormState`, but never reaches `ArmorPicker`). `build-query.ts` already has
+`slotsAfterHunterTypeFilter(slots, hunterTypeFilter)` -- used inside `buildSearchQuery` for the real
+search, dropping every candidate whose own `hunterType` is neither `'common'` nor the build's current
+filter -- but that function is never applied to the list handed to the picker, so e.g. a Gunner-only
+helmet can still be found and pinned while the build is set to Blademaster (and the solver would
+presumably still honor that pin regardless, the same "pin always wins" precedent as every other
+filter here).
+
+Likely belongs alongside TODO #33's fix, in the same `pinnableSlots`-style `useMemo`: `slots =
+slotsAfterHunterTypeFilter(slotsAfterCategoryFilter(bundle.slots, excludedCategories),
+hunterTypeFilter)`, recomputed whenever `hunterTypeFilter` (or `excludedCategories`) changes, since
+both filters narrow the exact same `slots` list before it reaches `ArmorPicker`. Needs a test (likely
+in `App.test.tsx`, since the fixture bundle needs more than one Hunter Type candidate to exercise
+this) asserting a Gunner-restricted piece doesn't appear in the piece search while Blademaster is
+selected, and vice versa.
