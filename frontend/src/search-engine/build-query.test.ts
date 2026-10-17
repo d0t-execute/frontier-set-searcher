@@ -2,13 +2,10 @@ import { describe, expect, it } from 'vitest'
 import {
   buildSearchQuery,
   cuffsAfterExcludedIds,
-  cuffsAfterExcludedSkills,
   decorationsAfterCategoryFilter,
   decorationsAfterExcludedIds,
-  decorationsAfterExcludedSkills,
   resolvePinnedSlotDecorations,
   slotsAfterExcludedIds,
-  slotsAfterExcludedSkills,
   slotsAfterHunterTypeFilter,
 } from './build-query'
 import type { QueryFormState } from './build-query'
@@ -179,48 +176,6 @@ describe('cuffsAfterExcludedIds', () => {
   })
 })
 
-describe('slotsAfterExcludedSkills', () => {
-  const slots: readonly NamedSlotQuery[] = [
-    {
-      slotId: 'body',
-      candidates: [
-        candidate('a', 'common', 0, [{ skillId: 1, points: 5 }]),
-        candidate('b', 'common', 0, [{ skillId: 2, points: 5 }]),
-      ],
-    },
-  ]
-
-  it('drops every candidate that grants an excluded skill', () => {
-    const result = slotsAfterExcludedSkills(slots, new Set(['1']))
-    expect(result[0].candidates.map((c) => c.id)).toEqual(['b'])
-  })
-
-  it('returns an equivalent copy when nothing is excluded', () => {
-    const result = slotsAfterExcludedSkills(slots, new Set())
-    expect(result[0].candidates.map((c) => c.id)).toEqual(['a', 'b'])
-  })
-})
-
-describe('decorationsAfterExcludedSkills', () => {
-  it('drops decorations that grant an excluded skill', () => {
-    const result = decorationsAfterExcludedSkills(
-      [deco('a', false, 'deco_standard', [{ skillId: 1, points: 3 }]), deco('b', false)],
-      new Set(['1']),
-    )
-    expect(result.map((d) => d.id)).toEqual(['b'])
-  })
-})
-
-describe('cuffsAfterExcludedSkills', () => {
-  it('drops cuffs that grant an excluded skill', () => {
-    const result = cuffsAfterExcludedSkills(
-      [cuffFixture('a', undefined, [{ skillId: 1, points: 5 }]), cuffFixture('b')],
-      new Set(['1']),
-    )
-    expect(result.map((c) => c.id)).toEqual(['b'])
-  })
-})
-
 describe('buildSearchQuery', () => {
   it("excludes Tower Gems from the decorations it hands to the solver, even though they're in the bundle", () => {
     const query = buildSearchQuery(BUNDLE, EMPTY_FORM_STATE)
@@ -335,7 +290,7 @@ describe('buildSearchQuery', () => {
     expect(query.pinnedCuffs.map((c) => c.id)).toEqual(['a'])
   })
 
-  it('drops every armor piece, decoration, and cuff that grants an excluded skill', () => {
+  it("doesn't drop any piece/decoration/cuff that grants an excluded skill from the solver pool (TODO #37: a hard solver constraint, not a pool filter)", () => {
     const bundleWithSkills: DataBundle = {
       ...BUNDLE,
       slots: [
@@ -358,29 +313,21 @@ describe('buildSearchQuery', () => {
       excludedSkillIds: new Set(['1']),
     })
 
-    expect(query.slots.find((s) => s.slotId === 'head')?.candidates.map((c) => c.id)).toEqual(['b'])
-    expect(query.decorations.map((d) => d.id)).toEqual([])
-    expect(query.cuffs.map((c) => c.id)).toEqual(['b'])
+    expect(query.slots.find((s) => s.slotId === 'head')?.candidates.map((c) => c.id)).toEqual([
+      'a',
+      'b',
+    ])
+    expect(query.decorations.map((d) => d.id)).toEqual(['regular'])
+    expect(query.cuffs.map((c) => c.id)).toEqual(['a', 'b'])
   })
 
-  it('still pins a piece/decoration/cuff that grants an excluded skill, since a pin always wins', () => {
-    const bundleWithSkills: DataBundle = {
-      ...BUNDLE,
-      slots: [{ slotId: 'head', candidates: [candidate('a', 'common', 1, [{ skillId: 1, points: 5 }])] }],
-      decorations: [deco('regular', false, 'deco_standard', [{ skillId: 1, points: 3 }])],
-      cuffs: [cuffFixture('a', undefined, [{ skillId: 1, points: 5 }])],
-    }
-    const query = buildSearchQuery(bundleWithSkills, {
+  it('parses excludedSkillIds into numeric excludedActiveSkillIds for the solver', () => {
+    const query = buildSearchQuery(BUNDLE, {
       ...EMPTY_FORM_STATE,
-      excludedSkillIds: new Set(['1']),
-      pinnedArmor: new Map([['head', { candidateId: 'a', decorationIds: ['regular'] }]]),
-      pinnedCuffIds: ['a'],
+      excludedSkillIds: new Set(['1', '2']),
     })
 
-    const headSlot = query.slots.find((s) => s.slotId === 'head')
-    expect(headSlot?.candidates.map((c) => c.id)).toEqual(['a'])
-    expect(headSlot?.candidates[0]?.name).toContain('regular')
-    expect(query.pinnedCuffs.map((c) => c.id)).toEqual(['a'])
+    expect(query.excludedActiveSkillIds).toEqual([1, 2])
   })
 })
 

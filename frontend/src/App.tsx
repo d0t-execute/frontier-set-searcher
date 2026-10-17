@@ -588,10 +588,8 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
     setErrorMessage(null)
     setReachedCap(false)
 
-    const { slots, decorations, cuffs, pinnedCuffs, pinnedSlotDecorations } = buildSearchQuery(
-      bundle,
-      queryFormState,
-    )
+    const { slots, decorations, cuffs, pinnedCuffs, pinnedSlotDecorations, excludedActiveSkillIds } =
+      buildSearchQuery(bundle, queryFormState)
 
     // Caught before ever handing this to the solver (docs/feedback.md Round 1
     // #14) -- a requirement flagged here is provably unreachable no matter
@@ -656,6 +654,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
         pinnedCuffs,
         pinnedSlotDecorations,
         resistanceFloors: [...nonNegativeResistances].map((element) => ({ element, minTotal: 0 })),
+        excludedActiveSkillIds,
       },
       cuffs,
     )
@@ -897,8 +896,9 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
               <Disclosure title="Exclusions" summary={exclusionsSummary}>
                 <p className="form-text">
                   Excluded armor, decorations, and cuffs never appear in a search result, unless also
-                  pinned above -- a pin always wins. Excluding a skill drops every piece, decoration,
-                  or cuff that grants it. Type at least 2 characters to search.
+                  pinned above -- a pin always wins. Excluding a skill works differently: a result is
+                  simply never allowed to make that skill active, but equipment that grants it stays
+                  eligible otherwise. Type at least 2 characters to search.
                 </p>
                 <EquipmentExclusionPicker
                   armorCandidates={allArmorCandidates}

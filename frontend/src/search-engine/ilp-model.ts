@@ -195,6 +195,20 @@ interface TierBreakpoints {
  * was crossed too). A requested skill is skipped entirely: its own
  * requirement row already governs it, and it's never treated as a "bonus"
  * skill regardless of what `options.skillTiers` says about it. */
+/** The two nearest tier breakpoints (see `TierBreakpoints`) for one skill's
+ * raw thresholds -- shared by `resolveTierBreakpoints` below and
+ * `buildModel`'s excluded-active-skill rows (docs/skill-system-roadmap.md
+ * TODO #37), both of which need exactly the same pos/neg reduction
+ * `active-skill-cap.ts`'s `isSkillActive` also performs. */
+function breakpointsFromThresholds(tierThresholds: readonly number[]): TierBreakpoints {
+  const positives = tierThresholds.filter((t) => t > 0)
+  const negatives = tierThresholds.filter((t) => t < 0)
+  return {
+    posThreshold: positives.length > 0 ? Math.min(...positives) : undefined,
+    negThreshold: negatives.length > 0 ? Math.max(...negatives) : undefined,
+  }
+}
+
 function resolveTierBreakpoints(
   skillTiers: readonly SkillTierThresholds[],
   requestedSkillIds: ReadonlySet<SkillId>,
@@ -203,12 +217,9 @@ function resolveTierBreakpoints(
   for (const { skillId, tierThresholds } of skillTiers) {
     if (requestedSkillIds.has(skillId)) continue
 
-    const positives = tierThresholds.filter((t) => t > 0)
-    const negatives = tierThresholds.filter((t) => t < 0)
-    const posThreshold = positives.length > 0 ? Math.min(...positives) : undefined
-    const negThreshold = negatives.length > 0 ? Math.max(...negatives) : undefined
-    if (posThreshold !== undefined || negThreshold !== undefined) {
-      breakpoints.set(skillId, { posThreshold, negThreshold })
+    const bp = breakpointsFromThresholds(tierThresholds)
+    if (bp.posThreshold !== undefined || bp.negThreshold !== undefined) {
+      breakpoints.set(skillId, bp)
     }
   }
   return breakpoints
@@ -475,7 +486,36 @@ export function buildModel(
   const resistanceFloors: readonly ResistanceFloor[] = options.resistanceFloors ?? []
   const resistanceRowBase = skillRowBase + requirements.length
   const resistanceRow = (floorIndex: number): number => resistanceRowBase + floorIndex
-  const baseNumRows = resistanceRowBase + resistanceFloors.length
+
+  // One row per excluded-active skill (docs/skill-system-roadmap.md TODO #37)
+  // -- replaces TODO #32's old "ban every piece/decoration/cuff that grants
+  // any points in it" behavior with a hard constraint that just keeps the
+  // build's summed total for that skill outside whichever tier(s) would make
+  // it "active," mirroring `active-skill-cap.ts`'s own `isSkillActive` exactly
+  // inverted (reusing `breakpointsFromThresholds`, the same reduction
+  // `resolveTierBreakpoints` uses). Unlike a resistance floor, fed by
+  // candidates, decorations, *and* cuffs -- skill points aren't
+  // candidate-only -- and unlike a plain floor, can have both a lower *and*
+  // upper bound at once (a skill with both a bonus and a penalty tier has an
+  // "inactive" zone strictly between them), each offset by the skill's own
+  // pinned-cuff contribution the same way a requirement row is.
+  const excludedActiveSkillIds: readonly SkillId[] = options.excludedActiveSkillIds ?? []
+  const excludedSkillTierThresholds = new Map(
+    (options.skillTiers ?? []).map((t) => [t.skillId, t.tierThresholds]),
+  )
+  const excludedSkillBounds = excludedActiveSkillIds.map((skillId) => {
+    const { posThreshold, negThreshold } = breakpointsFromThresholds(
+      excludedSkillTierThresholds.get(skillId) ?? [],
+    )
+    const untiered = posThreshold === undefined && negThreshold === undefined
+    return {
+      lower: negThreshold !== undefined ? negThreshold + 1 : -highs.infinity,
+      upper: posThreshold !== undefined ? posThreshold - 1 : untiered ? 0 : highs.infinity,
+    }
+  })
+  const excludedSkillRowBase = resistanceRowBase + resistanceFloors.length
+  const excludedSkillRow = (i: number): number => excludedSkillRowBase + i
+  const baseNumRows = excludedSkillRowBase + excludedActiveSkillIds.length
 
   // Tier machinery (see this function's own docstring) -- resolved before
   // row layout is finalized, since its row/column counts depend on which
@@ -545,6 +585,11 @@ export function buildModel(
     rowLower[resistanceRow(i)] = floor.minTotal
     rowUpper[resistanceRow(i)] = highs.infinity
   })
+  excludedActiveSkillIds.forEach((skillId, i) => {
+    const pinned = pinnedPointsTowards(skillId)
+    rowLower[excludedSkillRow(i)] = excludedSkillBounds[i].lower - pinned
+    rowUpper[excludedSkillRow(i)] = excludedSkillBounds[i].upper - pinned
+  })
   for (const m of tierMachinery) {
     rowLower[totalRowOf.get(m.skillId)!] = 0
     rowUpper[totalRowOf.get(m.skillId)!] = 0
@@ -609,6 +654,10 @@ export function buildModel(
         const amount = candidate.resistances?.[floor.element] ?? 0
         if (amount !== 0) entries.set(resistanceRow(i), amount)
       })
+      excludedActiveSkillIds.forEach((skillId, i) => {
+        const points = pointsTowards(candidate.skills, skillId)
+        if (points !== 0) entries.set(excludedSkillRow(i), points)
+      })
       for (const m of tierMachinery) {
         const points = pointsTowards(candidate.skills, m.skillId)
         if (points !== 0) entries.set(totalRowOf.get(m.skillId)!, points)
@@ -647,6 +696,10 @@ export function buildModel(
             const points = pointsTowards(decoration.skills, req.skillId)
             if (points !== 0) entries.set(skillRow(r), count * points)
           })
+          excludedActiveSkillIds.forEach((skillId, i) => {
+            const points = pointsTowards(decoration.skills, skillId)
+            if (points !== 0) entries.set(excludedSkillRow(i), count * points)
+          })
           for (const m of tierMachinery) {
             const points = pointsTowards(decoration.skills, m.skillId)
             if (points !== 0) entries.set(totalRowOf.get(m.skillId)!, count * points)
@@ -684,6 +737,10 @@ export function buildModel(
         requirements.forEach((req, r) => {
           const points = pointsTowards(cuff.skills, req.skillId)
           if (points !== 0) entries.set(skillRow(r), count * points)
+        })
+        excludedActiveSkillIds.forEach((skillId, j) => {
+          const points = pointsTowards(cuff.skills, skillId)
+          if (points !== 0) entries.set(excludedSkillRow(j), count * points)
         })
         for (const m of tierMachinery) {
           const points = pointsTowards(cuff.skills, m.skillId)

@@ -169,6 +169,19 @@ export interface SearchOptions {
    * and cuffs carry no resistance data at all (see `Candidate.resistances`'s
    * own docstring). */
   readonly resistanceFloors?: readonly ResistanceFloor[]
+  /** Skills a result must never make "active" (docs/skill-system-roadmap.md
+   * TODO #37) -- modeled by `ilp-model.ts`'s `buildModel` as one additional
+   * hard-constraint row per entry, keeping the summed contribution across
+   * every chosen candidate, placed decoration, *and* equipped cuff strictly
+   * outside whichever tier(s) would activate it (reusing `isSkillActive`'s
+   * exact pos/neg threshold reduction, inverted) -- rather than banning every
+   * piece/decoration/cuff that grants any points in it at all, the old (TODO
+   * #32) behavior this replaces. Needs each excluded skill's own
+   * `skillTiers` entry to know where its tiers actually are; a skill left out
+   * of `skillTiers` is treated as untiered (activates on any positive total),
+   * same "unknown defaults to the plain fallback" convention `skillTiers`
+   * itself already uses. */
+  readonly excludedActiveSkillIds?: readonly SkillId[]
 }
 
 export interface BuildResult {

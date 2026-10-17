@@ -78,14 +78,19 @@ export interface QueryFormState {
   readonly excludedDecorationIds: ReadonlySet<string>
   readonly excludedCuffIds: ReadonlySet<string>
   /** Skill ids (stringified, same convention as every other id set here --
-   * see `EquipmentExclusionPicker.tsx`'s own docstring) the player never
-   * wants ANY equipment to grant -- an armor piece/decoration/cuff that
-   * grants one of these is dropped from the pool entirely, the same as if
-   * the player had excluded that specific item by id (docs/skill-system-
-   * roadmap.md's exclusions generalization, 2026-10-18 per the project
-   * owner: "add the ability to exclude specific skills... add that to the
-   * exclude specific equipment"). Same "pin always wins" semantics as the
-   * id-based exclusions above. */
+   * see `EquipmentExclusionPicker.tsx`'s own docstring) a result is never
+   * allowed to make "active." Unlike the id-based exclusions above, this is
+   * NOT a pool filter -- a piece/decoration/cuff that grants one of these
+   * skills stays fully eligible, since dropping every contributor outright
+   * was too blunt (docs/skill-system-roadmap.md TODO #37, replacing this
+   * feature's original TODO #32 behavior: "there are edge cases where it
+   * might be preferable to get a few points in a skill, but not have it
+   * activate... to be able to use decorations that give multiple different
+   * skills"). Instead threaded straight through to
+   * `SearchOptions.excludedActiveSkillIds` as a solver-side hard constraint
+   * (see `buildSearchQuery`) -- a build may still pick up a few incidental
+   * points in an excluded skill, just never enough to cross into one of its
+   * own tiers. */
   readonly excludedSkillIds: ReadonlySet<string>
 }
 
@@ -194,24 +199,6 @@ export function slotsAfterExcludedIds(
   }))
 }
 
-/** Drops every candidate that grants any explicitly excluded skill (see
- * `QueryFormState.excludedSkillIds`'s own docstring) -- same "pin always
- * wins" semantics and ordering as `slotsAfterExcludedIds`: applied to the
- * same pre-pinning pool, so a piece the player pinned that happens to grant
- * an excluded skill still stays pinned. */
-export function slotsAfterExcludedSkills(
-  slots: readonly NamedSlotQuery[],
-  excludedSkillIds: ReadonlySet<string>,
-): NamedSlotQuery[] {
-  if (excludedSkillIds.size === 0) return [...slots]
-  return slots.map((slot) => ({
-    ...slot,
-    candidates: slot.candidates.filter(
-      (c) => !c.skills.some((s) => excludedSkillIds.has(String(s.skillId))),
-    ),
-  }))
-}
-
 // A pinned slot is forced by narrowing its candidate list down to exactly one
 // synthesized candidate -- the same technique `buildWeaponSlot` already uses,
 // not new ILP machinery (see docs/skill-system-roadmap.md TODO #7):
@@ -291,19 +278,6 @@ export function cuffsAfterExcludedIds(
   return cuffs.filter((c) => !excludedIds.has(c.id))
 }
 
-/** Drops every cuff that grants any explicitly excluded skill (see
- * `QueryFormState.excludedSkillIds`'s own docstring) -- only ever applied to
- * the free pool, same as `cuffsAfterExcludedIds`: a pinned cuff is resolved
- * straight from the unfiltered bundle by `resolvePinnedCuffs`, so it's
- * already structurally exempt. */
-export function cuffsAfterExcludedSkills(
-  cuffs: readonly NamedCuff[],
-  excludedSkillIds: ReadonlySet<string>,
-): NamedCuff[] {
-  if (excludedSkillIds.size === 0) return [...cuffs]
-  return cuffs.filter((c) => !c.skills.some((s) => excludedSkillIds.has(String(s.skillId))))
-}
-
 /** Tower Gems and regular decorations are strictly exclusive with each other
  * in both directions in-game (docs/data-format-notes.md's "Decorations"
  * section: Tower armor can only take Tower Gems, regular armor can't take
@@ -343,19 +317,6 @@ export function decorationsAfterExcludedIds(
 ): NamedDecoration[] {
   if (excludedIds.size === 0) return [...decorations]
   return decorations.filter((d) => !excludedIds.has(d.id))
-}
-
-/** Drops every decoration that grants any explicitly excluded skill (see
- * `QueryFormState.excludedSkillIds`'s own docstring) -- same "pin always
- * wins" semantics as `decorationsAfterExcludedIds`: only ever applied to the
- * solver's free decoration pool, never to the list a pin is resolved
- * against. */
-export function decorationsAfterExcludedSkills(
-  decorations: readonly NamedDecoration[],
-  excludedSkillIds: ReadonlySet<string>,
-): NamedDecoration[] {
-  if (excludedSkillIds.size === 0) return [...decorations]
-  return decorations.filter((d) => !d.skills.some((s) => excludedSkillIds.has(String(s.skillId))))
 }
 
 /** Resolves pinned cuff ids (see `QueryFormState.pinnedCuffIds`) to their full
@@ -409,6 +370,11 @@ export interface BuiltQuery {
   readonly cuffs: NamedCuff[]
   readonly pinnedCuffs: NamedCuff[]
   readonly pinnedSlotDecorations: Map<string, NamedDecoration[]>
+  /** `state.excludedSkillIds`, parsed back to numeric skill ids -- handed
+   * straight through to `SearchOptions.excludedActiveSkillIds` (see
+   * `QueryFormState.excludedSkillIds`'s own docstring for why this is a
+   * solver constraint rather than another pool filter here). */
+  readonly excludedActiveSkillIds: number[]
 }
 
 /** The inverse direction of `buildWeaponSlot`: given which weapon candidate a
@@ -465,19 +431,13 @@ export function buildSearchQuery(bundle: DataBundle, state: QueryFormState): Bui
     bundle.decorations,
     state.excludedDecorationCategories,
   )
-  const decorations = decorationsAfterExcludedSkills(
-    decorationsAfterExcludedIds(pinnableDecorations, state.excludedDecorationIds),
-    state.excludedSkillIds,
-  )
+  const decorations = decorationsAfterExcludedIds(pinnableDecorations, state.excludedDecorationIds)
   const slots = [
     ...slotsAfterPinning(
       slotsAfterHunterTypeFilter(
-        slotsAfterExcludedSkills(
-          slotsAfterExcludedIds(
-            slotsAfterCategoryFilter(bundle.slots, state.excludedCategories),
-            state.excludedArmorIds,
-          ),
-          state.excludedSkillIds,
+        slotsAfterExcludedIds(
+          slotsAfterCategoryFilter(bundle.slots, state.excludedCategories),
+          state.excludedArmorIds,
         ),
         state.hunterTypeFilter,
       ),
@@ -487,12 +447,9 @@ export function buildSearchQuery(bundle: DataBundle, state: QueryFormState): Bui
     ),
     buildWeaponSlot(bundle, state),
   ]
-  const cuffs = cuffsAfterExcludedSkills(
-    cuffsAfterExcludedIds(
-      cuffsAfterCategoryFilter(bundle.cuffs, state.excludedCuffCategories),
-      state.excludedCuffIds,
-    ),
-    state.excludedSkillIds,
+  const cuffs = cuffsAfterExcludedIds(
+    cuffsAfterCategoryFilter(bundle.cuffs, state.excludedCuffCategories),
+    state.excludedCuffIds,
   )
   const pinnedCuffs = resolvePinnedCuffs(bundle.cuffs, state.pinnedCuffIds)
   const pinnedSlotDecorations = resolvePinnedSlotDecorations(
@@ -500,5 +457,6 @@ export function buildSearchQuery(bundle: DataBundle, state: QueryFormState): Bui
     state.pinnedSlotDecorationIds,
     state.pinnedArmor,
   )
-  return { slots, decorations, cuffs, pinnedCuffs, pinnedSlotDecorations }
+  const excludedActiveSkillIds = [...state.excludedSkillIds].map(Number)
+  return { slots, decorations, cuffs, pinnedCuffs, pinnedSlotDecorations, excludedActiveSkillIds }
 }

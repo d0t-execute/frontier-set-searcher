@@ -2005,53 +2005,42 @@ in its original position the whole way down, until the emptied category itself d
 
 ## 37. Rework skill exclusion to cap a skill below "active" instead of banning every piece that grants it
 
-**Status: Not started.** The project owner: TODO #32's skill exclusion is too blunt -- rather than
-dropping every piece/decoration/cuff that grants any points in the excluded skill, a search result
-should just be disallowed from making that skill *active*. "There are edge cases where it might be
-preferable to get a few points in a skill, but not have it activate rather than having no points in
-it at all. To be able to use decorations that give multiple different skills, for example" -- e.g. a
-decoration granting both Attack and Sharpness should still be usable for its Sharpness even while
-Attack is "excluded," as long as the build's total Attack points stay below Attack's own activation
-threshold.
-
-This is a genuine rework, not a tweak: TODO #32's `slotsAfterExcludedSkills`/
-`decorationsAfterExcludedSkills`/`cuffsAfterExcludedSkills` (`build-query.ts`) filter the candidate
-*pool* before the solver ever runs; the new behavior instead needs a hard *constraint on the solved
-result's own totals*, the same shape as `ilp-model.ts`'s existing `resistanceFloors` row (one row per
-excluded skill, fed by every column that contributes points to it) -- except as an upper bound
-instead of a lower one, and fed by decorations/cuffs too, not just candidates (resistances only ever
-come from candidates; skill points come from all three).
-
-"Active" is already precisely defined twice in the codebase and needs to be reused, not
-reinvented: `active-skill-cap.ts`'s `isSkillActive(points, skill)` --
-`points >= the smallest positive tier threshold`, OR `points <= the largest (closest-to-zero)
-negative/penalty tier threshold` if the skill has one, falling back to `points > 0` for an untiered
-skill. `ilp-model.ts`'s own `resolveTierBreakpoints` already reduces a skill's raw
-`SkillTierThresholds.tierThresholds` to exactly this `{posThreshold, negThreshold}` pair (used today
-only for `preferExactMatches`' objective-only tie-break scoring, never as a hard feasibility bound) --
-that reduction is directly reusable. The new row(s) would enforce: `total <= posThreshold - 1` when a
-positive tier exists, and `total >= negThreshold + 1` when a negative one does (both, if the skill has
-both) -- the inverse of `isSkillActive`'s own check.
-
-One wrinkle `resistanceFloors` doesn't have: a pinned cuff's fixed skill contribution. Skill
-requirement rows already subtract a pinned cuff's own contribution from their lower bound via
-`pinnedPointsTowards(skillId)` (`ilp-model.ts`) before applying the solver's own freedom on top -- an
-excluded-active upper bound would need the same offset subtracted, or (simpler, and maybe worth just
-confirming with the project owner instead of building the offset) the query layer could simply refuse
-to let the player pin a cuff/piece/decoration that *by itself* already crosses the excluded skill's
-own threshold, sidestepping the offset math entirely.
-
-**Decided (2026-10-17, per the project owner): this REPLACES TODO #32's "ban every piece that grants
-it" behavior outright, rather than coexisting as a second mode.** Same stored `excludedSkillIds`, same
+**Status (2026-10-17): COMPLETE.** Per the project owner, this REPLACES TODO #32's "ban every
+piece/decoration/cuff that grants it" behavior outright (confirmed explicitly: "the armor decorations
+and cuffs should be a full exclusion. The skills should be a different mechanism. That simply prevents
+final results from having that skill active") -- same stored `excludedSkillIds`, same
 `EquipmentExclusionPicker.tsx` "Skills" list and UI, only the solver-side meaning of an excluded skill
-id changes -- no new per-item mode concept, no second list, no per-badge toggle needed.
+id changed. Armor/decoration/cuff id-based exclusion (and category exclusion) are untouched: those stay
+a full pool-level ban exactly as before.
 
-Threading: a new solver-facing `SearchOptions` field (e.g. `excludedActiveSkillIds: readonly
-SkillId[]`), converted from a plain `Set<string>` App state only at the `search()` call site --
-mirroring exactly how `resistanceFloors` itself is derived from `nonNegativeResistances` today, not
-threaded as a raw solver-shaped field through persistence. The UI-facing `excludedSkillIds` set already
-has its full persistence thread shipped (TODO #32: `AppInitialState`, `search-form-state.ts`,
-`shared-state.ts`, `query-code.ts`) and keeps that thread as-is. `build-query.ts`'s
-`slotsAfterExcludedSkills`/`decorationsAfterExcludedSkills`/`cuffsAfterExcludedSkills` (the old
-candidate-pool filtering from TODO #32) get removed once the new hard-constraint rows take over --
-their wholesale pool-filtering is exactly the blunt behavior being replaced.
+Implementation: `ilp-model.ts`'s `buildModel` gained one hard-constraint row per
+`options.excludedActiveSkillIds` entry, the same shape as the existing `resistanceFloors` row but as a
+two-sided bound (a skill with both a bonus and a penalty tier has an "inactive" zone strictly between
+them) and fed by candidates, decorations, *and* cuffs (resistances are candidate-only; skill points
+aren't). Reuses `active-skill-cap.ts`'s `isSkillActive` logic exactly inverted, via a new shared
+`breakpointsFromThresholds` helper extracted out of the existing `resolveTierBreakpoints` (which also
+now calls it) so both features stay in sync: `lower = negThreshold + 1` (or `-infinity` if no penalty
+tier), `upper = posThreshold - 1` (or `infinity` if no bonus tier, or `0` for a wholly untiered skill,
+mirroring `isSkillActive`'s own `points > 0` fallback) -- both offset by `pinnedPointsTowards(skillId)`,
+the same pinned-cuff adjustment a skill requirement row already gets.
+
+`SearchOptions.excludedActiveSkillIds: readonly SkillId[]` is the new solver-facing field (`types.ts`).
+`build-query.ts`'s old `slotsAfterExcludedSkills`/`decorationsAfterExcludedSkills`/
+`cuffsAfterExcludedSkills` (TODO #32's pool filters) are deleted; `buildSearchQuery` now just parses
+`state.excludedSkillIds` into `BuiltQuery.excludedActiveSkillIds` (numeric ids), which `App.tsx`'s
+`handleSearch` passes straight through to `search()`'s options alongside `resistanceFloors` etc. No
+persistence changes needed -- `excludedSkillIds` keeps its exact existing shape and thread through
+`AppInitialState`/`search-form-state.ts`/`shared-state.ts`/`query-code.ts`.
+
+Verified: `ilp-model.test.ts`'s new `'buildModel with options.excludedActiveSkillIds'` block (untiered
+skill rejected above zero and accepted at zero; a tiered skill accepted below its threshold and
+rejected at it; a penalty tier rejected; a skill with both tiers accepted in the gap between them;
+contributions correctly combined from a forced decoration and from a cuff needed for another
+requirement; a pinned cuff's fixed contribution tipping an otherwise-safe total over the threshold; an
+unlisted skill left completely unconstrained) and `build-query.test.ts` (excluding a skill no longer
+drops anything from the pool; `excludedSkillIds` parses to numeric `excludedActiveSkillIds`) and
+`App.test.tsx` (an excluded skill reaches the solver as `excludedActiveSkillIds`, with the full
+candidate/decoration/cuff pool unchanged). Live-verified against the real dataset: a result with
+"Hunter (9/10)" as an unrequested bonus skill, re-run with Hunter excluded, returned a different build
+with "Hunter (3/10)" -- kept well below its own activation threshold rather than dropped from the
+build (or the search failing) entirely.

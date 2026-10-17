@@ -687,6 +687,149 @@ describe('buildModel with options.resistanceFloors', () => {
   })
 })
 
+describe('buildModel with options.excludedActiveSkillIds (docs/skill-system-roadmap.md TODO #37)', () => {
+  it('rejects a build whose only candidate gives positive points in an untiered excluded skill', () => {
+    const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Helm', { 1: 3, 2: 5 })] }]
+    const { model } = buildModel(highs, slots, [], [{ skillId: 1, minPoints: 3 }], {
+      excludedActiveSkillIds: [2],
+    })
+
+    const { modelStatus, native } = solve(model)
+    expect(modelStatus).toBe(highs.constants.modelStatus.infeasible)
+    native.dispose()
+  })
+
+  it('accepts a build that keeps an untiered excluded skill at exactly zero', () => {
+    const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Helm', { 1: 3 })] }]
+    const { model, columns } = buildModel(highs, slots, [], [{ skillId: 1, minPoints: 3 }], {
+      excludedActiveSkillIds: [2],
+    })
+
+    const { modelStatus, colValue, native } = solve(model)
+    expect(modelStatus).toBe(highs.constants.modelStatus.optimal)
+    const decoded = decodeSolution(columns, colValue)
+    expect(decoded.picks.get('head')?.id).toBe('Helm')
+    native.dispose()
+  })
+
+  it('accepts a build that stays below a tiered excluded skill\'s own threshold', () => {
+    const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Helm', { 1: 3, 2: 9 })] }]
+    const { model, columns } = buildModel(highs, slots, [], [{ skillId: 1, minPoints: 3 }], {
+      excludedActiveSkillIds: [2],
+      skillTiers: [{ skillId: 2, tierThresholds: [10] }],
+    })
+
+    const { modelStatus, colValue, native } = solve(model)
+    expect(modelStatus).toBe(highs.constants.modelStatus.optimal)
+    const decoded = decodeSolution(columns, colValue)
+    expect(decoded.skillTotals.get(2)).toBe(9)
+    native.dispose()
+  })
+
+  it("rejects a build that reaches a tiered excluded skill's own threshold exactly", () => {
+    const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Helm', { 1: 3, 2: 10 })] }]
+    const { model } = buildModel(highs, slots, [], [{ skillId: 1, minPoints: 3 }], {
+      excludedActiveSkillIds: [2],
+      skillTiers: [{ skillId: 2, tierThresholds: [10] }],
+    })
+
+    const { modelStatus, native } = solve(model)
+    expect(modelStatus).toBe(highs.constants.modelStatus.infeasible)
+    native.dispose()
+  })
+
+  it('rejects a build that reaches a penalty tier of an excluded skill', () => {
+    const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Helm', { 1: 3, 2: -10 })] }]
+    const { model } = buildModel(highs, slots, [], [{ skillId: 1, minPoints: 3 }], {
+      excludedActiveSkillIds: [2],
+      skillTiers: [{ skillId: 2, tierThresholds: [-10] }],
+    })
+
+    const { modelStatus, native } = solve(model)
+    expect(modelStatus).toBe(highs.constants.modelStatus.infeasible)
+    native.dispose()
+  })
+
+  it('accepts a build sitting in the gap between a bonus and a penalty tier', () => {
+    const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Helm', { 1: 3, 2: 5 })] }]
+    const { model, columns } = buildModel(highs, slots, [], [{ skillId: 1, minPoints: 3 }], {
+      excludedActiveSkillIds: [2],
+      skillTiers: [{ skillId: 2, tierThresholds: [10, -10] }],
+    })
+
+    const { modelStatus, colValue, native } = solve(model)
+    expect(modelStatus).toBe(highs.constants.modelStatus.optimal)
+    const decoded = decodeSolution(columns, colValue)
+    expect(decoded.skillTotals.get(2)).toBe(5)
+    native.dispose()
+  })
+
+  it("includes a decoration's contribution once forced into the candidate's open slot, unlike a resistance floor", () => {
+    const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Helm', { 1: 3, 2: 7 }, 1)] }]
+    const decorations = [deco('D1', 1, { 2: 3 })]
+    const { model } = buildModel(highs, slots, decorations, [{ skillId: 1, minPoints: 3 }], {
+      excludedActiveSkillIds: [2],
+      skillTiers: [{ skillId: 2, tierThresholds: [10] }],
+      pinnedSlotDecorations: new Map([['head', decorations]]),
+    })
+
+    // The candidate alone (7) stays under the threshold, but the decoration
+    // forced into its one open slot tips the real total to exactly 10.
+    const { modelStatus, native } = solve(model)
+    expect(modelStatus).toBe(highs.constants.modelStatus.infeasible)
+    native.dispose()
+  })
+
+  it("includes a free cuff's contribution once it's the only way to meet another requirement", () => {
+    const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Helm', { 1: 3, 2: 7 })] }]
+    const cuffs = [cuff('C1', 0, { 2: 3, 3: 5 })]
+    const { model } = buildModel(
+      highs,
+      slots,
+      [],
+      [
+        { skillId: 1, minPoints: 3 },
+        { skillId: 3, minPoints: 5 },
+      ],
+      { excludedActiveSkillIds: [2], skillTiers: [{ skillId: 2, tierThresholds: [10] }] },
+      cuffs,
+    )
+
+    // Meeting the skill-3 requirement forces the cuff in, whose own +3 tips
+    // skill 2's real total to exactly 10.
+    const { modelStatus, native } = solve(model)
+    expect(modelStatus).toBe(highs.constants.modelStatus.infeasible)
+    native.dispose()
+  })
+
+  it("accounts for a pinned cuff's fixed contribution toward an excluded skill", () => {
+    const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Helm', { 1: 3, 2: 9 })] }]
+    const pinnedCuffs = [cuff('C1', 0, { 2: 1 })]
+    const { model } = buildModel(highs, slots, [], [{ skillId: 1, minPoints: 3 }], {
+      excludedActiveSkillIds: [2],
+      skillTiers: [{ skillId: 2, tierThresholds: [10] }],
+      pinnedCuffs,
+    })
+
+    // The candidate alone (9) stays under the threshold, but the pinned
+    // cuff's own fixed 1 point tips the real total to exactly 10.
+    const { modelStatus, native } = solve(model)
+    expect(modelStatus).toBe(highs.constants.modelStatus.infeasible)
+    native.dispose()
+  })
+
+  it('leaves a skill not listed in excludedActiveSkillIds completely unconstrained', () => {
+    const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Helm', { 1: 3, 2: 50 })] }]
+    const { model } = buildModel(highs, slots, [], [{ skillId: 1, minPoints: 3 }], {
+      excludedActiveSkillIds: [],
+    })
+
+    const { modelStatus, native } = solve(model)
+    expect(modelStatus).toBe(highs.constants.modelStatus.optimal)
+    native.dispose()
+  })
+})
+
 describe('buildModel with options.pinnedCuffs', () => {
   it("credits a pinned cuff's skills toward a requirement without any cuff column existing", () => {
     const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Helm', { 1: 3 })] }]

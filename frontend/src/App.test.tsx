@@ -194,6 +194,7 @@ describe('App', () => {
         pinnedCuffs: [],
         pinnedSlotDecorations: new Map(),
         resistanceFloors: [],
+        excludedActiveSkillIds: [],
       },
       // The "Unavailable"-leaf cuff is excluded by default (see App.tsx's
       // DEFAULT_EXCLUDED_CUFF_CATEGORIES) -- both real ones pass.
@@ -225,6 +226,7 @@ describe('App', () => {
         pinnedCuffs: [],
         pinnedSlotDecorations: new Map(),
         resistanceFloors: [],
+        excludedActiveSkillIds: [],
       },
       [BUNDLE.cuffs[0], BUNDLE.cuffs[1]],
     )
@@ -302,6 +304,39 @@ describe('App', () => {
       expect.anything(),
       expect.objectContaining({ resistanceFloors: [] }),
       expect.anything(),
+    )
+  })
+
+  it('passes an excluded skill to the solver as excludedActiveSkillIds, not a pool filter (docs/skill-system-roadmap.md TODO #37)', async () => {
+    const worker = makeWorker()
+    mockUseSearchWorker.mockReturnValue(worker as unknown as ReturnType<typeof useSearchWorker>)
+    const user = userEvent.setup()
+    render(<App />)
+
+    // Requires a different skill (Dissolver Up) than the one excluded
+    // (Attack), so this isn't a contradictory search.
+    await user.click(screen.getByRole('button', { name: 'Dissolver Up' }))
+    await user.click(screen.getByRole('button', { name: /exclusions/i }))
+    await user.type(screen.getByLabelText('Search skills to exclude'), 'Attack{Enter}')
+    await user.click(screen.getByRole('button', { name: /search/i }))
+
+    expect(worker.search).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      expect.objectContaining({ excludedActiveSkillIds: [1] }),
+      expect.anything(),
+    )
+    // Still fully eligible in the free candidate pool -- only the solver
+    // constraint changed, not what's offered.
+    expect(worker.search).toHaveBeenCalledWith(
+      [...BUNDLE.slots, expect.anything()],
+      expect.anything(),
+      BUNDLE.decorations,
+      expect.anything(),
+      expect.anything(),
+      [BUNDLE.cuffs[0], BUNDLE.cuffs[1]],
     )
   })
 

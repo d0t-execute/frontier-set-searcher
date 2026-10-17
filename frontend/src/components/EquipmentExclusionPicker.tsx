@@ -4,16 +4,21 @@
  * filters (Gear levels/Poogie cuffs/Decorations), for something the player
  * simply doesn't own or doesn't want suggested regardless of category (docs/
  * skill-system-roadmap.md's equipment-exclusion feature, 2026-10-16, per the
- * project owner). Excluding a skill drops every piece/decoration/cuff that
- * grants it (`build-query.ts`'s `excludedSkillIds`, 2026-10-18 per the
- * project owner: "add the ability to exclude specific skills... add that to
- * the exclude specific equipment") -- it's equipment-level, not a tweak to
- * the skill requirements search above. An excluded item never appears in a
- * search result -- except that pinning always wins over exclusion, the same
- * way a pin already overrides every other filter on this page
+ * project owner). An excluded armor piece, decoration, or cuff never appears
+ * in a search result -- except that pinning always wins over exclusion, the
+ * same way a pin already overrides every other filter on this page
  * (`build-query.ts`'s `buildSearchQuery`): a pinned piece or decoration stays
  * usable even after being added here, so excluding e.g. "Ice Atk G" doesn't
  * strip it back out of a slot the player explicitly pinned it into.
+ *
+ * Excluding a *skill* works differently (TODO #37, replacing this feature's
+ * original TODO #32 behavior, 2026-10-17 per the project owner): rather than
+ * dropping every piece/decoration/cuff that happens to grant it, the solver
+ * is simply never allowed to let that skill become "active" in the final
+ * result (`build-query.ts`'s `excludedSkillIds`, threaded through as
+ * `SearchOptions.excludedActiveSkillIds`) -- equipment granting it stays
+ * fully eligible, so e.g. a decoration also granting a wanted skill is never
+ * needlessly ruled out just because its other skill was excluded.
  *
  * Reuses `FilterableOptions`' type-to-filter search (same convention as
  * `ArmorPicker`/`CuffPicker`, needed for the same reason -- these catalogs run
