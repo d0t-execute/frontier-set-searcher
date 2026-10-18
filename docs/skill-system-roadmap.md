@@ -1,7 +1,7 @@
 # Skill system roadmap
 
-Ten planned future-work items on skill mechanics (cap system, priority list, Zenith/Exotic
-skills, Go Skill Boost), cuff equipment support, skill UI/categorization, per-piece include/
+Planned future-work items on skill mechanics (cap system, priority list, Zenith/Exotic
+skills), cuff equipment support, skill UI/categorization, per-piece include/
 exclude controls, weapon Zenith-skill support, sharing a search result, and an overall UI
 decluttering pass, with what already exists in the codebase for each. Tracked here as a running list of known-missing depth/polish, distinct from immediate bug-fix
 work -- surface this when deciding "what's left" or starting work on any one of these items, since
@@ -275,27 +275,8 @@ category, since an Exotic grant (e.g. Barioth's "Ice Attack") is never itself a 
 
 ## 4. "Go Skill Boost"
 
-Not found anywhere in docs or scraped data -- needs fresh research; may not be scraped/parsed/
-documented at all yet.
-
-- "G Rank" only ever appears as an equipment/weapon tier marker across
-  [gear-category-taxonomy.md](gear-category-taxonomy.md),
-  [weapon-data-format-notes.md](weapon-data-format-notes.md),
-  [data-format-notes.md](data-format-notes.md) -- never as a skill-boost mechanic.
-- The only "boost"-named data found is unrelated: weapon sigil effects ("Tech Boost[<weapon>]" in
-  `docs/reference/regular-sigils.json`) and Tower Armor Sigil effect names (TENKOKUNAME, in
-  [data-format-notes.md](data-format-notes.md)) -- a different, already-cataloged system. Don't
-  conflate either with this TODO.
-- **Open point (2026-10-15)**: fresh web research (English and Japanese queries against the general
-  web and the `mertna.github.io/MHFZ-Skills` site) found no mechanic matching this name in either
-  language -- not as a skill, a Zenith skill, a sigil effect, or any other documented system. Unlike
-  TODO #3 (Exotic skills), this came back inconclusive rather than confidently resolved: there's no
-  positive evidence ruling it out as there was for Exotic (no structural field/tier-family hiding it
-  in plain sight), just an absence of hits for a term that may be an informal/community nickname, a
-  mistranslation, or specific to a sub-version/era of MHF this project's sources don't cover. Left
-  open rather than guessed at -- needs the project owner to supply the in-game Japanese name, a
-  screenshot, or the source they originally saw this term in before further research can narrow it
-  down.
+**Removed (2026-10-18) per the project owner.** Never found in any scraped data or research pass
+(see git history for this entry's prior research notes); dropped from scope rather than left open.
 
 ## 5. Cleaner UI + better skill categorization
 
@@ -2067,3 +2048,65 @@ candidate/decoration/cuff pool unchanged). Live-verified against the real datase
 "Hunter (9/10)" as an unrequested bonus skill, re-run with Hunter excluded, returned a different build
 with "Hunter (3/10)" -- kept well below its own activation threshold rather than dropped from the
 build (or the search failing) entirely.
+
+## 38. Redo gear/cuff/decoration categorization; exclude non-equippable categories by default
+
+**Status: Not started -- awaiting a schema from the project owner (2026-10-18).** Today's category
+trees (`gear-categories.ts`'s `GEAR_CATEGORY_GROUPS`, `cuff-categories.ts`'s
+`CUFF_CATEGORY_GROUPS`, `decoration-categories.ts`) and their default-exclusion sets in `App.tsx`
+(`DEFAULT_EXCLUDED_EQUIPMENT_CATEGORIES`, `DEFAULT_EXCLUDED_CUFF_CATEGORIES`,
+`DEFAULT_EXCLUDED_DECORATION_CATEGORIES`) are getting a redo -- the project owner will provide the
+new schema to work from before implementation starts.
+
+What already exists to build on:
+- Gear levels: 14 groups / dozens of leaf categories in `GEAR_CATEGORY_GROUPS`
+  ([gear-categories.ts](../frontend/src/search-engine/gear-categories.ts)); only the "Unavailable"
+  group (`unavailable_not_implemented`, `unavailable_training_only`) is excluded by default today.
+- Poogie cuffs: `CUFF_CATEGORY_GROUPS` ([cuff-categories.ts](../frontend/src/search-engine/cuff-categories.ts)),
+  default-excludes only the `unavailable`/`training_only`-named leaves under the Premium and
+  Standard groups (Hiden cuffs have no such leaf). Premium cuffs themselves are deliberately *not*
+  excluded by default despite needing Poogie to wear Premium clothes -- confirmed fine by the
+  project owner (see `DEFAULT_EXCLUDED_CUFF_CATEGORIES`'s own comment in `App.tsx`).
+  [Cuff equipment support](project_cuff_equipment_support.md) memory has the Premium/Standard split
+  history.
+- Decorations: a 24-leaf tree in
+  [decoration-categories.ts](../frontend/src/search-engine/decoration-categories.ts); only
+  `deco_lottery_hiden` ("do not use" per the reference tool) is excluded by default, Tower Gems are
+  excluded unconditionally outside this mechanism entirely (`decorationsAfterCategoryFilter`'s own
+  docstring).
+- The exclusion UI itself (`CategoryFilter.tsx`, with its "View (N)" per-leaf content browser from
+  TODO #27) is generic over whatever tree it's given -- a retaxonomization is a data change plus
+  updated default-exclusion sets, not new UI plumbing, unless the new schema needs a structurally
+  different shape than the existing `{label, categories: [{key, label}]}` groups support.
+
+Next step: get the project owner's schema, diff it against the three existing trees above, and scope
+the actual data/default-exclusion changes from there.
+
+## 39. Make armor pinning show which skill a piece grants, without hovering
+
+**Status: Not started (2026-10-18).** The project owner wants it easier to see what skill a piece
+grants while pinning specific armor (`ArmorPicker.tsx`, TODO #7), especially when searching for one
+particular skill -- today a piece's granted skills only surface via the `title` hover tooltip
+`contributionSummary(c.skills, skillNameById)` adds to each `FilterableOptions` search option and
+each already-pinned piece's display (TODO #29), which requires hovering one option at a time to
+compare. Wants: skills shown visibly without hovering, and the ability to highlight a specific skill
+in that list -- the one the user is actually searching for -- so it stands out from a piece's other
+(incidental) granted skills.
+
+Relevant existing code:
+- `ArmorPicker.tsx`'s `ArmorSlotPicker` builds `candidateMatches` from the `skills` prop so the
+  type-to-filter search already matches on a granted skill's name, not just the piece's own name
+  (TODO #26's #19) -- the skill-name matching exists, just not the display.
+- `contribution-summary.ts`'s `contributionSummary(skills, skillNameById)` is the existing
+  "resolve a piece's `SkillContribution[]` to a readable string" helper, currently only consumed as
+  a `title` attribute; redone as always-visible text, it still needs per-skill granularity (to
+  highlight one entry) rather than one joined string, so likely needs a complementary function or a
+  small rendering change in `ArmorSlotPicker` that walks `candidate.skills` directly instead of
+  going through the single-string summary.
+- No existing "this is the skill currently being searched for" signal reaches `ArmorPicker` today --
+  it takes `skills: readonly NamedSkill[]` (the full catalog) but not the in-progress search's own
+  `requirements`/`zenithRequirements`, so highlighting "the skill the user searched for" needs a new
+  prop threading the active requirement skill id(s) down from `App.tsx`.
+
+Needs a concrete design pass (not just implementation) once TODO #38 is underway or complete --
+revisit then.
