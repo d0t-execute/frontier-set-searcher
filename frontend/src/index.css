@@ -226,6 +226,27 @@ code {
   gap: 18px;
 }
 
+.category-group-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* The collapse/expand chevron to the left of a group's own checkbox
+ * (2026-10-18, per the project owner: with the taxonomy now at 77 leaves, a
+ * group needs to be collapsible). A plain button, not nested inside the
+ * `GroupCheckbox` label, so clicking it never also toggles the checkbox. */
+.category-group-collapse-toggle {
+  background: none;
+  border: none;
+  padding: 0;
+  width: 1em;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.8em;
+  line-height: 1;
+}
+
 .category-group-children {
   display: flex;
   flex-direction: column;
@@ -694,4 +715,47 @@ code {
   padding: 6px 8px;
   color: var(--text);
   font-size: 14px;
+}
+
+/* -- Filterable option list (components/FilterableOptions.tsx) ----------
+ * Shared by ArmorPicker/CuffPicker/EquipmentExclusionPicker's item search --
+ * same shape and hover styling as .skill-add-results/.skill-add-option
+ * above, since a native <option> can't be meaningfully styled on hover. */
+
+.filterable-options {
+  margin-top: 8px;
+  max-height: 260px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px;
+}
+
+.filterable-option {
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--text-h);
+}
+
+.filterable-option:hover,
+.filterable-option:focus-visible {
+  background: var(--accent-bg);
+  outline: none;
+}
+
+.hovered-skill-summary {
+  margin-top: 0;
+  font-size: 14px;
+  color: var(--text-h);
+}
+
+.hovered-skill-summary mark {
+  background: transparent;
+  color: var(--accent);
+  font-weight: 700;
+  padding: 0;
 }

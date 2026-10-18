@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+﻿import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { ArmorPicker } from './ArmorPicker'
@@ -59,6 +59,7 @@ const decorations: readonly NamedDecoration[] = [
     slotSize: 1,
     skills: [{ skillId: 1, points: 3 }],
     isTower: false,
+    isSp: false,
     category: 'deco_standard',
   },
   {
@@ -67,6 +68,7 @@ const decorations: readonly NamedDecoration[] = [
     slotSize: 2,
     skills: [{ skillId: 2, points: 3 }],
     isTower: false,
+    isSp: false,
     category: 'deco_standard',
   },
 ]
@@ -158,9 +160,7 @@ describe('ArmorPicker', () => {
     fireEvent.change(screen.getByLabelText('Search pieces for head'), {
       target: { value: 'leather' },
     })
-    fireEvent.change(screen.getByLabelText('Pieces matching search for head'), {
-      target: { value: 'head:0001' },
-    })
+    fireEvent.click(screen.getByRole('option', { name: 'Leather Helm' }))
 
     expect(onChange).toHaveBeenCalledWith(pinHead('head:0001'))
   })
@@ -219,9 +219,7 @@ describe('ArmorPicker', () => {
     fireEvent.change(screen.getByLabelText('Search decorations for head'), {
       target: { value: 'attack' },
     })
-    fireEvent.change(screen.getByLabelText('Add a decoration to head'), {
-      target: { value: 'D001' },
-    })
+    fireEvent.click(screen.getByRole('option', { name: 'Attack Jewel' }))
 
     expect(onChange).toHaveBeenCalledWith(
       new Map([['head', { candidateId: 'head:0001', decorationIds: ['D001'] }]]),
@@ -324,9 +322,7 @@ describe('ArmorPicker', () => {
     fireEvent.change(screen.getByLabelText('Search decorations to force into head'), {
       target: { value: 'attack' },
     })
-    fireEvent.change(screen.getByLabelText('Force a decoration into head'), {
-      target: { value: 'D001' },
-    })
+    fireEvent.click(screen.getByRole('option', { name: 'Attack Jewel' }))
 
     expect(onChangeSlotDecorations).toHaveBeenCalledWith(new Map([['head', ['D001']]]))
   })
@@ -408,9 +404,7 @@ describe('ArmorPicker', () => {
     fireEvent.change(screen.getByLabelText('Search pieces for head'), {
       target: { value: 'leather' },
     })
-    fireEvent.change(screen.getByLabelText('Pieces matching search for head'), {
-      target: { value: 'head:0001' },
-    })
+    fireEvent.click(screen.getByRole('option', { name: 'Leather Helm' }))
 
     expect(onChangeSlotDecorations).toHaveBeenCalledWith(new Map())
   })
@@ -449,6 +443,73 @@ describe('ArmorPicker', () => {
     })
 
     expect(screen.getByRole('option', { name: 'Attack Jewel' })).toHaveAttribute('title', 'Attack: 3')
+  })
+
+  it('shows a prompt to hover a result before anything is hovered', () => {
+    render(
+      <ArmorPicker
+        slots={slots}
+        decorations={decorations}
+        pinned={new Map()}
+        onChange={() => {}}
+        pinnedSlotDecorationIds={new Map()}
+        onChangeSlotDecorations={() => {}}
+        skills={skills}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText('Search pieces for head'), {
+      target: { value: 'leather' },
+    })
+
+    expect(screen.getByText('Hover a result to see its skills.')).toBeInTheDocument()
+  })
+
+  it('shows the hovered piece\'s skills in a persistent summary line below the results', () => {
+    render(
+      <ArmorPicker
+        slots={slots}
+        decorations={decorations}
+        pinned={new Map()}
+        onChange={() => {}}
+        pinnedSlotDecorationIds={new Map()}
+        onChangeSlotDecorations={() => {}}
+        skills={skills}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText('Search pieces for head'), {
+      target: { value: 'helm' },
+    })
+    fireEvent.mouseEnter(screen.getByRole('option', { name: 'Leather Helm' }))
+
+    expect(screen.getByText('Attack: 5')).toBeInTheDocument()
+
+    fireEvent.mouseLeave(screen.getByRole('option', { name: 'Leather Helm' }))
+
+    expect(screen.getByText('Hover a result to see its skills.')).toBeInTheDocument()
+  })
+
+  it('highlights the searched-for skill in the hovered summary line', () => {
+    render(
+      <ArmorPicker
+        slots={slots}
+        decorations={decorations}
+        pinned={new Map()}
+        onChange={() => {}}
+        pinnedSlotDecorationIds={new Map()}
+        onChangeSlotDecorations={() => {}}
+        skills={skills}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText('Search pieces for head'), {
+      target: { value: 'attack' },
+    })
+    fireEvent.mouseEnter(screen.getByRole('option', { name: 'Leather Helm' }))
+
+    const mark = screen.getByText('Attack: 5', { selector: 'mark' })
+    expect(mark.tagName).toBe('MARK')
   })
 
   describe('keyboard-only picking', () => {

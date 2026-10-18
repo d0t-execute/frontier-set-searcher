@@ -70,9 +70,7 @@ describe('CuffPicker', () => {
     fireEvent.change(screen.getByLabelText('Search cuffs for Cuff slot 1'), {
       target: { value: 'Sharp' },
     })
-    fireEvent.change(screen.getByLabelText('Cuffs matching search for Cuff slot 1'), {
-      target: { value: 'cuff:0001' },
-    })
+    fireEvent.click(screen.getByRole('option', { name: 'Sharpening PC1' }))
 
     expect(onChange).toHaveBeenCalledWith([EXACT_1])
   })
@@ -92,9 +90,7 @@ describe('CuffPicker', () => {
     fireEvent.change(screen.getByLabelText('Search cuffs for Cuff slot 2'), {
       target: { value: 'Sharp' },
     })
-    fireEvent.change(screen.getByLabelText('Cuffs matching search for Cuff slot 2'), {
-      target: { value: 'cuff:0001' },
-    })
+    fireEvent.click(screen.getByRole('option', { name: 'Sharpening PC1' }))
 
     expect(onChange).toHaveBeenCalledWith([EXACT_1, EXACT_1])
   })
@@ -221,9 +217,7 @@ describe('CuffPicker', () => {
       fireEvent.change(screen.getByLabelText('Search skills to pin for Cuff slot 1'), {
         target: { value: 'Sharp' },
       })
-      fireEvent.change(screen.getByLabelText('Skills matching search for Cuff slot 1'), {
-        target: { value: '1' },
-      })
+      fireEvent.click(screen.getByRole('option', { name: 'Sharpening' }))
 
       expect(onChange).toHaveBeenCalledWith([{ mode: 'skill', skillId: 1 }])
     })

@@ -40,7 +40,8 @@ import type { NamedCandidate, NamedDecoration, NamedSkill } from '../search-engi
 import type { PinnedSlot } from '../search-engine/pinned-armor'
 import { computePinnedSkillTotals } from '../search-engine/pinned-armor'
 import type { SkillId } from '../search-engine/types'
-import { FilterableOptions } from './FilterableOptions'
+import { FilterableOptions, MIN_SEARCH_LENGTH } from './FilterableOptions'
+import { HoveredSkillSummary } from './HoveredSkillSummary'
 import { handleEnterToPickFirst } from './pick-first-match'
 
 export type { PinnedSlot } from '../search-engine/pinned-armor'
@@ -148,6 +149,8 @@ function ArmorSlotPicker({
   const [picking, setPicking] = useState(false)
   const [candidateSearch, setCandidateSearch] = useState('')
   const [decorationSearch, setDecorationSearch] = useState('')
+  const [hoveredCandidate, setHoveredCandidate] = useState<NamedCandidate | null>(null)
+  const [hoveredSlotDecoration, setHoveredSlotDecoration] = useState<NamedDecoration | null>(null)
 
   function candidateMatches(candidate: NamedCandidate, query: string): boolean {
     if (candidate.name.toLowerCase().includes(query)) return true
@@ -219,7 +222,15 @@ function ArmorSlotPicker({
             matches={candidateMatches}
             describe={(c) => contributionSummary(c.skills, skillNameById)}
             onPick={pickCandidate}
+            onHoverChange={setHoveredCandidate}
           />
+          {candidateSearch.trim().length >= MIN_SEARCH_LENGTH && (
+            <HoveredSkillSummary
+              hovered={hoveredCandidate}
+              skillNameById={skillNameById}
+              query={candidateSearch}
+            />
+          )}
           {pin && (
             <button
               type="button"
@@ -281,7 +292,15 @@ function ArmorSlotPicker({
                 ariaLabel={`Add a decoration to ${slotId}`}
                 describe={(d) => contributionSummary(d.skills, skillNameById)}
                 onPick={pickSlotDecoration}
+                onHoverChange={setHoveredSlotDecoration}
               />
+              {decorationSearch.trim().length >= MIN_SEARCH_LENGTH && (
+                <HoveredSkillSummary
+                  hovered={hoveredSlotDecoration}
+                  skillNameById={skillNameById}
+                  query={decorationSearch}
+                />
+              )}
             </div>
           )}
           <span className="small text-muted ms-1">({remainingCapacity} open slots left)</span>
@@ -323,6 +342,7 @@ function SlotDecorationOnlyPicker({
   skillNameById: ReadonlyMap<SkillId, string>
 }) {
   const [search, setSearch] = useState('')
+  const [hoveredDecoration, setHoveredDecoration] = useState<NamedDecoration | null>(null)
 
   // No candidate is chosen yet, so there's no single known capacity to bound
   // against -- the largest any candidate here could offer is a looser, safe
@@ -382,7 +402,15 @@ function SlotDecorationOnlyPicker({
             ariaLabel={`Force a decoration into ${slotId}`}
             describe={(d) => contributionSummary(d.skills, skillNameById)}
             onPick={pickDecoration}
+            onHoverChange={setHoveredDecoration}
           />
+          {search.trim().length >= MIN_SEARCH_LENGTH && (
+            <HoveredSkillSummary
+              hovered={hoveredDecoration}
+              skillNameById={skillNameById}
+              query={search}
+            />
+          )}
         </div>
       )}
       {maxCapacity > 0 && (

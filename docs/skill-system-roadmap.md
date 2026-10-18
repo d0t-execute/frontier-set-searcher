@@ -2232,29 +2232,118 @@ Live-browser confirmed against the real regenerated bundle: "Gear levels" now sh
 
 ## 39. Make armor pinning show which skill a piece grants, without hovering
 
-**Status: Not started (2026-10-18).** The project owner wants it easier to see what skill a piece
-grants while pinning specific armor (`ArmorPicker.tsx`, TODO #7), especially when searching for one
-particular skill -- today a piece's granted skills only surface via the `title` hover tooltip
-`contributionSummary(c.skills, skillNameById)` adds to each `FilterableOptions` search option and
-each already-pinned piece's display (TODO #29), which requires hovering one option at a time to
-compare. Wants: skills shown visibly without hovering, and the ability to highlight a specific skill
-in that list -- the one the user is actually searching for -- so it stands out from a piece's other
-(incidental) granted skills.
+**Status (2026-10-18): COMPLETE**, delivered as part of a broader gear-picker remodel the project
+owner asked for in the same sitting, covering four gripes:
 
-Relevant existing code:
-- `ArmorPicker.tsx`'s `ArmorSlotPicker` builds `candidateMatches` from the `skills` prop so the
-  type-to-filter search already matches on a granted skill's name, not just the piece's own name
-  (TODO #26's #19) -- the skill-name matching exists, just not the display.
-- `contribution-summary.ts`'s `contributionSummary(skills, skillNameById)` is the existing
-  "resolve a piece's `SkillContribution[]` to a readable string" helper, currently only consumed as
-  a `title` attribute; redone as always-visible text, it still needs per-skill granularity (to
-  highlight one entry) rather than one joined string, so likely needs a complementary function or a
-  small rendering change in `ArmorSlotPicker` that walks `candidate.skills` directly instead of
-  going through the single-string summary.
-- No existing "this is the skill currently being searched for" signal reaches `ArmorPicker` today --
-  it takes `skills: readonly NamedSkill[]` (the full catalog) but not the in-progress search's own
-  `requirements`/`zenithRequirements`, so highlighting "the skill the user searched for" needs a new
-  prop threading the active requirement skill id(s) down from `App.tsx`.
+1. **No hover styling on a search result.** `FilterableOptions.tsx` used to render a native
+   `<select>`/`<option>` pair, which no browser lets you meaningfully style on `:hover` -- unlike
+   `SkillPicker.tsx`'s own custom `.skill-add-option` button list, which already had a working
+   hover/active highlight. Fixed by rewriting `FilterableOptions` to render a custom
+   `role="listbox"`/`role="option"` `<div>` list (mirroring `SkillPicker`'s pattern) instead of a
+   native select, styled via new `.filterable-options`/`.filterable-option` CSS rules
+   (`index.css`). Shared by `ArmorPicker`, `CuffPicker`, and `EquipmentExclusionPicker`, so all three
+   picked up the fix for free.
+2. **This TODO's original ask**: skills shown without hovering each result one at a time. Fixed by
+   adding an `onHoverChange?: (item: T | null) => void` prop to `FilterableOptions`, fired on
+   mouse-enter/leave of each option. `ArmorPicker.tsx`'s `ArmorSlotPicker` (and
+   `SlotDecorationOnlyPicker`) track the currently-hovered candidate/decoration in local state and
+   render it as a new persistent `.hovered-skill-summary` line directly below the results list (one
+   per search box: piece search, decoration-into-pinned-slot search, decoration-only-pin search),
+   showing "Hover a result to see its skills." until something is hovered.
+3. **Highlight the searched-for skill.** The original design note below about threading the
+   *overall build's* requirement skill ids down from `App.tsx` turned out to be the wrong scope --
+   what the project owner actually meant was simpler: highlight a skill in the hover-summary line
+   when it matches the *piece search box's own query* (the same text `candidateMatches` already
+   matches pieces against by skill name, TODO #26's #19). Implemented as a local
+   `HoveredSkillSummary` component in `ArmorPicker.tsx` that wraps a matching skill name in
+   `<mark>`, styled via `--accent` in `index.css` (no new prop from `App.tsx` needed).
+4. **Exclusion-section picking used to close/clear the field.** Unrelated to the hover work, but
+   fixed in the same pass: `EquipmentExclusionPicker.tsx`'s `ExclusionList.add()` called
+   `setSearch('')` after every pick, forcing a full retype to exclude a second item. Removed --
+   the picked item drops out of `pickableItems` on its own, so the remaining matches just stay
+   visible under the still-populated search box.
 
-Needs a concrete design pass (not just implementation) once TODO #38 is underway or complete --
-revisit then.
+`contributionSummary` (the plain-string tooltip helper) is untouched and still used for the
+`title` attribute as a fallback; the new summary line is separate, locally-built JSX in
+`ArmorPicker.tsx` only (not a new shared module -- only this file needs per-skill highlighting).
+
+Verified: `tsc -b` and `oxlint` clean; full `vitest` suite green (384/384, the one known-flaky
+real-data timing test from TODO #28 aside) after rewriting `FilterableOptions.test.tsx`'s
+native-select-specific tests and converting every `fireEvent.change(..., {target:{value: id}})`
+pick-simulation in `ArmorPicker.test.tsx`/`CuffPicker.test.tsx`/`EquipmentExclusionPicker.test.tsx`/
+`App.test.tsx` to a click on the new `role="option"` element. Live-verified in the browser: hover
+highlight and the persistent summary line (with the matched skill marked) on the head-piece search,
+and multi-excluding several armor pieces in a row from the Exclusions section without the field
+ever clearing.
+
+**Follow-up (2026-10-18): fixed a perceptible delay after picking in the Exclusions section.** The
+project owner reported "a bit of a delay between picking and the item disappearing from the list"
+once point 4 above stopped clearing the search field. Root cause (confirmed via
+`MutationObserver`-based click-to-DOM-update timing in the live browser, not guesswork): the
+all-armor catalog `EquipmentExclusionPicker` searches across (`allArmorCandidates` in `App.tsx`) is
+~62,000 rows flattened from every slot, and `ExclusionList` was doing two full passes over it per
+pick -- filtering `items` down to `pickableItems` (excluding already-excluded ids), then
+`FilterableOptions` filtering *that* result again by the search query. Fixed by folding the
+exclusion check into the search's own `matches` predicate (a single pass), passing the stable
+`items` array straight to `FilterableOptions` instead of a freshly-filtered one each time;
+`pickableItems` is now only computed for `handleEnterToPickFirst`'s benefit (keyboard-only picking,
+unaffected by this). This halved the per-pick work, dropping click-to-DOM-update latency from
+~1,000-3,000ms to ~22ms in a production build (`npm run build` + `vite preview`) and ~100ms in the
+`npm run dev` server (React dev-mode/StrictMode overhead accounts for the remaining gap --
+confirmed by profiling both builds side by side; not worth chasing further since the shipped build
+is already near-instant). Added a `frontend-preview` entry to `.claude/launch.json` (alongside the
+existing `frontend-dev`) for exactly this kind of prod-vs-dev performance check going forward.
+Re-verified: `tsc -b`/`oxlint` clean, the same 5 affected test files green (76/76).
+
+**Second follow-up (2026-10-18): the Armor/Decorations/Cuffs exclusion lists now also search by
+skill name**, the same "search armor pieces by skill" behavior `ArmorPicker.tsx`'s own
+`candidateMatches` already had (TODO #26's #19) -- the project owner asked for it to be extended to
+`EquipmentExclusionPicker.tsx` too, e.g. "exclude every piece granting Ice Atk G" without knowing a
+single piece's name up front. Added a shared `matchesNameOrSkill` predicate in `ExclusionList`
+(checks the item's own name first, then falls back to any of its `skills` resolving to a name
+containing the query via `skillNameById`), composed into both the click-driven `pickableMatches`
+(already folded with the exclusion check, see the perf fix above) and the Enter-key path via
+`handleEnterToPickFirst`'s own `matches` override. The "Skills" list itself is unaffected -- its
+items already *are* skills, so there's nothing to extend. Added a line to the Exclusions section's
+own intro text in `App.tsx` noting the new skill-search capability (mirroring `ArmorPicker`'s own "You
+can also search by skill name." hint). Added 5 new tests to `EquipmentExclusionPicker.test.tsx`
+covering a name-silent skill match for each of armor/decoration/cuff, plus picking and Enter-key
+selection via a skill-only match. `tsc -b`/`oxlint` clean; full suite 383/383 (the one known-flaky
+real-data timing test aside). Live-verified in the browser: searching "sharpening" in each of the
+three lists returns pieces/decorations/cuffs whose own names don't contain "sharpening" at all
+(e.g. "Hunter's Helm", "All Res UP PC5"), proving the skill-based match, not just name substring.
+
+**Third follow-up (2026-10-19): the persistent hover-skill-summary line is now also in
+`EquipmentExclusionPicker.tsx`'s Armor/Decoration/Cuff lists**, not just `ArmorPicker.tsx`'s own
+piece search, per the project owner. Since both components now need the exact same component,
+pulled the formerly-inline `HoveredSkillSummary` out of `ArmorPicker.tsx` into its own
+`components/HoveredSkillSummary.tsx` and imported it in both places rather than duplicating it.
+`ExclusionList` gained a `showSkillSummary?: boolean` prop (defaults off) and a `hovered` state
+wired through `FilterableOptions`' `onHoverChange`; passed `true` for Armor/Decorations/Cuffs but
+left off for Skills, since a skill-exclusion row has nothing to show there (its items already *are*
+skills, same reasoning as the skill-name-search extension above). Added 4 new tests covering the
+idle prompt, the populated summary, the highlighted searched-for skill, and confirming the Skills
+list renders no summary line at all. `tsc -b`/`oxlint` clean; full suite 387/387 (the one known-flaky
+real-data timing test aside). Live-verified in the browser: hovering a result in the Exclusions
+section's Armor list shows its skills with the searched skill marked, exactly like `ArmorPicker`'s
+own piece search.
+
+Separately, two small CSS-only tweaks landed on `.hovered-skill-summary` itself per direct user
+feedback on how it looked: the gap above it (between the results list and the summary line) was
+tightened from 6px to 0 (down to just the ~4px irreducible gap from the parent's own Bootstrap
+`gap-1` flex spacing), and its text color changed from the muted `--text` to the normal/high-emphasis
+`--text-h` -- a brief earlier attempt to additionally enlarge it and wrap it in a bordered box was
+tried and then explicitly rolled back by the project owner ("I'll look at it myself"), so that part
+was reverted; only the gap and color changes stuck.
+
+**Fourth follow-up (2026-10-19): raised `FilterableOptions.tsx`'s `MAX_MATCHES_SHOWN` from 30 to
+200**, per the project owner ("30 is a little bit low... especially when searching for a specific
+skill"). Confirmed before changing it that this is cheap: the expensive part (scanning the whole
+catalog for matches) runs the same regardless of how many of those matches get rendered --
+`MAX_MATCHES_SHOWN` only bounds the `.slice()` afterward, so raising it just means ~170 more small
+`<div>`s in an already-scrollable list, not more scanning. Measured in the live browser with 200
+results actually rendered to confirm, not just reasoned about: hover-to-DOM-update ~14ms, click-to-
+pick ~63ms in the `npm run dev` server (consistent with the TODO #39 perf-fix numbers above) --
+no perceptible regression. Updated `FilterableOptions.test.tsx`'s overflow-note test to use 205
+items / an expected 200 shown. `tsc -b`/`oxlint` clean; full suite 387/387 (the one known-flaky
+real-data timing test aside).

@@ -441,10 +441,7 @@ describe('App', () => {
       screen.getByLabelText('Search cuffs for Cuff slot 1'),
       BUNDLE.cuffs[0].name.slice(0, 4),
     )
-    await user.selectOptions(
-      screen.getByLabelText('Cuffs matching search for Cuff slot 1'),
-      BUNDLE.cuffs[0].id,
-    )
+    await user.click(screen.getByRole('option', { name: BUNDLE.cuffs[0].name }))
     await user.click(screen.getByRole('button', { name: /search/i }))
 
     expect(worker.search).toHaveBeenCalledWith(
@@ -708,7 +705,7 @@ describe('App', () => {
       render(<App />)
 
       await user.click(screen.getByRole('button', { name: /gear levels/i }))
-      await user.click(screen.getByLabelText('Premium Kit'))
+      await user.click(screen.getByRole('checkbox', { name: 'Premium Kit' }))
 
       await user.click(screen.getByRole('button', { name: /pin specific armor/i }))
       await user.type(screen.getByLabelText('Search pieces for head'), 'Mask')
@@ -722,7 +719,7 @@ describe('App', () => {
       render(<App />)
 
       await user.click(screen.getByRole('button', { name: /gear levels/i }))
-      await user.click(screen.getByLabelText('Premium Kit'))
+      await user.click(screen.getByRole('checkbox', { name: 'Premium Kit' }))
 
       await user.click(screen.getByRole('button', { name: /pin specific armor/i }))
       await user.type(screen.getByLabelText('Search pieces for head'), 'Leather')
@@ -777,14 +774,12 @@ describe('App', () => {
 
       await user.click(screen.getByRole('button', { name: /pin specific armor/i }))
       await user.type(screen.getByLabelText('Search pieces for head'), 'Mask')
-      await user.selectOptions(screen.getByRole('option', { name: 'White Cat Mask' }).closest('select')!, [
-        'head:0002',
-      ])
+      await user.click(screen.getByRole('option', { name: 'White Cat Mask' }))
 
       expect(screen.getByText('White Cat Mask')).toBeInTheDocument()
 
       await user.click(screen.getByRole('button', { name: /gear levels/i }))
-      await user.click(screen.getByLabelText('Premium Kit'))
+      await user.click(screen.getByRole('checkbox', { name: 'Premium Kit' }))
 
       expect(screen.getByText('White Cat Mask')).toBeInTheDocument()
       expect(screen.getByRole('button', { name: 'Clear' })).toBeInTheDocument()

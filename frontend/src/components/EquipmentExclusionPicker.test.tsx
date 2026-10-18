@@ -71,6 +71,135 @@ describe('EquipmentExclusionPicker', () => {
     expect(screen.getByText('Leather Helm')).toHaveAttribute('title', 'Attack: 5')
   })
 
+  it('keeps the search field populated after picking, to make multi-selecting easy', () => {
+    renderPicker()
+
+    const search = screen.getByLabelText('Search armor pieces to exclude')
+    fireEvent.change(search, { target: { value: 'Leather' } })
+    fireEvent.click(screen.getByRole('option', { name: 'Leather Helm' }))
+
+    expect(search).toHaveValue('Leather')
+  })
+
+  describe('hover skill summary (armor/decorations/cuffs)', () => {
+    it('shows a prompt to hover a result before anything is hovered', () => {
+      renderPicker()
+
+      fireEvent.change(screen.getByLabelText('Search armor pieces to exclude'), {
+        target: { value: 'Leather' },
+      })
+
+      expect(screen.getByText('Hover a result to see its skills.')).toBeInTheDocument()
+    })
+
+    it("shows the hovered item's skills in a persistent summary line below the results", () => {
+      renderPicker()
+
+      fireEvent.change(screen.getByLabelText('Search armor pieces to exclude'), {
+        target: { value: 'Leather' },
+      })
+      fireEvent.mouseEnter(screen.getByRole('option', { name: 'Leather Helm' }))
+
+      expect(screen.getByText('Attack: 5')).toBeInTheDocument()
+
+      fireEvent.mouseLeave(screen.getByRole('option', { name: 'Leather Helm' }))
+
+      expect(screen.getByText('Hover a result to see its skills.')).toBeInTheDocument()
+    })
+
+    it('highlights the searched-for skill in the hovered summary line', () => {
+      renderPicker()
+
+      fireEvent.change(screen.getByLabelText('Search armor pieces to exclude'), {
+        target: { value: 'Attack' },
+      })
+      fireEvent.mouseEnter(screen.getByRole('option', { name: 'Leather Helm' }))
+
+      const mark = screen.getByText('Attack: 5', { selector: 'mark' })
+      expect(mark.tagName).toBe('MARK')
+    })
+
+    it('does not render a hover-skill-summary line for the Skills list', () => {
+      renderPicker()
+
+      fireEvent.change(screen.getByLabelText('Search skills to exclude'), {
+        target: { value: 'Sharp' },
+      })
+
+      expect(screen.queryByText('Hover a result to see its skills.')).not.toBeInTheDocument()
+    })
+  })
+
+  describe('search by skill name (armor/decorations/cuffs)', () => {
+    it('matches an armor piece by a skill it grants, not just its own name', () => {
+      renderPicker()
+
+      fireEvent.change(screen.getByLabelText('Search armor pieces to exclude'), {
+        target: { value: 'Attack' },
+      })
+
+      expect(screen.getByRole('option', { name: 'Leather Helm' })).toBeInTheDocument()
+    })
+
+    it('matches a cuff by a skill it grants, not just its own name', () => {
+      renderPicker()
+
+      fireEvent.change(screen.getByLabelText('Search cuffs to exclude'), {
+        target: { value: 'Attack' },
+      })
+
+      expect(screen.getByRole('option', { name: 'Sharpening PC1' })).toBeInTheDocument()
+    })
+
+    it('matches a decoration by a skill it grants, not just its own name', () => {
+      render(
+        <EquipmentExclusionPicker
+          armorCandidates={armorCandidates}
+          decorations={[{ id: 'D002', name: 'Lucky Charm', skills: [{ skillId: 2, points: 3 }] }]}
+          cuffs={cuffs}
+          skills={skills}
+          excludedArmorIds={new Set()}
+          onChangeExcludedArmorIds={vi.fn()}
+          excludedDecorationIds={new Set()}
+          onChangeExcludedDecorationIds={vi.fn()}
+          excludedCuffIds={new Set()}
+          onChangeExcludedCuffIds={vi.fn()}
+          excludedSkillIds={new Set()}
+          onChangeExcludedSkillIds={vi.fn()}
+          skillNameById={skillNameById}
+        />,
+      )
+
+      fireEvent.change(screen.getByLabelText('Search decorations to exclude'), {
+        target: { value: 'Sharp' },
+      })
+
+      expect(screen.getByRole('option', { name: 'Lucky Charm' })).toBeInTheDocument()
+    })
+
+    it('excludes a piece found via skill-name search once picked', () => {
+      const onChangeExcludedArmorIds = vi.fn()
+      renderPicker(onChangeExcludedArmorIds)
+
+      fireEvent.change(screen.getByLabelText('Search armor pieces to exclude'), {
+        target: { value: 'Attack' },
+      })
+      fireEvent.click(screen.getByRole('option', { name: 'Leather Helm' }))
+
+      expect(onChangeExcludedArmorIds).toHaveBeenCalledWith(new Set(['head:0001']))
+    })
+
+    it('excludes the top match found via skill-name search when Enter is pressed', async () => {
+      const onChangeExcludedArmorIds = vi.fn()
+      const user = userEvent.setup()
+      renderPicker(onChangeExcludedArmorIds)
+
+      await user.type(screen.getByLabelText('Search armor pieces to exclude'), 'Attack{Enter}')
+
+      expect(onChangeExcludedArmorIds).toHaveBeenCalledWith(new Set(['head:0001']))
+    })
+  })
+
   describe('keyboard-only picking', () => {
     it('excludes the top-matching item when Enter is pressed in the search', async () => {
       const onChangeExcludedArmorIds = vi.fn()
@@ -111,9 +240,7 @@ describe('EquipmentExclusionPicker', () => {
       fireEvent.change(screen.getByLabelText('Search skills to exclude'), {
         target: { value: 'Sharp' },
       })
-      fireEvent.change(screen.getByLabelText('Skills matching search'), {
-        target: { value: '2' },
-      })
+      fireEvent.click(screen.getByRole('option', { name: 'Sharpening' }))
 
       expect(onChangeExcludedSkillIds).toHaveBeenCalledWith(new Set(['2']))
     })

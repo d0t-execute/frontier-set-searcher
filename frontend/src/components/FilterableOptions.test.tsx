@@ -1,5 +1,5 @@
-import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { fireEvent, render, screen } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
 import { FilterableOptions } from './FilterableOptions'
 
 const items = [
@@ -16,23 +16,52 @@ describe('FilterableOptions', () => {
     expect(container).toBeEmptyDOMElement()
   })
 
-  it('renders an open listbox (size >= 2) even when exactly one match is found', () => {
+  it('renders every match as a clickable option, even when only one is found', () => {
     render(
       <FilterableOptions items={items} search="leather" onPick={() => {}} ariaLabel="Matches" />,
     )
 
-    const select = screen.getByLabelText('Matches')
-    expect(select).toHaveTextContent('Leather Helm')
-    expect(select).not.toHaveAttribute('size', '1')
-    expect(Number((select as HTMLSelectElement).size)).toBeGreaterThanOrEqual(2)
+    const listbox = screen.getByRole('listbox', { name: 'Matches' })
+    expect(listbox).toHaveTextContent('Leather Helm')
+    expect(screen.getAllByRole('option')).toHaveLength(1)
   })
 
-  it('sizes the listbox to the number of matches, up to 8', () => {
+  it('calls onPick with the clicked item', () => {
+    const onPick = vi.fn()
+    render(<FilterableOptions items={items} search="helm" onPick={onPick} ariaLabel="Matches" />)
+
+    fireEvent.click(screen.getByRole('option', { name: 'Iron Helm' }))
+
+    expect(onPick).toHaveBeenCalledWith(items[1])
+  })
+
+  it('reports the hovered item, and null once the pointer leaves it', () => {
+    const onHoverChange = vi.fn()
     render(
-      <FilterableOptions items={items} search="helm" onPick={() => {}} ariaLabel="Matches" />,
+      <FilterableOptions
+        items={items}
+        search="helm"
+        onPick={() => {}}
+        ariaLabel="Matches"
+        onHoverChange={onHoverChange}
+      />,
     )
 
-    const select = screen.getByLabelText('Matches') as HTMLSelectElement
-    expect(select.size).toBe(2)
+    const option = screen.getByRole('option', { name: 'Iron Helm' })
+    fireEvent.mouseEnter(option)
+    expect(onHoverChange).toHaveBeenCalledWith(items[1])
+
+    fireEvent.mouseLeave(option)
+    expect(onHoverChange).toHaveBeenCalledWith(null)
+  })
+
+  it('shows a note when more matches exist than fit', () => {
+    const manyItems = Array.from({ length: 205 }, (_, i) => ({ id: `${i}`, name: `Helm ${i}` }))
+    render(
+      <FilterableOptions items={manyItems} search="helm" onPick={() => {}} ariaLabel="Matches" />,
+    )
+
+    expect(screen.getAllByRole('option')).toHaveLength(200)
+    expect(screen.getByText(/205 matches/)).toBeInTheDocument()
   })
 })

@@ -870,7 +870,8 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
               <Disclosure title="Pin specific armor" summary={pinnedArmorSummary}>
                 <p className="form-text">
                   Pins a specific piece or decoration to force the solver to use it. Type at least 2
-                  characters to search.
+                  characters to search. <br />
+                  <b>You can also search by skill name.</b>
                 </p>
                 <ArmorPicker
                   slots={pinnableSlots}
@@ -931,6 +932,8 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                   pinned above -- a pin always wins. Excluding a skill works differently: a result is
                   simply never allowed to make that skill active, but equipment that grants it stays
                   eligible otherwise. Type at least 2 characters to search.
+                  <br />
+                  You can also search armor, decorations, and cuffs by skill name.
                 </p>
                 <EquipmentExclusionPicker
                   armorCandidates={allArmorCandidates}

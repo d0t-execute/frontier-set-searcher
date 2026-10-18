@@ -25,12 +25,24 @@
  * into the tens of thousands) for all four lists, since armor candidates,
  * decorations, cuffs, and skills all already share (or can be mapped onto)
  * the `{id, name}` shape it needs.
+ *
+ * Each of the armor/decoration/cuff lists also matches on a granted skill's
+ * name, not just the item's own name -- the same "search armor pieces by
+ * skill" behavior `ArmorPicker.tsx`'s `candidateMatches` already has (TODO
+ * #26's #19), extended here too (2026-10-18, per the project owner). The
+ * Skills list needs no such extension -- its items already *are* skills.
+ *
+ * Also shows the same persistent hover-skill-summary line `ArmorPicker.tsx`
+ * has below its own piece search (2026-10-19, per the project owner), on the
+ * armor/decoration/cuff lists only -- the Skills list's items have nothing to
+ * show there, since they already *are* the skill.
  */
 
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { contributionSummary } from '../search-engine/contribution-summary'
 import type { SkillContribution, SkillId } from '../search-engine/types'
-import { FilterableOptions } from './FilterableOptions'
+import { FilterableOptions, MIN_SEARCH_LENGTH } from './FilterableOptions'
+import { HoveredSkillSummary } from './HoveredSkillSummary'
 import { handleEnterToPickFirst } from './pick-first-match'
 
 interface Named {
@@ -85,6 +97,7 @@ export function EquipmentExclusionPicker({
         excludedIds={excludedArmorIds}
         onChange={onChangeExcludedArmorIds}
         skillNameById={skillNameById}
+        showSkillSummary
       />
       <ExclusionList
         label="Decorations"
@@ -93,6 +106,7 @@ export function EquipmentExclusionPicker({
         excludedIds={excludedDecorationIds}
         onChange={onChangeExcludedDecorationIds}
         skillNameById={skillNameById}
+        showSkillSummary
       />
       <ExclusionList
         label="Cuffs"
@@ -101,6 +115,7 @@ export function EquipmentExclusionPicker({
         excludedIds={excludedCuffIds}
         onChange={onChangeExcludedCuffIds}
         skillNameById={skillNameById}
+        showSkillSummary
       />
       <ExclusionList
         label="Skills"
@@ -121,6 +136,7 @@ function ExclusionList<T extends Named>({
   excludedIds,
   onChange,
   skillNameById,
+  showSkillSummary = false,
 }: {
   label: string
   searchAriaLabel: string
@@ -128,11 +144,41 @@ function ExclusionList<T extends Named>({
   excludedIds: ReadonlySet<string>
   onChange: (next: Set<string>) => void
   skillNameById: ReadonlyMap<SkillId, string>
+  /** Renders the persistent hover-skill-summary line below the results --
+   * left off for the Skills list, whose items have nothing to show there. */
+  showSkillSummary?: boolean
 }) {
   const [search, setSearch] = useState('')
+  const [hovered, setHovered] = useState<T | null>(null)
   const itemsById = useMemo(() => new Map(items.map((i) => [i.id, i])), [items])
+
+  // Matches an item by its own name or by a skill it grants -- lets "exclude
+  // every piece granting Ice Atk G" work without knowing a single piece's
+  // name up front, the same reason `ArmorPicker.tsx`'s own piece search
+  // matches by skill name too.
+  const matchesNameOrSkill = useCallback(
+    (item: T, query: string) => {
+      if (item.name.toLowerCase().includes(query)) return true
+      return (item.skills ?? []).some((c) =>
+        (skillNameById.get(c.skillId) ?? '').toLowerCase().includes(query),
+      )
+    },
+    [skillNameById],
+  )
+
   // Already-excluded items are left out of the search results -- nothing
-  // useful comes from letting the player "exclude" the same id twice.
+  // useful comes from letting the player "exclude" the same id twice. Folded
+  // into the search's own match rule (a single pass over `items`) rather than
+  // pre-filtering a separate `pickableItems` array first (a second full pass)
+  // -- halves the work redone on every pick, most noticeable on the ~62,000-
+  // row armor catalog (2026-10-18, after the project owner reported a visible
+  // delay between picking an item and it disappearing from the list).
+  const pickableMatches = useCallback(
+    (item: T, query: string) => !excludedIds.has(item.id) && matchesNameOrSkill(item, query),
+    [excludedIds, matchesNameOrSkill],
+  )
+  // `handleEnterToPickFirst` below still needs an actual array of pickable
+  // items (not just a match predicate) to find its own top match against.
   const pickableItems = useMemo(
     () => items.filter((i) => !excludedIds.has(i.id)),
     [items, excludedIds],
@@ -142,7 +188,11 @@ function ExclusionList<T extends Named>({
     const next = new Set(excludedIds)
     next.add(id)
     onChange(next)
-    setSearch('')
+    // Deliberately doesn't clear `search` -- picking an item used to close
+    // the results and empty the field, forcing a retype for every single
+    // piece when excluding several at once (2026-10-18, per the project
+    // owner). The picked item drops out of `pickableItems` on its own once
+    // excluded, so the remaining matches stay visible for the next pick.
   }
 
   function remove(id: string): void {
@@ -185,15 +235,26 @@ function ExclusionList<T extends Named>({
         placeholder="Type to search…"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        onKeyDown={(e) => handleEnterToPickFirst(e, pickableItems, search, (item) => add(item.id))}
+        onKeyDown={(e) =>
+          handleEnterToPickFirst(e, pickableItems, search, (item) => add(item.id), matchesNameOrSkill)
+        }
       />
       <FilterableOptions
-        items={pickableItems}
+        items={items}
         search={search}
         ariaLabel={`${label} matching search`}
+        matches={pickableMatches}
         describe={(item) => item.skills && contributionSummary(item.skills, skillNameById)}
         onPick={(item) => add(item.id)}
+        onHoverChange={showSkillSummary ? setHovered : undefined}
       />
+      {showSkillSummary && search.trim().length >= MIN_SEARCH_LENGTH && (
+        <HoveredSkillSummary
+          hovered={hovered && { skills: hovered.skills ?? [] }}
+          skillNameById={skillNameById}
+          query={search}
+        />
+      )}
     </div>
   )
 }
