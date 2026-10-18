@@ -255,6 +255,9 @@ def _export_decorations(conn: sqlite3.Connection) -> list[dict[str, Any]]:
             # this flag at least lets it exclude Tower Gems from the general
             # pool outright (see frontend's build-query.ts).
             "isTower": decoration.is_tower,
+            # Same mechanism as isTower above, for SP decorations (restricted
+            # to usable-only-in-SP-armor, 2026-10-18 per the project owner).
+            "isSp": decoration.is_sp,
             "category": decoration.category,
         }
         for decoration in list_decorations(conn)

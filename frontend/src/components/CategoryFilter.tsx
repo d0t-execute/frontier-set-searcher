@@ -41,6 +41,21 @@ export function CategoryFilter({
   onChange,
   itemsByCategory,
 }: CategoryFilterProps) {
+  // Collapsed-by-label, not a boolean-per-group array, so a group's collapse
+  // state survives `groups` changing identity (e.g. a parent re-render) as
+  // long as its label doesn't. Starts empty -- every group renders expanded,
+  // matching this component's pre-existing (always-expanded) behavior.
+  const [collapsedGroups, setCollapsedGroups] = useState<ReadonlySet<string>>(new Set())
+
+  function toggleGroupCollapsed(label: string): void {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev)
+      if (next.has(label)) next.delete(label)
+      else next.add(label)
+      return next
+    })
+  }
+
   function setLeaf(key: string, included: boolean): void {
     const next = new Set(excludedCategories)
     if (included) next.delete(key)
@@ -63,31 +78,45 @@ export function CategoryFilter({
         const excludedCount = group.categories.filter((c) => excludedCategories.has(c.key)).length
         const allExcluded = excludedCount === group.categories.length
         const someExcluded = excludedCount > 0 && !allExcluded
+        const collapsed = collapsedGroups.has(group.label)
         return (
           <div className="category-group" key={group.label}>
-            <GroupCheckbox
-              label={group.label}
-              // Fully checked only when nothing in the group is excluded --
-              // a partial selection renders unchecked-but-indeterminate, so a
-              // click always lands on "include everything" first rather
-              // than immediately excluding the rest (native checkboxes
-              // toggle their own `checked` value on click regardless of
-              // `indeterminate`, which is purely visual).
-              checked={excludedCount === 0}
-              indeterminate={someExcluded}
-              onChange={(checked) => setGroup(group, checked)}
-            />
-            <div className="category-group-children">
-              {group.categories.map((category) => (
-                <CategoryLeaf
-                  key={category.key}
-                  category={category}
-                  checked={!excludedCategories.has(category.key)}
-                  onChange={(checked) => setLeaf(category.key, checked)}
-                  items={itemsByCategory?.get(category.key)}
-                />
-              ))}
+            <div className="category-group-header">
+              <button
+                type="button"
+                className="category-group-collapse-toggle"
+                onClick={() => toggleGroupCollapsed(group.label)}
+                aria-expanded={!collapsed}
+                aria-label={`${collapsed ? 'Expand' : 'Collapse'} ${group.label}`}
+              >
+                {collapsed ? '▸' : '▾'}
+              </button>
+              <GroupCheckbox
+                label={group.label}
+                // Fully checked only when nothing in the group is excluded --
+                // a partial selection renders unchecked-but-indeterminate, so a
+                // click always lands on "include everything" first rather
+                // than immediately excluding the rest (native checkboxes
+                // toggle their own `checked` value on click regardless of
+                // `indeterminate`, which is purely visual).
+                checked={excludedCount === 0}
+                indeterminate={someExcluded}
+                onChange={(checked) => setGroup(group, checked)}
+              />
             </div>
+            {!collapsed && (
+              <div className="category-group-children">
+                {group.categories.map((category) => (
+                  <CategoryLeaf
+                    key={category.key}
+                    category={category}
+                    checked={!excludedCategories.has(category.key)}
+                    onChange={(checked) => setLeaf(category.key, checked)}
+                    items={itemsByCategory?.get(category.key)}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         )
       })}

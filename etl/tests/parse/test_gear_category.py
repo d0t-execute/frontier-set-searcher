@@ -34,6 +34,9 @@ from etl.parse.gear_category import (
     CATEGORY_DECO_EVENT,
     CATEGORY_DECO_EVENT_G,
     CATEGORY_DECO_EVENT_GX,
+    CATEGORY_DECO_EXTREME_HERUTO,
+    CATEGORY_DECO_EXTREME_IROASU,
+    CATEGORY_DECO_EXTREME_LUCHAR,
     CATEGORY_DECO_EXTREME_RAVIENTE,
     CATEGORY_DECO_FESTIVAL_G,
     CATEGORY_DECO_FESTIVAL_GX,
@@ -42,6 +45,7 @@ from etl.parse.gear_category import (
     CATEGORY_DECO_GUILD_GX,
     CATEGORY_DECO_GX,
     CATEGORY_DECO_HIDEN,
+    CATEGORY_DECO_IMPOSSIBLE_TO_CREATE,
     CATEGORY_DECO_KEOARUBORU,
     CATEGORY_DECO_LOTTERY_HIDEN,
     CATEGORY_DECO_MUSOU_BOGABADORUMU,
@@ -54,10 +58,30 @@ from etl.parse.gear_category import (
     CATEGORY_DECO_ROAD,
     CATEGORY_DECO_ROAD_GX,
     CATEGORY_DECO_ROAD_WHITE_FATALIS,
+    CATEGORY_DECO_SP,
+    CATEGORY_DECO_SP_LV2,
+    CATEGORY_DECO_SP_LV3,
+    CATEGORY_DECO_SPECIAL,
     CATEGORY_DECO_STANDARD,
     CATEGORY_DECO_TOWER,
+    CATEGORY_DECO_TRAINING_ONLY,
     CATEGORY_DECO_TRUE_HIDEN,
+    CATEGORY_DECO_UNIMPLEMENTED,
     CATEGORY_DIVA_DEFENSE,
+    CATEGORY_EVENT_EXTREME_DEMON_LORD,
+    CATEGORY_EVENT_EXTREME_HERUTO,
+    CATEGORY_EVENT_EXTREME_IROASU,
+    CATEGORY_EVENT_EXTREME_LUCHAR,
+    CATEGORY_EVENT_GX,
+    CATEGORY_EVENT_MUSOU_BOGABADORUMU,
+    CATEGORY_EVENT_MUSOU_DUREMUDIRA,
+    CATEGORY_EVENT_MUSOU_ELZELION,
+    CATEGORY_EVENT_MUSOU_GUANZORUMU,
+    CATEGORY_EVENT_MUSOU_MIRU,
+    CATEGORY_EVENT_MUSOU_NARGACUGA,
+    CATEGORY_EVENT_MUSOU_PARIAPURIA,
+    CATEGORY_EVENT_MUSOU_ZERUREUSU,
+    CATEGORY_EVENT_MUSOU_ZINOGRE,
     CATEGORY_EVENT_MYSTERY,
     CATEGORY_EVENT_PLAIN,
     CATEGORY_EVENT_ZENITH,
@@ -86,10 +110,32 @@ from etl.parse.gear_category import (
     CATEGORY_HR100_FX,
     CATEGORY_HR100_GOU,
     CATEGORY_PAID_GACHAPON,
+    CATEGORY_PAID_GACHAPON_EXOTIC,
+    CATEGORY_PAID_GACHAPON_G_HIDEN,
+    CATEGORY_PAID_GACHAPON_G_SHUGO,
+    CATEGORY_PAID_GACHAPON_HC,
+    CATEGORY_PAID_GACHAPON_HIDEN,
+    CATEGORY_PAID_GACHAPON_HS,
+    CATEGORY_PAID_GACHAPON_ZP,
     CATEGORY_PAID_NET_CAFE,
+    CATEGORY_PAID_NET_CAFE_G_SHUGO,
+    CATEGORY_PAID_NET_CAFE_HC,
+    CATEGORY_PAID_NET_CAFE_HS,
+    CATEGORY_PAID_NET_CAFE_ZP,
     CATEGORY_PAID_PACKAGE,
+    CATEGORY_PAID_PACKAGE_G_SHUGO,
+    CATEGORY_PAID_PACKAGE_HC,
+    CATEGORY_PAID_PACKAGE_HS,
     CATEGORY_PAID_PREMIUM_KIT,
+    CATEGORY_PAID_PREMIUM_KIT_G_SHUGO,
+    CATEGORY_PAID_PREMIUM_KIT_HC,
+    CATEGORY_PAID_PREMIUM_KIT_HS,
+    CATEGORY_PAID_PREMIUM_KIT_ZP,
     CATEGORY_PAID_PROMOTIONAL,
+    CATEGORY_PAID_PROMOTIONAL_G_SHUGO,
+    CATEGORY_PAID_PROMOTIONAL_HC,
+    CATEGORY_PAID_PROMOTIONAL_HS,
+    CATEGORY_PAID_PROMOTIONAL_ZP,
     CATEGORY_ROAD_G,
     CATEGORY_ROAD_GX,
     CATEGORY_ROAD_HS,
@@ -113,6 +159,7 @@ from etl.parse.gear_category import (
     CATEGORY_UNAVAILABLE_NOT_IMPLEMENTED,
     CATEGORY_UNAVAILABLE_TRAINING_ONLY,
     CATEGORY_ZENITH_PLAIN,
+    CATEGORY_ZENITH_ZF,
     CATEGORY_ZENITH_ZX,
     CATEGORY_ZENITH_ZY,
     classify_cuff_category,
@@ -122,9 +169,11 @@ from etl.parse.gear_category import (
 )
 
 
-def _row(name: str, cre: str = "", clazz: str = "") -> list[str]:
+def _row(name: str, cre: str = "", clazz: str = "", recipe: str = "", hr: str = "") -> list[str]:
     fields = [""] * 36
     fields[0] = name
+    fields[21] = recipe
+    fields[22] = hr
     fields[33] = cre
     fields[35] = clazz
     return fields
@@ -158,10 +207,7 @@ def test_premium_kit() -> None:
 def test_premium_kit_strips_the_color_variant_hash() -> None:
     # "#" marks a colour-variant row (the site's own c_color toggle), not a
     # separate acquisition method -- confirmed against the real dataset.
-    assert (
-        classify_equipment_category(_row("Steno GS Vest", cre="4k#", clazz="J"))
-        == CATEGORY_PAID_PREMIUM_KIT
-    )
+    assert classify_equipment_category(_row("Steno Vest", cre="4k#")) == CATEGORY_PAID_PREMIUM_KIT
 
 
 def test_gachapon() -> None:
@@ -179,13 +225,110 @@ def test_promotional() -> None:
     assert classify_equipment_category(_row("Nova Helm", cre="5-")) == CATEGORY_PAID_PROMOTIONAL
 
 
-def test_promotional_wins_over_class_even_though_hc_matches() -> None:
-    # Real example (head:1000, "テリオグHC Cap"): CRE "5-" wins over CLASS "E"
-    # (HC) -- the acquisition code always takes precedence, confirmed against
-    # the real dataset (see docs/gear-category-taxonomy.md).
+def test_paid_premium_subcategories() -> None:
+    # Every "Paid and Premium" route splits by CLASS into the same tier
+    # structure (confirmed against the real dataset, 2026-10-18) -- each
+    # route only has real rows for some of the 7 possible tiers.
+    assert (
+        classify_equipment_category(_row("Secuti HS Helm", cre="5p", clazz="F"))
+        == CATEGORY_PAID_PACKAGE_HS
+    )
+    assert (
+        classify_equipment_category(_row("Secuti GS Helm", cre="5p", clazz="J"))
+        == CATEGORY_PAID_PACKAGE_G_SHUGO
+    )
+    assert (
+        classify_equipment_category(_row("Teriogu HC Cap", cre="5p", clazz="E"))
+        == CATEGORY_PAID_PACKAGE_HC
+    )
+
+    assert (
+        classify_equipment_category(_row("Secuti HS Helm", cre="4k", clazz="F"))
+        == CATEGORY_PAID_PREMIUM_KIT_HS
+    )
+    assert (
+        classify_equipment_category(_row("Secuti GP Helm", cre="4k", clazz="J"))
+        == CATEGORY_PAID_PREMIUM_KIT_G_SHUGO
+    )
+    assert (
+        classify_equipment_category(_row("Teriogu HC Cap", cre="4k", clazz="E"))
+        == CATEGORY_PAID_PREMIUM_KIT_HC
+    )
+    assert (
+        classify_equipment_category(_row("Evol ZP Head", cre="4k", clazz="Q"))
+        == CATEGORY_PAID_PREMIUM_KIT_ZP
+    )
+
+    assert (
+        classify_equipment_category(_row("Secuti HS Helm", cre="4g", clazz="F"))
+        == CATEGORY_PAID_GACHAPON_HS
+    )
+    assert (
+        classify_equipment_category(_row("Ukon GS Head", cre="4g", clazz="J"))
+        == CATEGORY_PAID_GACHAPON_G_SHUGO
+    )
+    assert (
+        classify_equipment_category(_row("Teriogu HC Cap", cre="4g", clazz="E"))
+        == CATEGORY_PAID_GACHAPON_HC
+    )
+    assert (
+        classify_equipment_category(_row("Evol ZP Head", cre="4g", clazz="Q"))
+        == CATEGORY_PAID_GACHAPON_ZP
+    )
+    assert (
+        classify_equipment_category(_row("White Kensei Helm", cre="4g", clazz="K"))
+        == CATEGORY_PAID_GACHAPON_HIDEN
+    )
+    assert (
+        classify_equipment_category(_row("White Kensei GX Helm", cre="4g", clazz="L"))
+        == CATEGORY_PAID_GACHAPON_G_HIDEN
+    )
+    assert (
+        classify_equipment_category(_row("Yukumo Kasa GX", cre="4g", clazz="O"))
+        == CATEGORY_PAID_GACHAPON_EXOTIC
+    )
+
+    assert (
+        classify_equipment_category(_row("Secuti HS Helm", cre="3-", clazz="F"))
+        == CATEGORY_PAID_NET_CAFE_HS
+    )
+    assert (
+        classify_equipment_category(_row("Regyukusu GS Head", cre="3e", clazz="J"))
+        == CATEGORY_PAID_NET_CAFE_G_SHUGO
+    )
+    assert (
+        classify_equipment_category(_row("Teriogu HC Cap", cre="3-", clazz="E"))
+        == CATEGORY_PAID_NET_CAFE_HC
+    )
+    assert (
+        classify_equipment_category(_row("Evol ZP Head", cre="3e", clazz="Q"))
+        == CATEGORY_PAID_NET_CAFE_ZP
+    )
+
+    assert (
+        classify_equipment_category(_row("Secuti HS Helm", cre="5-", clazz="F"))
+        == CATEGORY_PAID_PROMOTIONAL_HS
+    )
+    assert (
+        classify_equipment_category(_row("Welf GS Helm", cre="5-", clazz="J"))
+        == CATEGORY_PAID_PROMOTIONAL_G_SHUGO
+    )
+    assert (
+        classify_equipment_category(_row("Evol ZP Head", cre="5-", clazz="Q"))
+        == CATEGORY_PAID_PROMOTIONAL_ZP
+    )
+
+
+def test_promotional_wins_over_class_for_the_top_level_route() -> None:
+    # Real example (head:1000, "テリオグHC Cap"): CRE "5-" (Promotional) wins
+    # over CLASS "E" (HC) for *which acquisition route* a row belongs to --
+    # it's not reclassified into the Hardcore Quests group entirely. CLASS
+    # still refines the leaf *within* Promotional though (2026-10-18, see
+    # `_paid_premium_subcategory`), landing on Promotional's own HC sub-leaf
+    # rather than the plain one.
     assert (
         classify_equipment_category(_row("Teriogu HC Cap", cre="5-", clazz="E"))
-        == CATEGORY_PAID_PROMOTIONAL
+        == CATEGORY_PAID_PROMOTIONAL_HC
     )
 
 
@@ -415,8 +558,16 @@ def test_tournament_zp() -> None:
 
 def test_event_plain() -> None:
     assert (
-        classify_equipment_category(_row("Demon Lord GX Helm", cre="1e", clazz="I"))
-        == CATEGORY_EVENT_PLAIN
+        classify_equipment_category(_row("Jess BM G", cre="1e", clazz="I")) == CATEGORY_EVENT_PLAIN
+    )
+    # Non-G-rank Event pieces (blank CLASS) are also plain, same bucket as a
+    # G-tier one that isn't GX and isn't a curated Musou/Extreme name.
+    assert classify_equipment_category(_row("Hunger Helm", cre="1e")) == CATEGORY_EVENT_PLAIN
+
+
+def test_event_gx() -> None:
+    assert (
+        classify_equipment_category(_row("Jess GX Helm", cre="1e", clazz="I")) == CATEGORY_EVENT_GX
     )
 
 
@@ -456,10 +607,11 @@ def test_event_mystery() -> None:
 
 def test_event_mystery_requires_the_luxt_name_to_be_anchored_at_the_start() -> None:
     # A name merely containing "Luxt" later, or without the GX tier, isn't
-    # Mystery Quest Armour -- it's a normal Event-series item.
+    # Mystery Quest Armour -- it's a normal Event-series item (GX-tier, so
+    # event_gx; the non-GX one falls to event_plain).
     assert (
         classify_equipment_category(_row("Deluxt GX Helm", cre="1e", clazz="I"))
-        == CATEGORY_EVENT_PLAIN
+        == CATEGORY_EVENT_GX
     )
     assert (
         classify_equipment_category(_row("Luxt Helm", cre="1e", clazz="I")) == CATEGORY_EVENT_PLAIN
@@ -468,6 +620,87 @@ def test_event_mystery_requires_the_luxt_name_to_be_anchored_at_the_start() -> N
 
 def test_event_fx_goes_to_hr100_fx_instead() -> None:
     assert classify_equipment_category(_row("Eques FX Helm", cre="1e")) == CATEGORY_HR100_FX
+
+
+def test_event_musou_armor() -> None:
+    # Real armor names confirmed by the project owner for all 9 Musou-tier
+    # monsters (2026-10-18) -- differ from the matching Musou *decoration*
+    # names for Bogabadorumu/Zerureusu/Elzelion (Rafan/Elysium/Fonce there vs
+    # Rapin/Elysi/Fonse here).
+    assert (
+        classify_equipment_category(_row("Demonclad Horn G", cre="1e", clazz="I"))
+        == CATEGORY_EVENT_MUSOU_NARGACUGA
+    )
+    assert (
+        classify_equipment_category(_row("鬼凛ノ角G", cre="1e", clazz="I"))
+        == CATEGORY_EVENT_MUSOU_GUANZORUMU
+    )
+    assert (
+        classify_equipment_category(_row("童凛ノ角G", cre="1e", clazz="I"))
+        == CATEGORY_EVENT_MUSOU_GUANZORUMU
+    )
+    assert (
+        classify_equipment_category(_row("Rapin G Helm", cre="1e", clazz="I"))
+        == CATEGORY_EVENT_MUSOU_BOGABADORUMU
+    )
+    assert (
+        classify_equipment_category(_row("Chiru G Head", cre="1e", clazz="I"))
+        == CATEGORY_EVENT_MUSOU_ZINOGRE
+    )
+    assert (
+        classify_equipment_category(_row("Elysi G Helm", cre="1e", clazz="I"))
+        == CATEGORY_EVENT_MUSOU_ZERUREUSU
+    )
+    assert (
+        classify_equipment_category(_row("Fonse G Helm", cre="1e", clazz="I"))
+        == CATEGORY_EVENT_MUSOU_ELZELION
+    )
+    assert (
+        classify_equipment_category(_row("Demon Tale Horn G", cre="1e", clazz="I"))
+        == CATEGORY_EVENT_MUSOU_MIRU
+    )
+    assert (
+        classify_equipment_category(_row("童伝ノ角G", cre="1e", clazz="I"))
+        == CATEGORY_EVENT_MUSOU_MIRU
+    )
+    assert (
+        classify_equipment_category(_row("Ganeto G Head", cre="1e", clazz="I"))
+        == CATEGORY_EVENT_MUSOU_PARIAPURIA
+    )
+    assert (
+        classify_equipment_category(_row("Bonne G Helm", cre="1e", clazz="I"))
+        == CATEGORY_EVENT_MUSOU_DUREMUDIRA
+    )
+    # A Musou name wins over the plain GX fallback too.
+    assert (
+        classify_equipment_category(_row("Demonclad Horn GX", cre="1e", clazz="I"))
+        == CATEGORY_EVENT_MUSOU_NARGACUGA
+    )
+
+
+def test_event_extreme_quest_armor() -> None:
+    # 4 distinct Extreme Quest rewards confirmed by the project owner
+    # (2026-10-18), none tied to an actual Musou monster.
+    assert (
+        classify_equipment_category(_row("Demon Lord ノ肩鎧GX", cre="1e", clazz="I"))
+        == CATEGORY_EVENT_EXTREME_DEMON_LORD
+    )
+    assert (
+        classify_equipment_category(_row("童子ノ角GX", cre="1e", clazz="I"))
+        == CATEGORY_EVENT_EXTREME_DEMON_LORD
+    )
+    assert (
+        classify_equipment_category(_row("Heruto GX Piercing", cre="1e", clazz="I"))
+        == CATEGORY_EVENT_EXTREME_HERUTO
+    )
+    assert (
+        classify_equipment_category(_row("Iroasu GX Piercing", cre="1e", clazz="I"))
+        == CATEGORY_EVENT_EXTREME_IROASU
+    )
+    assert (
+        classify_equipment_category(_row("Luchar GX Piercing", cre="1e", clazz="I"))
+        == CATEGORY_EVENT_EXTREME_LUCHAR
+    )
 
 
 # -- G Rank Armour ---------------------------------------------------------------
@@ -526,6 +759,14 @@ def test_zenith_zy() -> None:
 
 def test_zenith_zx() -> None:
     assert classify_equipment_category(_row("Espinas ZX Brain", clazz="P")) == CATEGORY_ZENITH_ZX
+
+
+def test_zenith_zf() -> None:
+    # Confirmed against the real dataset (2026-10-18): an exact 50/50 split
+    # of what used to all be `zenith_plain` -- every remaining "plain" row
+    # actually carries a bare "Z" token, and exactly as many carry "ZF"
+    # instead, the same name-suffix-token pattern as ZX/ZY above.
+    assert classify_equipment_category(_row("Espinas ZF Brain", clazz="P")) == CATEGORY_ZENITH_ZF
 
 
 # -- Hardcore Quests ---------------------------------------------------------------
@@ -955,6 +1196,70 @@ def test_deco_tower_not_surfaced_in_the_ui_tree() -> None:
 
 
 def test_deco_other_for_unmodeled_rows() -> None:
-    assert classify_decoration_category(_row("Placeholder Gem", cre="9")) == CATEGORY_DECO_OTHER
-    assert classify_decoration_category(_row("Guild R. Gem", cre="7-")) == CATEGORY_DECO_OTHER
-    assert classify_decoration_category(_row("SP Gem", cre="1-", clazz="A")) == CATEGORY_DECO_OTHER
+    # CLASS "Z" isn't a real decode -- never seen in the real dataset, but the
+    # function must still fall through to something rather than raise.
+    assert (
+        classify_decoration_category(_row("Placeholder Gem", cre="1-", clazz="Z"))
+        == CATEGORY_DECO_OTHER
+    )
+
+
+def test_deco_sp_tiers() -> None:
+    assert classify_decoration_category(_row("Recoil SP", cre="1-", clazz="A")) == CATEGORY_DECO_SP
+    assert (
+        classify_decoration_category(_row("Recoil SP α", cre="1-", clazz="A"))
+        == CATEGORY_DECO_SP_LV2
+    )
+    assert (
+        classify_decoration_category(_row("Recoil SP β", cre="1-", clazz="A"))
+        == CATEGORY_DECO_SP_LV3
+    )
+
+
+def test_deco_extreme_quest() -> None:
+    assert (
+        classify_decoration_category(_row("Heruto GX", cre="1e", clazz="I"))
+        == CATEGORY_DECO_EXTREME_HERUTO
+    )
+    assert (
+        classify_decoration_category(_row("Iroasu GX", cre="1e", clazz="I"))
+        == CATEGORY_DECO_EXTREME_IROASU
+    )
+    assert (
+        classify_decoration_category(_row("Luchar GN GX", cre="1e", clazz="I"))
+        == CATEGORY_DECO_EXTREME_LUCHAR
+    )
+
+
+def test_deco_training_only() -> None:
+    assert (
+        classify_decoration_category(_row("Instructor Gem I", cre="7-"))
+        == CATEGORY_DECO_TRAINING_ONLY
+    )
+
+
+def test_deco_impossible_to_create() -> None:
+    assert (
+        classify_decoration_category(_row("Blessing 1 Deco", cre="9", recipe="作成不可"))
+        == CATEGORY_DECO_IMPOSSIBLE_TO_CREATE
+    )
+
+
+def test_deco_unimplemented() -> None:
+    assert (
+        classify_decoration_category(_row("G Thunder Clad", cre="9", hr="10000"))
+        == CATEGORY_DECO_UNIMPLEMENTED
+    )
+    # No recipe/HR sentinel at all -- still treated as Unimplemented, the same
+    # fallback equipment's own CRE="9" uses (CATEGORY_UNAVAILABLE_NOT_IMPLEMENTED).
+    assert (
+        classify_decoration_category(_row("Placeholder Gem", cre="9"))
+        == CATEGORY_DECO_UNIMPLEMENTED
+    )
+
+
+def test_deco_special() -> None:
+    assert (
+        classify_decoration_category(_row("G Rolling・Curtain", cre="4k")) == CATEGORY_DECO_SPECIAL
+    )
+    assert classify_decoration_category(_row("G Issen・Protect", cre="5-")) == CATEGORY_DECO_SPECIAL

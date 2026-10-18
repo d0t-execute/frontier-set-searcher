@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+﻿import { describe, expect, it } from 'vitest'
 import { computePinnedSkillTotals } from './pinned-armor'
 import type { PinnableSlot, PinnedSlot } from './pinned-armor'
 import type { NamedDecoration } from './load-bundle'
@@ -21,6 +21,7 @@ const decorations: readonly NamedDecoration[] = [
     slotSize: 1,
     skills: [{ skillId: 1, points: 3 }],
     isTower: false,
+    isSp: false,
     category: 'deco_standard',
   },
 ]
@@ -30,7 +31,7 @@ describe('computePinnedSkillTotals', () => {
     expect(computePinnedSkillTotals(new Map(), slots, decorations).size).toBe(0)
   })
 
-  it('sums a pinned candidate’s own skills', () => {
+  it('sums a pinned candidateâ€™s own skills', () => {
     const pinned: ReadonlyMap<string, PinnedSlot> = new Map([
       ['head', { candidateId: 'head:0001', decorationIds: [] }],
     ])
@@ -40,7 +41,7 @@ describe('computePinnedSkillTotals', () => {
     expect(totals.get(1)).toBe(5)
   })
 
-  it('adds placed decorations’ skills on top of the candidate’s own', () => {
+  it('adds placed decorationsâ€™ skills on top of the candidateâ€™s own', () => {
     const pinned: ReadonlyMap<string, PinnedSlot> = new Map([
       ['head', { candidateId: 'head:0001', decorationIds: ['D001'] }],
     ])

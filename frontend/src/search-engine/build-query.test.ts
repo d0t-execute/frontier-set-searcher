@@ -32,8 +32,9 @@ function deco(
   isTower: boolean,
   category = 'deco_standard',
   skills: readonly SkillContribution[] = [],
+  isSp = false,
 ): NamedDecoration {
-  return { id, name: id, slotSize: 1, skills, isTower, category }
+  return { id, name: id, slotSize: 1, skills, isTower, isSp, category }
 }
 
 function candidate(
@@ -94,6 +95,15 @@ describe('decorationsAfterCategoryFilter', () => {
 
   it('returns an empty array when every decoration is a Tower Gem', () => {
     expect(decorationsAfterCategoryFilter([deco('a', true)], new Set())).toEqual([])
+  })
+
+  it('drops every decoration flagged isSp unconditionally, the same as isTower', () => {
+    const result = decorationsAfterCategoryFilter(
+      [deco('a', false), deco('b', false, 'deco_sp', [], true), deco('c', false)],
+      new Set(),
+    )
+
+    expect(result.map((d) => d.id)).toEqual(['a', 'c'])
   })
 
   it('drops decorations whose own category is excluded, independent of isTower', () => {

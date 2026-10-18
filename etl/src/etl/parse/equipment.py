@@ -40,6 +40,7 @@ _PLACEHOLDER_EXTERNAL_ID = "0000"
 # CLASS codes for the categories this module cares about -- see
 # docs/data-format-notes.md "Equipment taxonomy" for the full decode table.
 _TOWER_CLASS = "N"
+_SP_CLASS = "A"
 
 # TYPE field (index 2) decode -- confirmed by the project owner: a
 # Blademaster- or Gunner-restricted armor piece can't share a build with the
@@ -156,6 +157,13 @@ class ParsedDecorationRow:
     skills: tuple[tuple[int, int], ...]
     # Tower Gem (CLASS "N") -- see the matching note on ParsedEquipmentRow.
     is_tower: bool = False
+    # SP Decoration (CLASS "A", any of its 3 tiers) -- confirmed by the
+    # project owner to be usable only in SP armor, the same restriction Tower
+    # Gems get, via the same mechanism: this flag makes `build-query.ts`
+    # exclude it from the solver's free decoration pool unconditionally (see
+    # `is_tower`'s own matching note and docs/skill-system-roadmap.md TODO #11
+    # for the known one-sided-enforcement caveat this shares with Tower).
+    is_sp: bool = False
     # The reference set-searcher's decoration-tree category leaf -- see
     # docs/gear-category-taxonomy.md.
     category: str = "deco_standard"
@@ -345,6 +353,7 @@ def parse_decoration_bucket(bucket_json: str) -> list[ParsedDecorationRow]:
                 slot_size=slot_size,
                 skills=_extract_skills(fields),
                 is_tower=_field(fields, Field.CLASS) == _TOWER_CLASS,
+                is_sp=_field(fields, Field.CLASS) == _SP_CLASS,
                 category=classify_decoration_category(fields),
             )
         )

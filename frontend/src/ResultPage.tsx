@@ -74,6 +74,7 @@ function toNamedBuildResult(result: SharedBuildResult): NamedBuildResult {
         slotSize: dec.slotSize,
         skills: [],
         isTower: false,
+        isSp: false,
         category: '',
       })),
     ]),

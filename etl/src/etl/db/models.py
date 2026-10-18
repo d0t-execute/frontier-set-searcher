@@ -131,6 +131,8 @@ class Decoration:
     slot_size: int
     # Tower Gem -- see the matching note on Equipment.is_tower.
     is_tower: bool = False
+    # SP Decoration -- see ParsedDecorationRow.is_sp's own note.
+    is_sp: bool = False
     # The reference set-searcher's decoration-tree category leaf -- see
     # docs/gear-category-taxonomy.md.
     category: str = "deco_standard"

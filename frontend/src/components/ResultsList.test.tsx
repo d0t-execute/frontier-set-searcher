@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+﻿import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { ResultsList } from './ResultsList'
 import type { NamedBuildResult } from './types'
@@ -100,6 +100,7 @@ describe('ResultsList', () => {
                     slotSize: 1,
                     skills: [],
                     isTower: false,
+                    isSp: false,
                     category: 'deco_standard',
                   },
                 ],
@@ -135,7 +136,7 @@ describe('ResultsList', () => {
     expect(screen.getByText(/3 open slots/i)).toBeInTheDocument()
   })
 
-  it('subtracts placed decorations’ slot size from the open-slots count shown', () => {
+  it('subtracts placed decorationsâ€™ slot size from the open-slots count shown', () => {
     render(
       <ResultsList
         results={[
@@ -153,6 +154,7 @@ describe('ResultsList', () => {
                     slotSize: 1,
                     skills: [],
                     isTower: false,
+                    isSp: false,
                     category: 'deco_standard',
                   },
                 ],
@@ -187,6 +189,7 @@ describe('ResultsList', () => {
                     slotSize: 1,
                     skills: [],
                     isTower: false,
+                    isSp: false,
                     category: 'deco_standard',
                   },
                 ],
@@ -565,6 +568,7 @@ describe('ResultsList', () => {
                     slotSize: 1,
                     skills: [{ skillId: 1, points: 3 }],
                     isTower: false,
+                    isSp: false,
                     category: 'deco_standard',
                   },
                   {
@@ -573,6 +577,7 @@ describe('ResultsList', () => {
                     slotSize: 1,
                     skills: [],
                     isTower: false,
+                    isSp: false,
                     category: 'deco_standard',
                   },
                 ],

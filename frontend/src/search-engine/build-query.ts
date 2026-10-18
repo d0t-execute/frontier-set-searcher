@@ -291,6 +291,19 @@ export function cuffsAfterExcludedIds(
   return cuffs.filter((c) => !excludedIds.has(c.id))
 }
 
+/** Decoration categories this project has confirmed are impossible to ever
+ * obtain in-game (Training-only, Unimplemented, Impossible to Create -- see
+ * docs/gear-category-taxonomy.md's "Decorations" table) -- excluded from the
+ * general pool unconditionally, the same way Tower/SP decorations are, rather
+ * than left as a togglable (if default-off) choice (confirmed by the project
+ * owner, 2026-10-18). Not one of this tree's leaves at all (see
+ * decoration-categories.ts's own docstring), same convention as `deco_tower`. */
+const _UNOBTAINABLE_DECORATION_CATEGORIES: ReadonlySet<string> = new Set([
+  'deco_training_only',
+  'deco_unimplemented',
+  'deco_impossible_to_create',
+])
+
 /** Tower Gems and regular decorations are strictly exclusive with each other
  * in both directions in-game (docs/data-format-notes.md's "Decorations"
  * section: Tower armor can only take Tower Gems, regular armor can't take
@@ -304,6 +317,14 @@ export function cuffsAfterExcludedIds(
  * remains unenforced regardless (see docs/skill-system-roadmap.md TODO #11's
  * own note on this).
  *
+ * SP Decorations get the identical treatment (confirmed by the project
+ * owner, 2026-10-18): usable only in SP armor, same per-slot rule this engine
+ * doesn't model, so `isSp` decorations are excluded from the general pool
+ * unconditionally too, with the same one-sided caveat as Tower above. The
+ * Unobtainable categories above get the same unconditional treatment, for an
+ * unrelated reason (never craftable/obtainable at all, not a slot-placement
+ * rule).
+ *
  * Separately filters by `d.category` against the richer decoration-tree
  * taxonomy (see decoration-categories.ts), which IS togglable via
  * `excludedCategories`. */
@@ -312,7 +333,8 @@ export function decorationsAfterCategoryFilter(
   excludedCategories: ReadonlySet<string>,
 ): NamedDecoration[] {
   return decorations.filter((d) => {
-    if (d.isTower) return false
+    if (d.isTower || d.isSp) return false
+    if (_UNOBTAINABLE_DECORATION_CATEGORIES.has(d.category)) return false
     return !excludedCategories.has(d.category)
   })
 }

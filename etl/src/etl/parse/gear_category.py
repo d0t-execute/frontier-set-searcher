@@ -43,11 +43,45 @@ _CLASS_ZENITH = "P"
 _CLASS_ZENITH_SHUGO = "Q"
 
 # Category leaf keys -- names and groupings match docs/gear-category-taxonomy.md.
-CATEGORY_PAID_PACKAGE = "paid_package"
-CATEGORY_PAID_PREMIUM_KIT = "paid_premium_kit"
-CATEGORY_PAID_GACHAPON = "paid_gachapon"
-CATEGORY_PAID_NET_CAFE = "paid_net_cafe"
-CATEGORY_PAID_PROMOTIONAL = "paid_promotional"
+# Paid and Premium armor -- each of the 5 acquisition routes below further
+# splits by CLASS into the same tier structure (confirmed against the real
+# dataset, 2026-10-18): a plain base tier, plus whichever of Shugo/G-Shugo/HC/
+# Zenith-Shugo/Hiden/G-Hiden/Exotic that route actually has real rows for (not
+# every route has every tier -- no leaf is defined for a tier with 0 real
+# rows in a given route, same no-leaf-for-confirmed-empty convention as
+# Taiwanese Premium). The project owner asked for this precisely because the
+# un-split buckets were huge (Premium Kit alone was 21,733 rows in one leaf).
+CATEGORY_PAID_PACKAGE = "paid_package"  # CRE=5p, CLASS "" (base tier)
+CATEGORY_PAID_PACKAGE_HS = "paid_package_hs"
+CATEGORY_PAID_PACKAGE_G_SHUGO = "paid_package_g_shugo"
+CATEGORY_PAID_PACKAGE_HC = "paid_package_hc"
+
+CATEGORY_PAID_PREMIUM_KIT = "paid_premium_kit"  # CRE=4k, CLASS "" (base tier)
+CATEGORY_PAID_PREMIUM_KIT_HS = "paid_premium_kit_hs"
+CATEGORY_PAID_PREMIUM_KIT_G_SHUGO = "paid_premium_kit_g_shugo"
+CATEGORY_PAID_PREMIUM_KIT_HC = "paid_premium_kit_hc"
+CATEGORY_PAID_PREMIUM_KIT_ZP = "paid_premium_kit_zp"
+
+CATEGORY_PAID_GACHAPON = "paid_gachapon"  # CRE=4g, CLASS "" (base tier)
+CATEGORY_PAID_GACHAPON_HS = "paid_gachapon_hs"
+CATEGORY_PAID_GACHAPON_G_SHUGO = "paid_gachapon_g_shugo"
+CATEGORY_PAID_GACHAPON_HC = "paid_gachapon_hc"
+CATEGORY_PAID_GACHAPON_ZP = "paid_gachapon_zp"
+CATEGORY_PAID_GACHAPON_HIDEN = "paid_gachapon_hiden"
+CATEGORY_PAID_GACHAPON_G_HIDEN = "paid_gachapon_g_hiden"
+CATEGORY_PAID_GACHAPON_EXOTIC = "paid_gachapon_exotic"
+
+CATEGORY_PAID_NET_CAFE = "paid_net_cafe"  # CRE=3-/3e, CLASS "" (base tier)
+CATEGORY_PAID_NET_CAFE_HS = "paid_net_cafe_hs"
+CATEGORY_PAID_NET_CAFE_G_SHUGO = "paid_net_cafe_g_shugo"
+CATEGORY_PAID_NET_CAFE_HC = "paid_net_cafe_hc"
+CATEGORY_PAID_NET_CAFE_ZP = "paid_net_cafe_zp"
+
+CATEGORY_PAID_PROMOTIONAL = "paid_promotional"  # CRE=5-, CLASS "" (base tier)
+CATEGORY_PAID_PROMOTIONAL_HS = "paid_promotional_hs"
+CATEGORY_PAID_PROMOTIONAL_G_SHUGO = "paid_promotional_g_shugo"
+CATEGORY_PAID_PROMOTIONAL_HC = "paid_promotional_hc"
+CATEGORY_PAID_PROMOTIONAL_ZP = "paid_promotional_zp"
 
 CATEGORY_GUILD_FESTIVAL = "guild_festival"
 CATEGORY_GUILD_PLAIN = "guild_plain"
@@ -88,6 +122,7 @@ CATEGORY_GRANK_EXOTIC = "grank_exotic"
 CATEGORY_GRANK_EXOTIC_GX = "grank_exotic_gx"
 
 CATEGORY_ZENITH_PLAIN = "zenith_plain"
+CATEGORY_ZENITH_ZF = "zenith_zf"
 CATEGORY_ZENITH_ZY = "zenith_zy"
 CATEGORY_ZENITH_ZX = "zenith_zx"
 
@@ -103,10 +138,39 @@ CATEGORY_HR100_FX = "hr100_fx"
 CATEGORY_HR100_GOU = "hr100_gou"
 
 CATEGORY_EVENT_PLAIN = "event_plain"
+CATEGORY_EVENT_GX = "event_gx"
 CATEGORY_EVENT_ZENITH = "event_zenith"
 CATEGORY_EVENT_ZENITH_ZY = "event_zenith_zy"
 CATEGORY_EVENT_ZENITH_ZX = "event_zenith_zx"
 CATEGORY_EVENT_MYSTERY = "event_mystery"  # 謎 -- Luxt series, GX tier only
+
+# Musou armor -- carved out of what would otherwise be event_plain/event_gx
+# (CRE=1e, CLASS=I), confirmed by the project owner against the real armor
+# names for all 9 Musou-tier monsters (2026-10-18). Unlike the matching Musou
+# *decorations* (which key on a separate BM/GN "<name> GX1".."GX5" naming
+# scheme and share one leaf per monster across both names), Musou ARMOR only
+# has a genuine two-name split for 2 of the 9 monsters (Guanzorumu, Mi Ru) --
+# the other 7 use a single name common to both hunter types. See
+# docs/gear-category-taxonomy.md for the full per-monster name table.
+CATEGORY_EVENT_MUSOU_NARGACUGA = "event_musou_nargacuga"  # Demonclad
+CATEGORY_EVENT_MUSOU_GUANZORUMU = "event_musou_guanzorumu"  # 鬼凛ノ / 童凛ノ
+CATEGORY_EVENT_MUSOU_BOGABADORUMU = "event_musou_bogabadorumu"  # Rapin
+CATEGORY_EVENT_MUSOU_ZINOGRE = "event_musou_zinogre"  # Chiru
+CATEGORY_EVENT_MUSOU_ZERUREUSU = "event_musou_zerureusu"  # Elysi
+CATEGORY_EVENT_MUSOU_ELZELION = "event_musou_elzelion"  # Fonse
+CATEGORY_EVENT_MUSOU_MIRU = "event_musou_miru"  # Demon Tale / 童伝ノ
+CATEGORY_EVENT_MUSOU_PARIAPURIA = "event_musou_pariapuria"  # Ganeto
+CATEGORY_EVENT_MUSOU_DUREMUDIRA = "event_musou_duremudira"  # Bonne
+
+# Extreme Quest armor -- also carved out of event_plain/event_gx, confirmed
+# by the project owner: 4 distinct quests, none tied to an actual Musou
+# monster. "Demon Lord"/"童子ノ" is a full 5-slot set (two hunter-type-
+# flavored names, same shape as the dual-named Musou monsters above); the
+# other 3 are head-slot-only items with no other-slot counterpart.
+CATEGORY_EVENT_EXTREME_DEMON_LORD = "event_extreme_demon_lord"  # Demon Lord / 童子ノ
+CATEGORY_EVENT_EXTREME_HERUTO = "event_extreme_heruto"
+CATEGORY_EVENT_EXTREME_IROASU = "event_extreme_iroasu"
+CATEGORY_EVENT_EXTREME_LUCHAR = "event_extreme_luchar"
 
 CATEGORY_TOURNAMENT_PLAIN = "tournament_plain"
 CATEGORY_TOURNAMENT_HC = "tournament_hc"
@@ -191,7 +255,38 @@ CATEGORY_DECO_ROAD = "deco_road"  # 道
 CATEGORY_DECO_ROAD_WHITE_FATALIS = "deco_road_white_fatalis"  # Wht
 CATEGORY_DECO_ROAD_GX = "deco_road_gx"  # 道GX ("Multi Event")
 CATEGORY_DECO_TOWER = "deco_tower"  # Tower Gem -- not surfaced in the UI tree
-CATEGORY_DECO_OTHER = "deco_other"  # SP改/SP真, Unavailable rows, anything unmodeled
+# SP decorations (CLASS "A") -- 3 tiers distinguished by name suffix (plain/
+# " α"/" β"), confirmed against the real dataset. Like Tower Gems, these are
+# restricted to usable-only-in-SP-armor by the project owner (2026-10-18);
+# see ParsedDecorationRow.is_sp for the enforcement mechanism this leaf set
+# feeds alongside.
+CATEGORY_DECO_SP = "deco_sp"  # SP
+CATEGORY_DECO_SP_LV2 = "deco_sp_lv2"  # SP改
+CATEGORY_DECO_SP_LV3 = "deco_sp_lv3"  # SP真
+# Extreme Quest decorations -- carved out of event_gx by curated name, same
+# CRE=1e+CLASS=I bucket as the Musou decorations above. Only 3 of the 4
+# Extreme Quest sets have a confirmed decoration; "Demon Lord"/童子ノ has none
+# (confirmed empty, no leaf -- same convention as Taiwanese Premium armor).
+CATEGORY_DECO_EXTREME_HERUTO = "deco_extreme_heruto"
+CATEGORY_DECO_EXTREME_IROASU = "deco_extreme_iroasu"
+CATEGORY_DECO_EXTREME_LUCHAR = "deco_extreme_luchar"
+# Unavailable decorations -- split 3 ways per the reference tool's own tree
+# (力/未/不), confirmed against the real dataset: CRE="7-" is Training (same
+# code equipment uses for CATEGORY_UNAVAILABLE_TRAINING_ONLY); within CRE="9",
+# a literal "作成不可" ("cannot be created") RECIPE1 marks Impossible to
+# Create, and an HR1 sentinel of "10000" (unreachable) marks Unimplemented.
+CATEGORY_DECO_TRAINING_ONLY = "deco_training_only"  # 力
+CATEGORY_DECO_UNIMPLEMENTED = "deco_unimplemented"  # 未
+CATEGORY_DECO_IMPOSSIBLE_TO_CREATE = "deco_impossible_to_create"  # 不
+# "(特)" in the reference tree -- the only real decoration rows left among the
+# lottery/paid CRE codes once Cuffs are excluded are 5 "kit purchase" rows
+# (CRE 4k/5-, RECIPE1 literally names an anniversary/premium kit purchase) --
+# "(パ) Package" and "(ガTW) Lottery Decorations" have zero real decoration
+# rows in this dataset (confirmed empty, no leaf, same as Taiwanese Premium).
+# This label is a judgment call, not a project-owner confirmation -- flagged
+# the same way CATEGORY_GRANK_BURST_SPECIES's label is.
+CATEGORY_DECO_SPECIAL = "deco_special"  # 特, label unconfirmed
+CATEGORY_DECO_OTHER = "deco_other"  # anything unmodeled
 
 # Name-suffix tokens that mark a gear tier (NOT the "F"/"FY"/"FZ" forge-level
 # upgrade markers, which appear within every category uniformly and don't
@@ -257,6 +352,81 @@ def is_grank_or_later_equipment(fields: list[str]) -> bool:
     return clazz in _GRANK_OR_LATER_CLASSES
 
 
+# Musou armor name prefixes (CRE=1e, CLASS=I) -- confirmed by the project
+# owner against the real armor names (etl/.data/cache/equip.body), covering
+# all 9 Musou-tier monsters. Each tuple's names are TYPE=0 (common to both
+# hunter types) except where noted; a monster with two names has them as
+# wholly separate common armor sets, not a Blademaster/Gunner-restricted
+# pair (see CATEGORY_EVENT_MUSOU_NARGACUGA's own comment above).
+_EVENT_MUSOU_NAME_PREFIXES: tuple[tuple[tuple[str, ...], str], ...] = (
+    (("Demonclad",), CATEGORY_EVENT_MUSOU_NARGACUGA),
+    (("鬼凛ノ", "童凛ノ"), CATEGORY_EVENT_MUSOU_GUANZORUMU),
+    (("Rapin",), CATEGORY_EVENT_MUSOU_BOGABADORUMU),
+    (("Chiru",), CATEGORY_EVENT_MUSOU_ZINOGRE),
+    (("Elysi",), CATEGORY_EVENT_MUSOU_ZERUREUSU),
+    (("Fonse",), CATEGORY_EVENT_MUSOU_ELZELION),
+    (("Demon Tale", "童伝ノ"), CATEGORY_EVENT_MUSOU_MIRU),
+    (("Ganeto",), CATEGORY_EVENT_MUSOU_PARIAPURIA),
+    (("Bonne",), CATEGORY_EVENT_MUSOU_DUREMUDIRA),
+)
+
+# Extreme Quest armor name prefixes (CRE=1e, CLASS=I) -- confirmed by the
+# project owner: 4 distinct quests, none tied to an actual Musou monster (see
+# CATEGORY_EVENT_EXTREME_DEMON_LORD's own comment above).
+_EVENT_EXTREME_NAME_PREFIXES: tuple[tuple[tuple[str, ...], str], ...] = (
+    (("Demon Lord", "童子ノ"), CATEGORY_EVENT_EXTREME_DEMON_LORD),
+    (("Heruto",), CATEGORY_EVENT_EXTREME_HERUTO),
+    (("Iroasu",), CATEGORY_EVENT_EXTREME_IROASU),
+    (("Luchar",), CATEGORY_EVENT_EXTREME_LUCHAR),
+)
+
+
+def _paid_premium_subcategory(
+    clazz: str,
+    *,
+    base: str,
+    hs: str,
+    g_shugo: str,
+    hc: str,
+    zp: str | None = None,
+    hiden: str | None = None,
+    g_hiden: str | None = None,
+    exotic: str | None = None,
+) -> str:
+    """Shared CLASS-tier split for every "Paid and Premium" acquisition route
+    (CRE 5p/4k/4g/3-/3e/5-) -- confirmed against the real dataset (2026-10-18)
+    to be a complete partition of each route by CLASS alone (name-suffix
+    tokens like "HS"/"GS"/"GP"/"HC"/"ZP" just corroborate the CLASS value,
+    the same way "HS" already corroborates `_CLASS_SHUGO` elsewhere in this
+    file -- they're not needed to decide the leaf). A route's own caller only
+    passes the keyword leaves it actually has real rows for; any CLASS value
+    without a matching keyword falls back to `base` rather than raising, as a
+    defensive default (every real route's CLASS set was confirmed complete at
+    implementation time, but a cache refresh could in principle surface a
+    CLASS value this project hasn't seen yet).
+
+    `g_shugo` merges 2 real, evenly-split, name-suffix variants ("GS"/"GP")
+    that share this one CLASS value -- what actually distinguishes them
+    in-game is unconfirmed (both are `TYPE=0`, i.e. not a Blademaster/Gunner
+    pair), so they're kept as one leaf rather than guessing a further split.
+    """
+    if clazz == _CLASS_SHUGO:
+        return hs
+    if clazz == _CLASS_G_SHUGO:
+        return g_shugo
+    if clazz == _CLASS_HC:
+        return hc
+    if zp is not None and clazz == _CLASS_ZENITH_SHUGO:
+        return zp
+    if hiden is not None and clazz == _CLASS_HIDEN:
+        return hiden
+    if g_hiden is not None and clazz == _CLASS_G_HIDEN:
+        return g_hiden
+    if exotic is not None and clazz == _CLASS_EXOTIC:
+        return exotic
+    return base
+
+
 def classify_equipment_category(fields: list[str]) -> str:
     """Returns the gear-level category leaf key for one equipment row.
 
@@ -280,15 +450,52 @@ def classify_equipment_category(fields: list[str]) -> str:
         return CATEGORY_UNAVAILABLE_TRAINING_ONLY
 
     if cre == "5p":
-        return CATEGORY_PAID_PACKAGE
+        return _paid_premium_subcategory(
+            clazz,
+            base=CATEGORY_PAID_PACKAGE,
+            hs=CATEGORY_PAID_PACKAGE_HS,
+            g_shugo=CATEGORY_PAID_PACKAGE_G_SHUGO,
+            hc=CATEGORY_PAID_PACKAGE_HC,
+        )
     if cre == "4k":
-        return CATEGORY_PAID_PREMIUM_KIT
+        return _paid_premium_subcategory(
+            clazz,
+            base=CATEGORY_PAID_PREMIUM_KIT,
+            hs=CATEGORY_PAID_PREMIUM_KIT_HS,
+            g_shugo=CATEGORY_PAID_PREMIUM_KIT_G_SHUGO,
+            hc=CATEGORY_PAID_PREMIUM_KIT_HC,
+            zp=CATEGORY_PAID_PREMIUM_KIT_ZP,
+        )
     if cre == "4g":
-        return CATEGORY_PAID_GACHAPON
+        return _paid_premium_subcategory(
+            clazz,
+            base=CATEGORY_PAID_GACHAPON,
+            hs=CATEGORY_PAID_GACHAPON_HS,
+            g_shugo=CATEGORY_PAID_GACHAPON_G_SHUGO,
+            hc=CATEGORY_PAID_GACHAPON_HC,
+            zp=CATEGORY_PAID_GACHAPON_ZP,
+            hiden=CATEGORY_PAID_GACHAPON_HIDEN,
+            g_hiden=CATEGORY_PAID_GACHAPON_G_HIDEN,
+            exotic=CATEGORY_PAID_GACHAPON_EXOTIC,
+        )
     if cre in ("3-", "3e"):
-        return CATEGORY_PAID_NET_CAFE
+        return _paid_premium_subcategory(
+            clazz,
+            base=CATEGORY_PAID_NET_CAFE,
+            hs=CATEGORY_PAID_NET_CAFE_HS,
+            g_shugo=CATEGORY_PAID_NET_CAFE_G_SHUGO,
+            hc=CATEGORY_PAID_NET_CAFE_HC,
+            zp=CATEGORY_PAID_NET_CAFE_ZP,
+        )
     if cre == "5-":
-        return CATEGORY_PAID_PROMOTIONAL
+        return _paid_premium_subcategory(
+            clazz,
+            base=CATEGORY_PAID_PROMOTIONAL,
+            hs=CATEGORY_PAID_PROMOTIONAL_HS,
+            g_shugo=CATEGORY_PAID_PROMOTIONAL_G_SHUGO,
+            hc=CATEGORY_PAID_PROMOTIONAL_HC,
+            zp=CATEGORY_PAID_PROMOTIONAL_ZP,
+        )
 
     if cre == "2u":
         return CATEGORY_DIVA_DEFENSE
@@ -367,6 +574,15 @@ def classify_equipment_category(fields: list[str]) -> str:
             return CATEGORY_EVENT_MYSTERY
         if clazz == "" and "FX" in tokens:
             return CATEGORY_HR100_FX
+        if clazz == _CLASS_G:
+            for prefixes, category in _EVENT_EXTREME_NAME_PREFIXES:
+                if name.startswith(prefixes):
+                    return category
+            for prefixes, category in _EVENT_MUSOU_NAME_PREFIXES:
+                if name.startswith(prefixes):
+                    return category
+            if "GX" in tokens:
+                return CATEGORY_EVENT_GX
         return CATEGORY_EVENT_PLAIN
 
     # Standard tier: CRE is blank/"1"/"-"/"1-" (no special acquisition path).
@@ -406,6 +622,8 @@ def classify_equipment_category(fields: list[str]) -> str:
             return CATEGORY_ZENITH_ZX
         if "ZY" in tokens:
             return CATEGORY_ZENITH_ZY
+        if "ZF" in tokens:
+            return CATEGORY_ZENITH_ZF
         return CATEGORY_ZENITH_PLAIN
     if clazz == _CLASS_G:
         return CATEGORY_GRANK_GX if "GX" in tokens else CATEGORY_GRANK_G
@@ -498,6 +716,16 @@ _MUSOU_NAME_PREFIXES: tuple[tuple[tuple[str, ...], str], ...] = (
     (("Fonce",), CATEGORY_DECO_MUSOU_ELZELION),
 )
 
+# Extreme Quest decoration name prefixes (CRE=1e, CLASS=I) -- confirmed by the
+# project owner: only 3 of the 4 Extreme Quest sets have one ("Reiresu",
+# "Reuasu", and "Riaruo" are a different, unrelated trio of plain event-GX
+# decorations, not Extreme Quest items -- explicitly ruled out).
+_EXTREME_NAME_PREFIXES: tuple[tuple[tuple[str, ...], str], ...] = (
+    (("Heruto",), CATEGORY_DECO_EXTREME_HERUTO),
+    (("Iroasu",), CATEGORY_DECO_EXTREME_IROASU),
+    (("Luchar",), CATEGORY_DECO_EXTREME_LUCHAR),
+)
+
 # Raviente/Violent Raviente/Berserk Raviente GX decorations (蛇GX) share CRE
 # "1-" + CLASS "I" with ordinary G/GX monster decorations -- same situation as
 # Musou above, keyed on name prefix. Extreme Raviente GX (極蛇GX) is a fourth,
@@ -541,8 +769,14 @@ def classify_decoration_category(fields: list[str]) -> str:
     clazz = _field(fields, _CLASS)
     tokens = _tokens(name)
 
-    if cre in ("9", "7-", "5-", "4k"):
-        return CATEGORY_DECO_OTHER
+    if cre == "7-":
+        return CATEGORY_DECO_TRAINING_ONLY
+    if cre == "9":
+        if _field(fields, _RECIPE1) == "作成不可":
+            return CATEGORY_DECO_IMPOSSIBLE_TO_CREATE
+        return CATEGORY_DECO_UNIMPLEMENTED
+    if cre in ("5-", "4k"):
+        return CATEGORY_DECO_SPECIAL
     if cre == "4g":
         return CATEGORY_DECO_LOTTERY_HIDEN
     if cre == "2u":
@@ -569,6 +803,9 @@ def classify_decoration_category(fields: list[str]) -> str:
         return CATEGORY_DECO_ROAD
     if cre == "1e":
         if clazz == _CLASS_G:
+            for prefixes, category in _EXTREME_NAME_PREFIXES:
+                if name.startswith(prefixes):
+                    return category
             for prefixes, category in _MUSOU_NAME_PREFIXES:
                 if name.startswith(prefixes):
                     return category
@@ -597,6 +834,12 @@ def classify_decoration_category(fields: list[str]) -> str:
         if _has_deco_g_or_gf_tier(tokens):
             return CATEGORY_DECO_G
         return CATEGORY_DECO_OTHER
+    if clazz == _CLASS_SP:
+        if name.endswith("SP β"):  # β -- 2nd recipe tier, references the α item
+            return CATEGORY_DECO_SP_LV3
+        if name.endswith("SP α"):  # α -- 1st recipe tier, references the base SP item
+            return CATEGORY_DECO_SP_LV2
+        return CATEGORY_DECO_SP
     if clazz == "":
         return CATEGORY_DECO_STANDARD
-    return CATEGORY_DECO_OTHER  # CLASS "A" (SP改/SP真) and anything else unmodeled
+    return CATEGORY_DECO_OTHER  # anything unmodeled

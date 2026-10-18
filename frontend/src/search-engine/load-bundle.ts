@@ -99,6 +99,12 @@ export interface NamedDecoration extends Decoration {
    * keeps Tower Gems out of the general pool this flag alone doesn't stop
    * the engine from freely mixing in. */
   readonly isTower: boolean
+  /** An "SP Decoration" (etl/src/etl/export.py's `_export_decorations`) --
+   * restricted to usable-only-in-SP-armor by the project owner (2026-10-18),
+   * the same restriction `isTower` enforces for Tower Gems and via the same
+   * mechanism: `build-query.ts`'s `decorationsAfterCategoryFilter` drops
+   * every `isSp` decoration from the general pool unconditionally. */
+  readonly isSp: boolean
   /** The reference set-searcher's decoration-tree category leaf (see
    * docs/gear-category-taxonomy.md's "Decorations" table) -- mirrors
    * `NamedCandidate`/`NamedCuff`'s own `category` field. Entirely separate

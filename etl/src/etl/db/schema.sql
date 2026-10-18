@@ -120,6 +120,9 @@ CREATE TABLE IF NOT EXISTS decoration (
     slot_size INTEGER NOT NULL CHECK (slot_size BETWEEN 1 AND 3),
     -- Tower Gem (CLASS "N") -- see the matching note on `equipment.is_tower`.
     is_tower INTEGER NOT NULL DEFAULT 0,
+    -- SP Decoration (CLASS "A") -- see `decoration.is_sp`'s matching note in
+    -- ParsedDecorationRow.
+    is_sp INTEGER NOT NULL DEFAULT 0,
     -- The reference set-searcher's decoration-tree category leaf -- see
     -- docs/gear-category-taxonomy.md "Tree 2: Decorations and Cuffs".
     category TEXT NOT NULL DEFAULT 'deco_standard',

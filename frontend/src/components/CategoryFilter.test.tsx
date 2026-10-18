@@ -110,6 +110,19 @@ describe('CategoryFilter', () => {
     expect(header.indeterminate).toBe(true)
   })
 
+  it('collapses and expands a group\'s leaves without affecting its checked state', async () => {
+    render(<CategoryFilter groups={GROUPS} excludedCategories={new Set()} onChange={vi.fn()} />)
+
+    expect(screen.getByRole('checkbox', { name: 'Guild GX' })).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Collapse Guild' }))
+    expect(screen.queryByRole('checkbox', { name: 'Guild GX' })).not.toBeInTheDocument()
+    expect(screen.getByRole('checkbox', { name: 'Guild (all)' })).toBeChecked()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Expand Guild' }))
+    expect(screen.getByRole('checkbox', { name: 'Guild GX' })).toBeInTheDocument()
+  })
+
   describe('itemsByCategory', () => {
     const ITEMS_BY_CATEGORY = new Map([
       ['guild_gx', [{ name: 'Guardian Mask' }, { name: 'Carnage Mask' }]],
@@ -125,7 +138,10 @@ describe('CategoryFilter', () => {
         />,
       )
 
-      expect(screen.queryAllByRole('button')).toHaveLength(1)
+      // One collapse/expand toggle per group (GROUPS has 2), plus the one
+      // View toggle for "Guild GX" (the only leaf with an itemsByCategory
+      // entry) -- no View toggle for any leaf without one.
+      expect(screen.queryAllByRole('button')).toHaveLength(GROUPS.length + 1)
     })
 
     it('shows a View toggle with the item count for a leaf with items', () => {

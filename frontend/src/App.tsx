@@ -141,11 +141,22 @@ const DEFAULT_EXCLUDED_CUFF_CATEGORIES = new Set(
     .map((c) => c.key)
     .filter((key) => key.includes('unavailable') || key.includes('training_only')),
 )
-// Tower Gems are excluded unconditionally, not via this set at all -- see
-// `decorationsAfterCategoryFilter`'s own docstring. Lottery Hiden decorations
-// ("do not use" per the reference tool's own tree) are excluded by default
-// here, but stay a togglable choice since they're at least equippable.
-const DEFAULT_EXCLUDED_DECORATION_CATEGORIES = new Set(['deco_lottery_hiden'])
+// Tower Gems and the 3 "Unavailable" leaves are excluded unconditionally, not
+// via this set at all (they're not even leaves in DECORATION_CATEGORY_GROUPS
+// -- see decoration-categories.ts's own docstring and
+// `decorationsAfterCategoryFilter`'s `_UNOBTAINABLE_DECORATION_CATEGORIES`).
+// SP Decorations are ALSO excluded unconditionally via the same mechanism,
+// but stay real, visible leaves here -- default-excluded purely so their
+// checkbox state matches that unconditional exclusion (2026-10-18, per the
+// project owner). Lottery Hiden decorations ("do not use" per the reference
+// tool's own tree) are excluded by default too, but stay a togglable choice
+// since they're at least equippable.
+const DEFAULT_EXCLUDED_DECORATION_CATEGORIES = new Set([
+  'deco_lottery_hiden',
+  'deco_sp',
+  'deco_sp_lv2',
+  'deco_sp_lv3',
+])
 
 function countLeaves(groups: readonly CategoryFilterGroup[]): number {
   return groups.reduce((sum, group) => sum + group.categories.length, 0)
@@ -891,10 +902,6 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
               </Disclosure>
 
               <Disclosure title="Decorations" summary={decorationsSummary}>
-                <p className="form-text">
-                  Tower Gems are never included -- they're strictly stronger than their regular
-                  equivalents and this tool has no way to target them at Tower armor specifically.
-                </p>
                 <CategoryFilter
                   groups={DECORATION_CATEGORY_GROUPS}
                   excludedCategories={excludedDecorationCategories}

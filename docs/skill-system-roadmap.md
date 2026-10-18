@@ -2051,36 +2051,184 @@ build (or the search failing) entirely.
 
 ## 38. Redo gear/cuff/decoration categorization; exclude non-equippable categories by default
 
-**Status: Not started -- awaiting a schema from the project owner (2026-10-18).** Today's category
-trees (`gear-categories.ts`'s `GEAR_CATEGORY_GROUPS`, `cuff-categories.ts`'s
-`CUFF_CATEGORY_GROUPS`, `decoration-categories.ts`) and their default-exclusion sets in `App.tsx`
-(`DEFAULT_EXCLUDED_EQUIPMENT_CATEGORIES`, `DEFAULT_EXCLUDED_CUFF_CATEGORIES`,
-`DEFAULT_EXCLUDED_DECORATION_CATEGORIES`) are getting a redo -- the project owner will provide the
-new schema to work from before implementation starts.
+**Status (2026-10-18): Armor slice COMPLETE. Decoration slice COMPLETE. Cuff slice and the
+gendered-name display cleanup still explicitly deferred by the project owner.**
 
-What already exists to build on:
-- Gear levels: 14 groups / dozens of leaf categories in `GEAR_CATEGORY_GROUPS`
-  ([gear-categories.ts](../frontend/src/search-engine/gear-categories.ts)); only the "Unavailable"
-  group (`unavailable_not_implemented`, `unavailable_training_only`) is excluded by default today.
-- Poogie cuffs: `CUFF_CATEGORY_GROUPS` ([cuff-categories.ts](../frontend/src/search-engine/cuff-categories.ts)),
-  default-excludes only the `unavailable`/`training_only`-named leaves under the Premium and
-  Standard groups (Hiden cuffs have no such leaf). Premium cuffs themselves are deliberately *not*
-  excluded by default despite needing Poogie to wear Premium clothes -- confirmed fine by the
-  project owner (see `DEFAULT_EXCLUDED_CUFF_CATEGORIES`'s own comment in `App.tsx`).
-  [Cuff equipment support](project_cuff_equipment_support.md) memory has the Premium/Standard split
-  history.
-- Decorations: a 24-leaf tree in
-  [decoration-categories.ts](../frontend/src/search-engine/decoration-categories.ts); only
-  `deco_lottery_hiden` ("do not use" per the reference tool) is excluded by default, Tower Gems are
-  excluded unconditionally outside this mechanism entirely (`decorationsAfterCategoryFilter`'s own
-  docstring).
-- The exclusion UI itself (`CategoryFilter.tsx`, with its "View (N)" per-leaf content browser from
-  TODO #27) is generic over whatever tree it's given -- a retaxonomization is a data change plus
-  updated default-exclusion sets, not new UI plumbing, unless the new schema needs a structurally
-  different shape than the existing `{label, categories: [{key, label}]}` groups support.
+**Decoration slice (2026-10-18), after the armor slice shipped:**
+- Two small armor-slice follow-ups landed first: Musou Armour's 9 leaf labels now show the actual
+  set name (Demonclad, Rapin, Chiru, Elysi, Fonse, Ganeto, Bonne, 鬼凛ノ/童凛ノ, Demon Tale/童伝ノ)
+  instead of the monster name used to research them -- the monster names were only ever a lookup aid,
+  per the project owner ("that was just a way to figure out what belongs where"). Every category
+  group in `CategoryFilter.tsx` also gained a collapse/expand chevron (now needed with the taxonomy at
+  77+ leaves) -- new `collapsedGroups` state, a `.category-group-header`/`.category-group-collapse-toggle`
+  CSS pair, 1 new unit test.
+- The project owner supplied the reference tool's own decoration category tree (screenshot) and a
+  short list of distinctions to apply: SP decorations restricted to SP armor (same mechanism as Tower
+  Gems), Musou gems for the 9 monsters (corrected mid-investigation to "only 5" -- see below), and
+  Extreme Quest decorations for 3 of the 4 quests.
+- **SP Decorations**: confirmed restricted to usable-only-in-SP-armor, identical mechanism to Tower
+  Gems (`is_tower`) -- new `is_sp` flag threaded end-to-end (`ParsedDecorationRow` → `Decoration` →
+  schema column → export `isSp` → `NamedDecoration.isSp` → `decorationsAfterCategoryFilter` drops it
+  unconditionally, same one-sided-enforcement caveat as TODO #11 already documents for Tower). The 3
+  tiers (SP/SP改/SP真) are a real recipe chain in the data (plain → " α" → " β" name suffix, α's recipe
+  references the base item, β's references α) -- 43 decorations per tier, 129 total.
+- **Musou Decorations**: investigated expanding from 5 to all 9 monsters; found 3 more curated
+  `CRE=1e`+`CLASS=I` numbered names (Reiresu/Reuasu/Riaruo) that looked like candidates, but the
+  project owner ruled them out directly: *"Reiresu, Reuasu, Riaruo are different ones. its only the
+  5."* -- no code change needed here, they're correctly classified as plain `deco_event_gx` already.
+- **Extreme Quest Decorations**: added 3 new leaves (Heruto, Iroasu, Luchar) carved out of
+  `deco_event_gx`/`deco_event_g` by curated name, same `CRE=1e`+`CLASS=I` bucket as armor's. Demon
+  Lord has no decoration (0 real rows, no leaf, matching the no-leaf-for-confirmed-empty convention
+  already used for Taiwanese Premium armor). Real counts (Heruto=1, Iroasu=1, Luchar=3) are close to
+  but not identical to the project owner's estimate (1/2/3) -- flagged as a minor discrepancy in
+  docs/gear-category-taxonomy.md, not independently resolved.
+- **Unavailable 3-way split**: `CRE=7-` → Training (`deco_training_only`), `CRE=9` with a literal
+  "作成不可" RECIPE1 marker → Impossible to Create (`deco_impossible_to_create`), `CRE=9` otherwise
+  (an unreachable HR1="10000" sentinel in every real case) → Unimplemented (`deco_unimplemented`). All
+  3 added to `DEFAULT_EXCLUDED_DECORATION_CATEGORIES` (previously only `deco_lottery_hiden` was
+  excluded by default), mirroring the equipment-side Unavailable group's own default exclusion.
+- **"(特)" Special**: 5 "kit purchase" rows (CRE 4k/5-) given a `deco_special` leaf -- the project
+  owner did not confirm this label, flagged as a judgment call (same convention as
+  `CATEGORY_GRANK_BURST_SPECIES`'s unconfirmed label). "(パ) Package" and "(ガTW) Lottery Decorations"
+  are confirmed empty (0 real rows under any plausible CRE) -- no leaf added, matching the
+  Taiwanese-Premium no-leaf-for-confirmed-empty precedent. "(塔GX) Event Cycle Decorations" is also
+  unconfirmed/possibly-empty -- its `CRE=1t` bucket is already fully accounted for by the existing
+  Hunter's Road leaves.
+- ETL: full rebuild required this time (new `decoration.is_sp` schema column) -- old `frontier.sqlite3`
+  moved aside as `frontier.sqlite3.bak-pre-decoration-category`, full `python -m etl.pipeline` +
+  `python -m etl.export` re-run. Row counts match exactly (2,658 decorations, 61,817 equipment,
+  unchanged) and every new leaf's count matches docs/gear-category-taxonomy.md's table.
+- Verified: `etl/tests/parse/test_gear_category.py` (129 tests, new cases for SP tiers, Extreme Quest
+  decorations, and all 3 Unavailable leaves) and the full ETL suite (304 tests) pass. Frontend
+  `tsc -b`/`oxlint`/full Vitest suite (375 tests) clean. Live-browser confirmed: Decorations now shows
+  "4 tiers of 34 excluded" (up from 1) on a clean (`localStorage`-cleared) session, with every new
+  leaf and the 3 newly-default-excluded Unavailable leaves rendering correctly.
 
-Next step: get the project owner's schema, diff it against the three existing trees above, and scope
-the actual data/default-exclusion changes from there.
+**Follow-up (2026-10-18, same day): naming/default-exclusion refinements after the decoration slice shipped.**
+- Musou Armour's 9 leaf labels renamed from the monster name to the actual armor set name (Demonclad,
+  Rapin, Chiru, Elysi, Fonse, Ganeto, Bonne, 鬼凛ノ/童凛ノ, Demon Tale/童伝ノ) -- the project owner
+  clarified the monster names were only ever a research aid, never meant to ship as labels. Musou
+  *Decorations*' 5 leaf labels got the identical treatment (Demonclad/Dojiclad, Rafan, Elysium, Bonne,
+  Fonce).
+- `grank_g_hashu`'s label corrected from "G-Hashu" to "G Supremacy" -- the project owner asked whether
+  it was the G-rank tier of the "Supremacy" (`hardcore_hashu`) category; confirmed yes, both leaves
+  decode the identical kanji "覇", just at different CLASS tiers (`CLASS G` vs `CLASS D`) -- the
+  un-translated label was an inconsistency, not an intentional distinction.
+- SP Decorations (all 3 tiers) are now in `DEFAULT_EXCLUDED_DECORATION_CATEGORIES` -- they were already
+  unconditionally excluded from search via `isSp` regardless of checkbox state, but the checkbox itself
+  defaulted to checked, which the project owner flagged as misleading. Still real, togglable leaves
+  (unlike Tower/Unavailable below) purely so their checkbox state is visible and consistent.
+- The 3 "Unavailable" decoration leaves (Training/Unimplemented/Impossible to Create) are no longer
+  togglable leaves at all -- removed from `DECORATION_CATEGORY_GROUPS` entirely and excluded
+  unconditionally via a new `_UNOBTAINABLE_DECORATION_CATEGORIES` set in `build-query.ts`'s
+  `decorationsAfterCategoryFilter`, the same not-a-leaf/unconditional treatment Tower Gems already get
+  (confirmed by the project owner: these are genuinely impossible to ever obtain, not just
+  discouraged).
+- Removed the "Tower Gems are never included..." explanatory `<p>` at the top of the Decorations
+  section in `App.tsx` -- the project owner said this can be inferred and doesn't need calling out.
+- Every category group (gear/cuff/decoration) also gained a collapse/expand toggle in
+  `CategoryFilter.tsx`, now that the combined taxonomy is 75+ leaves across all 3 trees.
+- No ETL/classifier changes needed for any of the above -- purely `gear-categories.ts`/
+  `decoration-categories.ts` labels, `App.tsx`'s default-exclusion set, and `build-query.ts`'s filter
+  logic. Verified: full frontend suite (375 tests), `tsc -b`, `oxlint` clean; live-browser confirmed
+  Decorations shows "4 tiers of 31 excluded" on a clean session (down from 34 leaves after removing
+  Unavailable's 3, with SP's 3 newly default-excluded).
+
+**Follow-up (2026-10-18, continued): Paid/Premium subcategories and Zenith ZF, shipped.**
+- **Paid and Premium armor split by CLASS.** Research found CLASS alone fully partitions each of the 5
+  routes (Package/Premium Kit/Gachapon/Net Cafe/Promotional) -- unlike Cuffs' own `CRE=4k` split (which
+  needed a RECIPE1-prefix rule), name-suffix tokens (HS/GS,GP/HC/ZP) here just corroborate the CLASS
+  value rather than deciding it. Added a shared `_paid_premium_subcategory` helper in
+  `gear_category.py` so the 5 call sites don't duplicate the same 7-branch CLASS check, each passing
+  only the sub-leaves its own route actually has real rows for (e.g. Package has no Zenith-Shugo tier,
+  Premium Kit has no Hiden/Exotic tiers). One real nuance found and left unresolved: the "G-Shugo"
+  (`CLASS J`) tier has 2 parallel, evenly-split, name-suffix variants ("GS"/"GP") that are both
+  `TYPE=0` (not a Blademaster/Gunner pair) -- merged into one leaf since what actually distinguishes
+  them in-game is unconfirmed, flagged in docs/gear-category-taxonomy.md for a future look.
+  `gear-categories.ts` split the old single "Paid and Premium" group into 5 separate top-level groups
+  (Package/Premium Kit/Gachapon/Net Cafe/Promotional), each with its own sub-leaves, rather than one
+  27-leaf group -- the new collapse/expand toggle (see above) makes each independently collapsible.
+- **Zenith ZF.** Confirmed an exact 50/50 split of what used to all be `zenith_plain`: every row
+  without a ZX/ZY token already carries either a bare "Z" or a "ZF" name-suffix token, the same pattern
+  as the existing ZX/ZY checks -- just added a 3rd `if "ZF" in tokens` branch alongside them. The
+  identical Z/ZF/ZY/ZX split exists in 3 other CRE buckets too (Road Zenith, Event Zenith, and even
+  Diva Defense's own Zenith-class rows) -- left unsplit since the request was scoped to the "Zenith
+  Armour" group specifically; flagged in the taxonomy doc in case those are wanted later too.
+- ETL: full rebuild required (new category *values*, no schema change) -- old `frontier.sqlite3` moved
+  aside as `frontier.sqlite3.bak-pre-paid-premium-zenith-split`, full `python -m etl.pipeline` +
+  `python -m etl.export` re-run. Row counts match exactly (61,817 equipment, unchanged) and every new
+  leaf's count matches docs/gear-category-taxonomy.md's table exactly (e.g. Premium Kit's 21,733 now
+  splits into base 9,882 + HS 3,262 + G-Shugo 6,524 + HC 1,201 + ZP 864).
+- Verified: `etl/tests/parse/test_gear_category.py` (131 tests, new cases for every sub-leaf across all
+  5 routes plus Zenith ZF; 2 pre-existing tests whose whole premise was "CLASS doesn't matter for Paid
+  routes" were rewritten, since that's now exactly what changed) and the full ETL suite (306 tests)
+  pass, including a real-data integration test in `test_equipment.py` that needed the same update.
+  Frontend `tsc -b`/`oxlint`/full Vitest suite (375 tests) clean -- 3 tests broke on an unrelated latent
+  issue this change exposed (`getByLabelText('Premium Kit')` matched both the new "Premium Kit" *group*
+  label and its own base leaf's identical label text; fixed by switching those 3 call sites to the
+  accessible-name-based `getByRole('checkbox', { name: 'Premium Kit' })` query already used elsewhere
+  in the same file, which correctly disambiguates via the group's `aria-label="... (all)"` override).
+  Live-browser confirmed: "Gear levels" now shows "2 categories of 100 excluded" (up from 77, exactly
+  the 23 new leaves: 22 paid/premium + 1 `zenith_zf`), with every new leaf rendering at its exact
+  expected count.
+
+**Armor slice (2026-10-15/17), shipped first:**
+
+The project owner supplied the old reference tool's own armor category tree (screenshots) plus a
+list of edits, confirmed/refined over several rounds:
+- Remove "Taiwanese Premium" and "Subscription Period" -- turned out to need no code change at all,
+  both were already confirmed-empty (0 rows) and absent from `gear-categories.ts` from an earlier
+  taxonomy pass (see docs/gear-category-taxonomy.md).
+- Split Event Armour into plain/GX (confirmed by the project owner) and carve Musou- and Extreme-
+  Quest-named armor out of it by curated name, mirroring how decorations already carve Musou out of
+  their own Event bucket.
+- Gendered armor pairs (e.g. Quna/Kireek) -- investigated and found to be **not** a miscategorization:
+  verified byte-for-byte identical stats differing only in `TYPE`/name, i.e. the exact same
+  Blademaster/Gunner name-pair mechanism the project already documents for Mail/Vest etc. The project
+  owner confirmed this is a **display cleanup** (show both names together somewhere), explicitly not
+  part of this categorization TODO -- deferred, not scoped here.
+- A would-be "Raviente is inside `grank_gx`" finding was initially reported but turned out to be
+  wrong: re-verified by tracking each row's actual `SkillForm.setEquip("<slot>", ...)` section in the
+  raw cache, and every "Violent/Berserk/Extreme Ravi" row lives in the decoration section, not armor
+  -- no Raviente armor exists at all, nothing to carve out of `grank_gx`. Caught before shipping (see
+  git history on this entry), reverted cleanly.
+- The 9 real Musou monster names and the 4 real Extreme Quest names were resolved through several
+  rounds of the project owner supplying exact in-game names and correcting early guesses (e.g. "Demon
+  Tale"/童伝ノ and "鬼凛ノ"/"童凛ノ" were first guessed as Extreme Quests, turned out to be 2 of the 9
+  Musou monsters instead) -- see docs/gear-category-taxonomy.md's new "Musou Armour"/"Extreme Quest
+  Armour" tables for the final confirmed mapping and counts.
+
+Implementation:
+- `etl/src/etl/parse/gear_category.py`: `classify_equipment_category`'s `cre == "1e"` branch now
+  splits `CLASS=I` rows into `event_gx`/`event_plain` by GX token (previously always `event_plain`
+  regardless of tier), checking two new curated name-prefix tables first -- `_EVENT_MUSOU_NAME_PREFIXES`
+  (9 monsters, one tuple of names each since 2 of the 9 have a genuine dual name) and
+  `_EVENT_EXTREME_NAME_PREFIXES` (4 quests) -- each returning its own new `CATEGORY_EVENT_MUSOU_*`/
+  `CATEGORY_EVENT_EXTREME_*` constant.
+- `frontend/src/search-engine/gear-categories.ts`: `GEAR_CATEGORY_GROUPS` gained an `event_gx` leaf
+  in the existing "Event Armour" group, plus two new top-level groups ("Musou Armour" with 9 leaves,
+  "Extreme Quest Armour" with 4), mirroring `decoration-categories.ts`'s own top-level "Musou
+  Decorations" group rather than nesting under "Event Armour".
+- Required a full ETL rebuild (new category *values* on the existing `equipment.category` column, no
+  schema change needed this time -- unlike the cuff/decoration category additions, which needed a new
+  column): old `frontier.sqlite3` moved aside as `frontier.sqlite3.bak-pre-event-musou-category`, full
+  `python -m etl.pipeline` + `python -m etl.export` re-run. Row counts match exactly (61,817 equipment
+  total, unchanged) and every new leaf's count matches the taxonomy doc's table.
+
+Verified: `etl/tests/parse/test_gear_category.py` (123 tests, including new cases for every Musou
+monster name, all 4 Extreme Quest names, and the plain/GX Event split; the pre-existing
+`test_event_plain`/`test_event_mystery_requires_the_luxt_name...` tests updated for the new split) and
+the full ETL suite (300 tests) pass. Frontend `tsc -b`/`oxlint`/full Vitest suite (373 tests) clean.
+Live-browser confirmed against the real regenerated bundle: "Gear levels" now shows "2 categories of
+77 excluded" (up from 63, exactly the 14 new leaves: 1 `event_gx` + 9 Musou + 4 Extreme), and the new
+"Musou Armour"/"Extreme Quest Armour" groups render with the exact counts from the taxonomy doc.
+
+**Deferred, not part of either slice above:**
+- Cuff category redo -- the project owner will supply schema/edits for this later.
+- Expanding the Musou *decoration* list past 5 monsters -- explicitly ruled out by the project owner
+  (see "Decoration slice" above): confirmed it's only 5, not a gap.
+- The gendered-pair display cleanup (TODO #38 absorbed this question, but it's scoped out as its own
+  future display-only change, not a categorization fix).
 
 ## 39. Make armor pinning show which skill a piece grants, without hovering
 

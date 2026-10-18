@@ -453,10 +453,11 @@ def test_parse_equip_js_covers_every_armor_bucket() -> None:
         resistance_ice=4,
         is_tower=False,
         zenith_skill_id=None,
-        # CRE "5-" (Promotional) wins over CLASS "E" (HC) -- the acquisition
-        # code takes precedence over the origin tier, confirmed against the
-        # real dataset (see docs/gear-category-taxonomy.md).
-        category="paid_promotional",
+        # CRE "5-" (Promotional) wins over CLASS "E" (HC) for *which route*
+        # this row belongs to, but CLASS still refines the leaf within that
+        # route (2026-10-18, see gear_category.py's `_paid_premium_subcategory`)
+        # -- landing on Promotional's own HC sub-leaf, not plain Promotional.
+        category="paid_promotional_hc",
     )
     assert by_id["body:1000"].slot_type == "chest"
     assert by_id["body:1000"].min_hr == 2200
