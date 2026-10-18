@@ -1,4 +1,4 @@
-﻿import { render, screen } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { ResultsList } from './ResultsList'
 import type { NamedBuildResult } from './types'
@@ -136,7 +136,7 @@ describe('ResultsList', () => {
     expect(screen.getByText(/3 open slots/i)).toBeInTheDocument()
   })
 
-  it('subtracts placed decorationsâ€™ slot size from the open-slots count shown', () => {
+  it('subtracts placed decorations’ slot size from the open-slots count shown', () => {
     render(
       <ResultsList
         results={[
