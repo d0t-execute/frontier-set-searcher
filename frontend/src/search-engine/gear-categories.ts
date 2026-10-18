@@ -91,7 +91,7 @@ export const GEAR_CATEGORY_GROUPS: readonly GearCategoryGroup[] = [
       { key: 'tower_plain', label: 'Tower' },
       { key: 'tower_hs', label: 'Tower HS' },
       { key: 'tower_g', label: 'Tower G' },
-      { key: 'tower_gx_custom', label: 'Customisable Tower GX' },
+      { key: 'tower_gx_custom', label: 'Customizable Tower GX' },
     ],
   },
   {
@@ -117,7 +117,7 @@ export const GEAR_CATEGORY_GROUPS: readonly GearCategoryGroup[] = [
     ],
   },
   {
-    label: 'G Rank Armour',
+    label: 'G Rank Armor',
     categories: [
       { key: 'grank_g', label: 'G' },
       { key: 'grank_gx', label: 'GX' },
@@ -130,7 +130,7 @@ export const GEAR_CATEGORY_GROUPS: readonly GearCategoryGroup[] = [
     ],
   },
   {
-    label: 'Zenith Armour',
+    label: 'Zenith Armor',
     categories: [
       { key: 'zenith_plain', label: 'Zenith' },
       { key: 'zenith_zf', label: 'Zenith ZF' },
@@ -158,14 +158,14 @@ export const GEAR_CATEGORY_GROUPS: readonly GearCategoryGroup[] = [
     ],
   },
   {
-    label: 'Event Armour',
+    label: 'Event Armor',
     categories: [
       { key: 'event_plain', label: 'Event' },
       { key: 'event_gx', label: 'Event GX' },
       { key: 'event_zenith', label: 'Event Zenith' },
       { key: 'event_zenith_zy', label: 'Event Zenith ZY' },
       { key: 'event_zenith_zx', label: 'Event Zenith ZX' },
-      { key: 'event_mystery', label: 'Mystery Quest Armour' },
+      { key: 'event_mystery', label: 'Mystery Quest Armor' },
       { key: 'tournament_plain', label: 'Hunting Tournament' },
       { key: 'tournament_hc', label: 'Hunting Tournament HC' },
       { key: 'tournament_hs', label: 'Hunting Tournament HS' },
@@ -176,7 +176,7 @@ export const GEAR_CATEGORY_GROUPS: readonly GearCategoryGroup[] = [
     ],
   },
   {
-    label: 'Musou Armour',
+    label: 'Musou Armor',
     categories: [
       { key: 'event_musou_nargacuga', label: 'Demonclad' },
       { key: 'event_musou_guanzorumu', label: '鬼凛ノ / 童凛ノ' },
@@ -190,7 +190,7 @@ export const GEAR_CATEGORY_GROUPS: readonly GearCategoryGroup[] = [
     ],
   },
   {
-    label: 'Extreme Quest Armour',
+    label: 'Extreme Quest Armor',
     categories: [
       { key: 'event_extreme_demon_lord', label: 'Demon Lord' },
       { key: 'event_extreme_heruto', label: 'Heruto' },
@@ -199,7 +199,7 @@ export const GEAR_CATEGORY_GROUPS: readonly GearCategoryGroup[] = [
     ],
   },
   {
-    label: 'Standard Armour',
+    label: 'Standard Armor',
     categories: [
       { key: 'standard_plain', label: 'Standard' },
       { key: 'standard_sp', label: 'SP' },
