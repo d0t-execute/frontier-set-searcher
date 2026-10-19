@@ -2,38 +2,10 @@ import { toBlob, toPng } from 'html-to-image'
 import { useRef, useState } from 'react'
 import { determineActiveSkills } from '../search-engine/active-skill-cap'
 import { contributionSummary } from '../search-engine/contribution-summary'
-import type { NamedCandidate, NamedResistances, NamedSkill, SkillTierRecord } from '../search-engine/load-bundle'
+import type { NamedResistances, NamedSkill, SkillTierRecord } from '../search-engine/load-bundle'
+import { computeResultStats } from '../search-engine/result-stats'
 import type { SkillId } from '../search-engine/types'
 import type { NamedBuildResult } from './types'
-
-/** Summed across every pick in a result (armor, weapon, cuffs aren't picks
- * here -- see `NamedBuildResult.picks`). Weapons and cuffs carry no defense/
- * resistance data at all (confirmed against the raw data, see
- * docs/data-format-notes.md: the "deco" bucket's Cuff rows and the weapon
- * buckets have no F/W/T/D/I/DEF columns, a different row shape from armor),
- * so in practice only armor picks ever contribute a non-zero amount here --
- * but summing every pick regardless costs nothing, since a non-armor pick's
- * own placeholder values (`null`/all-zero, see `build-query.ts`'s
- * `NO_RESISTANCES`) are additive no-ops. `defenseMax` (not `defenseBase`) is
- * used for "Total defense" -- the fully-forged value is what a hunter
- * actually cares about reaching, the same reasoning
- * docs/data-format-notes.md gives for storing it at all. */
-function sumStats(picks: ReadonlyMap<string, NamedCandidate>): {
-  readonly totalDefense: number
-  readonly resistances: NamedResistances
-} {
-  let totalDefense = 0
-  const resistances = { fire: 0, water: 0, thunder: 0, ice: 0, dragon: 0 }
-  for (const candidate of picks.values()) {
-    totalDefense += candidate.defenseMax ?? 0
-    resistances.fire += candidate.resistances.fire
-    resistances.water += candidate.resistances.water
-    resistances.thunder += candidate.resistances.thunder
-    resistances.ice += candidate.resistances.ice
-    resistances.dragon += candidate.resistances.dragon
-  }
-  return { totalDefense, resistances }
-}
 
 export interface ResultsListProps {
   readonly results: readonly NamedBuildResult[]
@@ -178,11 +150,7 @@ function buildSkillEntry(
   }
 
   const weakestTier =
-    points > 0
-      ? positiveTiers[positiveTiers.length - 1]
-      : points < 0
-        ? negativeTiers[0]
-        : undefined
+    points > 0 ? positiveTiers[positiveTiers.length - 1] : points < 0 ? negativeTiers[0] : undefined
   const value = weakestTier ? `${points}/${weakestTier.minPoints}` : String(points)
   return {
     skillId,
@@ -229,8 +197,10 @@ function buildResultText(
     entries.map((e) => `  ${e.label}${e.disabled ? ' (disabled)' : ` (${e.value})`}`)
 
   lines.push('Skills:', ...renderEntries(regularSkillEntries))
-  if (exoticSkillEntries.length > 0) lines.push('Exotic skills:', ...renderEntries(exoticSkillEntries))
-  if (zenithSkillEntries.length > 0) lines.push('Zenith skills:', ...renderEntries(zenithSkillEntries))
+  if (exoticSkillEntries.length > 0)
+    lines.push('Exotic skills:', ...renderEntries(exoticSkillEntries))
+  if (zenithSkillEntries.length > 0)
+    lines.push('Zenith skills:', ...renderEntries(zenithSkillEntries))
 
   lines.push('', 'Picks:')
   for (const [slotId, candidate] of result.picks.entries()) {
@@ -357,7 +327,13 @@ export function ResultCard({
   const zenithSkillEntries = skillEntries
     .filter((e) => zenithSkillIds.has(e.skillId))
     .sort(compareSkillEntries)
-  const { totalDefense, resistances } = sumStats(result.picks)
+  const { totalDefense, resistances } = computeResultStats(
+    result.picks,
+    result.skillTotals,
+    skills,
+    zenithSkills,
+    result.cuffs,
+  )
 
   function handleCopyText(): void {
     navigator.clipboard
@@ -431,146 +407,155 @@ export function ResultCard({
         <div className="result-card" ref={cardRef}>
           <div className="result-column">
             <h3 className="result-column-heading">Skills</h3>
-        <div className="small">{regularSkillEntries.map((entry) => renderSkillEntry(entry))}</div>
-        {exoticSkillEntries.length > 0 && (
-          <div className="small mt-2">
-            <span className="fw-bold">Exotic skills:</span>
-            <div>{exoticSkillEntries.map((entry) => renderSkillEntry(entry))}</div>
+            <div className="small">
+              {regularSkillEntries.map((entry) => renderSkillEntry(entry))}
+            </div>
+            {exoticSkillEntries.length > 0 && (
+              <div className="small mt-2">
+                <span className="fw-bold">Exotic skills:</span>
+                <div>{exoticSkillEntries.map((entry) => renderSkillEntry(entry))}</div>
+              </div>
+            )}
+            {zenithSkillEntries.length > 0 && (
+              <div className="small mt-2">
+                <span className="fw-bold">Zenith skills:</span>
+                <div>{zenithSkillEntries.map((entry) => renderSkillEntry(entry, false))}</div>
+              </div>
+            )}
           </div>
-        )}
-        {zenithSkillEntries.length > 0 && (
-          <div className="small mt-2">
-            <span className="fw-bold">Zenith skills:</span>
-            <div>{zenithSkillEntries.map((entry) => renderSkillEntry(entry, false))}</div>
-          </div>
-        )}
-      </div>
 
-      <div className="result-column">
-        <h3 className="result-column-heading">Picks</h3>
-        <dl className="row mb-2">
-          {[...result.picks.entries()].map(([slotId, candidate]) => {
-            const decorations = result.decorations.get(slotId) ?? []
-            const usedSlots = decorations.reduce((sum, d) => sum + d.slotSize, 0)
-            const openSlots = (candidate.openSlotCount ?? 0) - usedSlots
+          <div className="result-column">
+            <h3 className="result-column-heading">Picks</h3>
+            <dl className="row mb-2">
+              {[...result.picks.entries()].map(([slotId, candidate]) => {
+                const decorations = result.decorations.get(slotId) ?? []
+                const usedSlots = decorations.reduce((sum, d) => sum + d.slotSize, 0)
+                const openSlots = (candidate.openSlotCount ?? 0) - usedSlots
 
-            return (
-              <div key={slotId} className="col-12">
-                <div className="d-flex gap-1">
-                  <dt className="text-capitalize">{slotId}:</dt>
-                  <dd className="mb-0" title={contributionSummary(candidate.skills, skillNames)}>
-                    {candidate.name}
-                    {openSlots > 0 && (
-                      <span className="result-muted">
-                        {' '}
-                        ({openSlots} open slot{openSlots === 1 ? '' : 's'})
-                      </span>
+                return (
+                  <div key={slotId} className="col-12">
+                    <div className="d-flex gap-1">
+                      <dt className="text-capitalize">{slotId}:</dt>
+                      <dd
+                        className="mb-0"
+                        title={contributionSummary(candidate.skills, skillNames)}
+                      >
+                        {candidate.name}
+                        {openSlots > 0 && (
+                          <span className="result-muted">
+                            {' '}
+                            ({openSlots} open slot{openSlots === 1 ? '' : 's'})
+                          </span>
+                        )}
+                      </dd>
+                    </div>
+                    {decorations.length > 0 && (
+                      <div className="category-group-children result-decoration-list">
+                        {/* Sorted by name, not left in whatever order the solver happened to
+                         * produce -- otherwise multiple copies of the same decoration can end
+                         * up scattered through the list instead of sitting next to each other
+                         * (2026-10-16, per user feedback). */}
+                        {[...decorations]
+                          .sort((a, b) => a.name.localeCompare(b.name))
+                          .map((decoration, i) => (
+                            <div
+                              key={i}
+                              className="category-leaf"
+                              title={contributionSummary(decoration.skills, skillNames)}
+                            >
+                              {decoration.name}
+                            </div>
+                          ))}
+                      </div>
                     )}
-                  </dd>
-                </div>
-                {decorations.length > 0 && (
-                  <div className="category-group-children result-decoration-list">
-                    {/* Sorted by name, not left in whatever order the solver happened to
-                     * produce -- otherwise multiple copies of the same decoration can end
-                     * up scattered through the list instead of sitting next to each other
-                     * (2026-10-16, per user feedback). */}
-                    {[...decorations]
-                      .sort((a, b) => a.name.localeCompare(b.name))
-                      .map((decoration, i) => (
-                        <div
-                          key={i}
-                          className="category-leaf"
-                          title={contributionSummary(decoration.skills, skillNames)}
-                        >
-                          {decoration.name}
-                        </div>
-                      ))}
                   </div>
-                )}
-              </div>
-            )
-          })}
-        </dl>
+                )
+              })}
+            </dl>
 
-        {result.cuffs.length > 0 && (
-          <div className="mb-2">
-            <span className="fw-bold">Cuffs:</span>{' '}
-            {result.cuffs.map((cuff, i) => (
-              <span key={i} title={contributionSummary(cuff.skills, skillNames)}>
-                {cuff.name}
-                {i < result.cuffs.length - 1 ? ', ' : ''}
-              </span>
-            ))}
+            {result.cuffs.length > 0 && (
+              <div className="mb-2">
+                <span className="fw-bold">Cuffs:</span>{' '}
+                {result.cuffs.map((cuff, i) => (
+                  <span key={i} title={contributionSummary(cuff.skills, skillNames)}>
+                    {cuff.name}
+                    {i < result.cuffs.length - 1 ? ', ' : ''}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
-        )}
-      </div>
 
-      <div className="result-column d-flex flex-column">
-        <h3 className="result-column-heading">Stats</h3>
-        <div className="small">
-          Active skill cap: {cap}
-          {disabledIds.size > 0 && (
-            <span className="text-danger">
-              {' '}
-              ({disabledIds.size} skill{disabledIds.size === 1 ? '' : 's'} disabled)
-            </span>
-          )}
-        </div>
-        <div className="small mt-2">Total defense: {totalDefense}</div>
-        <div className="small">
-          Fire: {resistances.fire}, Water: {resistances.water}, Thunder: {resistances.thunder}, Ice:{' '}
-          {resistances.ice}, Dragon: {resistances.dragon}
-        </div>
+          <div className="result-column d-flex flex-column">
+            <h3 className="result-column-heading">Stats</h3>
+            <div className="small">
+              Active skill cap: {cap}
+              {disabledIds.size > 0 && (
+                <span className="text-danger">
+                  {' '}
+                  ({disabledIds.size} skill{disabledIds.size === 1 ? '' : 's'} disabled)
+                </span>
+              )}
+            </div>
+            <div className="small mt-2">Total defense: {totalDefense}</div>
+            <div className="small">
+              Fire: {resistances.fire}, Water: {resistances.water}, Thunder: {resistances.thunder},
+              Ice: {resistances.ice}, Dragon: {resistances.dragon}
+            </div>
 
-        <div className="mt-auto pt-2 d-flex justify-content-end align-items-center gap-2">
-          {getShareUrl &&
-            (shareUrl ? (
-              <div className="d-flex gap-2 align-items-center">
-                <input
-                  type="text"
-                  className="form-control form-control-sm"
-                  aria-label="Shareable link"
-                  readOnly
-                  value={shareUrl}
-                  onFocus={(e) => e.target.select()}
-                />
-                <button
-                  type="button"
-                  className="btn btn-sm btn-outline-secondary"
-                  onClick={() => void navigator.clipboard?.writeText(shareUrl)}
-                >
-                  Copy
-                </button>
-              </div>
-            ) : (
+            <div className="mt-auto pt-2 d-flex justify-content-end align-items-center gap-2">
+              {getShareUrl &&
+                (shareUrl ? (
+                  <div className="d-flex gap-2 align-items-center">
+                    <input
+                      type="text"
+                      className="form-control form-control-sm"
+                      aria-label="Shareable link"
+                      readOnly
+                      value={shareUrl}
+                      onFocus={(e) => e.target.select()}
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-secondary"
+                      onClick={() => void navigator.clipboard?.writeText(shareUrl)}
+                    >
+                      Copy
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-secondary"
+                    disabled={isGeneratingShareUrl}
+                    onClick={handleGetShareUrl}
+                  >
+                    {isGeneratingShareUrl ? 'Generating link…' : 'Get shareable link'}
+                  </button>
+                ))}
               <button
                 type="button"
                 className="btn btn-sm btn-outline-secondary"
-                disabled={isGeneratingShareUrl}
-                onClick={handleGetShareUrl}
+                disabled={isDownloadingImage}
+                onClick={handleDownloadImage}
               >
-                {isGeneratingShareUrl ? 'Generating link…' : 'Get shareable link'}
+                {isDownloadingImage ? 'Downloading…' : 'Download as image'}
               </button>
-            ))}
-          <button
-            type="button"
-            className="btn btn-sm btn-outline-secondary"
-            disabled={isDownloadingImage}
-            onClick={handleDownloadImage}
-          >
-            {isDownloadingImage ? 'Downloading…' : 'Download as image'}
-          </button>
-          <button
-            type="button"
-            className="btn btn-sm btn-outline-secondary"
-            disabled={isCopyingImage}
-            onClick={handleCopyImage}
-          >
-            {isCopyingImage ? 'Copying…' : 'Copy image'}
-          </button>
-          <button type="button" className="btn btn-sm btn-outline-secondary" onClick={handleCopyText}>
-            {copiedText ? 'Copied!' : 'Copy as text'}
-          </button>
+              <button
+                type="button"
+                className="btn btn-sm btn-outline-secondary"
+                disabled={isCopyingImage}
+                onClick={handleCopyImage}
+              >
+                {isCopyingImage ? 'Copying…' : 'Copy image'}
+              </button>
+              <button
+                type="button"
+                className="btn btn-sm btn-outline-secondary"
+                onClick={handleCopyText}
+              >
+                {copiedText ? 'Copied!' : 'Copy as text'}
+              </button>
             </div>
           </div>
         </div>

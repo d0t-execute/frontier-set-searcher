@@ -95,6 +95,35 @@ export const OPEN_SLOT_WEIGHT = 10_000
  * activated every single one of them couldn't approach `OPEN_SLOT_WEIGHT`. */
 export const EXACT_MATCH_SKILL_PENALTY = 1
 
+/** How much using one preferred piece (`SearchOptions.preferredCandidateIds`,
+ * docs/feedback.md Round 2 #2) is worth in the objective -- deliberately far
+ * ABOVE `OPEN_SLOT_WEIGHT`, not below it (confirmed by the project owner,
+ * 2026-10-19: "the preferred pieces should always win out over any other
+ * valid result... an optimized result that uses 0 preferred pieces should be
+ * omitted in favor of a worse result that still meets the query and has a
+ * preferred piece"). This is meant to let a player optimize around gear they
+ * already own, much like pinning -- but as a *pool* the solver draws from
+ * freely rather than a fixed per-slot assignment, and one it's still allowed
+ * to override when a requirement genuinely can't be reached without doing so
+ * (never a hard constraint -- see `buildModel`'s own docstring on how this
+ * differs from `options.pinnedCuffs`/a `PinnedSlot`).
+ *
+ * Chosen large enough that a build using one additional preferred piece
+ * always outranks one that doesn't, regardless of every other factor this
+ * objective weighs -- a build's *entire* realistic `OPEN_SLOT_WEIGHT`
+ * contribution (bounded by a handful of armor slots times a piece's own
+ * small open-slot count, nowhere near this constant's own order of
+ * magnitude) could never make up the difference, the same "large enough that
+ * a lower tier's whole realistic range can't approach it" reasoning
+ * `OPEN_SLOT_WEIGHT` itself already uses against bonus skill points. Applied
+ * additively per preferred piece actually used, so a build using *more* of
+ * them always outranks one using fewer, not just "any vs. none" -- the
+ * natural generalization of "optimize with my existing gear." Applied
+ * unconditionally, independent of `preferExactMatches` -- the two features
+ * bias different, unrelated things (incidental skill points vs. a player's
+ * own named pieces). */
+export const PREFERRED_ITEM_WEIGHT = 10_000_000
+
 /** The game's "at most 2 cuffs equipped" rule and its combined "Poogie slot"
  * cost budget -- confirmed in `etl/src/etl/db/schema.sql` ("at most 2
  * equipped, slot costs summing to at most 2") and
@@ -408,6 +437,7 @@ export function buildModel(
 ): BuiltModel {
   const requestedSkillIds = new Set(requirements.map((r) => r.skillId))
   const preferExactMatches = options.preferExactMatches ?? false
+  const preferredCandidateIds = options.preferredCandidateIds ?? new Set<string>()
   const numSlots = slots.length
 
   // Pinned cuffs (see `SearchOptions.pinnedCuffs`) are never modeled as
@@ -693,7 +723,8 @@ export function buildModel(
 
       columns.push({ kind: 'candidate', slotIndex: s, slotId: slot.slotId, candidate })
       const bonus = preferExactMatches ? 0 : bonusPointsOf(candidate.skills, requestedSkillIds)
-      addColumn(OPEN_SLOT_WEIGHT * capacity + bonus, entries)
+      const preferredBonus = preferredCandidateIds.has(candidate.id) ? PREFERRED_ITEM_WEIGHT : 0
+      addColumn(OPEN_SLOT_WEIGHT * capacity + bonus + preferredBonus, entries)
     }
 
     const pinnedCounts = pinnedSlotDecorationCounts.get(slot.slotId)

@@ -143,6 +143,38 @@ describe('ArmorPicker', () => {
     expect(matches).not.toHaveTextContent('Iron Helm')
   })
 
+  it("matches a candidate by one of its granted skill's tier labels (docs/feedback.md Round 2 #8)", () => {
+    const skillsWithTiers: readonly NamedSkill[] = [
+      {
+        id: 1,
+        name: 'Attack',
+        category: null,
+        priorityRank: null,
+        tiers: [{ label: 'Attack Up (Large)', minPoints: 20, description: null }],
+      },
+      { id: 2, name: 'Defense', category: null, priorityRank: null, tiers: [] },
+    ]
+    render(
+      <ArmorPicker
+        slots={slots}
+        decorations={decorations}
+        pinned={new Map()}
+        onChange={() => {}}
+        pinnedSlotDecorationIds={new Map()}
+        onChangeSlotDecorations={() => {}}
+        skills={skillsWithTiers}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText('Search pieces for head'), {
+      target: { value: 'attack up (large)' },
+    })
+
+    const matches = screen.getByLabelText('Pieces matching search for head')
+    expect(matches).toHaveTextContent('Leather Helm')
+    expect(matches).not.toHaveTextContent('Iron Helm')
+  })
+
   it('pins a candidate when picked from the filtered list', () => {
     const onChange = vi.fn()
     render(

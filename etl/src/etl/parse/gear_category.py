@@ -107,6 +107,7 @@ CATEGORY_ROAD_HS = "road_hs"
 CATEGORY_ROAD_G = "road_g"
 CATEGORY_ROAD_GX = "road_gx"
 CATEGORY_ROAD_ZENITH = "road_zenith"
+CATEGORY_ROAD_ZENITH_ZF = "road_zenith_zf"
 CATEGORY_ROAD_ZENITH_ZY = "road_zenith_zy"
 CATEGORY_ROAD_ZENITH_ZX = "road_zenith_zx"
 
@@ -140,6 +141,7 @@ CATEGORY_HR100_GOU = "hr100_gou"
 CATEGORY_EVENT_PLAIN = "event_plain"
 CATEGORY_EVENT_GX = "event_gx"
 CATEGORY_EVENT_ZENITH = "event_zenith"
+CATEGORY_EVENT_ZENITH_ZF = "event_zenith_zf"
 CATEGORY_EVENT_ZENITH_ZY = "event_zenith_zy"
 CATEGORY_EVENT_ZENITH_ZX = "event_zenith_zx"
 CATEGORY_EVENT_MYSTERY = "event_mystery"  # 謎 -- Luxt series, GX tier only
@@ -526,6 +528,8 @@ def classify_equipment_category(fields: list[str]) -> str:
                 return CATEGORY_ROAD_ZENITH_ZX
             if "ZY" in tokens:
                 return CATEGORY_ROAD_ZENITH_ZY
+            if "ZF" in tokens:
+                return CATEGORY_ROAD_ZENITH_ZF
             return CATEGORY_ROAD_ZENITH
         if "GX" in tokens:
             return CATEGORY_ROAD_GX
@@ -569,6 +573,8 @@ def classify_equipment_category(fields: list[str]) -> str:
                 return CATEGORY_EVENT_ZENITH_ZX
             if "ZY" in tokens:
                 return CATEGORY_EVENT_ZENITH_ZY
+            if "ZF" in tokens:
+                return CATEGORY_EVENT_ZENITH_ZF
             return CATEGORY_EVENT_ZENITH
         if name.startswith("Luxt") and "GX" in tokens:
             return CATEGORY_EVENT_MYSTERY

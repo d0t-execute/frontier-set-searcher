@@ -198,6 +198,24 @@ export interface SearchOptions {
    * available as a separate, more precise alternative -- this is additive,
    * not a replacement. */
   readonly pinnedCuffSkillIds?: readonly SkillId[]
+  /** Candidate ids the solver should favor using whenever it can (docs/
+   * feedback.md Round 2 #2, confirmed 2026-10-19 by the project owner: "the
+   * preferred pieces should always win out over any other valid result...
+   * meant to allow people to optimize with existing gear, similarly to
+   * pinning pieces, but with a pool of gear that can be overruled if it's
+   * not possible to reach the goal with it") -- modeled by `ilp-model.ts`'s
+   * `buildModel` as a large per-piece bonus (`PREFERRED_ITEM_WEIGHT`) added
+   * to a candidate column's objective cost whenever its id is in this set,
+   * large enough to dominate every other ranking factor (including
+   * `OPEN_SLOT_WEIGHT`) -- a build using one more preferred piece always
+   * outranks one using fewer, regardless of anything else. Still never a
+   * hard constraint, unlike `pinnedCuffs`/a `PinnedSlot`: a build that uses
+   * none of these pieces is still returned (and still correctly ranked
+   * against other such builds) when using any of them would make a
+   * requirement unreachable -- the pool is overruled, not enforced. Scoped
+   * to armor candidates only (decorations/cuffs are a separate pool, not
+   * asked for here). */
+  readonly preferredCandidateIds?: ReadonlySet<string>
 }
 
 export interface BuildResult {

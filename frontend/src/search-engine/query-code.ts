@@ -71,7 +71,9 @@ interface NameIndex {
   readonly idFor: (text: string) => string | null
 }
 
-function buildNameIndex(items: readonly { readonly id: string; readonly name: string }[]): NameIndex {
+function buildNameIndex(
+  items: readonly { readonly id: string; readonly name: string }[],
+): NameIndex {
   const nameById = new Map(items.map((i) => [i.id, i.name]))
   const idsByName = new Map<string, string[]>()
   for (const item of items) {
@@ -103,7 +105,9 @@ function skillIndex(skills: readonly { readonly id: number; readonly name: strin
   return buildNameIndex(skills.map((s) => ({ id: String(s.id), name: s.name })))
 }
 
-function weaponZenithIndex(zenithSkills: readonly { readonly id: number; readonly name: string }[]): NameIndex {
+function weaponZenithIndex(
+  zenithSkills: readonly { readonly id: number; readonly name: string }[],
+): NameIndex {
   return buildNameIndex([
     { id: WEAPON_NO_ZENITH_SKILL_KEY, name: 'No Zenith skill' },
     ...zenithSkills.map((s) => ({ id: String(s.id), name: s.name })),
@@ -122,7 +126,9 @@ function cuffSkillIndex(catalog: QueryCodeCatalog): NameIndex {
 }
 
 function flattenCategoryGroups(groups: readonly GearCategoryGroup[]): NameIndex {
-  return buildNameIndex(groups.flatMap((g) => g.categories.map((c) => ({ id: c.key, name: c.label }))))
+  return buildNameIndex(
+    groups.flatMap((g) => g.categories.map((c) => ({ id: c.key, name: c.label }))),
+  )
 }
 
 const RESISTANCE_ELEMENT_LABELS: ReadonlyMap<ResistanceElement, string> = new Map([
@@ -150,7 +156,10 @@ function renderNullableList(header: string, items: readonly string[] | null): re
   return items === null ? [] : [`${header}:`, ...items.map((item) => `- ${item}`)]
 }
 
-export async function encodeQueryCode(state: SearchFormState, catalog: QueryCodeCatalog): Promise<string> {
+export async function encodeQueryCode(
+  state: SearchFormState,
+  catalog: QueryCodeCatalog,
+): Promise<string> {
   const skillIdx = skillIndex(catalog.skills)
   const zenithIdx = skillIndex(catalog.zenithSkills)
   const weaponZenithIdx = weaponZenithIndex(catalog.zenithSkills)
@@ -175,7 +184,9 @@ export async function encodeQueryCode(state: SearchFormState, catalog: QueryCode
     ),
     renderList(
       'Zenith skill requirements',
-      state.zenithRequirements.map((r) => `${zenithIdx.nameFor(String(r.skillId))}: ${r.minPoints}`),
+      state.zenithRequirements.map(
+        (r) => `${zenithIdx.nameFor(String(r.skillId))}: ${r.minPoints}`,
+      ),
     ),
     renderList(
       'Resistances required non-negative',
@@ -223,10 +234,26 @@ export async function encodeQueryCode(state: SearchFormState, catalog: QueryCode
         ids.map((id) => `${slotId}: ${decorationIdx.nameFor(id)}`),
       ),
     ),
-    renderList('Excluded armor', state.excludedArmorIds.map((id) => armorIdx.nameFor(id))),
-    renderList('Excluded decorations', state.excludedDecorationIds.map((id) => decorationIdx.nameFor(id))),
-    renderList('Excluded cuffs', state.excludedCuffIds.map((id) => cuffIdx.nameFor(id))),
-    renderList('Excluded skills', state.excludedSkillIds.map((id) => skillIdx.nameFor(id))),
+    renderList(
+      'Excluded armor',
+      state.excludedArmorIds.map((id) => armorIdx.nameFor(id)),
+    ),
+    renderList(
+      'Excluded decorations',
+      state.excludedDecorationIds.map((id) => decorationIdx.nameFor(id)),
+    ),
+    renderList(
+      'Excluded cuffs',
+      state.excludedCuffIds.map((id) => cuffIdx.nameFor(id)),
+    ),
+    renderList(
+      'Excluded skills',
+      state.excludedSkillIds.map((id) => skillIdx.nameFor(id)),
+    ),
+    renderList(
+      'Preferred armor',
+      state.preferredArmorIds.map((id) => armorIdx.nameFor(id)),
+    ),
   ]
 
   // Async only to keep this a drop-in replacement for the old gzip-based
@@ -367,7 +394,9 @@ function decodePinnedCuffSlots(
   return result
 }
 
-function groupBySlot(pairs: readonly (readonly [string, string])[]): ReadonlyMap<string, readonly string[]> {
+function groupBySlot(
+  pairs: readonly (readonly [string, string])[],
+): ReadonlyMap<string, readonly string[]> {
   const bySlot = new Map<string, string[]>()
   for (const [slotId, id] of pairs) {
     const list = bySlot.get(slotId) ?? []
@@ -420,7 +449,10 @@ export async function decodeQueryCode(
   const maxResults = Number(maxResultsText)
   if (!Number.isFinite(weaponSlotCount) || !Number.isFinite(maxResults)) return null
 
-  const requirements = decodeSkillRequirements(doc.sections.get('Skill requirements') ?? [], skillIdx)
+  const requirements = decodeSkillRequirements(
+    doc.sections.get('Skill requirements') ?? [],
+    skillIdx,
+  )
   const zenithRequirements = decodeSkillRequirements(
     doc.sections.get('Zenith skill requirements') ?? [],
     zenithIdx,
@@ -443,20 +475,31 @@ export async function decodeQueryCode(
   const weaponZenithSection = doc.sections.get('Excluded weapon Zenith skills')
   const excludedWeaponZenithSkillIds =
     weaponZenithSection === undefined ? null : decodeIdList(weaponZenithSection, weaponZenithIdx)
-  const pinnedArmorPieces = decodeSlotNamePairs(doc.sections.get('Pinned armor pieces') ?? [], armorIdx)
+  const pinnedArmorPieces = decodeSlotNamePairs(
+    doc.sections.get('Pinned armor pieces') ?? [],
+    armorIdx,
+  )
   const pinnedArmorDecorations = decodeSlotNamePairs(
     doc.sections.get('Decorations in pinned armor') ?? [],
     decorationIdx,
   )
-  const pinnedCuffSlots = decodePinnedCuffSlots(doc.sections.get('Pinned cuffs') ?? [], cuffIdx, cuffSkillIdx)
+  const pinnedCuffSlots = decodePinnedCuffSlots(
+    doc.sections.get('Pinned cuffs') ?? [],
+    cuffIdx,
+    cuffSkillIdx,
+  )
   const slotDecorationPairs = decodeSlotNamePairs(
     doc.sections.get('Pinned slot decorations (no piece pinned)') ?? [],
     decorationIdx,
   )
   const excludedArmorIds = decodeIdList(doc.sections.get('Excluded armor') ?? [], armorIdx)
-  const excludedDecorationIds = decodeIdList(doc.sections.get('Excluded decorations') ?? [], decorationIdx)
+  const excludedDecorationIds = decodeIdList(
+    doc.sections.get('Excluded decorations') ?? [],
+    decorationIdx,
+  )
   const excludedCuffIds = decodeIdList(doc.sections.get('Excluded cuffs') ?? [], cuffIdx)
   const excludedSkillIds = decodeIdList(doc.sections.get('Excluded skills') ?? [], skillIdx)
+  const preferredArmorIds = decodeIdList(doc.sections.get('Preferred armor') ?? [], armorIdx)
 
   if (
     requirements === null ||
@@ -473,16 +516,19 @@ export async function decodeQueryCode(
     excludedArmorIds === null ||
     excludedDecorationIds === null ||
     excludedCuffIds === null ||
-    excludedSkillIds === null
+    excludedSkillIds === null ||
+    preferredArmorIds === null
   ) {
     return null
   }
 
   const decorationsBySlot = groupBySlot(pinnedArmorDecorations)
-  const pinnedArmor: (readonly [string, PinnedSlot])[] = pinnedArmorPieces.map(([slotId, candidateId]) => [
-    slotId,
-    { candidateId, decorationIds: decorationsBySlot.get(slotId) ?? [] },
-  ])
+  const pinnedArmor: (readonly [string, PinnedSlot])[] = pinnedArmorPieces.map(
+    ([slotId, candidateId]) => [
+      slotId,
+      { candidateId, decorationIds: decorationsBySlot.get(slotId) ?? [] },
+    ],
+  )
   const pinnedSlotDecorationIds = [...groupBySlot(slotDecorationPairs).entries()]
 
   return validateSearchFormState({
@@ -501,6 +547,7 @@ export async function decodeQueryCode(
     excludedDecorationIds,
     excludedCuffIds,
     excludedSkillIds,
+    preferredArmorIds,
     nonNegativeResistances,
     preferExactMatches,
     maxResults,

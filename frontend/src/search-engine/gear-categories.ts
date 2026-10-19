@@ -112,6 +112,7 @@ export const GEAR_CATEGORY_GROUPS: readonly GearCategoryGroup[] = [
       { key: 'road_g', label: 'Road G' },
       { key: 'road_gx', label: 'Road GX' },
       { key: 'road_zenith', label: 'Road Zenith' },
+      { key: 'road_zenith_zf', label: 'Road Zenith ZF' },
       { key: 'road_zenith_zy', label: 'Road Zenith ZY' },
       { key: 'road_zenith_zx', label: 'Road Zenith ZX' },
     ],
@@ -163,6 +164,7 @@ export const GEAR_CATEGORY_GROUPS: readonly GearCategoryGroup[] = [
       { key: 'event_plain', label: 'Event' },
       { key: 'event_gx', label: 'Event GX' },
       { key: 'event_zenith', label: 'Event Zenith' },
+      { key: 'event_zenith_zf', label: 'Event Zenith ZF' },
       { key: 'event_zenith_zy', label: 'Event Zenith ZY' },
       { key: 'event_zenith_zx', label: 'Event Zenith ZX' },
       { key: 'event_mystery', label: 'Mystery Quest Armor' },
@@ -213,3 +215,53 @@ export const GEAR_CATEGORY_GROUPS: readonly GearCategoryGroup[] = [
     ],
   },
 ]
+
+function allLeafKeys(groups: readonly GearCategoryGroup[]): readonly string[] {
+  return groups.flatMap((group) => group.categories.map((c) => c.key))
+}
+
+/** Every leaf category key that's G-Rank or later, for the top-level
+ * "Gear levels" Pre-G-Rank/G-Rank/Zenith quick toggles (docs/feedback.md
+ * Round 2 #6, confirmed by the project owner 2026-10-19: "G-Rank" is the
+ * whole "G Rank Armor" group, including Exotic, Origin, and G-Hiden). Kept
+ * as an explicit list, not derived from a group label match, so a future
+ * taxonomy reshuffle has to touch this deliberately rather than silently. */
+export const GEAR_LEVEL_GRANK_CATEGORIES: readonly string[] = [
+  'grank_g',
+  'grank_gx',
+  'grank_g_hashu',
+  'grank_burst_species',
+  'grank_g_hiden',
+  'grank_origin',
+  'grank_exotic',
+  'grank_exotic_gx',
+]
+
+/** Every leaf category key that's Zenith, for the same toggles -- confirmed
+ * by the project owner to include Road Zenith and Event Zenith (and their
+ * ZF/ZY/ZX variants) alongside the base "Zenith Armor" group, not just the
+ * latter. */
+export const GEAR_LEVEL_ZENITH_CATEGORIES: readonly string[] = [
+  'zenith_plain',
+  'zenith_zf',
+  'zenith_zy',
+  'zenith_zx',
+  'road_zenith',
+  'road_zenith_zf',
+  'road_zenith_zy',
+  'road_zenith_zx',
+  'event_zenith',
+  'event_zenith_zf',
+  'event_zenith_zy',
+  'event_zenith_zx',
+]
+
+/** Every leaf category key that's neither of the above -- "Pre-G-Rank" for
+ * the same toggles. Derived (not hand-listed) so it can't drift out of sync
+ * with `GEAR_CATEGORY_GROUPS` as new categories are added. */
+export const GEAR_LEVEL_PRE_GRANK_CATEGORIES: readonly string[] = allLeafKeys(
+  GEAR_CATEGORY_GROUPS,
+).filter(
+  (key) =>
+    !GEAR_LEVEL_GRANK_CATEGORIES.includes(key) && !GEAR_LEVEL_ZENITH_CATEGORIES.includes(key),
+)

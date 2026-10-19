@@ -71,6 +71,7 @@ const EMPTY_FORM_STATE: QueryFormState = {
   excludedDecorationIds: new Set(),
   excludedCuffIds: new Set(),
   excludedSkillIds: new Set(),
+  preferredArmorIds: new Set(),
 }
 
 const BUNDLE: DataBundle = {
@@ -255,7 +256,10 @@ describe('buildSearchQuery', () => {
   })
 
   it('drops an excluded decoration from the solver pool', () => {
-    const query = buildSearchQuery(BUNDLE, { ...EMPTY_FORM_STATE, excludedDecorationIds: new Set(['regular']) })
+    const query = buildSearchQuery(BUNDLE, {
+      ...EMPTY_FORM_STATE,
+      excludedDecorationIds: new Set(['regular']),
+    })
 
     expect(query.decorations.map((d) => d.id)).toEqual([])
   })
@@ -339,6 +343,15 @@ describe('buildSearchQuery', () => {
 
     expect(query.excludedActiveSkillIds).toEqual([1, 2])
   })
+
+  it('passes preferredArmorIds straight through as preferredCandidateIds (docs/feedback.md Round 2 #2)', () => {
+    const query = buildSearchQuery(BUNDLE, {
+      ...EMPTY_FORM_STATE,
+      preferredArmorIds: new Set(['head:0001']),
+    })
+
+    expect(query.preferredCandidateIds).toEqual(new Set(['head:0001']))
+  })
 })
 
 describe('resolvePinnedSlotDecorations', () => {
@@ -365,7 +378,11 @@ describe('resolvePinnedSlotDecorations', () => {
   })
 
   it('omits a slot entirely once every one of its ids fails to resolve', () => {
-    const resolved = resolvePinnedSlotDecorations(decorations, new Map([['head', ['gone']]]), new Map())
+    const resolved = resolvePinnedSlotDecorations(
+      decorations,
+      new Map([['head', ['gone']]]),
+      new Map(),
+    )
 
     expect(resolved.has('head')).toBe(false)
   })

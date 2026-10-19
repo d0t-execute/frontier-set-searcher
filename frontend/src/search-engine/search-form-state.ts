@@ -55,6 +55,7 @@ export interface SearchFormState {
   readonly excludedDecorationIds: readonly string[]
   readonly excludedCuffIds: readonly string[]
   readonly excludedSkillIds: readonly string[]
+  readonly preferredArmorIds: readonly string[]
   readonly nonNegativeResistances: readonly ResistanceElement[]
   readonly preferExactMatches: boolean
   readonly maxResults: number
@@ -96,6 +97,7 @@ export function validateSearchFormState(parsed: unknown): SearchFormState | null
     !Array.isArray(p.excludedDecorationIds) ||
     !Array.isArray(p.excludedCuffIds) ||
     !Array.isArray(p.excludedSkillIds) ||
+    !Array.isArray(p.preferredArmorIds) ||
     !Array.isArray(p.nonNegativeResistances) ||
     !p.nonNegativeResistances.every((e) => RESISTANCE_ELEMENTS.includes(e)) ||
     typeof p.preferExactMatches !== 'boolean' ||

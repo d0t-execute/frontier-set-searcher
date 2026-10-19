@@ -27,7 +27,10 @@ const catalog: QueryCodeCatalog = {
     { id: 'cuff:C099', name: 'Guard Up SZ' },
   ],
   gearCategories: [
-    { label: 'Unavailable', categories: [{ key: 'unavailable_not_implemented', label: 'Not Implemented' }] },
+    {
+      label: 'Unavailable',
+      categories: [{ key: 'unavailable_not_implemented', label: 'Not Implemented' }],
+    },
   ],
   cuffCategories: [
     {
@@ -37,9 +40,7 @@ const catalog: QueryCodeCatalog = {
       categories: [{ key: 'cuff_standard_unavailable', label: 'Standard (Unavailable)' }],
     },
   ],
-  decorationCategories: [
-    { label: 'Tower', categories: [{ key: 'deco_tower', label: 'Tower' }] },
-  ],
+  decorationCategories: [{ label: 'Tower', categories: [{ key: 'deco_tower', label: 'Tower' }] }],
 }
 
 const state: SearchFormState = {
@@ -61,6 +62,7 @@ const state: SearchFormState = {
   excludedDecorationIds: ['D099'],
   excludedCuffIds: ['cuff:C099'],
   excludedSkillIds: ['2'],
+  preferredArmorIds: ['chest:0001'],
   nonNegativeResistances: ['fire', 'dragon'],
   preferExactMatches: true,
   maxResults: 5,
@@ -105,6 +107,7 @@ describe('encodeQueryCode / decodeQueryCode', () => {
       excludedDecorationIds: [],
       excludedCuffIds: [],
       excludedSkillIds: [],
+      preferredArmorIds: [],
       nonNegativeResistances: [],
       preferExactMatches: true,
       maxResults: 5,
@@ -128,7 +131,10 @@ describe('encodeQueryCode / decodeQueryCode', () => {
   })
 
   it('disambiguates two items that share a display name with their own id, and keeps a legitimate parenthetical label intact', async () => {
-    const withDuplicateName: SearchFormState = { ...state, excludedArmorIds: ['chest:0001', 'chest:0002'] }
+    const withDuplicateName: SearchFormState = {
+      ...state,
+      excludedArmorIds: ['chest:0001', 'chest:0002'],
+    }
     const encoded = await encodeQueryCode(withDuplicateName, catalog)
 
     expect(encoded).toContain('Duplicate Mail (chest:0001)')
@@ -177,7 +183,10 @@ describe('encodeQueryCode / decodeQueryCode', () => {
   })
 
   it('returns null for a skill name that is not in the catalog', async () => {
-    const encoded = (await encodeQueryCode(state, catalog)).replace('Attack: 10', 'Nonexistent Skill: 10')
+    const encoded = (await encodeQueryCode(state, catalog)).replace(
+      'Attack: 10',
+      'Nonexistent Skill: 10',
+    )
     expect(await decodeQueryCode(encoded, catalog)).toBeNull()
   })
 

@@ -72,6 +72,14 @@ export function ArmorPicker({
 }: ArmorPickerProps) {
   const skillsById = new Map(skills.map((s) => [s.id, s]))
   const skillNameById = new Map(skills.map((s) => [s.id, s.name]))
+  // Every string a piece search should match a skill by -- its own name plus
+  // every tier label (docs/feedback.md Round 2 #8, 2026-10-19 per the project
+  // owner: "searching... gear by skill name and skill threshold names"), e.g.
+  // typing "BBQ Master" should surface a piece granting "Cooking". Lowercased
+  // once here rather than per-keystroke in `candidateMatches`.
+  const skillSearchTextById = new Map(
+    skills.map((s) => [s.id, [s.name, ...s.tiers.map((t) => t.label)].join(' ').toLowerCase()]),
+  )
   const skillTotals = computePinnedSkillTotals(pinned, slots, decorations, pinnedSlotDecorationIds)
 
   function setPin(slotId: string, pin: PinnedSlot | null): void {
@@ -108,6 +116,7 @@ export function ArmorPicker({
           slotDecorationIds={pinnedSlotDecorationIds.get(slot.slotId) ?? []}
           onChangeSlotDecorations={(ids) => setSlotDecorations(slot.slotId, ids)}
           skillNameById={skillNameById}
+          skillSearchTextById={skillSearchTextById}
         />
       ))}
 
@@ -137,6 +146,7 @@ function ArmorSlotPicker({
   slotDecorationIds,
   onChangeSlotDecorations,
   skillNameById,
+  skillSearchTextById,
 }: {
   slotId: string
   candidates: readonly NamedCandidate[]
@@ -148,6 +158,10 @@ function ArmorSlotPicker({
   /** Lets the piece search below match on a skill name too, not just the
    * piece's own name (2026-10-16, per user feedback). */
   skillNameById: ReadonlyMap<number, string>
+  /** Every skill id's own name plus its tier labels, pre-joined and
+   * lowercased, for the same piece search (docs/feedback.md Round 2 #8,
+   * 2026-10-19). */
+  skillSearchTextById: ReadonlyMap<number, string>
 }) {
   const [candidateSearch, setCandidateSearch] = useState('')
   const [decorationSearch, setDecorationSearch] = useState('')
@@ -156,9 +170,7 @@ function ArmorSlotPicker({
 
   function candidateMatches(candidate: NamedCandidate, query: string): boolean {
     if (candidate.name.toLowerCase().includes(query)) return true
-    return candidate.skills.some((s) =>
-      (skillNameById.get(s.skillId) ?? '').toLowerCase().includes(query),
-    )
+    return candidate.skills.some((s) => (skillSearchTextById.get(s.skillId) ?? '').includes(query))
   }
 
   function pickCandidate(c: NamedCandidate): void {

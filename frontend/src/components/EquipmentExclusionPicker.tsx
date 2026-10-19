@@ -29,8 +29,11 @@
  * Each of the armor/decoration/cuff lists also matches on a granted skill's
  * name, not just the item's own name -- the same "search armor pieces by
  * skill" behavior `ArmorPicker.tsx`'s `candidateMatches` already has (TODO
- * #26's #19), extended here too (2026-10-18, per the project owner). The
- * Skills list needs no such extension -- its items already *are* skills.
+ * #26's #19), extended here too (2026-10-18, per the project owner). Every
+ * list (including Skills) also matches a skill's tier/threshold labels, not
+ * just its own name (docs/feedback.md Round 2 #8, 2026-10-19) -- e.g. typing
+ * "BBQ Master" surfaces "Cooking" everywhere, including in the Skills list
+ * itself, where there's no separate "granted skill" to look up.
  *
  * Also shows the same persistent hover-skill-summary line `ArmorPicker.tsx`
  * has below its own piece search (2026-10-19, per the project owner), on the
@@ -71,6 +74,11 @@ export interface EquipmentExclusionPickerProps {
   readonly excludedSkillIds: ReadonlySet<string>
   readonly onChangeExcludedSkillIds: (next: Set<string>) => void
   readonly skillNameById: ReadonlyMap<SkillId, string>
+  /** Every skill id's own name plus its tier labels, pre-joined and
+   * lowercased -- lets the armor/decoration/cuff lists below match a
+   * tier/threshold name too, not just a skill's own name (docs/feedback.md
+   * Round 2 #8, 2026-10-19). */
+  readonly skillSearchTextById: ReadonlyMap<SkillId, string>
 }
 
 export function EquipmentExclusionPicker({
@@ -87,6 +95,7 @@ export function EquipmentExclusionPicker({
   excludedSkillIds,
   onChangeExcludedSkillIds,
   skillNameById,
+  skillSearchTextById,
 }: EquipmentExclusionPickerProps) {
   return (
     <div className="d-flex flex-column gap-3">
@@ -97,6 +106,7 @@ export function EquipmentExclusionPicker({
         excludedIds={excludedArmorIds}
         onChange={onChangeExcludedArmorIds}
         skillNameById={skillNameById}
+        skillSearchTextById={skillSearchTextById}
         showSkillSummary
       />
       <ExclusionList
@@ -106,6 +116,7 @@ export function EquipmentExclusionPicker({
         excludedIds={excludedDecorationIds}
         onChange={onChangeExcludedDecorationIds}
         skillNameById={skillNameById}
+        skillSearchTextById={skillSearchTextById}
         showSkillSummary
       />
       <ExclusionList
@@ -115,6 +126,7 @@ export function EquipmentExclusionPicker({
         excludedIds={excludedCuffIds}
         onChange={onChangeExcludedCuffIds}
         skillNameById={skillNameById}
+        skillSearchTextById={skillSearchTextById}
         showSkillSummary
       />
       <ExclusionList
@@ -124,6 +136,7 @@ export function EquipmentExclusionPicker({
         excludedIds={excludedSkillIds}
         onChange={onChangeExcludedSkillIds}
         skillNameById={skillNameById}
+        skillSearchTextById={skillSearchTextById}
       />
     </div>
   )
@@ -136,6 +149,7 @@ function ExclusionList<T extends Named>({
   excludedIds,
   onChange,
   skillNameById,
+  skillSearchTextById,
   showSkillSummary = false,
 }: {
   label: string
@@ -144,6 +158,10 @@ function ExclusionList<T extends Named>({
   excludedIds: ReadonlySet<string>
   onChange: (next: Set<string>) => void
   skillNameById: ReadonlyMap<SkillId, string>
+  /** Every skill id's own name plus its tier labels, pre-joined and
+   * lowercased -- optional since the Skills list (whose items already *are*
+   * skills, matched on `item.name` directly) has no use for it. */
+  skillSearchTextById?: ReadonlyMap<SkillId, string>
   /** Renders the persistent hover-skill-summary line below the results --
    * left off for the Skills list, whose items have nothing to show there. */
   showSkillSummary?: boolean
@@ -152,18 +170,27 @@ function ExclusionList<T extends Named>({
   const [hovered, setHovered] = useState<T | null>(null)
   const itemsById = useMemo(() => new Map(items.map((i) => [i.id, i])), [items])
 
-  // Matches an item by its own name or by a skill it grants -- lets "exclude
-  // every piece granting Ice Atk G" work without knowing a single piece's
-  // name up front, the same reason `ArmorPicker.tsx`'s own piece search
-  // matches by skill name too.
+  // Matches an item by its own name, by a skill it grants, or by one of that
+  // skill's tier/threshold labels (docs/feedback.md Round 2 #8, 2026-10-19)
+  // -- lets "exclude every piece granting Ice Atk G" work without knowing a
+  // single piece's name up front, the same reason `ArmorPicker.tsx`'s own
+  // piece search matches by skill name (and now tier label) too.
   const matchesNameOrSkill = useCallback(
     (item: T, query: string) => {
       if (item.name.toLowerCase().includes(query)) return true
-      return (item.skills ?? []).some((c) =>
-        (skillNameById.get(c.skillId) ?? '').toLowerCase().includes(query),
-      )
+      if (item.skills) {
+        return item.skills.some((c) =>
+          skillSearchTextById
+            ? (skillSearchTextById.get(c.skillId) ?? '').includes(query)
+            : (skillNameById.get(c.skillId) ?? '').toLowerCase().includes(query),
+        )
+      }
+      // This item has no "skills it grants" list of its own -- it IS a
+      // skill (the Skills list itself) -- match its own tier labels too, so
+      // e.g. typing "BBQ Master" still surfaces "Cooking" here.
+      return (skillSearchTextById?.get(Number(item.id)) ?? '').includes(query)
     },
-    [skillNameById],
+    [skillNameById, skillSearchTextById],
   )
 
   // Already-excluded items are left out of the search results -- nothing
@@ -236,7 +263,13 @@ function ExclusionList<T extends Named>({
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         onKeyDown={(e) =>
-          handleEnterToPickFirst(e, pickableItems, search, (item) => add(item.id), matchesNameOrSkill)
+          handleEnterToPickFirst(
+            e,
+            pickableItems,
+            search,
+            (item) => add(item.id),
+            matchesNameOrSkill,
+          )
         }
       />
       <FilterableOptions

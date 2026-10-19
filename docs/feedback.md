@@ -61,11 +61,11 @@ demographic" for this new tool.
     results is easier (`ResultsList`/`ResultCard` have no collapsed state today -- could reuse
     `Disclosure.tsx`).
 
-12. **A "preference"/"already owned" list** -- equipment that's nice to use but not required, only
+12. ~~**A "preference"/"already owned" list** -- equipment that's nice to use but not required, only
     dropped from a result if that's the *only* way to reach a valid build. Effectively the inverse of
     pinning: "prefer this if feasible" rather than "force this regardless." Likely needs real
     `ilp-model.ts` objective-function support (a soft bonus for using a preferred item), not just a
-    pre/post filter.
+    pre/post filter.~~ **DONE** -- see Round 2 #2's entry for the actual implementation.
 
 13. **Mark gender-specific pieces** somewhere in the UI (some MHF-Z armor is gender-locked) -- needs
     checking whether the source data/ETL even captures gender restriction today.
@@ -86,12 +86,18 @@ demographic" for this new tool.
     exactly what's missing (a category-tree gap? a pinning gap for "any piece of tier X, solver's
     choice of exactly which"?).
 
-16. **Show the achievable active-skill cap given current armor/Zenith settings**, before or alongside
-    running a search -- the example given: if every included piece is a Zenith piece, a build with no
-    active Zenith skill of its own is capped lower than normal (e.g. 12, or 13 with a Zenith weapon
-    skill) because it can't reach the usual G-Rank-piece-count cap bonus. Needs confirming this
-    specific mechanic (Zenith pieces not counting toward the G-Rank piece-count bonus) against real
-    game rules/data before building it.
+16. **DONE** (see Round 2 #4) ~~Show the achievable active-skill cap given current armor/Zenith
+    settings~~, before or alongside running a search -- the example given: if every included piece is a
+    Zenith piece, a build with no active Zenith skill of its own is capped lower than normal (e.g. 12,
+    or 13 with a Zenith weapon skill) because it can't reach the usual G-Rank-piece-count cap bonus.
+    Needs confirming this specific mechanic (Zenith pieces not counting toward the G-Rank piece-count
+    bonus) against real game rules/data before building it. **Note:** this premise turned out to
+    conflict with the already-shipped data -- `NamedCandidate.grankOrLater` is `true` for Zenith-category
+    gear (only Origin is carved out, per Round 2 #5), so Zenith pieces *do* count toward the G-Rank
+    piece-count bonus today, both in actual solved results (`countGrankOrLaterPieces`) and in the new
+    preview (`previewActiveSkillCap`). Not re-litigated as part of shipping Round 2 #4 -- flagging here
+    in case the "Zenith pieces don't count" premise reflects a real game rule this project has gotten
+    wrong elsewhere, worth a separate confirmation with the project owner if revisited.
 
 17. **DONE** (see roadmap #26) ~~Sort decorations within a result~~ so duplicates of the same
     decoration cluster together (or at least sit adjacent) instead of appearing in whatever order the
@@ -115,3 +121,155 @@ demographic" for this new tool.
     Supporting this for real likely means modeling Tower armor as its own constrained pairing (a Tower
     weapon/piece can only take Tower Gems, and vice versa), which TODO #11's own note already flagged
     as unenforced.
+
+## Round 2 (2026-10-19)
+
+1. ~~**Extend "Results to show" past 50** -- add 100/150/250 to `App.tsx`'s `MAX_RESULTS_OPTIONS`
+   (today: 1/3/5/10/20/50). No engine change needed, just more iterations of the existing
+   solve-exclude-resolve loop -- a plain quick win.~~ **DONE** (2026-10-19)
+
+2. ~~**A "preference"/"already owned" list** -- same ask as Round 1 #12, repeated here. Still needs
+   `ilp-model.ts` objective-function support (a soft bonus for using a preferred item), not just a
+   pre/post filter -- not a quick win.~~ **DONE** (2026-10-19): a new "Preferred pieces" section
+   (`PreferredArmorPicker.tsx`, same search-by-skill/tier-label UI as the exclusion lists) feeds a flat
+   set of armor piece ids through `QueryFormState.preferredArmorIds` ->
+   `SearchOptions.preferredCandidateIds` -> `ilp-model.ts`'s `buildModel`. Initially shipped as a mild
+   tie-breaker (a small bonus below `OPEN_SLOT_WEIGHT`), then corrected the same day per the project
+   owner's explicit clarification: "the preferred pieces should always win out over any other valid
+   result... an optimized result that uses 0 preferred pieces should be omitted in favor of a worse
+   result that still meets the query and has a preferred piece" -- i.e. this is meant to optimize
+   around gear the player already owns, much like pinning, but as an overridable *pool* rather than a
+   fixed per-slot assignment. `PREFERRED_ITEM_WEIGHT` (10,000,000) now dominates every other ranking
+   factor including `OPEN_SLOT_WEIGHT`, applied additively per preferred piece used so a build using
+   *more* of them always outranks one using fewer (confirmed live: a preferred 1-open-slot piece now
+   correctly wins the slot over a non-preferred 3-open-slot one). Still purely a ranking tie-break, not
+   a hard constraint -- a feasible build using none of the preferred pieces is still returned once using
+   any of them would make a requirement unreachable. Scoped to armor pieces only, matching the
+   feedback's own wording ("pieces") -- decorations/cuffs weren't asked for and would need their own
+   follow-up if wanted. Plumbed through the full persist/share/save-code pipeline
+   (`search-form-state.ts`, `shared-state.ts`, `query-code.ts`) the
+   same way every other query-shaping control already is.
+
+3. ~~**Sort results by resistance, "number of skills over cap," or defense** -- overlaps Round 1 #10.
+   "Number of skills over cap" is presumably `ResultCard`'s own already-computed `disabledCount` (how
+   many skills `computeActiveSkillCap` force-disabled for that build) -- if so this is buildable as a
+   pure client-side re-sort of the already-fetched `results` array (resistance sum, `disabledCount`,
+   and summed `defenseMax` are all already derivable per result), with no engine change. Needs
+   confirming that reading of "over cap," plus which direction each sort goes (e.g. fewest disabled
+   first) and whether a default "solver order" option stays available.~~ **DONE** (2026-10-19): a new
+   "Sort by" dropdown (`App.tsx`) re-sorts the already-solved `results` client-side, via a new shared
+   `search-engine/result-stats.ts` module (`computeResultStats`, also now used by `ResultsList.tsx`
+   itself so a sort can never disagree with what a card displays). "Resistances" sorts by
+   `resistanceScore`: the average of all 5 elements, but any negative resistance is weighted 3x before
+   averaging (confirmed by the project owner: "penalize negative values strongly" -- a build with one
+   bad negative should sort below one with merely mediocre positives). "Skills over cap" sorts by
+   `disabledCount` ascending (fewest first), confirmed. "Best match" (the solver's own order) stays the
+   default.
+
+4. ~~**Show the achievable active-skill cap for the current selection, before running a search** --
+   overlaps Round 1 #16, now with a worked example: 5 non-"Skill Slots Up" Zenith skills selected +
+   7 equippable Zenith pieces -> cap 14 (10 base + 2 G-Rank-piece-bonus + 2 from Skill Slots Up).
+   The "+2 from Skill Slots Up" despite it not being one of the 5 selected skills needs clarifying --
+   does this mean the preview should also account for "Skill Slots Up" points incidentally available
+   from the same gear that grants the other 5 (plausible, since one piece can carry several Zenith
+   skills), separately from whatever the player explicitly selects? Needs this confirmed before
+   building, same caution as Round 1 #16's own entry.~~ **DONE** (2026-10-19, corrected same day): first
+   shipped computing the "current" cap (what's already locked in by gear/selections plus a per-skill
+   incidental-Skill-Slots-Up sum), but that conflated "what's the cap right now" with the actually-asked-
+   for "how high could it still go" -- the project owner's correction: this is about the *current
+   selection's remaining ceiling*, not what's already equipped. Reworked `active-skill-cap.ts`'s
+   `previewActiveSkillCap` into a slot-budget model: every real armor slot, the weapon slot, and the
+   `MAX_EQUIPPED_CUFFS` cuff slots are each one "position" that could still end up granting Skill Slots
+   Up; every *other* selected Zenith requirement is assumed to claim one dedicated position (this game
+   never grants more than one Zenith skill per piece, so a position used for skill X essentially never
+   also carries Skill Slots Up); whatever positions are left over is the most Skill Slots Up this
+   selection could still reach, capped at +7. A position already resolved to a single candidate
+   (pinned, or narrowed by filtering) contributes everything it has unconditionally, no trade-off to
+   make; a position with real choices left is matched to an unmet requirement only if needed (greedy,
+   preferring to spend positions with the least Skill Slots Up potential first), confirmed against the
+   project owner's own worked examples: 0 selected + 7 flexible positions -> 19 (10 + 2 G-Rank + 7); 5
+   selected (each claiming its own position) -> 14 (10 + 2 + 2 left over); pinning both cuff slots to
+   non-Skill-Slots-Up cuffs on top of that -> 17 (two positions removed from play entirely, not just
+   claimed). The G-Rank-piece bonus itself is unchanged from the first version (per real armor slot, any
+   currently-eligible candidate counts, same Origin carve-out as Round 2 #5) -- it doesn't compete with
+   Zenith-skill slot usage, since one piece can be both. Fed `buildSearchQuery`'s own resolved
+   `slots`/`cuffs`/`pinnedCuffs`/`pinnedCuffSkillIds` (never decorations, which don't grant Zenith
+   skills), so it automatically honors every existing category/id exclusion, pin, and Hunter Type filter
+   with no separate filtering logic. Shown live in `App.tsx` just above the action bar ("Highest
+   active-skill cap still reachable from here: N"), reactive to every selection change (confirmed live
+   against the real catalog: selecting "Dissolver Up" as a requirement dropped the reachable ceiling
+   from 19 to 18, one real position consumed). `queryFormState` was memoized as part of this (it used to
+   be rebuilt fresh every render, fine when only read on a button click, but not once a live preview
+   reads it reactively too). **Two further corrections** (2026-10-19, same day): (1) cuffs were modeled as
+   two independent `MAX_EQUIPPED_CUFFS` positions, each able to reach Skill Slots Up on its own --
+   confirmed wrong by the project owner: "there are only ever 7 Zenith skill points that can be gotten in
+   a build. 1 for each armor piece, 1 from the cuff, and 1 from the weapon," i.e. cuffs collectively share
+   just 1 Zenith-capable position, not 2 (this surfaced as excluding the weapon's Zenith skill still
+   showing a reachable cap of 19 instead of 18 -- fixed, confirmed live: 19 with weapon Skill-Slots-Up
+   allowed, 18 with it excluded). A pin only "spends" that shared slot when it actually grants some Zenith
+   skill (`cuffGrantsAnyZenithSkill`); a non-Zenith pin still occupies a physical cuff slot without
+   touching the budget, so the one remaining unpinned slot can still become the Zenith-capable cuff. (2)
+   each selected Zenith requirement was treated as claiming exactly 1 position regardless of its tier --
+   confirmed wrong: "A Zenith piece can only ever give 1 point of a Zenith skill, meaning that if I have
+   Stylish Assault up +2 as the goal of the search, it should deduct 2 points rather than 1." Fixed by
+   reserving `minPoints` dedicated positions per requirement instead of 1 (confirmed live: adding "Stylish
+   Assault Up" at +1 dropped the reachable cap by 1, at +2 by 2).
+
+5. ~~**Origin pieces shouldn't count toward the G-Rank-or-later piece-count skill-cap bonus** -- while
+   investigating #4, found this is likely a real, already-shipped bug: ETL's
+   `is_grank_or_later_equipment` puts `_CLASS_SISYU` (Origin, category `grank_origin`) in
+   `_GRANK_OR_LATER_CLASSES`, so an Origin piece sets `grankOrLater: true` same as any other G-Rank+
+   piece, and `active-skill-cap.ts`'s `countGrankOrLaterPieces` (which feeds the real
+   `computeActiveSkillCap` used for actual solved results, not just a future preview) counts it
+   toward the 3/5-piece bonus today. Per this feedback, it shouldn't. Flagging for confirmation before
+   fixing, since it would change already-displayed active-skill-cap numbers for any build using an
+   Origin piece -- `grankOrLater` itself should stay `true` for Origin everywhere else (category
+   filtering, etc.), this is scoped to the piece-count bonus specifically.~~ **DONE** (2026-10-19):
+   confirmed by the project owner, fixed in `active-skill-cap.ts`'s `countGrankOrLaterPieces` -- a
+   candidate in category `grank_origin` no longer counts toward the 3/5-piece G-Rank bonus, while
+   `grankOrLater` itself is untouched (still `true` for Origin everywhere else). This changes the
+   displayed active-skill cap for any already-existing build using 1+ Origin pieces, as flagged above.
+
+6. ~~**New top-level Gear levels checkboxes for pre-G-Rank / G-Rank / Zenith** -- a coarser "toggle a
+   whole tier at once" layer above the existing fine-grained category tree (`GEAR_CATEGORY_GROUPS`),
+   presumably checking/unchecking every leaf that tier spans. Needs deciding exactly which existing
+   leaves fall under each of the 3 new buckets (e.g. does "G-Rank" include Exotic/Origin/Hiden-G? does
+   "Zenith" include Road Zenith and Event Zenith?) before building.~~ **DONE** (2026-10-19): confirmed
+   "G-Rank" = the whole "G Rank Armor" group (incl. Exotic, Origin, G-Hiden) and "Zenith" = the base
+   Zenith Armor group plus Road Zenith and Event Zenith (and their ZF/ZY/ZX variants); "Pre-G-Rank" is
+   derived as everything else, so it can't drift from `GEAR_CATEGORY_GROUPS` as categories are added
+   (`gear-categories.ts`'s `GEAR_LEVEL_GRANK_CATEGORIES`/`GEAR_LEVEL_ZENITH_CATEGORIES`/
+   `GEAR_LEVEL_PRE_GRANK_CATEGORIES`). Three quick-toggle checkboxes now sit above the existing
+   category tree in `App.tsx`'s "Gear levels" disclosure.
+
+7. ~~**Split Road Zenith and Event Zenith into plain/ZF**, matching the base Zenith category's existing
+   `zenith_plain`/`zenith_zf` split. Confirmed as a real gap while investigating: ETL's
+   `classify_equipment_category` checks for a "ZF" name token under the base Zenith branch
+   (`CLASS=Zenith`, `CRE` blank) but never under the `CRE="1t"` (Road) or `CRE="1e"` (Event) Zenith
+   branches, so a ZF piece from either route silently lands in the plain `road_zenith`/`event_zenith`
+   bucket today. A clear, scoped ETL fix (new `road_zenith_zf`/`event_zenith_zf` categories mirroring
+   the existing ZY/ZX check pattern) -- a quick win once prioritized.~~ **DONE** (2026-10-19): new
+   `road_zenith_zf`/`event_zenith_zf` categories added to `gear_category.py`, confirmed against real
+   cached data (60 Road + 52 Event rows reclassified), frontend taxonomy and bundle regenerated.
+
+8. ~~**Search skills (and gear) by skill name and by tier/threshold label**, not just the skill's own
+   name -- e.g. typing a tier name like "+2" or a threshold-specific label should also surface the
+   skill/piece that has it. Needs checking what's actually in `SkillTierRecord.label` across the real
+   catalog (today's `skills.json`/`zenith-skills.json`) to know what this search would actually match
+   against.~~ **DONE** (2026-10-19): confirmed the real catalog has plenty of tier labels distinct from
+   their skill's own name (e.g. Cooking's "BBQ Master"/"BBQ Expert"). Extended every existing
+   skill-name search to also match tier labels: `SkillPicker.tsx`'s "Add a skill" control,
+   `ArmorPicker.tsx`'s per-slot piece search (via a new `skillSearchTextById` lookup, name + every tier
+   label pre-joined and lowercased), and `EquipmentExclusionPicker.tsx`'s armor/decoration/cuff/Skills
+   exclusion lists (the Skills list matches its own tier labels too, not just a granted skill's, since
+   its items already *are* skills). `CuffPicker.tsx`'s own "Exact cuff" search never had skill-name
+   matching at all (out of scope here -- a separate gap, not extended).
+
+9. ~~**A consistent "view full table" link/button for every category, not just overflowing ones** --
+   today's "show more" link (`CategoryFilter.tsx`, added 2026-10-19) only appears once a category's
+   contents exceed `MAX_CATEGORY_CONTENTS_SHOWN` (100); this asks for the same link (or an equally
+   consistent affordance) on every category leaf regardless of size, so "see this as a sortable table"
+   isn't conditional on how big the category happens to be. A quick win -- `CategoryTablePage.tsx`
+   already handles any category key, this just needs the link always rendered.~~ **DONE** (2026-10-19):
+   a "Table" link now renders next to every leaf's "View" toggle whenever it has items, regardless of
+   category size.

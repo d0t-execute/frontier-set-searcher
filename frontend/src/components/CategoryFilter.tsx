@@ -33,10 +33,12 @@ export interface CategoryFilterProps {
    * forcing every call site to pass an always-present but sometimes-pointless
    * map). */
   readonly itemsByCategory?: ReadonlyMap<string, readonly { readonly name: string }[]>
-  /** Builds the hash link a leaf's "View all in a table" link points at, for
-   * a category whose contents outgrow `MAX_CATEGORY_CONTENTS_SHOWN` --
-   * CategoryTablePage.tsx's own route. Takes just the category key (not the
-   * item kind), so this component doesn't need to know about
+  /** Builds the hash link a leaf's "Table" link points at --
+   * CategoryTablePage.tsx's own route. Shown next to every leaf's "View"
+   * toggle regardless of category size (2026-10-19, per the project owner:
+   * a consistent link/button on every leaf, not just one conditionally
+   * embedded in a "show more" overflow note). Takes just the category key
+   * (not the item kind), so this component doesn't need to know about
    * `category-route.ts`'s `CategoryTableKind` strings itself -- a caller
    * with nothing meaningful to link to (e.g. the weapon Zenith skill tree,
    * which has no `itemsByCategory` at all) simply omits it. */
@@ -176,6 +178,11 @@ function CategoryLeaf({ category, checked, onChange, items, tableHref }: Categor
             {expanded ? 'Hide' : `View (${items.length})`}
           </button>
         )}
+        {items && items.length > 0 && tableHref && (
+          <a href={tableHref} className="btn btn-sm btn-link p-0 category-leaf-table-link">
+            Table
+          </a>
+        )}
       </div>
       {expanded && items && (
         <div className="category-leaf-contents small text-muted">
@@ -183,17 +190,9 @@ function CategoryLeaf({ category, checked, onChange, items, tableHref }: Categor
             .slice(0, MAX_CATEGORY_CONTENTS_SHOWN)
             .map((item) => item.name)
             .join(', ')}
-          {items.length > MAX_CATEGORY_CONTENTS_SHOWN &&
-            (tableHref ? (
-              <>
-                {', and '}
-                <a href={tableHref}>
-                  {items.length - MAX_CATEGORY_CONTENTS_SHOWN} more in a sortable table
-                </a>
-              </>
-            ) : (
-              <> , and {items.length - MAX_CATEGORY_CONTENTS_SHOWN} more</>
-            ))}
+          {items.length > MAX_CATEGORY_CONTENTS_SHOWN && (
+            <> , and {items.length - MAX_CATEGORY_CONTENTS_SHOWN} more</>
+          )}
         </div>
       )}
     </div>

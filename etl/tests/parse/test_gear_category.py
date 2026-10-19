@@ -85,6 +85,7 @@ from etl.parse.gear_category import (
     CATEGORY_EVENT_MYSTERY,
     CATEGORY_EVENT_PLAIN,
     CATEGORY_EVENT_ZENITH,
+    CATEGORY_EVENT_ZENITH_ZF,
     CATEGORY_EVENT_ZENITH_ZX,
     CATEGORY_EVENT_ZENITH_ZY,
     CATEGORY_GRANK_BURST_SPECIES,
@@ -141,6 +142,7 @@ from etl.parse.gear_category import (
     CATEGORY_ROAD_HS,
     CATEGORY_ROAD_PLAIN,
     CATEGORY_ROAD_ZENITH,
+    CATEGORY_ROAD_ZENITH_ZF,
     CATEGORY_ROAD_ZENITH_ZX,
     CATEGORY_ROAD_ZENITH_ZY,
     CATEGORY_STANDARD_PLAIN,
@@ -464,6 +466,13 @@ def test_road_zenith() -> None:
     )
 
 
+def test_road_zenith_zf() -> None:
+    assert (
+        classify_equipment_category(_row("Nerigeki Headguard ZF", cre="1t", clazz="P"))
+        == CATEGORY_ROAD_ZENITH_ZF
+    )
+
+
 def test_road_zenith_zy() -> None:
     assert (
         classify_equipment_category(_row("Nerihi ZY", cre="1t", clazz="P"))
@@ -575,6 +584,13 @@ def test_event_zenith() -> None:
     assert (
         classify_equipment_category(_row("Korinyi Z Band", cre="1e", clazz="P"))
         == CATEGORY_EVENT_ZENITH
+    )
+
+
+def test_event_zenith_zf() -> None:
+    assert (
+        classify_equipment_category(_row("Guridi ZF Helm", cre="1e", clazz="P"))
+        == CATEGORY_EVENT_ZENITH_ZF
     )
 
 

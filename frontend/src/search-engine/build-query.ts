@@ -105,6 +105,18 @@ export interface QueryFormState {
    * points in an excluded skill, just never enough to cross into one of its
    * own tiers. */
   readonly excludedSkillIds: ReadonlySet<string>
+  /** Armor piece ids the solver should favor using whenever it can (docs/
+   * feedback.md Round 2 #2, confirmed 2026-10-19: using more of these always
+   * outranks using fewer, dominating every other ranking factor) -- handed
+   * straight through to `SearchOptions.preferredCandidateIds` (see its own
+   * docstring) with no filtering here: a preferred id that's been excluded or
+   * doesn't fit the current category filter simply never appears in `slots`
+   * to begin with, so it has no effect on its own, the same way an excluded
+   * skill id with nothing granting it has no effect. Unlike the exclusion
+   * sets above, a pin never needs a carve-out against this one -- preference
+   * is purely a ranking tie-break, never a pool filter or a hard constraint,
+   * so it can't conflict with what a pin forces in the first place. */
+  readonly preferredArmorIds: ReadonlySet<string>
 }
 
 // The weapon slot is virtual (see etl/src/etl/export.py's module docstring --
@@ -434,6 +446,10 @@ export interface BuiltQuery {
    * ids -- handed straight through to `SearchOptions.pinnedCuffSkillIds` (see
    * `PinnedCuffSlot`'s own docstring). */
   readonly pinnedCuffSkillIds: number[]
+  /** `state.preferredArmorIds`, handed straight through to
+   * `SearchOptions.preferredCandidateIds` -- see `QueryFormState.preferredArmorIds`'s
+   * own docstring. */
+  readonly preferredCandidateIds: Set<string>
 }
 
 /** The inverse direction of `buildWeaponSlot`: given which weapon candidate a
@@ -510,13 +526,17 @@ export function buildSearchQuery(bundle: DataBundle, state: QueryFormState): Bui
     cuffsAfterCategoryFilter(bundle.cuffs, state.excludedCuffCategories),
     state.excludedCuffIds,
   )
-  const { pinnedCuffs, pinnedCuffSkillIds } = resolvePinnedCuffs(bundle.cuffs, state.pinnedCuffSlots)
+  const { pinnedCuffs, pinnedCuffSkillIds } = resolvePinnedCuffs(
+    bundle.cuffs,
+    state.pinnedCuffSlots,
+  )
   const pinnedSlotDecorations = resolvePinnedSlotDecorations(
     pinnableDecorations,
     state.pinnedSlotDecorationIds,
     state.pinnedArmor,
   )
   const excludedActiveSkillIds = [...state.excludedSkillIds].map(Number)
+  const preferredCandidateIds = new Set(state.preferredArmorIds)
   return {
     slots,
     decorations,
@@ -525,5 +545,6 @@ export function buildSearchQuery(bundle: DataBundle, state: QueryFormState): Bui
     pinnedSlotDecorations,
     excludedActiveSkillIds,
     pinnedCuffSkillIds,
+    preferredCandidateIds,
   }
 }

@@ -71,7 +71,10 @@ function categoryOrder(skills: readonly SkillOption[]): readonly string[] {
     const category = skill.category ?? UNCATEGORIZED
     if (!seen.includes(category)) seen.push(category)
   }
-  return [...seen.filter((c) => c !== UNCATEGORIZED), ...(seen.includes(UNCATEGORIZED) ? [UNCATEGORIZED] : [])]
+  return [
+    ...seen.filter((c) => c !== UNCATEGORIZED),
+    ...(seen.includes(UNCATEGORIZED) ? [UNCATEGORIZED] : []),
+  ]
 }
 
 /** Buckets `skills` into the given, already-fixed category `order`, dropping
@@ -121,10 +124,22 @@ export function SkillPicker({
   const pickedIds = new Set(requirements.map((r) => r.skillId))
   const available = skills.filter((s) => !pickedIds.has(s.id))
   const query = search.trim().toLowerCase()
-  const matching = query ? available.filter((s) => s.name.toLowerCase().includes(query)) : available
+  // Matches a skill's own name OR any of its tier labels (docs/feedback.md
+  // Round 2 #8, 2026-10-19 per the project owner) -- e.g. typing "BBQ
+  // Master" surfaces "Cooking", since that's one of its tier names, not its
+  // own. Confirmed against the real catalog (skills.json) that tier labels
+  // are frequently distinct, more specific names than the skill itself.
+  const matching = query
+    ? available.filter(
+        (s) =>
+          s.name.toLowerCase().includes(query) ||
+          s.tiers.some((t) => t.label.toLowerCase().includes(query)),
+      )
+    : available
   const groupedMatches = groupByCategory(matching, categoryOrder(skills))
   const flatMatches = groupedMatches.flatMap(([, categorySkills]) => categorySkills)
-  const clampedActiveIndex = flatMatches.length === 0 ? -1 : Math.min(activeIndex, flatMatches.length - 1)
+  const clampedActiveIndex =
+    flatMatches.length === 0 ? -1 : Math.min(activeIndex, flatMatches.length - 1)
 
   function addSkill(skillId: number): void {
     const tiers = skillOf(skillId)?.tiers ?? []
@@ -229,7 +244,9 @@ export function SkillPicker({
                   <button
                     key={skill.id}
                     type="button"
-                    className={active ? 'skill-add-option skill-add-option-active' : 'skill-add-option'}
+                    className={
+                      active ? 'skill-add-option skill-add-option-active' : 'skill-add-option'
+                    }
                     onMouseEnter={() => setActiveIndex(flatIndex)}
                     onClick={() => addSkill(skill.id)}
                   >

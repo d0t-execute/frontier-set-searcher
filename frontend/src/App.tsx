@@ -5,11 +5,13 @@ import type { CategoryFilterGroup } from './components/CategoryFilter'
 import { CuffPicker } from './components/CuffPicker'
 import { Disclosure } from './components/Disclosure'
 import { EquipmentExclusionPicker } from './components/EquipmentExclusionPicker'
+import { PreferredArmorPicker } from './components/PreferredArmorPicker'
 import { ResultsList } from './components/ResultsList'
 import { SkillPicker } from './components/SkillPicker'
 import type { NamedBuildResult } from './components/types'
 import { useDataBundle } from './data/useDataBundle'
 import { useSearchWorker } from './search/useSearchWorker'
+import { previewActiveSkillCap } from './search-engine/active-skill-cap'
 import {
   buildSearchQuery,
   decorationsAfterCategoryFilter,
@@ -22,10 +24,16 @@ import { categoryRouteHash } from './search-engine/category-route'
 import { CUFF_CATEGORY_GROUPS } from './search-engine/cuff-categories'
 import { DECORATION_CATEGORY_GROUPS } from './search-engine/decoration-categories'
 import { findUnreachableRequirements } from './search-engine/feasibility'
-import { GEAR_CATEGORY_GROUPS } from './search-engine/gear-categories'
+import {
+  GEAR_CATEGORY_GROUPS,
+  GEAR_LEVEL_GRANK_CATEGORIES,
+  GEAR_LEVEL_PRE_GRANK_CATEGORIES,
+  GEAR_LEVEL_ZENITH_CATEGORIES,
+} from './search-engine/gear-categories'
 import type { PinnedSlot } from './search-engine/pinned-armor'
 import { decodeQueryCode, encodeQueryCode } from './search-engine/query-code'
 import type { QueryCodeCatalog } from './search-engine/query-code'
+import { computeResultStats, resistanceScore } from './search-engine/result-stats'
 import type { SearchFormState } from './search-engine/search-form-state'
 import {
   clearSearchFormState,
@@ -133,8 +141,25 @@ const DEFAULT_MAX_RESULTS = 5
 // a free-typed number: each extra result is a full extra solver round-trip
 // (see above), so the options stay in the same cheap-to-expensive range the
 // old hardcoded default lived in rather than letting an arbitrary number
-// stall the page.
-const MAX_RESULTS_OPTIONS = [1, 3, 5, 10, 20, 50] as const
+// stall the page. Extended past 50 (docs/feedback.md Round 2 #1, 2026-10-19
+// per the project owner) -- no engine change needed, just more iterations of
+// the same loop.
+const MAX_RESULTS_OPTIONS = [1, 3, 5, 10, 20, 50, 100, 150, 250] as const
+
+/** Result-sort options (docs/feedback.md Round 2 #3, 2026-10-19) -- a pure
+ * client-side re-sort of the already-solved `results` array, since every
+ * value sorted on here (`result-stats.ts`'s `computeResultStats`) is cheap
+ * to derive and already computed per-card for display. 'default' keeps the
+ * solver's own ranking (best match first), the same order shown before this
+ * control existed. */
+type ResultSortOption = 'default' | 'defense' | 'resistances' | 'skillsOverCap'
+
+const RESULT_SORT_LABELS: Record<ResultSortOption, string> = {
+  default: 'Best match',
+  defense: 'Total defense (highest first)',
+  resistances: 'Resistances (best first)',
+  skillsOverCap: 'Skills over cap (fewest first)',
+}
 
 // A piece/cuff that's unobtainable in the real game (removed, unimplemented,
 // or training-quest-only) is never worth surfacing by default -- these start
@@ -178,6 +203,18 @@ const GEAR_LEVEL_LEAF_COUNT = countLeaves(GEAR_CATEGORY_GROUPS)
 const CUFF_LEAF_COUNT = countLeaves(CUFF_CATEGORY_GROUPS)
 const DECORATION_LEAF_COUNT = countLeaves(DECORATION_CATEGORY_GROUPS)
 
+/** The "Gear levels" disclosure's own top-level quick toggles -- one
+ * checkbox per gear-strength tier, each including/excluding every leaf
+ * category under it in one click (docs/feedback.md Round 2 #6, 2026-10-19).
+ * Separate from `GEAR_CATEGORY_GROUPS`'s own group headers, since a tier
+ * here spans several of those groups (e.g. "Zenith" covers the base Zenith
+ * group plus the Zenith leaves inside Hunter's Road and Event Armor). */
+const GEAR_LEVEL_TIERS: readonly { readonly label: string; readonly keys: readonly string[] }[] = [
+  { label: 'Pre-G-Rank', keys: GEAR_LEVEL_PRE_GRANK_CATEGORIES },
+  { label: 'G-Rank', keys: GEAR_LEVEL_GRANK_CATEGORIES },
+  { label: 'Zenith', keys: GEAR_LEVEL_ZENITH_CATEGORIES },
+]
+
 function pluralize(count: number, noun: string, plural: string = `${noun}s`): string {
   return `${count} ${count === 1 ? noun : plural}`
 }
@@ -220,6 +257,7 @@ export interface AppInitialState {
   readonly excludedDecorationIds?: ReadonlySet<string>
   readonly excludedCuffIds?: ReadonlySet<string>
   readonly excludedSkillIds?: ReadonlySet<string>
+  readonly preferredArmorIds?: ReadonlySet<string>
   /** Elements required to stay at or above zero, summed across every chosen
    * candidate (docs/feedback.md Round 1 #4) -- optional, same "not every
    * seed source has an opinion on every field" convention as the other
@@ -328,6 +366,12 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
   const [excludedSkillIds, setExcludedSkillIds] = useState<Set<string>>(
     () => new Set(initialState?.excludedSkillIds ?? persisted?.excludedSkillIds ?? []),
   )
+  // Armor piece ids the solver should favor using when it can (docs/
+  // feedback.md Round 2 #2, "prefer using any of these pieces if possible")
+  // -- see build-query.ts's `QueryFormState.preferredArmorIds` own docstring.
+  const [preferredArmorIds, setPreferredArmorIds] = useState<Set<string>>(
+    () => new Set(initialState?.preferredArmorIds ?? persisted?.preferredArmorIds ?? []),
+  )
   // Elements required to stay at or above zero (docs/feedback.md Round 1 #4)
   // -- empty by default, same "don't silently assume a new feature's most
   // restrictive state" precedent as `DEFAULT_EXCLUDED_CUFF_CATEGORIES`, just
@@ -347,12 +391,44 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
     () => initialState?.maxResults ?? persisted?.maxResults ?? DEFAULT_MAX_RESULTS,
   )
   const [results, setResults] = useState<NamedBuildResult[]>([])
+  const [sortBy, setSortBy] = useState<ResultSortOption>('default')
   const [status, setStatus] = useState<SearchStatus>('idle')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [activeRequestId, setActiveRequestId] = useState<string | null>(null)
   const [reachedCap, setReachedCap] = useState(false)
 
   const bundle = bundleQuery.data
+
+  // Pure client-side re-sort of the already-solved `results` (docs/
+  // feedback.md Round 2 #3) -- 'default' keeps the solver's own ranking
+  // untouched (including while `bundle` hasn't loaded yet, though `results`
+  // is always empty at that point anyway). Every card already computes these
+  // same stats for display (`ResultsList.tsx`, via this same
+  // `result-stats.ts` module), so sorting by them here can't disagree with
+  // what's shown.
+  const sortedResults = useMemo<NamedBuildResult[]>(() => {
+    if (sortBy === 'default' || !bundle) return results
+    const withStats = results.map((result) => ({
+      result,
+      stats: computeResultStats(
+        result.picks,
+        result.skillTotals,
+        bundle.skills,
+        bundle.zenithSkills,
+        result.cuffs,
+      ),
+    }))
+    if (sortBy === 'defense') {
+      withStats.sort((a, b) => b.stats.totalDefense - a.stats.totalDefense)
+    } else if (sortBy === 'resistances') {
+      withStats.sort(
+        (a, b) => resistanceScore(b.stats.resistances) - resistanceScore(a.stats.resistances),
+      )
+    } else {
+      withStats.sort((a, b) => a.stats.disabledCount - b.stats.disabledCount)
+    }
+    return withStats.map((w) => w.result)
+  }, [results, sortBy, bundle])
 
   // Decorations excluded by the filter below are excluded from manual
   // pinning the same way they're excluded from the solver's own pool (see
@@ -412,6 +488,22 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
   // its real Zenith skill name).
   const armorPickerSkills = useMemo(
     () => [...(bundle?.skills ?? []), ...(bundle?.zenithSkills ?? [])],
+    [bundle],
+  )
+
+  // Every skill id's own name plus its tier labels, pre-joined and lowercased
+  // -- lets `EquipmentExclusionPicker.tsx`'s armor/decoration/cuff exclusion
+  // lists match a tier/threshold name too, not just a skill's own name (docs/
+  // feedback.md Round 2 #8, 2026-10-19 per the project owner), the same
+  // extension `ArmorPicker.tsx` makes to its own piece search.
+  const skillSearchTextById = useMemo(
+    () =>
+      new Map(
+        [...(bundle?.skills ?? []), ...(bundle?.zenithSkills ?? [])].map((s) => [
+          s.id,
+          [s.name, ...s.tiers.map((t) => t.label)].join(' ').toLowerCase(),
+        ]),
+      ),
     [bundle],
   )
 
@@ -546,6 +638,10 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
       excludedSkillIds.size
     return total === 0 ? 'None excluded' : `${pluralize(total, 'item')} excluded`
   })()
+  const preferredPiecesSummary =
+    preferredArmorIds.size === 0
+      ? 'None preferred'
+      : `${pluralize(preferredArmorIds.size, 'piece')} preferred`
   const resistancesSummary =
     nonNegativeResistances.size === 0
       ? 'None required'
@@ -571,21 +667,75 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
     return `${allowed} of ${total} Zenith skills allowed, ${weaponSlotCount} of 3 slots used for decorations`
   })()
 
-  const queryFormState: QueryFormState = {
-    excludedCategories,
-    excludedCuffCategories,
-    excludedDecorationCategories,
-    excludedWeaponZenithSkillIds: effectiveExcludedWeaponZenithSkillIds,
-    weaponSlotCount,
-    hunterTypeFilter,
-    pinnedArmor,
-    pinnedCuffSlots,
-    pinnedSlotDecorationIds,
-    excludedArmorIds,
-    excludedDecorationIds,
-    excludedCuffIds,
-    excludedSkillIds,
-  }
+  // Memoized (unlike before docs/feedback.md Round 2 #4) since the new live
+  // skill-cap preview below now calls `buildSearchQuery` reactively on every
+  // render affected by a selection change, not just once per button click
+  // the way `handleSearch` alone used to -- a fresh object here would defeat
+  // `builtQuery`'s own memoization and re-filter the full armor catalog on
+  // every unrelated render.
+  const queryFormState: QueryFormState = useMemo(
+    () => ({
+      excludedCategories,
+      excludedCuffCategories,
+      excludedDecorationCategories,
+      excludedWeaponZenithSkillIds: effectiveExcludedWeaponZenithSkillIds,
+      weaponSlotCount,
+      hunterTypeFilter,
+      pinnedArmor,
+      pinnedCuffSlots,
+      pinnedSlotDecorationIds,
+      excludedArmorIds,
+      excludedDecorationIds,
+      excludedCuffIds,
+      excludedSkillIds,
+      preferredArmorIds,
+    }),
+    [
+      excludedCategories,
+      excludedCuffCategories,
+      excludedDecorationCategories,
+      effectiveExcludedWeaponZenithSkillIds,
+      weaponSlotCount,
+      hunterTypeFilter,
+      pinnedArmor,
+      pinnedCuffSlots,
+      pinnedSlotDecorationIds,
+      excludedArmorIds,
+      excludedDecorationIds,
+      excludedCuffIds,
+      excludedSkillIds,
+      preferredArmorIds,
+    ],
+  )
+
+  // The solver's exact resolved candidate pool for the *current* selection,
+  // before running an actual search -- reused by the live active-skill-cap
+  // preview below (docs/feedback.md Round 2 #4) so it automatically honors
+  // every existing category/id exclusion, pin, and Hunter Type filter the
+  // same way a real search does, with no separate filtering logic of its own.
+  const builtQuery = useMemo(
+    () => (bundle ? buildSearchQuery(bundle, queryFormState) : null),
+    [bundle, queryFormState],
+  )
+
+  // Shown before running a search, so the player can see the ceiling their
+  // current Zenith-skill selections and pins still leave for the active-skill
+  // cap to reach (docs/feedback.md Round 2 #4) -- see active-skill-cap.ts's
+  // `previewActiveSkillCap` for the full algorithm.
+  const skillCapPreview = useMemo(
+    () =>
+      builtQuery && bundle
+        ? previewActiveSkillCap(
+            builtQuery.slots,
+            builtQuery.cuffs,
+            builtQuery.pinnedCuffs,
+            builtQuery.pinnedCuffSkillIds,
+            zenithRequirements,
+            bundle.zenithSkills,
+          )
+        : null,
+    [builtQuery, bundle, zenithRequirements],
+  )
 
   // Persists every search input on each change (docs/skill-system-roadmap.md
   // TODO #18), so refreshing the page restores the last search instead of
@@ -613,6 +763,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
       excludedDecorationIds: [...excludedDecorationIds],
       excludedCuffIds: [...excludedCuffIds],
       excludedSkillIds: [...excludedSkillIds],
+      preferredArmorIds: [...preferredArmorIds],
       nonNegativeResistances: [...nonNegativeResistances],
       preferExactMatches,
       maxResults,
@@ -634,6 +785,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
     excludedDecorationIds,
     excludedCuffIds,
     excludedSkillIds,
+    preferredArmorIds,
     preferExactMatches,
     maxResults,
   ])
@@ -654,6 +806,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
       pinnedSlotDecorations,
       excludedActiveSkillIds,
       pinnedCuffSkillIds,
+      preferredCandidateIds,
     } = buildSearchQuery(bundle, queryFormState)
 
     // Caught before ever handing this to the solver (docs/feedback.md Round 1
@@ -721,6 +874,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
         resistanceFloors: [...nonNegativeResistances].map((element) => ({ element, minTotal: 0 })),
         excludedActiveSkillIds,
         pinnedCuffSkillIds,
+        preferredCandidateIds,
       },
       cuffs,
     )
@@ -757,6 +911,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
         excludedDecorationIds: [...excludedDecorationIds],
         excludedCuffIds: [...excludedCuffIds],
         excludedSkillIds: [...excludedSkillIds],
+        preferredArmorIds: [...preferredArmorIds],
         nonNegativeResistances: [...nonNegativeResistances],
         preferExactMatches,
         maxResults,
@@ -785,6 +940,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
     setExcludedDecorationIds(new Set(state.excludedDecorationIds))
     setExcludedCuffIds(new Set(state.excludedCuffIds))
     setExcludedSkillIds(new Set(state.excludedSkillIds))
+    setPreferredArmorIds(new Set(state.preferredArmorIds))
     setNonNegativeResistances(new Set(state.nonNegativeResistances))
     setPreferExactMatches(state.preferExactMatches)
     setMaxResults(state.maxResults)
@@ -826,7 +982,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
   // reconstruct what to show. Returns a Promise because encoding compresses
   // the payload (TODO #14) -- see shared-state.ts's own docstring.
   function buildShareUrl(resultIndex: number): Promise<string> {
-    const result = results[resultIndex]
+    const result = sortedResults[resultIndex]
     const state: SharedSearchState = {
       requirements,
       zenithRequirements,
@@ -842,6 +998,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
       excludedDecorationIds: [...excludedDecorationIds],
       excludedCuffIds: [...excludedCuffIds],
       excludedSkillIds: [...excludedSkillIds],
+      preferredArmorIds: [...preferredArmorIds],
       nonNegativeResistances: [...nonNegativeResistances],
       preferExactMatches,
       result: {
@@ -926,7 +1083,57 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                 />
               </Disclosure>
 
+              <Disclosure title="Preferred pieces" summary={preferredPiecesSummary}>
+                <p className="form-text">
+                  The solver will always favor using more of these pieces over fewer, outranking any
+                  other difference in a build -- only dropping one if it would otherwise make a
+                  skill requirement unreachable. Optimize around gear you already own, without
+                  forcing an exact slot assignment the way pinning does. Type at least 2 characters
+                  to search.
+                  <br />
+                  You can also search by skill name.
+                </p>
+                <PreferredArmorPicker
+                  armorCandidates={allArmorCandidates}
+                  preferredIds={preferredArmorIds}
+                  onChange={setPreferredArmorIds}
+                  skillNameById={bundle.skillNames}
+                  skillSearchTextById={skillSearchTextById}
+                />
+              </Disclosure>
+
               <Disclosure title="Gear levels" summary={gearLevelsSummary}>
+                <div className="gear-level-tiers d-flex gap-3 mb-2">
+                  {GEAR_LEVEL_TIERS.map((tier) => {
+                    const excludedCount = tier.keys.filter((key) =>
+                      excludedCategories.has(key),
+                    ).length
+                    return (
+                      <GroupCheckbox
+                        key={tier.label}
+                        label={tier.label}
+                        checked={excludedCount === 0}
+                        indeterminate={excludedCount > 0 && excludedCount < tier.keys.length}
+                        // Distinct from the "Zenith" (etc.) *leaf* checkbox's
+                        // own plain accessible name further down the tree --
+                        // without this, two checkboxes would share the name
+                        // "Zenith" and be indistinguishable to a screen
+                        // reader (and to tests).
+                        ariaLabel={`${tier.label} gear level`}
+                        onChange={(checked) => {
+                          setExcludedCategories((prev) => {
+                            const next = new Set(prev)
+                            for (const key of tier.keys) {
+                              if (checked) next.delete(key)
+                              else next.add(key)
+                            }
+                            return next
+                          })
+                        }}
+                      />
+                    )
+                  })}
+                </div>
                 <CategoryFilter
                   groups={GEAR_CATEGORY_GROUPS}
                   excludedCategories={excludedCategories}
@@ -994,6 +1201,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                   excludedSkillIds={excludedSkillIds}
                   onChangeExcludedSkillIds={setExcludedSkillIds}
                   skillNameById={bundle.skillNames}
+                  skillSearchTextById={skillSearchTextById}
                 />
               </Disclosure>
             </div>
@@ -1132,6 +1340,12 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
             </div>
           </div>
 
+          {skillCapPreview !== null && (
+            <p className="form-text mt-3">
+              Highest active-skill cap still reachable from here: <strong>{skillCapPreview}</strong>
+            </p>
+          )}
+
           <div className="app-action-bar">
             <div className="app-toggle">
               <div className="app-toggle-row form-check mb-0">
@@ -1165,6 +1379,24 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                 {MAX_RESULTS_OPTIONS.map((count) => (
                   <option key={count} value={count}>
                     {count}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="form-label mb-0" htmlFor="results-sort-by">
+                Sort by
+              </label>
+              <select
+                id="results-sort-by"
+                className="form-select w-auto"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as ResultSortOption)}
+              >
+                {(Object.keys(RESULT_SORT_LABELS) as ResultSortOption[]).map((option) => (
+                  <option key={option} value={option}>
+                    {RESULT_SORT_LABELS[option]}
                   </option>
                 ))}
               </select>
@@ -1207,7 +1439,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
 
           <div className="app-results">
             <ResultsList
-              results={results}
+              results={sortedResults}
               skillNames={bundle.skillNames}
               skills={bundle.skills}
               zenithSkills={bundle.zenithSkills}

@@ -18,6 +18,11 @@ const skillNameById = new Map([
   [2, 'Sharpening'],
 ])
 
+const skillSearchTextById = new Map([
+  [1, 'attack expert'],
+  [2, 'sharpening artisan'],
+])
+
 function renderPicker(onChangeExcludedArmorIds = vi.fn(), onChangeExcludedSkillIds = vi.fn()) {
   return render(
     <EquipmentExclusionPicker
@@ -34,6 +39,7 @@ function renderPicker(onChangeExcludedArmorIds = vi.fn(), onChangeExcludedSkillI
       excludedSkillIds={new Set()}
       onChangeExcludedSkillIds={onChangeExcludedSkillIds}
       skillNameById={skillNameById}
+      skillSearchTextById={skillSearchTextById}
     />,
   )
 }
@@ -46,7 +52,10 @@ describe('EquipmentExclusionPicker', () => {
       target: { value: 'Leather' },
     })
 
-    expect(screen.getByRole('option', { name: 'Leather Helm' })).toHaveAttribute('title', 'Attack: 5')
+    expect(screen.getByRole('option', { name: 'Leather Helm' })).toHaveAttribute(
+      'title',
+      'Attack: 5',
+    )
   })
 
   it('shows the skills an already-excluded item grants as a hover tooltip on its badge', () => {
@@ -65,6 +74,7 @@ describe('EquipmentExclusionPicker', () => {
         excludedSkillIds={new Set()}
         onChangeExcludedSkillIds={vi.fn()}
         skillNameById={skillNameById}
+        skillSearchTextById={skillSearchTextById}
       />,
     )
 
@@ -79,6 +89,26 @@ describe('EquipmentExclusionPicker', () => {
     fireEvent.click(screen.getByRole('option', { name: 'Leather Helm' }))
 
     expect(search).toHaveValue('Leather')
+  })
+
+  it("matches an armor piece by one of its granted skill's tier labels (docs/feedback.md Round 2 #8)", () => {
+    renderPicker()
+
+    fireEvent.change(screen.getByLabelText('Search armor pieces to exclude'), {
+      target: { value: 'attack expert' },
+    })
+
+    expect(screen.getByRole('option', { name: 'Leather Helm' })).toBeInTheDocument()
+  })
+
+  it('matches a skill in the Skills list by its own tier label, not just its name', () => {
+    renderPicker()
+
+    fireEvent.change(screen.getByLabelText('Search skills to exclude'), {
+      target: { value: 'sharpening artisan' },
+    })
+
+    expect(screen.getByRole('option', { name: 'Sharpening' })).toBeInTheDocument()
   })
 
   describe('hover skill summary (armor/decorations/cuffs)', () => {
@@ -167,6 +197,7 @@ describe('EquipmentExclusionPicker', () => {
           excludedSkillIds={new Set()}
           onChangeExcludedSkillIds={vi.fn()}
           skillNameById={skillNameById}
+          skillSearchTextById={skillSearchTextById}
         />,
       )
 
@@ -261,6 +292,7 @@ describe('EquipmentExclusionPicker', () => {
           excludedSkillIds={new Set(['2'])}
           onChangeExcludedSkillIds={vi.fn()}
           skillNameById={skillNameById}
+          skillSearchTextById={skillSearchTextById}
         />,
       )
 

@@ -358,6 +358,135 @@ describe('buildModel', () => {
   })
 })
 
+describe('buildModel with options.preferredCandidateIds (docs/feedback.md Round 2 #2)', () => {
+  it('breaks a tie in favor of a preferred candidate', () => {
+    const slots: SlotQuery[] = [
+      {
+        slotId: 'head',
+        candidates: [candidate('Plain', { 1: 5 }), candidate('Preferred', { 1: 5 })],
+      },
+    ]
+    const { model, columns } = buildModel(highs, slots, [], [{ skillId: 1, minPoints: 3 }], {
+      preferredCandidateIds: new Set(['Preferred']),
+    })
+
+    const { colValue, native } = solve(model)
+    const decoded = decodeSolution(columns, colValue)
+    // Both candidates equally satisfy the requirement -- a genuine tie
+    // without the preference, so the preferred one must win it.
+    expect(decoded.picks.get('head')?.id).toBe('Preferred')
+    native.dispose()
+  })
+
+  it('wins out over a non-preferred candidate even when it has far more open slots (docs/feedback.md Round 2 #2, confirmed 2026-10-19)', () => {
+    const slots: SlotQuery[] = [
+      {
+        slotId: 'head',
+        candidates: [candidate('Preferred', { 1: 5 }, 0), candidate('OpenSlot', { 1: 5 }, 4)],
+      },
+    ]
+    const { model, columns } = buildModel(highs, slots, [], [{ skillId: 1, minPoints: 3 }], {
+      preferredCandidateIds: new Set(['Preferred']),
+    })
+
+    const { colValue, native } = solve(model)
+    const decoded = decodeSolution(columns, colValue)
+    // PREFERRED_ITEM_WEIGHT dominates OPEN_SLOT_WEIGHT -- the project owner:
+    // "the preferred pieces should always win out over any other valid
+    // result." An optimized-but-unpreferred build is omitted in favor of a
+    // worse one that still meets the query and uses a preferred piece.
+    expect(decoded.picks.get('head')?.id).toBe('Preferred')
+    native.dispose()
+  })
+
+  it('maximizes the count of preferred pieces used across slots, not just "any vs. none"', () => {
+    const slots: SlotQuery[] = [
+      {
+        slotId: 'head',
+        candidates: [
+          candidate('PreferredHead', { 1: 5 }, 0),
+          candidate('OpenSlotHead', { 1: 5 }, 4),
+        ],
+      },
+      {
+        slotId: 'chest',
+        candidates: [
+          candidate('PreferredChest', { 1: 5 }, 0),
+          candidate('OpenSlotChest', { 1: 5 }, 4),
+        ],
+      },
+    ]
+    const { model, columns } = buildModel(highs, slots, [], [{ skillId: 1, minPoints: 3 }], {
+      preferredCandidateIds: new Set(['PreferredHead', 'PreferredChest']),
+    })
+
+    const { colValue, native } = solve(model)
+    const decoded = decodeSolution(columns, colValue)
+    // Using both preferred pieces beats using just one of them plus a
+    // higher-open-slot alternative -- "optimize with existing gear" means
+    // drawing as much as possible from the whole preferred pool, not merely
+    // satisfying a one-time "used at least one" condition.
+    expect(decoded.picks.get('head')?.id).toBe('PreferredHead')
+    expect(decoded.picks.get('chest')?.id).toBe('PreferredChest')
+    native.dispose()
+  })
+
+  it('still picks the better of two preferred candidates competing for the same slot', () => {
+    // Both get the exact same PREFERRED_ITEM_WEIGHT bonus (only one can ever
+    // be chosen for a slot anyway), so that term cancels out between them --
+    // the choice still falls through to the usual lower-priority factors
+    // (here, open slots) the same way it would with no preference at all.
+    const slots: SlotQuery[] = [
+      {
+        slotId: 'head',
+        candidates: [
+          candidate('PreferredLowSlots', { 1: 5 }, 0),
+          candidate('PreferredHighSlots', { 1: 5 }, 2),
+          candidate('NotPreferred', { 1: 5 }, 4),
+        ],
+      },
+    ]
+    const { model, columns } = buildModel(highs, slots, [], [{ skillId: 1, minPoints: 3 }], {
+      preferredCandidateIds: new Set(['PreferredLowSlots', 'PreferredHighSlots']),
+    })
+
+    const { colValue, native } = solve(model)
+    const decoded = decodeSolution(columns, colValue)
+    // NotPreferred has the most open slots of all three, but loses to both
+    // preferred candidates regardless; between the two preferred ones,
+    // PreferredHighSlots' extra open slots make it the better pick.
+    expect(decoded.picks.get('head')?.id).toBe('PreferredHighSlots')
+    native.dispose()
+  })
+
+  it('does not make an otherwise-infeasible build feasible just because it is preferred', () => {
+    const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('TooWeak', { 1: 2 })] }]
+    const { model } = buildModel(highs, slots, [], [{ skillId: 1, minPoints: 3 }], {
+      preferredCandidateIds: new Set(['TooWeak']),
+    })
+
+    const { modelStatus } = solve(model)
+    expect(modelStatus).toBe(highs.constants.modelStatus.infeasible)
+  })
+
+  it('has no effect at all when a candidate id is not in the preferred set', () => {
+    const slots: SlotQuery[] = [
+      {
+        slotId: 'head',
+        candidates: [candidate('Plain', { 1: 5 }), candidate('AlsoPlain', { 1: 5 })],
+      },
+    ]
+    const { model, columns } = buildModel(highs, slots, [], [{ skillId: 1, minPoints: 3 }], {
+      preferredCandidateIds: new Set(['SomeoneElse']),
+    })
+
+    const { colValue, native } = solve(model)
+    const decoded = decodeSolution(columns, colValue)
+    expect(['Plain', 'AlsoPlain']).toContain(decoded.picks.get('head')?.id)
+    native.dispose()
+  })
+})
+
 describe('buildModel with cuffs', () => {
   it('does not add any cuff columns or rows when no cuffs are given', () => {
     const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Helm', { 1: 5 })] }]
@@ -712,7 +841,7 @@ describe('buildModel with options.excludedActiveSkillIds (docs/skill-system-road
     native.dispose()
   })
 
-  it('accepts a build that stays below a tiered excluded skill\'s own threshold', () => {
+  it("accepts a build that stays below a tiered excluded skill's own threshold", () => {
     const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Helm', { 1: 3, 2: 9 })] }]
     const { model, columns } = buildModel(highs, slots, [], [{ skillId: 1, minPoints: 3 }], {
       excludedActiveSkillIds: [2],
@@ -727,7 +856,9 @@ describe('buildModel with options.excludedActiveSkillIds (docs/skill-system-road
   })
 
   it("rejects a build that reaches a tiered excluded skill's own threshold exactly", () => {
-    const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Helm', { 1: 3, 2: 10 })] }]
+    const slots: SlotQuery[] = [
+      { slotId: 'head', candidates: [candidate('Helm', { 1: 3, 2: 10 })] },
+    ]
     const { model } = buildModel(highs, slots, [], [{ skillId: 1, minPoints: 3 }], {
       excludedActiveSkillIds: [2],
       skillTiers: [{ skillId: 2, tierThresholds: [10] }],
@@ -739,7 +870,9 @@ describe('buildModel with options.excludedActiveSkillIds (docs/skill-system-road
   })
 
   it('rejects a build that reaches a penalty tier of an excluded skill', () => {
-    const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Helm', { 1: 3, 2: -10 })] }]
+    const slots: SlotQuery[] = [
+      { slotId: 'head', candidates: [candidate('Helm', { 1: 3, 2: -10 })] },
+    ]
     const { model } = buildModel(highs, slots, [], [{ skillId: 1, minPoints: 3 }], {
       excludedActiveSkillIds: [2],
       skillTiers: [{ skillId: 2, tierThresholds: [-10] }],
@@ -765,7 +898,9 @@ describe('buildModel with options.excludedActiveSkillIds (docs/skill-system-road
   })
 
   it("includes a decoration's contribution once forced into the candidate's open slot, unlike a resistance floor", () => {
-    const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Helm', { 1: 3, 2: 7 }, 1)] }]
+    const slots: SlotQuery[] = [
+      { slotId: 'head', candidates: [candidate('Helm', { 1: 3, 2: 7 }, 1)] },
+    ]
     const decorations = [deco('D1', 1, { 2: 3 })]
     const { model } = buildModel(highs, slots, decorations, [{ skillId: 1, minPoints: 3 }], {
       excludedActiveSkillIds: [2],
@@ -819,7 +954,9 @@ describe('buildModel with options.excludedActiveSkillIds (docs/skill-system-road
   })
 
   it('leaves a skill not listed in excludedActiveSkillIds completely unconstrained', () => {
-    const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Helm', { 1: 3, 2: 50 })] }]
+    const slots: SlotQuery[] = [
+      { slotId: 'head', candidates: [candidate('Helm', { 1: 3, 2: 50 })] },
+    ]
     const { model } = buildModel(highs, slots, [], [{ skillId: 1, minPoints: 3 }], {
       excludedActiveSkillIds: [],
     })
@@ -1011,10 +1148,7 @@ describe('buildModel with options.pinnedSlotDecorations', () => {
     const slots: SlotQuery[] = [
       {
         slotId: 'head',
-        candidates: [
-          candidate('Weak Helm', { 1: 1 }, 2),
-          candidate('Strong Helm', { 1: 5 }, 2),
-        ],
+        candidates: [candidate('Weak Helm', { 1: 1 }, 2), candidate('Strong Helm', { 1: 5 }, 2)],
       },
     ]
     const decorations = [deco('Attack Deco', 1, { 1: 3 })]
@@ -1037,9 +1171,7 @@ describe('buildModel with options.pinnedSlotDecorations', () => {
   })
 
   it('forces more than one copy of the same pinned decoration via duplicate list entries', () => {
-    const slots: SlotQuery[] = [
-      { slotId: 'head', candidates: [candidate('Helm', { 1: 1 }, 3)] },
-    ]
+    const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Helm', { 1: 1 }, 3)] }]
     const decorations = [deco('Attack Deco', 1, { 1: 2 })]
     const { model, columns } = buildModel(
       highs,

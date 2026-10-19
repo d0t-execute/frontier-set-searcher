@@ -177,7 +177,7 @@ describe('CategoryFilter', () => {
       expect(screen.queryByText(/Guardian Mask/)).not.toBeInTheDocument()
     })
 
-    it('shows a plain "N more" note with no tableLinkHash, even past the cap', async () => {
+    it('shows a plain "N more" note with no table link, even past the cap', async () => {
       const overflowing = new Map([
         ['guild_gx', Array.from({ length: 101 }, (_, i) => ({ name: `Item ${i}` }))],
       ])
@@ -196,24 +196,49 @@ describe('CategoryFilter', () => {
       expect(screen.queryByRole('link')).not.toBeInTheDocument()
     })
 
-    it('links to a sortable table for the overflow, when tableLinkHash is given', async () => {
-      const overflowing = new Map([
-        ['guild_gx', Array.from({ length: 101 }, (_, i) => ({ name: `Item ${i}` }))],
-      ])
+    it('does not render a Table link when tableLinkHash is omitted', () => {
       render(
         <CategoryFilter
           groups={GROUPS}
           excludedCategories={new Set()}
           onChange={vi.fn()}
-          itemsByCategory={overflowing}
+          itemsByCategory={ITEMS_BY_CATEGORY}
+        />,
+      )
+
+      expect(screen.queryByRole('link', { name: 'Table' })).not.toBeInTheDocument()
+    })
+
+    it('shows a Table link for a leaf with items, regardless of category size', () => {
+      render(
+        <CategoryFilter
+          groups={GROUPS}
+          excludedCategories={new Set()}
+          onChange={vi.fn()}
+          itemsByCategory={ITEMS_BY_CATEGORY}
           tableLinkHash={(key) => `#/category/gear/${key}`}
         />,
       )
 
-      await userEvent.click(screen.getByRole('button', { name: 'View (101)' }))
-
-      const link = screen.getByRole('link', { name: '1 more in a sortable table' })
+      // "Guild GX" is the only leaf with an itemsByCategory entry (2 items,
+      // well under the "View" cap) -- the Table link shows up regardless.
+      const link = screen.getByRole('link', { name: 'Table' })
       expect(link).toHaveAttribute('href', '#/category/gear/guild_gx')
+    })
+
+    it('does not show a Table link for a leaf with no items at all', () => {
+      const emptyCategory = new Map([['guild_gx', []]])
+      render(
+        <CategoryFilter
+          groups={GROUPS}
+          excludedCategories={new Set()}
+          onChange={vi.fn()}
+          itemsByCategory={emptyCategory}
+          tableLinkHash={(key) => `#/category/gear/${key}`}
+        />,
+      )
+
+      expect(screen.queryByRole('link', { name: 'Table' })).not.toBeInTheDocument()
     })
   })
 })

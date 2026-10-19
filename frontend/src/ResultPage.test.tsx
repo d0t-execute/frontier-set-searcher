@@ -46,6 +46,7 @@ const STATE: SharedSearchState = {
   excludedDecorationIds: [],
   excludedCuffIds: [],
   excludedSkillIds: [],
+  preferredArmorIds: [],
   nonNegativeResistances: [],
   preferExactMatches: true,
   result: {
@@ -131,7 +132,11 @@ describe('ResultPage', () => {
 
   it('shows an error for a link that fails to decode', async () => {
     render(
-      <ResultPage encoded="not-a-valid-encoded-payload" onUseAsBase={() => {}} onBackToSearch={() => {}} />,
+      <ResultPage
+        encoded="not-a-valid-encoded-payload"
+        onUseAsBase={() => {}}
+        onBackToSearch={() => {}}
+      />,
     )
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/corrupted/i)

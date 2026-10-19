@@ -196,6 +196,7 @@ describe('App', () => {
         resistanceFloors: [],
         excludedActiveSkillIds: [],
         pinnedCuffSkillIds: [],
+        preferredCandidateIds: new Set(),
       },
       // The "Unavailable"-leaf cuff is excluded by default (see App.tsx's
       // DEFAULT_EXCLUDED_CUFF_CATEGORIES) -- both real ones pass.
@@ -229,6 +230,7 @@ describe('App', () => {
         resistanceFloors: [],
         excludedActiveSkillIds: [],
         pinnedCuffSkillIds: [],
+        preferredCandidateIds: new Set(),
       },
       [BUNDLE.cuffs[0], BUNDLE.cuffs[1]],
     )
@@ -654,6 +656,69 @@ describe('App', () => {
     ])
   })
 
+  it('re-sorts streamed results by total defense when asked (docs/feedback.md Round 2 #3)', async () => {
+    const worker = makeWorker()
+    worker.search.mockImplementation((...args: unknown[]) => {
+      const callbacks = args[3] as { onResult: (result: unknown) => void }
+      callbacks.onResult({
+        picks: new Map([
+          [
+            'head',
+            {
+              id: 'head:low',
+              name: 'Low Defense Helm',
+              skills: [],
+              defenseMax: 10,
+              resistances: { fire: 0, water: 0, thunder: 0, ice: 0, dragon: 0 },
+            },
+          ],
+        ]),
+        decorations: new Map(),
+        cuffs: [],
+        skillTotals: new Map([[1, 15]]),
+      })
+      callbacks.onResult({
+        picks: new Map([
+          [
+            'head',
+            {
+              id: 'head:high',
+              name: 'High Defense Helm',
+              skills: [],
+              defenseMax: 100,
+              resistances: { fire: 0, water: 0, thunder: 0, ice: 0, dragon: 0 },
+            },
+          ],
+        ]),
+        decorations: new Map(),
+        cuffs: [],
+        skillTotals: new Map([[1, 15]]),
+      })
+      return 'req-1'
+    })
+    mockUseSearchWorker.mockReturnValue(worker as unknown as ReturnType<typeof useSearchWorker>)
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.click(screen.getByRole('button', { name: 'Attack' }))
+    await user.click(screen.getByRole('button', { name: /search/i }))
+
+    const resultsList = await screen.findByRole('list', { name: /search results/i })
+    await within(resultsList).findByText(/low defense helm/i)
+
+    // Default order is the solver's own ranking: low-defense result first,
+    // since it streamed in first.
+    let cards = within(resultsList).getAllByRole('listitem')
+    expect(cards[0]).toHaveTextContent(/low defense helm/i)
+    expect(cards[1]).toHaveTextContent(/high defense helm/i)
+
+    await user.selectOptions(screen.getByLabelText('Sort by'), 'Total defense (highest first)')
+
+    cards = within(resultsList).getAllByRole('listitem')
+    expect(cards[0]).toHaveTextContent(/high defense helm/i)
+    expect(cards[1]).toHaveTextContent(/low defense helm/i)
+  })
+
   it('stops the search and reports a capped result set once enough results have streamed in', async () => {
     const worker = makeWorker()
     worker.search.mockImplementation((...args: unknown[]) => {
@@ -697,6 +762,177 @@ describe('App', () => {
     expect(await screen.findByText(/showing the top/i)).toBeInTheDocument()
     expect(screen.getAllByText(/helm \d+/i).length).toBeLessThan(25)
     expect(worker.cancel).toHaveBeenCalledWith('req-1')
+  })
+
+  describe('preferred pieces (docs/feedback.md Round 2 #2)', () => {
+    it('passes a preferred piece straight through to the solver as preferredCandidateIds', async () => {
+      const worker = makeWorker()
+      mockUseSearchWorker.mockReturnValue(worker as unknown as ReturnType<typeof useSearchWorker>)
+      const user = userEvent.setup()
+      render(<App />)
+
+      await user.click(screen.getByRole('button', { name: /preferred pieces/i }))
+      await user.type(screen.getByLabelText('Search armor pieces to prefer'), 'White Cat')
+      await user.click(screen.getByRole('option', { name: 'White Cat Mask' }))
+
+      await user.click(screen.getByRole('button', { name: 'Attack' }))
+      await user.click(screen.getByRole('button', { name: /search/i }))
+
+      expect(worker.search).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.anything(),
+        expect.anything(),
+        expect.anything(),
+        expect.objectContaining({ preferredCandidateIds: new Set(['head:0002']) }),
+        expect.anything(),
+      )
+    })
+
+    it('shows a preferred piece as a badge, removable without affecting pinned armor', async () => {
+      const user = userEvent.setup()
+      render(<App />)
+
+      await user.click(screen.getByRole('button', { name: /preferred pieces/i }))
+      await user.type(screen.getByLabelText('Search armor pieces to prefer'), 'White Cat')
+      await user.click(screen.getByRole('option', { name: 'White Cat Mask' }))
+
+      expect(screen.getByText('White Cat Mask')).toBeInTheDocument()
+
+      await user.click(screen.getByRole('button', { name: 'Remove White Cat Mask' }))
+
+      expect(
+        screen.queryByRole('button', { name: 'Remove White Cat Mask' }),
+      ).not.toBeInTheDocument()
+    })
+  })
+
+  describe('active-skill cap preview (docs/feedback.md Round 2 #4)', () => {
+    it('shows the baseline cap of 10 before any selection is made', () => {
+      render(<App />)
+
+      const preview = screen.getByText(/highest active-skill cap still reachable from here:/i)
+      expect(preview).toHaveTextContent('10')
+    })
+
+    it('lowers the reachable cap once a selected skill claims the only slot that could otherwise go to Skill Slots Up', async () => {
+      // Chest is the *only* slot that can grant "Dissolver Up" here, and it's
+      // also the only slot that can grant "Skill Slots Up" -- two different
+      // physical pieces competing for the same armor slot, not two skills on
+      // one piece (this game's gear never grants more than one Zenith skill
+      // per piece). Selecting Dissolver Up should claim that slot, dropping
+      // the ceiling by the 2 points of Skill Slots Up it could have otherwise
+      // provided -- the project owner's correction (2026-10-19) to the first
+      // version of this preview, which instead showed the cap of whatever was
+      // *already* equipped/selected rather than the highest still reachable.
+      const bundleWithCompetingChestSlot = {
+        ...BUNDLE,
+        slots: [
+          {
+            slotId: 'head',
+            candidates: [
+              {
+                ...BUNDLE.slots[0].candidates[0],
+                // Head keeps its normal-skill grant (so it can still satisfy
+                // "Attack" elsewhere), but not its Dissolver Up grant -- this
+                // test needs chest to be the *only* slot that can grant it.
+                skills: [{ skillId: 1, points: 5 }],
+              },
+              BUNDLE.slots[0].candidates[1],
+            ],
+          },
+          {
+            slotId: 'chest',
+            candidates: [
+              {
+                id: 'chest:0001',
+                name: 'Dissolver Chest',
+                skills: [{ skillId: 1000001, points: 1 }],
+                category: 'zenith_plain',
+                grankOrLater: false,
+                hunterType: 'common',
+                exoticSkillId: null,
+                defenseMax: null,
+                resistances: { fire: 0, water: 0, thunder: 0, ice: 0, dragon: 0 },
+              },
+              {
+                id: 'chest:0002',
+                name: 'Slots Up Chest',
+                skills: [{ skillId: 1000002, points: 2 }],
+                category: 'zenith_plain',
+                grankOrLater: false,
+                hunterType: 'common',
+                exoticSkillId: null,
+                defenseMax: null,
+                resistances: { fire: 0, water: 0, thunder: 0, ice: 0, dragon: 0 },
+              },
+              {
+                id: 'chest:0003',
+                name: 'Plain Chest',
+                skills: [],
+                category: 'standard_plain',
+                grankOrLater: false,
+                hunterType: 'common',
+                exoticSkillId: null,
+                defenseMax: null,
+                resistances: { fire: 0, water: 0, thunder: 0, ice: 0, dragon: 0 },
+              },
+            ],
+          },
+        ],
+        zenithSkills: [
+          ...BUNDLE.zenithSkills,
+          { id: 1000002, name: 'Skill Slots Up', category: null, priorityRank: null, tiers: [] },
+        ],
+      }
+      mockUseDataBundle.mockReturnValue({
+        isLoading: false,
+        isError: false,
+        data: bundleWithCompetingChestSlot,
+      } as unknown as ReturnType<typeof useDataBundle>)
+      const user = userEvent.setup()
+      render(<App />)
+
+      const preview = screen.getByText(/highest active-skill cap still reachable from here:/i)
+      expect(preview).toHaveTextContent('12')
+
+      await user.click(screen.getByRole('button', { name: 'Dissolver Up' }))
+
+      expect(preview).toHaveTextContent('10')
+    })
+  })
+
+  describe('gear-level quick toggles (docs/feedback.md Round 2 #6)', () => {
+    it('unchecking the top-level Zenith toggle excludes every Zenith leaf, including the new ZF split', async () => {
+      const user = userEvent.setup()
+      render(<App />)
+
+      await user.click(screen.getByRole('button', { name: /gear levels/i }))
+      await user.click(screen.getByRole('checkbox', { name: 'Zenith gear level' }))
+
+      expect(screen.getByRole('checkbox', { name: 'Zenith' })).not.toBeChecked()
+      expect(screen.getByRole('checkbox', { name: 'Road Zenith ZF' })).not.toBeChecked()
+      expect(screen.getByRole('checkbox', { name: 'Event Zenith ZF' })).not.toBeChecked()
+      // Pre-G-Rank and G-Rank leaves are untouched.
+      expect(screen.getByRole('checkbox', { name: 'Guild' })).toBeChecked()
+      expect(screen.getByRole('checkbox', { name: 'Origin' })).toBeChecked()
+    })
+
+    it('shows the G-Rank toggle as indeterminate once one of its leaves is excluded, and re-checking it re-includes everything', async () => {
+      const user = userEvent.setup()
+      render(<App />)
+
+      await user.click(screen.getByRole('button', { name: /gear levels/i }))
+      await user.click(screen.getByRole('checkbox', { name: 'Origin' }))
+
+      const grankToggle = screen.getByRole('checkbox', {
+        name: 'G-Rank gear level',
+      }) as HTMLInputElement
+      expect(grankToggle.indeterminate).toBe(true)
+
+      await user.click(grankToggle)
+
+      expect(screen.getByRole('checkbox', { name: 'Origin' })).toBeChecked()
+    })
   })
 
   describe('"Pin specific armor" scoping (docs/skill-system-roadmap.md #33/#35)', () => {

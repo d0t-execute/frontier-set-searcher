@@ -128,6 +128,22 @@ describe('SkillPicker', () => {
     expect(screen.queryByRole('button', { name: 'Evasion' })).not.toBeInTheDocument()
   })
 
+  it('matches a skill by one of its tier labels, not just its own name (docs/feedback.md Round 2 #8)', async () => {
+    const user = userEvent.setup()
+    const skillsWithTiers = [
+      skill(1, 'Cooking', {
+        tiers: [{ label: 'BBQ Master', minPoints: 15, description: null }],
+      }),
+      ...SKILLS,
+    ]
+    render(<SkillPicker skills={skillsWithTiers} requirements={[]} onChange={vi.fn()} />)
+
+    await user.type(screen.getByRole('textbox', { name: /add a skill/i }), 'bbq master')
+
+    expect(screen.getByRole('button', { name: 'Cooking' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Attack' })).not.toBeInTheDocument()
+  })
+
   it('shows a message when no skill matches the search text', async () => {
     const user = userEvent.setup()
     render(<SkillPicker skills={SKILLS} requirements={[]} onChange={vi.fn()} />)
