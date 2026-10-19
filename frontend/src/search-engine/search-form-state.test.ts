@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { loadSearchFormState, saveSearchFormState } from './search-form-state'
+import { clearSearchFormState, loadSearchFormState, saveSearchFormState } from './search-form-state'
 import type { SearchFormState } from './search-form-state'
 
 const STATE: SearchFormState = {
@@ -65,6 +65,19 @@ describe('saveSearchFormState / loadSearchFormState', () => {
       'frontier-set-searcher:search-form-state:v1',
       JSON.stringify({ ...STATE, hunterTypeFilter: 'either' }),
     )
+    expect(loadSearchFormState()).toBeNull()
+  })
+})
+
+describe('clearSearchFormState', () => {
+  it('discards a previously-saved state', () => {
+    saveSearchFormState(STATE)
+    clearSearchFormState()
+    expect(loadSearchFormState()).toBeNull()
+  })
+
+  it('does nothing when nothing was saved', () => {
+    expect(() => clearSearchFormState()).not.toThrow()
     expect(loadSearchFormState()).toBeNull()
   })
 })

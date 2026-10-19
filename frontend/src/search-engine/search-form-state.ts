@@ -26,7 +26,13 @@ import type { HunterTypeFilter, PinnedCuffSlot } from './build-query'
 import type { PinnedSlot } from './pinned-armor'
 import type { ResistanceElement, SkillRequirement } from './types'
 
-const RESISTANCE_ELEMENTS: readonly ResistanceElement[] = ['fire', 'water', 'thunder', 'ice', 'dragon']
+const RESISTANCE_ELEMENTS: readonly ResistanceElement[] = [
+  'fire',
+  'water',
+  'thunder',
+  'ice',
+  'dragon',
+]
 
 const STORAGE_KEY = 'frontier-set-searcher:search-form-state:v1'
 
@@ -121,6 +127,20 @@ export function loadSearchFormState(): SearchFormState | null {
 export function saveSearchFormState(state: SearchFormState): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+  } catch {
+    // Unavailable storage -- see this function's own docstring.
+  }
+}
+
+/** Discards the saved form state, for the "Reset" button (2026-10-19, per the
+ * project owner). The page still needs a reload afterward to actually return
+ * to defaults -- `App`'s ~20 individual `useState` calls only ever read this
+ * once, at mount, so clearing it alone wouldn't change anything already on
+ * screen. Silently does nothing if `localStorage` throws, same as
+ * `saveSearchFormState`. */
+export function clearSearchFormState(): void {
+  try {
+    localStorage.removeItem(STORAGE_KEY)
   } catch {
     // Unavailable storage -- see this function's own docstring.
   }

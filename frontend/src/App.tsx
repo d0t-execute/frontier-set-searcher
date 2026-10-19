@@ -27,7 +27,11 @@ import type { PinnedSlot } from './search-engine/pinned-armor'
 import { decodeQueryCode, encodeQueryCode } from './search-engine/query-code'
 import type { QueryCodeCatalog } from './search-engine/query-code'
 import type { SearchFormState } from './search-engine/search-form-state'
-import { loadSearchFormState, saveSearchFormState } from './search-engine/search-form-state'
+import {
+  clearSearchFormState,
+  loadSearchFormState,
+  saveSearchFormState,
+} from './search-engine/search-form-state'
 import { buildResultUrl } from './search-engine/shared-state'
 import type { SharedSearchState } from './search-engine/shared-state'
 import type {
@@ -805,6 +809,16 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
     setStatus('done')
   }
 
+  // Discards every saved skill/pin/exclusion/etc and reloads to pick the
+  // hardcoded defaults back up (2026-10-19, per the project owner) -- a full
+  // reload rather than resetting each of this component's ~20 individual
+  // `useState` calls by hand, since every one of them only ever reads
+  // `loadSearchFormState()` once, at mount.
+  function handleReset(): void {
+    clearSearchFormState()
+    window.location.reload()
+  }
+
   // Builds a link to this exact result (docs/skill-system-roadmap.md TODO
   // #9) -- encodes the solved result itself (not just the query that
   // produced it, see shared-state.ts's own docstring for why TODO #15
@@ -985,7 +999,16 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
             </div>
 
             <div className="app-column">
-              <HunterTypeToggle value={hunterTypeFilter} onChange={setHunterTypeFilter} />
+              <div className="app-hunter-type-row">
+                <HunterTypeToggle value={hunterTypeFilter} onChange={setHunterTypeFilter} />
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-danger"
+                  onClick={handleReset}
+                >
+                  Reset
+                </button>
+              </div>
 
               <Disclosure title="Weapon" summary={weaponSummary}>
                 <div className="app-field-group">

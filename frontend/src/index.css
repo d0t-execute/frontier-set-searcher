@@ -389,6 +389,18 @@ code {
  * this is a required, build-defining choice, not an optional filter that
  * belongs behind a click to expand) -- one track, one sliding thumb, each
  * half labeled with the option it selects instead of a generic on/off. */
+
+/* Puts the "Reset" button (2026-10-19, per the project owner) on the
+ * opposite side of the Hunter Type toggle it sits beside, rather than
+ * stacking below it -- the toggle's own width varies with its container, so
+ * `justify-content: space-between` keeps the button flush right regardless. */
+.app-hunter-type-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 .hunter-type-toggle {
   position: relative;
   display: inline-grid;

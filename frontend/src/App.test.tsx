@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 import { useDataBundle } from './data/useDataBundle'
 import { useSearchWorker } from './search/useSearchWorker'
@@ -800,6 +800,34 @@ describe('App', () => {
       expect(screen.getByText('Attack: 5')).toBeInTheDocument()
       expect(screen.getByText(/Dissolver Up: 5/)).toBeInTheDocument()
       expect(screen.queryByText(/Skill 1000001/)).not.toBeInTheDocument()
+    })
+  })
+
+  describe('Reset button', () => {
+    afterEach(() => localStorage.clear())
+
+    it('clears the saved form state and reloads the page', async () => {
+      localStorage.setItem(
+        'frontier-set-searcher:search-form-state:v1',
+        JSON.stringify({ hunterTypeFilter: 'gunner' }),
+      )
+      // jsdom's `window.location.reload` isn't configurable, so it can't be
+      // spied on directly -- replace the whole `location` object instead,
+      // same workaround jsdom itself recommends for this method.
+      const originalLocation = window.location
+      const reload = vi.fn()
+      Object.defineProperty(window, 'location', {
+        configurable: true,
+        value: { ...originalLocation, reload },
+      })
+      const user = userEvent.setup()
+      render(<App />)
+
+      await user.click(screen.getByRole('button', { name: 'Reset' }))
+
+      expect(localStorage.getItem('frontier-set-searcher:search-form-state:v1')).toBeNull()
+      expect(reload).toHaveBeenCalled()
+      Object.defineProperty(window, 'location', { configurable: true, value: originalLocation })
     })
   })
 })
