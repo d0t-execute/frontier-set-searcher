@@ -32,7 +32,8 @@ import { MAX_EQUIPPED_CUFFS } from '../search-engine/ilp-model'
 import type { NamedCuff } from '../search-engine/load-bundle'
 import type { PinnedCuffSlot } from '../search-engine/build-query'
 import type { SkillId } from '../search-engine/types'
-import { FilterableOptions } from './FilterableOptions'
+import { FilterableOptions, MIN_SEARCH_LENGTH } from './FilterableOptions'
+import { HoveredSkillSummary } from './HoveredSkillSummary'
 import { handleEnterToPickFirst } from './pick-first-match'
 
 interface SkillOption {
@@ -104,12 +105,12 @@ function CuffSlotPicker({
   skillNameById: ReadonlyMap<SkillId, string>
   pinnableSkills: readonly SkillOption[]
 }) {
-  const [picking, setPicking] = useState(false)
   // Which mode the *in-progress* search shows -- only meaningful while
-  // nothing is pinned yet (or the player clicked "Change"), since an
-  // existing pin's own mode already comes from `pin.mode`.
+  // nothing is pinned yet, since an existing pin's own mode already comes
+  // from `pin.mode`.
   const [mode, setMode] = useState<'exact' | 'skill'>('exact')
   const [search, setSearch] = useState('')
+  const [hoveredCuff, setHoveredCuff] = useState<NamedCuff | null>(null)
 
   const cuff = pin?.mode === 'exact' ? cuffs.find((c) => c.id === pin.cuffId) : undefined
   const pinnedSkillName =
@@ -118,13 +119,11 @@ function CuffSlotPicker({
   function pickCuff(c: NamedCuff): void {
     onChange({ mode: 'exact', cuffId: c.id })
     setSearch('')
-    setPicking(false)
   }
 
   function pickSkill(option: SkillOption): void {
     onChange({ mode: 'skill', skillId: Number(option.id) })
     setSearch('')
-    setPicking(false)
   }
 
   function switchMode(next: 'exact' | 'skill'): void {
@@ -132,7 +131,7 @@ function CuffSlotPicker({
     setSearch('')
   }
 
-  const showingPin = pin !== null && !picking
+  const showingPin = pin !== null
 
   return (
     <div>
@@ -147,13 +146,6 @@ function CuffSlotPicker({
           ) : (
             <span>Any cuff granting {pinnedSkillName}</span>
           )}
-          <button
-            type="button"
-            className="btn btn-sm btn-outline-secondary"
-            onClick={() => setPicking(true)}
-          >
-            Change
-          </button>
           <button
             type="button"
             className="btn btn-sm btn-outline-secondary"
@@ -203,7 +195,15 @@ function CuffSlotPicker({
                 ariaLabel={`Cuffs matching search for ${label}`}
                 describe={(c) => contributionSummary(c.skills, skillNameById)}
                 onPick={pickCuff}
+                onHoverChange={setHoveredCuff}
               />
+              {search.trim().length >= MIN_SEARCH_LENGTH && (
+                <HoveredSkillSummary
+                  hovered={hoveredCuff}
+                  skillNameById={skillNameById}
+                  query={search}
+                />
+              )}
             </>
           ) : (
             <>
@@ -223,18 +223,6 @@ function CuffSlotPicker({
                 onPick={pickSkill}
               />
             </>
-          )}
-          {pin && (
-            <button
-              type="button"
-              className="btn btn-sm btn-outline-secondary align-self-start"
-              onClick={() => {
-                setPicking(false)
-                setSearch('')
-              }}
-            >
-              Cancel
-            </button>
           )}
         </div>
       )}

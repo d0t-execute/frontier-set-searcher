@@ -6,8 +6,20 @@ import type { NamedCuff } from '../search-engine/load-bundle'
 import type { PinnedCuffSlot } from '../search-engine/build-query'
 
 const cuffs: readonly NamedCuff[] = [
-  { id: 'cuff:0001', name: 'Sharpening PC1', slotSize: 1, skills: [{ skillId: 1, points: 5 }], category: 'cuff_standard_plain' },
-  { id: 'cuff:0002', name: 'Guard Up SZ', slotSize: 2, skills: [{ skillId: 2, points: 5 }], category: 'cuff_standard_plain' },
+  {
+    id: 'cuff:0001',
+    name: 'Sharpening PC1',
+    slotSize: 1,
+    skills: [{ skillId: 1, points: 5 }],
+    category: 'cuff_standard_plain',
+  },
+  {
+    id: 'cuff:0002',
+    name: 'Guard Up SZ',
+    slotSize: 2,
+    skills: [{ skillId: 2, points: 5 }],
+    category: 'cuff_standard_plain',
+  },
 ]
 
 const skillNameById = new Map([
@@ -53,6 +65,21 @@ describe('CuffPicker', () => {
     expect(screen.getByText('Sharpening PC1')).toBeInTheDocument()
     expect(screen.queryByLabelText('Search cuffs for Cuff slot 1')).not.toBeInTheDocument()
     expect(screen.getByLabelText('Search cuffs for Cuff slot 2')).toBeInTheDocument()
+  })
+
+  it('shows a pinned slot as a summary with just a Clear control', () => {
+    render(
+      <CuffPicker
+        cuffs={cuffs}
+        pinned={[EXACT_1]}
+        onChange={() => {}}
+        skillNameById={skillNameById}
+        pinnableSkills={pinnableSkills}
+      />,
+    )
+
+    expect(screen.queryByRole('button', { name: 'Change' })).not.toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: 'Clear' })).toHaveLength(1)
   })
 
   it('pins a cuff into the given slot once picked from the filtered list', () => {
@@ -143,6 +170,47 @@ describe('CuffPicker', () => {
 
     const option = screen.getByRole('option', { name: 'Sharpening PC1' })
     expect(option).toHaveAttribute('title', 'Sharpening: 5')
+  })
+
+  it('shows a prompt to hover a result before anything is hovered', () => {
+    render(
+      <CuffPicker
+        cuffs={cuffs}
+        pinned={[]}
+        onChange={() => {}}
+        skillNameById={skillNameById}
+        pinnableSkills={pinnableSkills}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText('Search cuffs for Cuff slot 1'), {
+      target: { value: 'Sharp' },
+    })
+
+    expect(screen.getByText('Hover a result to see its skills.')).toBeInTheDocument()
+  })
+
+  it("shows the hovered cuff's skills in a persistent summary line below the results", () => {
+    render(
+      <CuffPicker
+        cuffs={cuffs}
+        pinned={[]}
+        onChange={() => {}}
+        skillNameById={skillNameById}
+        pinnableSkills={pinnableSkills}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText('Search cuffs for Cuff slot 1'), {
+      target: { value: 'Sharp' },
+    })
+    fireEvent.mouseEnter(screen.getByRole('option', { name: 'Sharpening PC1' }))
+
+    expect(screen.getByText('Sharpening: 5')).toBeInTheDocument()
+
+    fireEvent.mouseLeave(screen.getByRole('option', { name: 'Sharpening PC1' }))
+
+    expect(screen.getByText('Hover a result to see its skills.')).toBeInTheDocument()
   })
 
   describe('keyboard-only picking', () => {

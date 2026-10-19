@@ -165,7 +165,7 @@ describe('ArmorPicker', () => {
     expect(onChange).toHaveBeenCalledWith(pinHead('head:0001'))
   })
 
-  it('shows a pinned slot as a summary with Change/Clear controls', () => {
+  it('shows a pinned slot as a summary with just a Clear control', () => {
     render(
       <ArmorPicker
         slots={slots}
@@ -179,7 +179,7 @@ describe('ArmorPicker', () => {
     )
 
     expect(screen.getByText('Leather Helm')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Change' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Change' })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Clear' })).toBeInTheDocument()
   })
 
@@ -344,9 +344,7 @@ describe('ArmorPicker', () => {
     // spent entirely by the pinned D002 (size 2) -- no room left for
     // anything else, so the search box itself doesn't render (same as the
     // piece-pinned decoration picker's own "remainingCapacity > 0" gate).
-    expect(
-      screen.queryByLabelText('Search decorations to force into head'),
-    ).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Search decorations to force into head')).not.toBeInTheDocument()
     expect(screen.getByText(/0 of 2 possible open slots left/i)).toBeInTheDocument()
   })
 
@@ -363,9 +361,7 @@ describe('ArmorPicker', () => {
       />,
     )
 
-    expect(
-      screen.queryByLabelText('Search decorations to force into head'),
-    ).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Search decorations to force into head')).not.toBeInTheDocument()
   })
 
   it('removes a decoration-only pin when its remove button is clicked', () => {
@@ -442,7 +438,10 @@ describe('ArmorPicker', () => {
       target: { value: 'Attack' },
     })
 
-    expect(screen.getByRole('option', { name: 'Attack Jewel' })).toHaveAttribute('title', 'Attack: 3')
+    expect(screen.getByRole('option', { name: 'Attack Jewel' })).toHaveAttribute(
+      'title',
+      'Attack: 3',
+    )
   })
 
   it('shows a prompt to hover a result before anything is hovered', () => {
@@ -465,7 +464,7 @@ describe('ArmorPicker', () => {
     expect(screen.getByText('Hover a result to see its skills.')).toBeInTheDocument()
   })
 
-  it('shows the hovered piece\'s skills in a persistent summary line below the results', () => {
+  it("shows the hovered piece's skills in a persistent summary line below the results", () => {
     render(
       <ArmorPicker
         slots={slots}

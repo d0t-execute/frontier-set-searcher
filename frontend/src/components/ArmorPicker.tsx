@@ -47,7 +47,10 @@ import { handleEnterToPickFirst } from './pick-first-match'
 export type { PinnedSlot } from '../search-engine/pinned-armor'
 
 export interface ArmorPickerProps {
-  readonly slots: readonly { readonly slotId: string; readonly candidates: readonly NamedCandidate[] }[]
+  readonly slots: readonly {
+    readonly slotId: string
+    readonly candidates: readonly NamedCandidate[]
+  }[]
   readonly decorations: readonly NamedDecoration[]
   readonly pinned: ReadonlyMap<string, PinnedSlot>
   readonly onChange: (next: ReadonlyMap<string, PinnedSlot>) => void
@@ -146,7 +149,6 @@ function ArmorSlotPicker({
    * piece's own name (2026-10-16, per user feedback). */
   skillNameById: ReadonlyMap<number, string>
 }) {
-  const [picking, setPicking] = useState(false)
   const [candidateSearch, setCandidateSearch] = useState('')
   const [decorationSearch, setDecorationSearch] = useState('')
   const [hoveredCandidate, setHoveredCandidate] = useState<NamedCandidate | null>(null)
@@ -154,13 +156,14 @@ function ArmorSlotPicker({
 
   function candidateMatches(candidate: NamedCandidate, query: string): boolean {
     if (candidate.name.toLowerCase().includes(query)) return true
-    return candidate.skills.some((s) => (skillNameById.get(s.skillId) ?? '').toLowerCase().includes(query))
+    return candidate.skills.some((s) =>
+      (skillNameById.get(s.skillId) ?? '').toLowerCase().includes(query),
+    )
   }
 
   function pickCandidate(c: NamedCandidate): void {
     onChange({ candidateId: c.id, decorationIds: [] })
     setCandidateSearch('')
-    setPicking(false)
   }
 
   function pickSlotDecoration(d: NamedDecoration): void {
@@ -184,16 +187,9 @@ function ArmorSlotPicker({
     <div>
       <div className="fw-bold text-capitalize mb-1">{slotId}</div>
 
-      {candidate && !picking ? (
+      {candidate ? (
         <div className="d-flex align-items-center gap-2">
           <span title={contributionSummary(candidate.skills, skillNameById)}>{candidate.name}</span>
-          <button
-            type="button"
-            className="btn btn-sm btn-outline-secondary"
-            onClick={() => setPicking(true)}
-          >
-            Change
-          </button>
           <button
             type="button"
             className="btn btn-sm btn-outline-secondary"
@@ -212,7 +208,13 @@ function ArmorSlotPicker({
             value={candidateSearch}
             onChange={(e) => setCandidateSearch(e.target.value)}
             onKeyDown={(e) =>
-              handleEnterToPickFirst(e, candidates, candidateSearch, pickCandidate, candidateMatches)
+              handleEnterToPickFirst(
+                e,
+                candidates,
+                candidateSearch,
+                pickCandidate,
+                candidateMatches,
+              )
             }
           />
           <FilterableOptions
@@ -231,22 +233,10 @@ function ArmorSlotPicker({
               query={candidateSearch}
             />
           )}
-          {pin && (
-            <button
-              type="button"
-              className="btn btn-sm btn-outline-secondary align-self-start"
-              onClick={() => {
-                setPicking(false)
-                setCandidateSearch('')
-              }}
-            >
-              Cancel
-            </button>
-          )}
         </div>
       )}
 
-      {candidate && !picking && (
+      {candidate && (
         <div className="ms-2 mt-2">
           {pin!.decorationIds.map((decorationId, i) => {
             const decoration = decorations.find((d) => d.id === decorationId)
@@ -283,7 +273,12 @@ function ArmorSlotPicker({
                 value={decorationSearch}
                 onChange={(e) => setDecorationSearch(e.target.value)}
                 onKeyDown={(e) =>
-                  handleEnterToPickFirst(e, fittableDecorations, decorationSearch, pickSlotDecoration)
+                  handleEnterToPickFirst(
+                    e,
+                    fittableDecorations,
+                    decorationSearch,
+                    pickSlotDecoration,
+                  )
                 }
               />
               <FilterableOptions
@@ -394,7 +389,9 @@ function SlotDecorationOnlyPicker({
             placeholder="Type to search decorations…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            onKeyDown={(e) => handleEnterToPickFirst(e, fittableDecorations, search, pickDecoration)}
+            onKeyDown={(e) =>
+              handleEnterToPickFirst(e, fittableDecorations, search, pickDecoration)
+            }
           />
           <FilterableOptions
             items={fittableDecorations}
