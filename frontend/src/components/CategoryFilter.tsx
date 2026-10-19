@@ -33,6 +33,14 @@ export interface CategoryFilterProps {
    * forcing every call site to pass an always-present but sometimes-pointless
    * map). */
   readonly itemsByCategory?: ReadonlyMap<string, readonly { readonly name: string }[]>
+  /** Builds the hash link a leaf's "View all in a table" link points at, for
+   * a category whose contents outgrow `MAX_CATEGORY_CONTENTS_SHOWN` --
+   * CategoryTablePage.tsx's own route. Takes just the category key (not the
+   * item kind), so this component doesn't need to know about
+   * `category-route.ts`'s `CategoryTableKind` strings itself -- a caller
+   * with nothing meaningful to link to (e.g. the weapon Zenith skill tree,
+   * which has no `itemsByCategory` at all) simply omits it. */
+  readonly tableLinkHash?: (categoryKey: string) => string
 }
 
 export function CategoryFilter({
@@ -40,6 +48,7 @@ export function CategoryFilter({
   excludedCategories,
   onChange,
   itemsByCategory,
+  tableLinkHash,
 }: CategoryFilterProps) {
   // Collapsed-by-label, not a boolean-per-group array, so a group's collapse
   // state survives `groups` changing identity (e.g. a parent re-render) as
@@ -113,6 +122,7 @@ export function CategoryFilter({
                     checked={!excludedCategories.has(category.key)}
                     onChange={(checked) => setLeaf(category.key, checked)}
                     items={itemsByCategory?.get(category.key)}
+                    tableHref={tableLinkHash?.(category.key)}
                   />
                 ))}
               </div>
@@ -129,6 +139,10 @@ interface CategoryLeafProps {
   readonly checked: boolean
   readonly onChange: (checked: boolean) => void
   readonly items: readonly { readonly name: string }[] | undefined
+  /** Pre-built hash link for this leaf specifically (`tableLinkHash` already
+   * applied to `category.key`), or `undefined` when the caller gave no
+   * `tableLinkHash` at all. */
+  readonly tableHref: string | undefined
 }
 
 /** One leaf checkbox, plus (when `items` is given) a "View" toggle that
@@ -136,7 +150,7 @@ interface CategoryLeafProps {
  * #2). Its own component, not inlined in `CategoryFilter`'s `.map`, so the
  * expanded/collapsed state belongs to this one leaf rather than needing a
  * `Set<string>` of expanded keys threaded through the parent. */
-function CategoryLeaf({ category, checked, onChange, items }: CategoryLeafProps) {
+function CategoryLeaf({ category, checked, onChange, items, tableHref }: CategoryLeafProps) {
   const [expanded, setExpanded] = useState(false)
 
   return (
@@ -169,9 +183,17 @@ function CategoryLeaf({ category, checked, onChange, items }: CategoryLeafProps)
             .slice(0, MAX_CATEGORY_CONTENTS_SHOWN)
             .map((item) => item.name)
             .join(', ')}
-          {items.length > MAX_CATEGORY_CONTENTS_SHOWN && (
-            <> , and {items.length - MAX_CATEGORY_CONTENTS_SHOWN} more</>
-          )}
+          {items.length > MAX_CATEGORY_CONTENTS_SHOWN &&
+            (tableHref ? (
+              <>
+                {', and '}
+                <a href={tableHref}>
+                  {items.length - MAX_CATEGORY_CONTENTS_SHOWN} more in a sortable table
+                </a>
+              </>
+            ) : (
+              <> , and {items.length - MAX_CATEGORY_CONTENTS_SHOWN} more</>
+            ))}
         </div>
       )}
     </div>
@@ -195,7 +217,13 @@ interface GroupCheckboxProps {
  * imperatively via a ref, matching the platform's own checkbox behavior.
  * Exported for reuse anywhere else a "toggle every leaf below" control over
  * a flat set of checkboxes is needed, not just a `CategoryFilter` group. */
-export function GroupCheckbox({ label, checked, indeterminate, onChange, ariaLabel }: GroupCheckboxProps) {
+export function GroupCheckbox({
+  label,
+  checked,
+  indeterminate,
+  onChange,
+  ariaLabel,
+}: GroupCheckboxProps) {
   const ref = useRef<HTMLInputElement>(null)
 
   useEffect(() => {

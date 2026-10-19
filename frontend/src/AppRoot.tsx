@@ -14,7 +14,10 @@
 import { useEffect, useState } from 'react'
 import App from './App'
 import type { AppInitialState } from './App'
+import { CategoryTablePage } from './CategoryTablePage'
 import { ResultPage } from './ResultPage'
+import { categoryRouteFromLocation } from './search-engine/category-route'
+import type { CategoryRoute } from './search-engine/category-route'
 import { encodedResultFromLocation } from './search-engine/shared-state'
 
 export function AppRoot() {
@@ -24,12 +27,16 @@ export function AppRoot() {
   // reconstruction rather than this component needing its own loading state
   // for a decode step with nothing to render yet.
   const [encoded, setEncoded] = useState<string | null>(() => encodedResultFromLocation())
+  const [categoryRoute, setCategoryRoute] = useState<CategoryRoute | null>(() =>
+    categoryRouteFromLocation(),
+  )
   const [initialState, setInitialState] = useState<AppInitialState | undefined>(undefined)
   const [appKey, setAppKey] = useState(0)
 
   useEffect(() => {
     function onHashChange(): void {
       setEncoded(encodedResultFromLocation())
+      setCategoryRoute(categoryRouteFromLocation())
     }
     window.addEventListener('hashchange', onHashChange)
     return () => window.removeEventListener('hashchange', onHashChange)
@@ -38,6 +45,7 @@ export function AppRoot() {
   function goToSearch(): void {
     window.location.hash = ''
     setEncoded(null)
+    setCategoryRoute(null)
   }
 
   function handleUseAsBase(next: AppInitialState): void {
@@ -46,6 +54,15 @@ export function AppRoot() {
     goToSearch()
   }
 
+  if (categoryRoute !== null) {
+    return (
+      <CategoryTablePage
+        kind={categoryRoute.kind}
+        categoryKey={categoryRoute.categoryKey}
+        onBackToSearch={goToSearch}
+      />
+    )
+  }
   if (encoded !== null) {
     return (
       <ResultPage encoded={encoded} onUseAsBase={handleUseAsBase} onBackToSearch={goToSearch} />

@@ -784,5 +784,22 @@ describe('App', () => {
       expect(screen.getByText('White Cat Mask')).toBeInTheDocument()
       expect(screen.getByRole('button', { name: 'Clear' })).toBeInTheDocument()
     })
+
+    it("resolves a piece's Zenith skill contribution to its real name in the hover summary", async () => {
+      const user = userEvent.setup()
+      render(<App />)
+
+      await user.click(screen.getByRole('button', { name: /pin specific armor/i }))
+      await user.type(screen.getByLabelText('Search pieces for head'), 'Leather')
+      await user.hover(screen.getByRole('option', { name: 'Leather Helm' }))
+
+      // Leather Helm grants both a normal skill (Attack) and a Zenith skill
+      // (Dissolver Up, id 1000001) -- before this fix, ArmorPicker built its
+      // skill-name lookup from `bundle.skills` alone, so the Zenith
+      // contribution fell back to "Skill 1000001" instead of its real name.
+      expect(screen.getByText('Attack: 5')).toBeInTheDocument()
+      expect(screen.getByText(/Dissolver Up: 5/)).toBeInTheDocument()
+      expect(screen.queryByText(/Skill 1000001/)).not.toBeInTheDocument()
+    })
   })
 })

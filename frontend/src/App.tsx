@@ -18,6 +18,7 @@ import {
   WEAPON_NO_ZENITH_SKILL_KEY,
 } from './search-engine/build-query'
 import type { HunterTypeFilter, PinnedCuffSlot, QueryFormState } from './search-engine/build-query'
+import { categoryRouteHash } from './search-engine/category-route'
 import { CUFF_CATEGORY_GROUPS } from './search-engine/cuff-categories'
 import { DECORATION_CATEGORY_GROUPS } from './search-engine/decoration-categories'
 import { findUnreachableRequirements } from './search-engine/feasibility'
@@ -29,7 +30,11 @@ import type { SearchFormState } from './search-engine/search-form-state'
 import { loadSearchFormState, saveSearchFormState } from './search-engine/search-form-state'
 import { buildResultUrl } from './search-engine/shared-state'
 import type { SharedSearchState } from './search-engine/shared-state'
-import type { ResistanceElement, SkillRequirement, SkillTierThresholds } from './search-engine/types'
+import type {
+  ResistanceElement,
+  SkillRequirement,
+  SkillTierThresholds,
+} from './search-engine/types'
 
 /** How many of a weapon's (always up to 3, confirmed against the real
  * dataset -- every Zenith-infused weapon has exactly 3, and a plain one can
@@ -52,7 +57,10 @@ const HUNTER_TYPE_FILTER_OPTIONS: readonly {
 /** The 5 elements `SearchOptions.resistanceFloors` can constrain (docs/
  * feedback.md Round 1 #4) -- labels capitalized for display, values matching
  * `ResistanceElement` exactly. */
-const RESISTANCE_ELEMENT_OPTIONS: readonly { readonly value: ResistanceElement; readonly label: string }[] = [
+const RESISTANCE_ELEMENT_OPTIONS: readonly {
+  readonly value: ResistanceElement
+  readonly label: string
+}[] = [
   { value: 'fire', label: 'Fire' },
   { value: 'water', label: 'Water' },
   { value: 'thunder', label: 'Thunder' },
@@ -322,8 +330,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
   // in the opposite direction (nothing constrained until the player opts an
   // element in).
   const [nonNegativeResistances, setNonNegativeResistances] = useState<Set<ResistanceElement>>(
-    () =>
-      new Set(initialState?.nonNegativeResistances ?? persisted?.nonNegativeResistances ?? []),
+    () => new Set(initialState?.nonNegativeResistances ?? persisted?.nonNegativeResistances ?? []),
   )
   // Defaults to on (2026-10-15, per the project owner): an unrequested skill
   // reaching one of its own tiers unprompted is more often a surprise than a
@@ -376,7 +383,9 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
         const pinnedCandidate = bundle.slots
           .find((s) => s.slotId === slot.slotId)
           ?.candidates.find((c) => c.id === pin.candidateId)
-        return pinnedCandidate ? { ...slot, candidates: [...slot.candidates, pinnedCandidate] } : slot
+        return pinnedCandidate
+          ? { ...slot, candidates: [...slot.candidates, pinnedCandidate] }
+          : slot
       })
     : []
 
@@ -386,6 +395,19 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
   // care which slot it happens to belong to.
   const allArmorCandidates = useMemo(
     () => bundle?.slots.flatMap((slot) => slot.candidates) ?? [],
+    [bundle],
+  )
+
+  // ArmorPicker builds its own name/tier lookups from this (not `bundle.skillNames`
+  // directly -- it also needs each skill's own tiers for its "Pinned skill
+  // totals" active-cap display, not just its name). Needs both catalogs --
+  // a Zenith-armor piece's own `skills` entries can include a Zenith skill
+  // contribution alongside its normal ones (e.g. "Skill Slots Up"), which
+  // `bundle.skills` alone can't name (bug found 2026-10-19, per the project
+  // owner: a pinned piece's hover summary showed "Skill 1000001" instead of
+  // its real Zenith skill name).
+  const armorPickerSkills = useMemo(
+    () => [...(bundle?.skills ?? []), ...(bundle?.zenithSkills ?? [])],
     [bundle],
   )
 
@@ -437,7 +459,10 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
   // (docs/feedback.md Round 1 #2: "see what's actually in a category") --
   // `CategoryFilter`'s own `itemsByCategory` prop. Armor is grouped from the
   // already-flattened `allArmorCandidates` above rather than re-flattening.
-  const gearItemsByCategory = useMemo(() => groupByCategory(allArmorCandidates), [allArmorCandidates])
+  const gearItemsByCategory = useMemo(
+    () => groupByCategory(allArmorCandidates),
+    [allArmorCandidates],
+  )
   const cuffItemsByCategory = useMemo(() => groupByCategory(bundle?.cuffs ?? []), [bundle])
   const decorationItemsByCategory = useMemo(
     () => groupByCategory(bundle?.decorations ?? []),
@@ -511,7 +536,10 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
       : `${pluralize(pinnedCuffSlots.length, 'cuff')} pinned`
   const exclusionsSummary = (() => {
     const total =
-      excludedArmorIds.size + excludedDecorationIds.size + excludedCuffIds.size + excludedSkillIds.size
+      excludedArmorIds.size +
+      excludedDecorationIds.size +
+      excludedCuffIds.size +
+      excludedSkillIds.size
     return total === 0 ? 'None excluded' : `${pluralize(total, 'item')} excluded`
   })()
   const resistancesSummary =
@@ -880,7 +908,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                   onChange={setPinnedArmor}
                   pinnedSlotDecorationIds={pinnedSlotDecorationIds}
                   onChangeSlotDecorations={setPinnedSlotDecorationIds}
-                  skills={bundle.skills}
+                  skills={armorPickerSkills}
                 />
               </Disclosure>
 
@@ -890,6 +918,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                   excludedCategories={excludedCategories}
                   onChange={setExcludedCategories}
                   itemsByCategory={gearItemsByCategory}
+                  tableLinkHash={(key) => categoryRouteHash('gear', key)}
                 />
               </Disclosure>
 
@@ -899,6 +928,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                   excludedCategories={excludedCuffCategories}
                   onChange={setExcludedCuffCategories}
                   itemsByCategory={cuffItemsByCategory}
+                  tableLinkHash={(key) => categoryRouteHash('cuffs', key)}
                 />
               </Disclosure>
 
@@ -908,6 +938,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                   excludedCategories={excludedDecorationCategories}
                   onChange={setExcludedDecorationCategories}
                   itemsByCategory={decorationItemsByCategory}
+                  tableLinkHash={(key) => categoryRouteHash('decorations', key)}
                 />
               </Disclosure>
 
@@ -928,10 +959,10 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
 
               <Disclosure title="Exclusions" summary={exclusionsSummary}>
                 <p className="form-text">
-                  Excluded armor, decorations, and cuffs never appear in a search result, unless also
-                  pinned above -- a pin always wins. Excluding a skill works differently: a result is
-                  simply never allowed to make that skill active, but equipment that grants it stays
-                  eligible otherwise. Type at least 2 characters to search.
+                  Excluded armor, decorations, and cuffs never appear in a search result, unless
+                  also pinned above -- a pin always wins. Excluding a skill works differently: a
+                  result is simply never allowed to make that skill active, but equipment that
+                  grants it stays eligible otherwise. Type at least 2 characters to search.
                   <br />
                   You can also search armor, decorations, and cuffs by skill name.
                 </p>
@@ -985,8 +1016,8 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
 
               <Disclosure title="Resistances" summary={resistancesSummary}>
                 <p className="form-text">
-                  Force a result's summed resistance to never drop below zero for the elements checked
-                  below -- avoids a build with a glaring elemental weakness.
+                  Force a result's summed resistance to never drop below zero for the elements
+                  checked below -- avoids a build with a glaring elemental weakness.
                 </p>
                 <div className="app-field-group d-flex flex-column gap-1">
                   <GroupCheckbox
@@ -999,7 +1030,9 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                     }
                     onChange={(checked) =>
                       setNonNegativeResistances(
-                        checked ? new Set(RESISTANCE_ELEMENT_OPTIONS.map((o) => o.value)) : new Set(),
+                        checked
+                          ? new Set(RESISTANCE_ELEMENT_OPTIONS.map((o) => o.value))
+                          : new Set(),
                       )
                     }
                   />
@@ -1027,8 +1060,8 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
 
               <Disclosure title="Save/load this query" summary="By text code">
                 <p className="form-text">
-                  Get a text code for every search input above, to reuse or share later -- unlike the
-                  automatic restore-on-reload, you can keep as many of these as you want.
+                  Get a text code for every search input above, to reuse or share later -- unlike
+                  the automatic restore-on-reload, you can keep as many of these as you want.
                 </p>
                 <div className="app-field-group d-flex flex-column gap-1">
                   <button

@@ -110,7 +110,7 @@ describe('CategoryFilter', () => {
     expect(header.indeterminate).toBe(true)
   })
 
-  it('collapses and expands a group\'s leaves without affecting its checked state', async () => {
+  it("collapses and expands a group's leaves without affecting its checked state", async () => {
     render(<CategoryFilter groups={GROUPS} excludedCategories={new Set()} onChange={vi.fn()} />)
 
     expect(screen.getByRole('checkbox', { name: 'Guild GX' })).toBeInTheDocument()
@@ -175,6 +175,45 @@ describe('CategoryFilter', () => {
 
       await userEvent.click(screen.getByRole('button', { name: 'Hide' }))
       expect(screen.queryByText(/Guardian Mask/)).not.toBeInTheDocument()
+    })
+
+    it('shows a plain "N more" note with no tableLinkHash, even past the cap', async () => {
+      const overflowing = new Map([
+        ['guild_gx', Array.from({ length: 101 }, (_, i) => ({ name: `Item ${i}` }))],
+      ])
+      render(
+        <CategoryFilter
+          groups={GROUPS}
+          excludedCategories={new Set()}
+          onChange={vi.fn()}
+          itemsByCategory={overflowing}
+        />,
+      )
+
+      await userEvent.click(screen.getByRole('button', { name: 'View (101)' }))
+
+      expect(screen.getByText(/, and 1 more/)).toBeInTheDocument()
+      expect(screen.queryByRole('link')).not.toBeInTheDocument()
+    })
+
+    it('links to a sortable table for the overflow, when tableLinkHash is given', async () => {
+      const overflowing = new Map([
+        ['guild_gx', Array.from({ length: 101 }, (_, i) => ({ name: `Item ${i}` }))],
+      ])
+      render(
+        <CategoryFilter
+          groups={GROUPS}
+          excludedCategories={new Set()}
+          onChange={vi.fn()}
+          itemsByCategory={overflowing}
+          tableLinkHash={(key) => `#/category/gear/${key}`}
+        />,
+      )
+
+      await userEvent.click(screen.getByRole('button', { name: 'View (101)' }))
+
+      const link = screen.getByRole('link', { name: '1 more in a sortable table' })
+      expect(link).toHaveAttribute('href', '#/category/gear/guild_gx')
     })
   })
 })
