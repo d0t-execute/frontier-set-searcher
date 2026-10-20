@@ -330,9 +330,7 @@ describe('ResultsList', () => {
     // bigger) means the full "Skill 11 (3) (disabled)" text is never any one
     // element's own text node -- `toHaveTextContent` aggregates descendants
     // the way `getByText` deliberately doesn't, so it's used here instead.
-    expect(screen.getByText('Skill 11').closest('div')).toHaveTextContent(
-      'Skill 11 (3) (disabled)',
-    )
+    expect(screen.getByText('Skill 11').closest('div')).toHaveTextContent('Skill 11 (3) (disabled)')
   })
 
   it('shows a tiered skill as its crossed tier label plus points over threshold', () => {
@@ -496,10 +494,7 @@ describe('ResultsList', () => {
       name: `Skill ${i + 1}`,
       category: null,
       priorityRank: i + 1,
-      tiers:
-        i === 10
-          ? [{ label: 'Deviation Up', minPoints: -10, description: null }]
-          : [],
+      tiers: i === 10 ? [{ label: 'Deviation Up', minPoints: -10, description: null }] : [],
     }))
     const skillTotals = new Map([
       ...manySkills.slice(0, 10).map((s, i): [number, number] => [s.id, i + 1]),
@@ -546,9 +541,7 @@ describe('ResultsList', () => {
       />,
     )
 
-    const names = screen
-      .getAllByText(/^Skill \d+$/)
-      .map((el) => el.textContent)
+    const names = screen.getAllByText(/^Skill \d+$/).map((el) => el.textContent)
     expect(names[0]).toBe('Skill 10')
     expect(names[names.length - 1]).toBe('Skill 11')
   })
@@ -657,7 +650,12 @@ describe('ResultsList', () => {
 
   it('renders nothing when there are no results', () => {
     const { container } = render(
-      <ResultsList results={[]} skillNames={skillNames} skills={skills} zenithSkills={zenithSkills} />,
+      <ResultsList
+        results={[]}
+        skillNames={skillNames}
+        skills={skills}
+        zenithSkills={zenithSkills}
+      />,
     )
 
     expect(screen.queryAllByRole('listitem')).toHaveLength(0)

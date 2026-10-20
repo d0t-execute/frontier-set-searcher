@@ -158,8 +158,8 @@ export function ResultPage({ encoded, onUseAsBase, onBackToSearch }: ResultPageP
       )}
       {decodeStatus === 'invalid-link' && (
         <p role="alert">
-          This link is corrupted, or was created before an update changed how links are encoded,
-          and can no longer be opened.
+          This link is corrupted, or was created before an update changed how links are encoded, and
+          can no longer be opened.
         </p>
       )}
 

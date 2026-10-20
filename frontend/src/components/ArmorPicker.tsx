@@ -429,7 +429,13 @@ function SlotDecorationOnlyPicker({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={(e) =>
-              handleEnterToPickFirst(e, fittableDecorations, search, pickDecoration, decorationMatches)
+              handleEnterToPickFirst(
+                e,
+                fittableDecorations,
+                search,
+                pickDecoration,
+                decorationMatches,
+              )
             }
           />
           <FilterableOptions

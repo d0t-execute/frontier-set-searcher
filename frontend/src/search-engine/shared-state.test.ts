@@ -22,6 +22,7 @@ const state: SharedSearchState = {
   excludedCuffIds: ['cuff:C099'],
   excludedSkillIds: ['5'],
   preferredArmorIds: ['head:0002'],
+  preferredCategoryCounts: [{ category: 'equip_g_rank', count: 2 }],
   nonNegativeResistances: ['ice', 'thunder'],
   preferExactMatches: true,
   result: {

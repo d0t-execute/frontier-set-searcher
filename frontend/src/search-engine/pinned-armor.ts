@@ -19,7 +19,10 @@ export interface PinnedSlot {
 
 export interface PinnableSlot {
   readonly slotId: string
-  readonly candidates: readonly { readonly id: string; readonly skills: readonly SkillContribution[] }[]
+  readonly candidates: readonly {
+    readonly id: string
+    readonly skills: readonly SkillContribution[]
+  }[]
 }
 
 /** Sums skill contributions across every currently pinned slot's chosen

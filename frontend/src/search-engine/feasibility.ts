@@ -32,7 +32,9 @@ function slotDecorationGroupsFor(
     slot.candidates.reduce((max, c) => Math.max(max, c.openSlotCount ?? 0), 0),
   )
   const groups = slots.map((_slot, s) =>
-    capacities[s] > 0 ? decorations.filter((d) => d.slotSize > 0 && d.slotSize <= capacities[s]) : [],
+    capacities[s] > 0
+      ? decorations.filter((d) => d.slotSize > 0 && d.slotSize <= capacities[s])
+      : [],
   )
   return { groups, capacities }
 }

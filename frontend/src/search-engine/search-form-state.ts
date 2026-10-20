@@ -24,7 +24,7 @@
 
 import type { HunterTypeFilter, PinnedCuffSlot } from './build-query'
 import type { PinnedSlot } from './pinned-armor'
-import type { ResistanceElement, SkillRequirement } from './types'
+import type { PreferredCategoryCount, ResistanceElement, SkillRequirement } from './types'
 
 const RESISTANCE_ELEMENTS: readonly ResistanceElement[] = [
   'fire',
@@ -56,6 +56,7 @@ export interface SearchFormState {
   readonly excludedCuffIds: readonly string[]
   readonly excludedSkillIds: readonly string[]
   readonly preferredArmorIds: readonly string[]
+  readonly preferredCategoryCounts: readonly PreferredCategoryCount[]
   readonly nonNegativeResistances: readonly ResistanceElement[]
   readonly preferExactMatches: boolean
   readonly maxResults: number
@@ -74,6 +75,12 @@ function isPinnedCuffSlot(value: unknown): value is PinnedCuffSlot {
   if (v.mode === 'exact') return typeof v.cuffId === 'string'
   if (v.mode === 'skill') return typeof v.skillId === 'number'
   return false
+}
+
+function isPreferredCategoryCount(value: unknown): value is PreferredCategoryCount {
+  if (typeof value !== 'object' || value === null) return false
+  const v = value as Record<string, unknown>
+  return typeof v.category === 'string' && typeof v.count === 'number'
 }
 
 export function validateSearchFormState(parsed: unknown): SearchFormState | null {
@@ -98,6 +105,8 @@ export function validateSearchFormState(parsed: unknown): SearchFormState | null
     !Array.isArray(p.excludedCuffIds) ||
     !Array.isArray(p.excludedSkillIds) ||
     !Array.isArray(p.preferredArmorIds) ||
+    !Array.isArray(p.preferredCategoryCounts) ||
+    !p.preferredCategoryCounts.every(isPreferredCategoryCount) ||
     !Array.isArray(p.nonNegativeResistances) ||
     !p.nonNegativeResistances.every((e) => RESISTANCE_ELEMENTS.includes(e)) ||
     typeof p.preferExactMatches !== 'boolean' ||

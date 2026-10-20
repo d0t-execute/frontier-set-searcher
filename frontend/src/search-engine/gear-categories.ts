@@ -79,7 +79,10 @@ export interface GearCategoryGroup {
  * G-Rank/Zenith" computation and the plain group-level select-all checkbox
  * keep working off the flat list exactly as they did before sections
  * existed; `sections` is purely an additional display subdivision on top. */
-function sectionedGroup(label: string, sections: readonly GearCategorySection[]): GearCategoryGroup {
+function sectionedGroup(
+  label: string,
+  sections: readonly GearCategorySection[],
+): GearCategoryGroup {
   return { label, categories: sections.flatMap((section) => section.categories), sections }
 }
 

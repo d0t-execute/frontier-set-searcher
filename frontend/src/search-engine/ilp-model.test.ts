@@ -16,6 +16,7 @@ function candidate(
   skills: Record<number, number>,
   openSlotCount = 0,
   resistances?: Resistances,
+  category?: string,
 ): Candidate {
   return {
     id,
@@ -25,6 +26,7 @@ function candidate(
     })),
     openSlotCount,
     resistances,
+    category,
   }
 }
 
@@ -478,6 +480,146 @@ describe('buildModel with options.preferredCandidateIds (docs/feedback.md Round 
     ]
     const { model, columns } = buildModel(highs, slots, [], [{ skillId: 1, minPoints: 3 }], {
       preferredCandidateIds: new Set(['SomeoneElse']),
+    })
+
+    const { colValue, native } = solve(model)
+    const decoded = decodeSolution(columns, colValue)
+    expect(['Plain', 'AlsoPlain']).toContain(decoded.picks.get('head')?.id)
+    native.dispose()
+  })
+})
+
+describe('buildModel with options.preferredCategoryCounts (2026-10-20, per the project owner)', () => {
+  it('breaks a tie in favor of a candidate matching the preferred category', () => {
+    const slots: SlotQuery[] = [
+      {
+        slotId: 'head',
+        candidates: [
+          candidate('Plain', { 1: 5 }, 0, undefined, 'other'),
+          candidate('FromA', { 1: 5 }, 0, undefined, 'categoryA'),
+        ],
+      },
+    ]
+    const { model, columns } = buildModel(highs, slots, [], [{ skillId: 1, minPoints: 3 }], {
+      preferredCategoryCounts: [{ category: 'categoryA', count: 1 }],
+    })
+
+    const { colValue, native } = solve(model)
+    const decoded = decodeSolution(columns, colValue)
+    expect(decoded.picks.get('head')?.id).toBe('FromA')
+    native.dispose()
+  })
+
+  it('maximizes the count of matching candidates used, up to the requested count, across slots', () => {
+    const slots: SlotQuery[] = [
+      {
+        slotId: 'head',
+        candidates: [
+          candidate('AHead', { 1: 5 }, 0, undefined, 'categoryA'),
+          candidate('OpenHead', { 1: 5 }, 4, undefined, 'other'),
+        ],
+      },
+      {
+        slotId: 'chest',
+        candidates: [
+          candidate('AChest', { 1: 5 }, 0, undefined, 'categoryA'),
+          candidate('OpenChest', { 1: 5 }, 4, undefined, 'other'),
+        ],
+      },
+    ]
+    const { model, columns } = buildModel(highs, slots, [], [{ skillId: 1, minPoints: 3 }], {
+      preferredCategoryCounts: [{ category: 'categoryA', count: 2 }],
+    })
+
+    const { colValue, native } = solve(model)
+    const decoded = decodeSolution(columns, colValue)
+    // Using both categoryA pieces earns 2 * PREFERRED_ITEM_WEIGHT, dominating
+    // the far smaller OPEN_SLOT_WEIGHT gain from picking an "other" piece
+    // instead for either slot.
+    expect(decoded.picks.get('head')?.id).toBe('AHead')
+    expect(decoded.picks.get('chest')?.id).toBe('AChest')
+    native.dispose()
+  })
+
+  it('stops rewarding once the requested count is already reached, letting other factors decide the rest', () => {
+    const slots: SlotQuery[] = [
+      { slotId: 'head', candidates: [candidate('AHead', { 1: 5 }, 0, undefined, 'categoryA')] },
+      { slotId: 'chest', candidates: [candidate('AChest', { 1: 5 }, 0, undefined, 'categoryA')] },
+      {
+        slotId: 'arms',
+        candidates: [
+          candidate('AArms', { 1: 5 }, 0, undefined, 'categoryA'),
+          candidate('OpenArms', { 1: 5 }, 4, undefined, 'other'),
+        ],
+      },
+    ]
+    const { model, columns } = buildModel(highs, slots, [], [{ skillId: 1, minPoints: 3 }], {
+      preferredCategoryCounts: [{ category: 'categoryA', count: 2 }],
+    })
+
+    const { colValue, native } = solve(model)
+    const decoded = decodeSolution(columns, colValue)
+    // head/chest have only one option each, already reaching the count-2
+    // target on their own -- a 3rd categoryA piece earns no further reward
+    // (the accounting column is capped at 2), so arms' extra open slots win.
+    expect(decoded.picks.get('arms')?.id).toBe('OpenArms')
+    native.dispose()
+  })
+
+  it('is a soft preference: a build using fewer than the requested count is still returned, not made infeasible', () => {
+    const slots: SlotQuery[] = [
+      { slotId: 'head', candidates: [candidate('OnlyA', { 1: 3 }, 0, undefined, 'categoryA')] },
+    ]
+    const { model, columns } = buildModel(highs, slots, [], [{ skillId: 1, minPoints: 3 }], {
+      preferredCategoryCounts: [{ category: 'categoryA', count: 5 }],
+    })
+
+    const { colValue, native } = solve(model)
+    const decoded = decodeSolution(columns, colValue)
+    expect(decoded.picks.get('head')?.id).toBe('OnlyA')
+    native.dispose()
+  })
+
+  it('supports multiple categories at once, each rewarded independently (e.g. 1 from A and 1 from B)', () => {
+    const slots: SlotQuery[] = [
+      {
+        slotId: 'head',
+        candidates: [
+          candidate('AHead', { 1: 5 }, 0, undefined, 'categoryA'),
+          candidate('OpenHead', { 1: 5 }, 4, undefined, 'other'),
+        ],
+      },
+      {
+        slotId: 'chest',
+        candidates: [
+          candidate('BChest', { 1: 5 }, 0, undefined, 'categoryB'),
+          candidate('OpenChest', { 1: 5 }, 4, undefined, 'other'),
+        ],
+      },
+    ]
+    const { model, columns } = buildModel(highs, slots, [], [{ skillId: 1, minPoints: 3 }], {
+      preferredCategoryCounts: [
+        { category: 'categoryA', count: 1 },
+        { category: 'categoryB', count: 1 },
+      ],
+    })
+
+    const { colValue, native } = solve(model)
+    const decoded = decodeSolution(columns, colValue)
+    expect(decoded.picks.get('head')?.id).toBe('AHead')
+    expect(decoded.picks.get('chest')?.id).toBe('BChest')
+    native.dispose()
+  })
+
+  it('has no effect when no candidate matches the requested category', () => {
+    const slots: SlotQuery[] = [
+      {
+        slotId: 'head',
+        candidates: [candidate('Plain', { 1: 5 }), candidate('AlsoPlain', { 1: 5 })],
+      },
+    ]
+    const { model, columns } = buildModel(highs, slots, [], [{ skillId: 1, minPoints: 3 }], {
+      preferredCategoryCounts: [{ category: 'nonexistent', count: 1 }],
     })
 
     const { colValue, native } = solve(model)

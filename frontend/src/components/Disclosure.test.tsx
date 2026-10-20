@@ -24,10 +24,7 @@ describe('Disclosure', () => {
       </Disclosure>,
     )
 
-    expect(screen.getByRole('button', { name: /skills/i })).toHaveAttribute(
-      'aria-expanded',
-      'true',
-    )
+    expect(screen.getByRole('button', { name: /skills/i })).toHaveAttribute('aria-expanded', 'true')
   })
 
   it('toggles open and closed when its header is clicked', async () => {

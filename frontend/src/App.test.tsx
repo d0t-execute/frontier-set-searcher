@@ -197,6 +197,7 @@ describe('App', () => {
         excludedActiveSkillIds: [],
         pinnedCuffSkillIds: [],
         preferredCandidateIds: new Set(),
+        preferredCategoryCounts: [],
       },
       // The "Unavailable"-leaf cuff is excluded unconditionally (see build-
       // query.ts's `_UNOBTAINABLE_CUFF_CATEGORIES`) -- both real ones pass.
@@ -231,6 +232,7 @@ describe('App', () => {
         excludedActiveSkillIds: [],
         pinnedCuffSkillIds: [],
         preferredCandidateIds: new Set(),
+        preferredCategoryCounts: [],
       },
       [BUNDLE.cuffs[0], BUNDLE.cuffs[1]],
     )

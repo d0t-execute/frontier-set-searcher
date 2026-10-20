@@ -84,7 +84,7 @@ describe('computePinnedSkillTotals', () => {
     expect(totals.get(1)).toBe(6)
   })
 
-  it("ignores a slot-only decoration pin for a slot that already has a full piece pin", () => {
+  it('ignores a slot-only decoration pin for a slot that already has a full piece pin', () => {
     const pinned: ReadonlyMap<string, PinnedSlot> = new Map([
       ['head', { candidateId: 'head:0001', decorationIds: [] }],
     ])

@@ -240,7 +240,7 @@ export function CategoryTablePage({ kind, categoryKey, onBackToSearch }: Categor
       if (nameQuery.length > 0 && !item.name.toLowerCase().includes(nameQuery)) return false
       if (skillQuery.length > 0) {
         const matchesSkill = item.skills.some((s) => {
-          const text = skillSearchTextById.get(s.skillId) ?? (skillNameById.get(s.skillId) ?? '')
+          const text = skillSearchTextById.get(s.skillId) ?? skillNameById.get(s.skillId) ?? ''
           return text.toLowerCase().includes(skillQuery)
         })
         if (!matchesSkill) return false
@@ -251,7 +251,16 @@ export function CategoryTablePage({ kind, categoryKey, onBackToSearch }: Categor
       }
       return true
     })
-  }, [items, kind, nameFilter, skillFilter, skillSearchTextById, bundle, showBlademaster, showGunner])
+  }, [
+    items,
+    kind,
+    nameFilter,
+    skillFilter,
+    skillSearchTextById,
+    bundle,
+    showBlademaster,
+    showGunner,
+  ])
 
   const sortedItems = useMemo(() => {
     const column = columns.find((c) => c.key === sortKey)

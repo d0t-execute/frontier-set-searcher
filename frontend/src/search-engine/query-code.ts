@@ -38,7 +38,7 @@ import type { GearCategoryGroup } from './gear-categories'
 import type { PinnedSlot } from './pinned-armor'
 import { validateSearchFormState } from './search-form-state'
 import type { SearchFormState } from './search-form-state'
-import type { ResistanceElement, SkillRequirement } from './types'
+import type { PreferredCategoryCount, ResistanceElement, SkillRequirement } from './types'
 
 /** Every catalog this module needs to resolve an id to its real name (and
  * back). Deliberately plain `{id, name}` shapes rather than the richer
@@ -254,6 +254,12 @@ export async function encodeQueryCode(
       'Preferred armor',
       state.preferredArmorIds.map((id) => armorIdx.nameFor(id)),
     ),
+    renderList(
+      'Preferred categories',
+      state.preferredCategoryCounts.map(
+        (p) => `${gearCategoryIdx.nameFor(p.category)}: ${p.count}`,
+      ),
+    ),
   ]
 
   // Async only to keep this a drop-in replacement for the old gzip-based
@@ -329,6 +335,21 @@ function decodeSkillRequirements(
     const id = index.idFor(match[1])
     if (id === null) return null
     result.push({ skillId: Number(id), minPoints: Number(match[2]) })
+  }
+  return result
+}
+
+function decodePreferredCategoryCounts(
+  lines: readonly string[],
+  index: NameIndex,
+): readonly PreferredCategoryCount[] | null {
+  const result: PreferredCategoryCount[] = []
+  for (const line of lines) {
+    const match = /^(.*): (\d+)$/.exec(line)
+    if (!match) return null
+    const category = index.idFor(match[1])
+    if (category === null) return null
+    result.push({ category, count: Number(match[2]) })
   }
   return result
 }
@@ -500,6 +521,10 @@ export async function decodeQueryCode(
   const excludedCuffIds = decodeIdList(doc.sections.get('Excluded cuffs') ?? [], cuffIdx)
   const excludedSkillIds = decodeIdList(doc.sections.get('Excluded skills') ?? [], skillIdx)
   const preferredArmorIds = decodeIdList(doc.sections.get('Preferred armor') ?? [], armorIdx)
+  const preferredCategoryCounts = decodePreferredCategoryCounts(
+    doc.sections.get('Preferred categories') ?? [],
+    gearCategoryIdx,
+  )
 
   if (
     requirements === null ||
@@ -517,7 +542,8 @@ export async function decodeQueryCode(
     excludedDecorationIds === null ||
     excludedCuffIds === null ||
     excludedSkillIds === null ||
-    preferredArmorIds === null
+    preferredArmorIds === null ||
+    preferredCategoryCounts === null
   ) {
     return null
   }
@@ -548,6 +574,7 @@ export async function decodeQueryCode(
     excludedCuffIds,
     excludedSkillIds,
     preferredArmorIds,
+    preferredCategoryCounts,
     nonNegativeResistances,
     preferExactMatches,
     maxResults,

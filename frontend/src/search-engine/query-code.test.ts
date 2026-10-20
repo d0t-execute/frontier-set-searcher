@@ -63,6 +63,7 @@ const state: SearchFormState = {
   excludedCuffIds: ['cuff:C099'],
   excludedSkillIds: ['2'],
   preferredArmorIds: ['chest:0001'],
+  preferredCategoryCounts: [{ category: 'unavailable_not_implemented', count: 2 }],
   nonNegativeResistances: ['fire', 'dragon'],
   preferExactMatches: true,
   maxResults: 5,
@@ -108,6 +109,7 @@ describe('encodeQueryCode / decodeQueryCode', () => {
       excludedCuffIds: [],
       excludedSkillIds: [],
       preferredArmorIds: [],
+      preferredCategoryCounts: [],
       nonNegativeResistances: [],
       preferExactMatches: true,
       maxResults: 5,
@@ -188,6 +190,13 @@ describe('encodeQueryCode / decodeQueryCode', () => {
       'Nonexistent Skill: 10',
     )
     expect(await decodeQueryCode(encoded, catalog)).toBeNull()
+  })
+
+  it('resolves a preferred category count to its real name and count (2026-10-20)', async () => {
+    const encoded = await encodeQueryCode(state, catalog)
+    expect(encoded).toContain('Preferred categories:')
+    expect(encoded).toContain('- Not Implemented: 2')
+    expect(await decodeQueryCode(encoded, catalog)).toEqual(state)
   })
 
   it('returns null for an ambiguous name with no disambiguating id', async () => {

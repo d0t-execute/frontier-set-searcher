@@ -65,9 +65,12 @@ describe('findUnreachableRequirements', () => {
   it('does not flag a requirement only reachable through decorations placed in open slots', () => {
     const slots = [slot('head', [candidate('head:1', {}, 3)])]
     const decorations = [deco('D1', 1, { 1: 5 })]
-    const unreachable = findUnreachableRequirements(slots, decorations, [], [
-      { skillId: 1, minPoints: 15 },
-    ])
+    const unreachable = findUnreachableRequirements(
+      slots,
+      decorations,
+      [],
+      [{ skillId: 1, minPoints: 15 }],
+    )
     expect(unreachable).toEqual([])
   })
 

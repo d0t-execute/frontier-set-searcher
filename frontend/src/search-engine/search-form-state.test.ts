@@ -22,6 +22,7 @@ const STATE: SearchFormState = {
   excludedCuffIds: ['cuff:C002'],
   excludedSkillIds: ['5'],
   preferredArmorIds: ['head:0003'],
+  preferredCategoryCounts: [{ category: 'equip_g_rank', count: 2 }],
   nonNegativeResistances: ['water'],
   preferExactMatches: true,
   maxResults: 10,
@@ -65,6 +66,14 @@ describe('saveSearchFormState / loadSearchFormState', () => {
     localStorage.setItem(
       'frontier-set-searcher:search-form-state:v1',
       JSON.stringify({ ...STATE, hunterTypeFilter: 'either' }),
+    )
+    expect(loadSearchFormState()).toBeNull()
+  })
+
+  it('returns null for a malformed preferredCategoryCounts entry (2026-10-20)', () => {
+    localStorage.setItem(
+      'frontier-set-searcher:search-form-state:v1',
+      JSON.stringify({ ...STATE, preferredCategoryCounts: [{ category: 'equip_g_rank' }] }),
     )
     expect(loadSearchFormState()).toBeNull()
   })

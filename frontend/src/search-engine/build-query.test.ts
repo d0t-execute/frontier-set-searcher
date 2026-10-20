@@ -75,6 +75,7 @@ const EMPTY_FORM_STATE: QueryFormState = {
   excludedCuffIds: new Set(),
   excludedSkillIds: new Set(),
   preferredArmorIds: new Set(),
+  preferredCategoryCounts: [],
 }
 
 const BUNDLE: DataBundle = {
@@ -429,6 +430,15 @@ describe('buildSearchQuery', () => {
     })
 
     expect(query.preferredCandidateIds).toEqual(new Set(['head:0001']))
+  })
+
+  it('passes preferredCategoryCounts straight through unfiltered (2026-10-20)', () => {
+    const query = buildSearchQuery(BUNDLE, {
+      ...EMPTY_FORM_STATE,
+      preferredCategoryCounts: [{ category: 'standard_plain', count: 2 }],
+    })
+
+    expect(query.preferredCategoryCounts).toEqual([{ category: 'standard_plain', count: 2 }])
   })
 })
 

@@ -172,7 +172,10 @@ describe('CategoryFilter', () => {
     })
 
     it('restores collapse state from localStorage on mount, overriding defaultCollapsed', () => {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ collapsedGroups: ['Guild'], collapsedSections: [] }))
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ collapsedGroups: ['Guild'], collapsedSections: [] }),
+      )
 
       render(
         <CategoryFilter
@@ -231,17 +234,27 @@ describe('CategoryFilter', () => {
 
     it('renders a section header and nests its own leaves under it', () => {
       render(
-        <CategoryFilter groups={SECTIONED_GROUPS} excludedCategories={new Set()} onChange={vi.fn()} />,
+        <CategoryFilter
+          groups={SECTIONED_GROUPS}
+          excludedCategories={new Set()}
+          onChange={vi.fn()}
+        />,
       )
 
-      expect(screen.getByRole('checkbox', { name: 'Guild: Diva Defense (all)' })).toBeInTheDocument()
+      expect(
+        screen.getByRole('checkbox', { name: 'Guild: Diva Defense (all)' }),
+      ).toBeInTheDocument()
       expect(screen.getByRole('checkbox', { name: 'Diva Defense' })).toBeInTheDocument()
       expect(screen.getByRole('checkbox', { name: 'Diva Defense Zenith ZX' })).toBeInTheDocument()
     })
 
     it('collapses and expands one section independently of its sibling', async () => {
       render(
-        <CategoryFilter groups={SECTIONED_GROUPS} excludedCategories={new Set()} onChange={vi.fn()} />,
+        <CategoryFilter
+          groups={SECTIONED_GROUPS}
+          excludedCategories={new Set()}
+          onChange={vi.fn()}
+        />,
       )
 
       await userEvent.click(screen.getByRole('button', { name: 'Collapse Guild: Diva Defense' }))
@@ -254,7 +267,11 @@ describe('CategoryFilter', () => {
     it("a section's checkbox excludes only its own leaves, not its sibling section's", async () => {
       const onChange = vi.fn()
       render(
-        <CategoryFilter groups={SECTIONED_GROUPS} excludedCategories={new Set()} onChange={onChange} />,
+        <CategoryFilter
+          groups={SECTIONED_GROUPS}
+          excludedCategories={new Set()}
+          onChange={onChange}
+        />,
       )
 
       await userEvent.click(screen.getByRole('checkbox', { name: 'Guild: Diva Defense (all)' }))
@@ -273,7 +290,9 @@ describe('CategoryFilter', () => {
       )
 
       // The group itself is collapsed, so no section header renders yet.
-      expect(screen.queryByRole('checkbox', { name: 'Guild: Diva Defense (all)' })).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole('checkbox', { name: 'Guild: Diva Defense (all)' }),
+      ).not.toBeInTheDocument()
     })
   })
 

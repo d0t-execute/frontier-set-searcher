@@ -7,6 +7,7 @@ import { Disclosure } from './components/Disclosure'
 import { EquipmentExclusionPicker } from './components/EquipmentExclusionPicker'
 import { InfoTooltip } from './components/InfoTooltip'
 import { PreferredArmorPicker } from './components/PreferredArmorPicker'
+import { PreferredCategoryPicker } from './components/PreferredCategoryPicker'
 import { ResultsList } from './components/ResultsList'
 import { SkillPicker } from './components/SkillPicker'
 import type { NamedBuildResult } from './components/types'
@@ -45,6 +46,7 @@ import {
 import { buildResultUrl } from './search-engine/shared-state'
 import type { SharedSearchState } from './search-engine/shared-state'
 import type {
+  PreferredCategoryCount,
   ResistanceElement,
   SkillRequirement,
   SkillTierThresholds,
@@ -256,6 +258,11 @@ export interface AppInitialState {
   readonly excludedCuffIds?: ReadonlySet<string>
   readonly excludedSkillIds?: ReadonlySet<string>
   readonly preferredArmorIds?: ReadonlySet<string>
+  /** Gear categories (and piece counts) to favor using several pieces from
+   * (2026-10-20, per the project owner) -- optional, same "not every seed
+   * source has an opinion on every field" convention as the other optional
+   * fields here. */
+  readonly preferredCategoryCounts?: readonly PreferredCategoryCount[]
   /** Elements required to stay at or above zero, summed across every chosen
    * candidate (docs/feedback.md Round 1 #4) -- optional, same "not every
    * seed source has an opinion on every field" convention as the other
@@ -359,6 +366,18 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
   // -- see build-query.ts's `QueryFormState.preferredArmorIds` own docstring.
   const [preferredArmorIds, setPreferredArmorIds] = useState<Set<string>>(
     () => new Set(initialState?.preferredArmorIds ?? persisted?.preferredArmorIds ?? []),
+  )
+  // Gear categories (and piece counts) to favor using several pieces from
+  // (2026-10-20, per the project owner) -- see PreferredCategoryPicker.tsx's
+  // own docstring. A `Map` (category -> count), not a `Set` like the other
+  // preference/exclusion state above, since each entry also carries a count.
+  const [preferredCategoryCounts, setPreferredCategoryCounts] = useState<Map<string, number>>(
+    () =>
+      new Map(
+        (initialState?.preferredCategoryCounts ?? persisted?.preferredCategoryCounts ?? []).map(
+          (p) => [p.category, p.count],
+        ),
+      ),
   )
   // Elements required to stay at or above zero (docs/feedback.md Round 1 #4)
   // -- empty by default, same "don't silently assume a new feature's most
@@ -469,9 +488,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
       const pinnedCandidate = bundle.slots
         .find((s) => s.slotId === slot.slotId)
         ?.candidates.find((c) => c.id === pin.candidateId)
-      return pinnedCandidate
-        ? { ...slot, candidates: [...slot.candidates, pinnedCandidate] }
-        : slot
+      return pinnedCandidate ? { ...slot, candidates: [...slot.candidates, pinnedCandidate] } : slot
     })
   }, [bundle, deferredExcludedCategories, deferredHunterTypeFilter, pinnedArmor])
 
@@ -649,6 +666,10 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
     preferredArmorIds.size === 0
       ? 'None preferred'
       : `${pluralize(preferredArmorIds.size, 'piece')} preferred`
+  const preferredCategoriesSummary =
+    preferredCategoryCounts.size === 0
+      ? 'None preferred'
+      : `${pluralize(preferredCategoryCounts.size, 'category', 'categories')} preferred`
   const resistancesSummary =
     nonNegativeResistances.size === 0
       ? 'None required'
@@ -696,6 +717,10 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
       excludedCuffIds,
       excludedSkillIds,
       preferredArmorIds,
+      preferredCategoryCounts: [...preferredCategoryCounts].map(([category, count]) => ({
+        category,
+        count,
+      })),
     }),
     [
       excludedCategories,
@@ -712,6 +737,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
       excludedCuffIds,
       excludedSkillIds,
       preferredArmorIds,
+      preferredCategoryCounts,
     ],
   )
 
@@ -783,6 +809,10 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
       excludedCuffIds: [...excludedCuffIds],
       excludedSkillIds: [...excludedSkillIds],
       preferredArmorIds: [...preferredArmorIds],
+      preferredCategoryCounts: [...preferredCategoryCounts].map(([category, count]) => ({
+        category,
+        count,
+      })),
       nonNegativeResistances: [...nonNegativeResistances],
       preferExactMatches,
       maxResults,
@@ -805,6 +835,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
     excludedCuffIds,
     excludedSkillIds,
     preferredArmorIds,
+    preferredCategoryCounts,
     preferExactMatches,
     maxResults,
   ])
@@ -894,6 +925,10 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
         excludedActiveSkillIds,
         pinnedCuffSkillIds,
         preferredCandidateIds,
+        preferredCategoryCounts: [...preferredCategoryCounts].map(([category, count]) => ({
+          category,
+          count,
+        })),
       },
       cuffs,
     )
@@ -931,6 +966,10 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
         excludedCuffIds: [...excludedCuffIds],
         excludedSkillIds: [...excludedSkillIds],
         preferredArmorIds: [...preferredArmorIds],
+        preferredCategoryCounts: [...preferredCategoryCounts].map(([category, count]) => ({
+          category,
+          count,
+        })),
         nonNegativeResistances: [...nonNegativeResistances],
         preferExactMatches,
         maxResults,
@@ -960,6 +999,9 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
     setExcludedCuffIds(new Set(state.excludedCuffIds))
     setExcludedSkillIds(new Set(state.excludedSkillIds))
     setPreferredArmorIds(new Set(state.preferredArmorIds))
+    setPreferredCategoryCounts(
+      new Map(state.preferredCategoryCounts.map((p) => [p.category, p.count])),
+    )
     setNonNegativeResistances(new Set(state.nonNegativeResistances))
     setPreferExactMatches(state.preferExactMatches)
     setMaxResults(state.maxResults)
@@ -1018,6 +1060,10 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
       excludedCuffIds: [...excludedCuffIds],
       excludedSkillIds: [...excludedSkillIds],
       preferredArmorIds: [...preferredArmorIds],
+      preferredCategoryCounts: [...preferredCategoryCounts].map(([category, count]) => ({
+        category,
+        count,
+      })),
       nonNegativeResistances: [...nonNegativeResistances],
       preferExactMatches,
       result: {
@@ -1113,8 +1159,8 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                 summary={pinnedArmorSummary}
                 info={
                   <InfoTooltip label="About pinning armor">
-                    Pins a specific piece or decoration to force the solver to use it. Type at
-                    least 2 characters to search. <br />
+                    Pins a specific piece or decoration to force the solver to use it. Type at least
+                    2 characters to search. <br />
                     <b>You can search by skill name and skill level/threshold names.</b>
                   </InfoTooltip>
                 }
@@ -1155,14 +1201,33 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
               </Disclosure>
 
               <Disclosure
+                title="Preferred categories"
+                summary={preferredCategoriesSummary}
+                info={
+                  <InfoTooltip label="About preferred piece categories">
+                    The solver will favor using at least this many pieces from a chosen category,
+                    outranking any other difference in a build -- only falling short if it would
+                    otherwise make a skill requirement unreachable. Using more than the chosen count
+                    is never penalized. Set several categories at once to split the 5 armor slots
+                    between them (e.g. 2 from one category and 3 from another).
+                  </InfoTooltip>
+                }
+              >
+                <PreferredCategoryPicker
+                  counts={preferredCategoryCounts}
+                  onChange={setPreferredCategoryCounts}
+                />
+              </Disclosure>
+
+              <Disclosure
                 title="Gear categories"
                 summary={gearLevelsSummary}
                 info={
                   <InfoTooltip label="About the gear category list">
-                    Choose which armor categories are included in the search. This affects both
-                    the final results as well as the search elements in the sections. The
-                    categories can be expanded and collapsed. The gear rank buttons at the top
-                    will include/exclude all categories of that rank.
+                    Choose which armor categories are included in the search. This affects both the
+                    final results as well as the search elements in the sections. The categories can
+                    be expanded and collapsed. The gear rank buttons at the top will include/exclude
+                    all categories of that rank.
                   </InfoTooltip>
                 }
               >
@@ -1214,8 +1279,8 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                 info={
                   <InfoTooltip label="About the cuff category list">
                     Choose which cuff categories are included in the search. This affects both the
-                    final results as well as the search elements in the sections. The categories
-                    can be expanded and collapsed.
+                    final results as well as the search elements in the sections. The categories can
+                    be expanded and collapsed.
                   </InfoTooltip>
                 }
               >
@@ -1233,9 +1298,9 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                 summary={decorationsSummary}
                 info={
                   <InfoTooltip label="About the decoration category list">
-                    Choose which decoration categories are included in the search. This affects
-                    both the final results as well as the search elements in the sections. The
-                    categories can be expanded and collapsed.
+                    Choose which decoration categories are included in the search. This affects both
+                    the final results as well as the search elements in the sections. The categories
+                    can be expanded and collapsed.
                   </InfoTooltip>
                 }
               >
@@ -1275,13 +1340,15 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                 summary={exclusionsSummary}
                 info={
                   <InfoTooltip label="About excluding gear">
-                    Exclude armor, decorations, cuffs and skills to never appear in a search
-                    result. If that same piece is pinned above, the pin is prioritized. Excluding a
-                    skill means a result is never allowed to make that skill active, but equipment
-                    that grants it stays eligible otherwise. Type at least 2 characters to search.
+                    Exclude armor, decorations, cuffs and skills to never appear in a search result.
+                    If that same piece is pinned above, the pin is prioritized. Excluding a skill
+                    means a result is never allowed to make that skill active, but equipment that
+                    grants it stays eligible otherwise. Type at least 2 characters to search.
                     <br />
-                    <b>You can search armor, decorations, and cuffs by skill name and skill
-                    level/threshold names.</b>
+                    <b>
+                      You can search armor, decorations, and cuffs by skill name and skill
+                      level/threshold names.
+                    </b>
                   </InfoTooltip>
                 }
               >
@@ -1321,9 +1388,9 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                 summary={weaponSummary}
                 info={
                   <InfoTooltip label="About the weapon">
-                    Choose which Zenith skill is allowed to be on the weapon and how many
-                    decoration slots are reserved for sigils and should not be used to reach the
-                    skill requirements.
+                    Choose which Zenith skill is allowed to be on the weapon and how many decoration
+                    slots are reserved for sigils and should not be used to reach the skill
+                    requirements.
                   </InfoTooltip>
                 }
               >

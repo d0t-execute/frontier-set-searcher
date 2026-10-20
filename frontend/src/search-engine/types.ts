@@ -53,6 +53,11 @@ export interface Candidate {
    * resistance data (a synthetic test fixture, or a context that never
    * populates it at all). */
   readonly resistances?: Resistances
+  /** This piece's gear-level category key (see `NamedCandidate`, which always
+   * sets this -- optional here only so a synthetic test fixture that doesn't
+   * care about categories can omit it, same convention as `openSlotCount`/
+   * `resistances`). Used by `SearchOptions.preferredCategoryCounts`. */
+  readonly category?: string
 }
 
 export interface Decoration {
@@ -216,6 +221,38 @@ export interface SearchOptions {
    * to armor candidates only (decorations/cuffs are a separate pool, not
    * asked for here). */
   readonly preferredCandidateIds?: ReadonlySet<string>
+  /** A gear category to favor using several pieces from, and how many
+   * (2026-10-20, per the project owner: "a strong benefit from using exactly
+   * one piece from a specific category" -- generalized to any count 1-5, and
+   * to several categories at once, e.g. "2 from category A and 3 from
+   * category B"). Same soft-preference family as `preferredCandidateIds`
+   * (confirmed by the project owner: a build that can't reach `count` from
+   * this category is still returned, using fewer, rather than the search
+   * failing outright) -- but "prefer up to N armor picks from this category"
+   * doesn't fit that field's own per-piece bonus directly (a flat bonus per
+   * matching piece has no notion of "stop crediting after N," it would just
+   * always reward using *more* of the category, same as naming every one of
+   * its pieces individually). `ilp-model.ts`'s `buildModel` instead tracks,
+   * per entry, how many chosen armor candidates have this `category` (summed
+   * across every slot) and rewards that count up to `count` at
+   * `PREFERRED_ITEM_WEIGHT` per piece (the same per-piece scale
+   * `preferredCandidateIds` uses, so the two features rank consistently
+   * against each other and stack additively when a piece satisfies both) --
+   * see `buildModel`'s own docstring for the accounting-column mechanism,
+   * shared with its `preferExactMatches` tier machinery. `count` is a floor
+   * to reach, not a ceiling: a build using more than `count` pieces from this
+   * category is never penalized for the excess, only not rewarded further for
+   * it. A category with no matching candidates in the current query (e.g.
+   * filtered out) simply never reaches any reward, the same graceful
+   * degradation `preferredCandidateIds` already has for a filtered-out id. */
+  readonly preferredCategoryCounts?: readonly PreferredCategoryCount[]
+}
+
+export interface PreferredCategoryCount {
+  readonly category: string
+  /** How many armor picks from `category` to reward reaching, 1-5 (the game's
+   * own armor-slot count) -- see `SearchOptions.preferredCategoryCounts`. */
+  readonly count: number
 }
 
 export interface BuildResult {

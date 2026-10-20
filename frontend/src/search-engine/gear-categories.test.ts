@@ -35,7 +35,7 @@ describe('Exotic leaves (2026-10-20: only the plain leaf is Pre-G-Rank / moved u
   const preGrankExoticKeys = ['grank_exotic']
   const grankExoticKeys = ['grank_exotic_g', 'grank_exotic_gf', 'grank_exotic_gx']
 
-  it("the plain leaf is classified Pre-G-Rank; its G/GF/GX tiers stay G-Rank", () => {
+  it('the plain leaf is classified Pre-G-Rank; its G/GF/GX tiers stay G-Rank', () => {
     for (const key of preGrankExoticKeys) {
       expect(GEAR_LEVEL_GRANK_CATEGORIES).not.toContain(key)
       expect(GEAR_LEVEL_PRE_GRANK_CATEGORIES).toContain(key)

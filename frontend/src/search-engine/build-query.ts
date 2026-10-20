@@ -19,6 +19,7 @@ import type {
   NamedSlotQuery,
 } from './load-bundle'
 import type { PinnedSlot } from './pinned-armor'
+import type { PreferredCategoryCount } from './types'
 
 // The weapon slot is virtual and carries no defense/resistance data of its
 // own (confirmed against the raw data -- see docs/data-format-notes.md: the
@@ -117,6 +118,13 @@ export interface QueryFormState {
    * is purely a ranking tie-break, never a pool filter or a hard constraint,
    * so it can't conflict with what a pin forces in the first place. */
   readonly preferredArmorIds: ReadonlySet<string>
+  /** Gear categories to favor using several pieces from, and how many
+   * (2026-10-20, per the project owner) -- handed straight through to
+   * `SearchOptions.preferredCategoryCounts` with no filtering here, same
+   * "a target that doesn't fit the current query simply has no effect"
+   * convention `preferredArmorIds` above already has (see
+   * `SearchOptions.preferredCategoryCounts`'s own docstring). */
+  readonly preferredCategoryCounts: readonly PreferredCategoryCount[]
 }
 
 // The weapon slot is virtual (see etl/src/etl/export.py's module docstring --
@@ -314,7 +322,8 @@ export function cuffsAfterCategoryFilter(
   excludedCuffCategories: ReadonlySet<string>,
 ): NamedCuff[] {
   return cuffs.filter(
-    (c) => !_UNOBTAINABLE_CUFF_CATEGORIES.has(c.category) && !excludedCuffCategories.has(c.category),
+    (c) =>
+      !_UNOBTAINABLE_CUFF_CATEGORIES.has(c.category) && !excludedCuffCategories.has(c.category),
   )
 }
 
@@ -484,6 +493,10 @@ export interface BuiltQuery {
    * `SearchOptions.preferredCandidateIds` -- see `QueryFormState.preferredArmorIds`'s
    * own docstring. */
   readonly preferredCandidateIds: Set<string>
+  /** `state.preferredCategoryCounts`, handed straight through to
+   * `SearchOptions.preferredCategoryCounts` -- see
+   * `QueryFormState.preferredCategoryCounts`'s own docstring. */
+  readonly preferredCategoryCounts: readonly PreferredCategoryCount[]
 }
 
 /** The inverse direction of `buildWeaponSlot`: given which weapon candidate a
@@ -580,5 +593,6 @@ export function buildSearchQuery(bundle: DataBundle, state: QueryFormState): Bui
     excludedActiveSkillIds,
     pinnedCuffSkillIds,
     preferredCandidateIds,
+    preferredCategoryCounts: state.preferredCategoryCounts,
   }
 }

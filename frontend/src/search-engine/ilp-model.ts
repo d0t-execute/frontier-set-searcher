@@ -55,10 +55,12 @@
  * must reach its own minimum, since decorations/cuffs carry no resistance
  * data at all), then (same condition as the auxiliary columns above) a
  * handful of rows per bonus skill wiring its accounting column to the real
- * choice columns and to its tier-crossing indicator column(s), then one
- * cuff-group row per relevant cuff plus three rows global to every cuff
- * (combined slot-cost budget, item count, and Hiden-cuff count -- see
- * `buildModel`'s own docstring).
+ * choice columns and to its tier-crossing indicator column(s), then one row
+ * per `options.preferredCategoryCounts` entry wiring its own capped
+ * accounting column to the real candidate columns matching its category (see
+ * `buildModel`'s own docstring), then one cuff-group row per relevant cuff
+ * plus three rows global to every cuff (combined slot-cost budget, item
+ * count, and Hiden-cuff count -- see `buildModel`'s own docstring).
  */
 
 import type { Highs, ModelData, ModelStatusCode, VariableType } from 'highs'
@@ -585,6 +587,18 @@ export function buildModel(
     if (m.needsNeg) negIndicatorRowOf.set(m.skillId, rowCursor++)
   }
 
+  // Preferred category counts (see `SearchOptions.preferredCategoryCounts`):
+  // one row per entry, each wiring a capped accounting column (added once
+  // candidates are built below) to the real candidate columns the same way
+  // `totalRowOf` above wires a bonus skill's accounting column to its real
+  // contributors -- `capped - sum(matching candidates) <= 0` lets the
+  // objective reward the accounting column up to `count` without ever
+  // letting it claim more credit than the build actually earns. A degenerate
+  // entry (`count <= 0`) is dropped rather than given a column that could
+  // never contribute anything.
+  const preferredCategoryCounts = (options.preferredCategoryCounts ?? []).filter((p) => p.count > 0)
+  const preferredCategoryRowOf: number[] = preferredCategoryCounts.map(() => rowCursor++)
+
   // Cuffs (see this function's own docstring): one one-hot group row per
   // cuff, plus two rows global to every cuff (not per-slot, since cuffs
   // aren't tied to an armor slot). Skipped entirely when there are no
@@ -654,6 +668,10 @@ export function buildModel(
       rowUpper[negIndicatorRowOf.get(m.skillId)!] = highs.infinity
     }
   }
+  for (const row of preferredCategoryRowOf) {
+    rowLower[row] = -highs.infinity
+    rowUpper[row] = 0
+  }
   for (const row of cuffGroupRowOf) {
     rowLower[row] = 1
     rowUpper[row] = 1
@@ -720,6 +738,9 @@ export function buildModel(
         const points = pointsTowards(candidate.skills, m.skillId)
         if (points !== 0) entries.set(totalRowOf.get(m.skillId)!, points)
       }
+      preferredCategoryCounts.forEach((p, i) => {
+        if (candidate.category === p.category) entries.set(preferredCategoryRowOf[i], -1)
+      })
 
       columns.push({ kind: 'candidate', slotIndex: s, slotId: slot.slotId, candidate })
       const bonus = preferExactMatches ? 0 : bonusPointsOf(candidate.skills, requestedSkillIds)
@@ -839,6 +860,16 @@ export function buildModel(
       addColumn(-EXACT_MATCH_SKILL_PENALTY, new Map([[negIndicatorRowOf.get(m.skillId)!, bigM]]))
     }
   }
+
+  // The capped accounting column for each preferred-category-count entry
+  // (see this function's own docstring and `preferredCategoryRowOf` above) --
+  // bounded [0, count], so the objective can never reward more than `count`
+  // pieces from this category even if the build uses more of them, and its
+  // own row keeps it from claiming credit the build hasn't actually earned.
+  preferredCategoryCounts.forEach((p, i) => {
+    columns.push({ kind: 'auxiliary' })
+    addColumn(PREFERRED_ITEM_WEIGHT, new Map([[preferredCategoryRowOf[i], 1]]), 0, p.count)
+  })
 
   const model: ModelData = {
     numCols: columns.length,

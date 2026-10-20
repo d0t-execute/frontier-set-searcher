@@ -47,7 +47,12 @@
 
 import type { HunterTypeFilter } from './build-query'
 import { fromBase64Url, gunzip, gzip, toBase64Url } from './codec'
-import type { ResistanceElement, SkillContribution, SkillRequirement } from './types'
+import type {
+  PreferredCategoryCount,
+  ResistanceElement,
+  SkillContribution,
+  SkillRequirement,
+} from './types'
 
 const RESISTANCE_ELEMENTS: readonly ResistanceElement[] = [
   'fire',
@@ -145,6 +150,10 @@ export interface SharedSearchState {
    * #2) -- same "use as a base for a new search"-only role as the exclusion
    * sets above. */
   readonly preferredArmorIds: readonly string[]
+  /** Gear categories (and piece counts) the original search favored using
+   * several pieces from (2026-10-20, per the project owner) -- same "use as
+   * a base for a new search"-only role as `preferredArmorIds` above. */
+  readonly preferredCategoryCounts: readonly PreferredCategoryCount[]
   /** Elements the original search required to stay at or above zero
    * (docs/feedback.md Round 1 #4) -- same "use as a base for a new
    * search"-only role as the exclusions above. */
@@ -173,6 +182,7 @@ interface WireFormat {
   readonly eci: readonly string[]
   readonly esi: readonly string[]
   readonly pai: readonly string[]
+  readonly pcc: readonly (readonly [string, number])[]
   readonly nnr: readonly ResistanceElement[]
   readonly pem: boolean
   readonly rp: readonly (readonly [
@@ -205,6 +215,7 @@ function toWireFormat(state: SharedSearchState): WireFormat {
     eci: state.excludedCuffIds,
     esi: state.excludedSkillIds,
     pai: state.preferredArmorIds,
+    pcc: state.preferredCategoryCounts.map((p) => [p.category, p.count]),
     nnr: state.nonNegativeResistances,
     pem: state.preferExactMatches,
     rp: state.result.picks.map((p) => [
@@ -256,6 +267,7 @@ function fromWireFormat(parsed: unknown): SharedSearchState | null {
     !Array.isArray(p.eci) ||
     !Array.isArray(p.esi) ||
     !Array.isArray(p.pai) ||
+    !Array.isArray(p.pcc) ||
     !Array.isArray(p.nnr) ||
     !p.nnr.every((e) => RESISTANCE_ELEMENTS.includes(e)) ||
     typeof p.pem !== 'boolean' ||
@@ -282,6 +294,7 @@ function fromWireFormat(parsed: unknown): SharedSearchState | null {
     excludedCuffIds: w.eci,
     excludedSkillIds: w.esi,
     preferredArmorIds: w.pai,
+    preferredCategoryCounts: w.pcc.map(([category, count]) => ({ category, count })),
     nonNegativeResistances: w.nnr,
     preferExactMatches: w.pem,
     result: {
