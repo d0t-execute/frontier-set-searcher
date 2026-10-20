@@ -144,12 +144,16 @@ code {
  * height animation) -- `.disclosure-info` (the `InfoTooltip` icon) is also a
  * child of this row, and an `overflow: hidden` ancestor would clip its
  * floating tooltip content wherever it pokes outside the row's own bounds
- * (2026-10-20). `.disclosure-header`'s own top corners are rounded and
- * clipped instead, scoped to just the button, so its hover highlight still
- * looks clipped to the container without needing an ancestor's overflow. */
+ * (2026-10-20). The hover highlight (below) is painted on this row directly,
+ * sized to its own rounded corners, rather than on `.disclosure-header` alone
+ * clipped via `overflow: hidden` -- that left the highlight stopping short of
+ * `.disclosure-info` instead of reaching the row's full width (2026-10-20,
+ * per the project owner: "the hover style doesn't reach all the way to the
+ * end now with the information element"). */
 .disclosure-header-row {
   display: flex;
   align-items: center;
+  border-radius: 10px 10px 0 0;
 }
 
 .disclosure-header {
@@ -161,8 +165,6 @@ code {
   flex: 1;
   min-width: 0;
   padding: 14px 18px;
-  border-radius: 10px 10px 0 0;
-  overflow: hidden;
   cursor: pointer;
   color: var(--text-h);
   font-weight: 500;
@@ -173,16 +175,16 @@ code {
   margin-right: 18px;
 }
 
-/* While closed, the header IS the whole box (the body collapses to 0
- * height) -- round its bottom corners too in that case, so a hover
- * highlight's fill doesn't peek past the container's own rounded corners at
- * the bottom (it only needs square bottom corners while open, to butt
- * cleanly against `.disclosure-body-inner`'s top border below it). */
-.disclosure:has(.disclosure-body[data-open='false']) .disclosure-header {
+/* While closed, the header row IS the whole box (the body collapses to 0
+ * height) -- round its bottom corners too in that case, so the hover
+ * highlight doesn't peek past the container's own rounded corners at the
+ * bottom (it only needs square bottom corners while open, to butt cleanly
+ * against `.disclosure-body-inner`'s top border below it). */
+.disclosure:has(.disclosure-body[data-open='false']) .disclosure-header-row {
   border-radius: 10px;
 }
 
-.disclosure-header:hover {
+.disclosure-header-row:has(.disclosure-header:hover) {
   background: var(--accent-bg);
 }
 
