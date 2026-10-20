@@ -894,3 +894,51 @@ code {
   font-weight: 700;
   padding: 0;
 }
+
+/* -- CategoryTablePage.tsx -------------------------------------------- */
+
+.category-table-filters {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.category-table-filters .form-control {
+  width: 260px;
+  max-width: 100%;
+}
+
+.category-table-hunter-type-filters {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Same bug class as `.text-muted`/`.text-danger` above: this vendored
+ * Bootstrap build's `.table`/`.table-striped` only re-theme under a
+ * `[data-bs-theme=dark]` attribute this app never sets, so left alone they
+ * keep Bootstrap's fixed light-mode `--bs-table-bg`/`--bs-table-color` (white/
+ * near-black) no matter what the page's own dark mode does -- a bright white
+ * table on this page's dark background (2026-10-20, per the project owner:
+ * "they currently dont use a dark mode style if dark mode is preferred").
+ * Pointed at this page's own tokens instead of Bootstrap's, which already
+ * flip for dark mode, so this table re-themes for free. */
+.category-table {
+  --bs-table-bg: var(--bg);
+  --bs-table-color: var(--text-h);
+  --bs-table-border-color: var(--border);
+  --bs-table-striped-bg: color-mix(in srgb, var(--border), transparent 50%);
+  --bs-table-striped-color: var(--text-h);
+}
+
+.category-table-sortable-header button {
+  color: var(--text-h);
+  font-weight: 500;
+}
+
+.category-table-sortable-header button:hover,
+.category-table-sortable-header button:focus-visible {
+  color: var(--accent);
+}

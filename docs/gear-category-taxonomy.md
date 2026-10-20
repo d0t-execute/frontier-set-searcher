@@ -195,11 +195,20 @@ the ETL (`CATEGORY_DIVA_DEFENSE`/`diva_defense`), but since it's confirmed
 0 real rows it's no longer a UI leaf at all -- removed from this section's
 tree rather than kept as an always-empty defensive-default option.
 
+**Update (2026-10-20, Zenith ZF split out):** "Diva Defense Zenith" initially
+stayed merged (bare "Z" + "ZF") per the project owner's screenshot of the
+reference tool's own tree, which showed no separate "ZF" child here unlike
+Road/Event Zenith below. The project owner later decided to split it anyway,
+for consistency with Road/Event Zenith's own ZF leaf -- the real dataset
+splits cleanly by the same "ZF" name-suffix token (100/100), so the split is
+a clean row-count halving, not a guess.
+
 | Leaf | Rule | Count | Confidence |
 |---|---|---|---|
 | Diva Defense (plain) | `CRE=2u`, not `CLASS I`/`P` | 0 — confirmed empty, no longer a UI leaf (2026-10-20) | CONFIRMED |
 | Diva Defense GX | `CRE=2u` + `CLASS I` + GX ("Burning Cliff"/"Crimson Cliff") | 10 | CONFIRMED |
-| Diva Defense Zenith | `CRE=2u` + `CLASS P`, "Z" or "ZF" token | 200 | CONFIRMED — the project owner's screenshot shows no separate "ZF" child here, unlike Road/Event Zenith below, so "Z" and "ZF" stay merged in this one leaf |
+| Diva Defense Zenith | `CRE=2u` + `CLASS P`, bare "Z" token | 100 | CONFIRMED |
+| Diva Defense Zenith ZF | `CRE=2u` + `CLASS P` + ZF | 100 | CONFIRMED |
 | Diva Defense Zenith ZY | `CRE=2u` + `CLASS P` + ZY | 100 | HIGH |
 | Diva Defense Zenith ZX | `CRE=2u` + `CLASS P` + ZX | 100 | HIGH |
 
@@ -263,16 +272,17 @@ carry G/GF/GX), while 縁 has a plain variant plus all 3 (4 tiers total, 110/110
 pre-existing glued-marker bug where "Tempest GX【衣】"/"Welkin GX【衣】" rows (no space before "GX")
 were silently misclassified into plain 縁 instead of 縁GX, already reflected in the counts below.
 
-**Update (2026-10-20, Exotic corrected to Pre-G-Rank):** the 縁 (Exotic) rows below turned out to be
-Pre-G-Rank, not G-Rank, per the project owner's own reference taxonomy -- despite being `CLASS O`
-alongside the genuinely G-Rank G祕/始/etc. leaves above. The `grank_exotic`/`grank_exotic_g`/
-`grank_exotic_gf`/`grank_exotic_gx` UI leaves moved out of this "G Rank Armor" group entirely, into a
-new "Exotic" section under "Standard Armor" (see that section below); Gachapon's own "Gachapon Exotic"
-leaves (already a separate group, under "Paid and Premium" below) got the same Pre-G-Rank
-reclassification without needing to move groups. This is purely a "Gear levels" UI-tier correction --
-`is_grank_or_later_equipment` in gear_category.py (the real in-game active-skill-cap G-Rank
-piece-count bonus) still treats `CLASS O` as G-Rank-or-later, which is a separate, unrelated mechanic
-and was intentionally left untouched.
+**Update (2026-10-20, plain Exotic corrected to Pre-G-Rank):** only the plain 縁 (Exotic) row below
+turned out to be Pre-G-Rank, not G-Rank, per the project owner's own reference taxonomy -- despite
+being `CLASS O` alongside the genuinely G-Rank G祕/始/etc. leaves above. Its G/GF/GX tiers (縁G/縁GF/
+縁GX) stayed G-Rank. Only the `grank_exotic` (plain) UI leaf moved out of this "G Rank Armor" group,
+into a new "Exotic" section under "Standard Armor" (see that section below); `grank_exotic_g`/`_gf`/
+`_gx` stayed in "G Rank Armor", in their own "Exotic" section there. Gachapon's own "Gachapon Exotic"
+leaves (a separate group, under "Paid and Premium" below) are unrelated and untouched -- still all
+Pre-G-Rank as before. This is purely a "Gear levels" UI-tier correction -- `is_grank_or_later_equipment`
+in gear_category.py (the real in-game active-skill-cap G-Rank piece-count bonus) still treats
+`CLASS O` as G-Rank-or-later, which is a separate, unrelated mechanic and was intentionally left
+untouched.
 
 | Leaf | Rule | Count | Confidence |
 |---|---|---|---|
@@ -443,10 +453,11 @@ never actually affected.
 
 **Update (2026-10-20):** splits further into F/FZ (see the taxonomy-wide note above).
 
-**Update (2026-10-20, Exotic moved in):** the 縁 (Exotic) leaves (`grank_exotic`/`_g`/`_gf`/`_gx`)
-moved here from "G Rank Armor" above, as their own UI "Exotic" section -- see that section's own note
-for why (confirmed Pre-G-Rank, not G-Rank, despite `CLASS O`). The rule/count/confidence for those 4
-leaves is unchanged from the "G Rank Armour" table above; only their UI grouping moved.
+**Update (2026-10-20, plain Exotic moved in):** only the plain 縁 (Exotic) leaf (`grank_exotic`) moved
+here from "G Rank Armor" above, as its own UI "Exotic" section -- see that section's own note for why
+(confirmed Pre-G-Rank, not G-Rank, despite `CLASS O`). Its G/GF/GX tiers (`grank_exotic_g`/`_gf`/`_gx`)
+stayed in "G Rank Armor"'s own "Exotic" section. The rule/count/confidence for the plain leaf is
+unchanged from the "G Rank Armour" table above; only its UI grouping moved.
 
 | Leaf | Rule | Count | Confidence |
 |---|---|---|---|

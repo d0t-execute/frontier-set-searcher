@@ -227,6 +227,7 @@ function CuffSlotPicker({
                 <HoveredSkillSummary
                   hovered={hoveredCuff}
                   skillNameById={skillNameById}
+                  skillSearchTextById={skillSearchTextById}
                   query={search}
                 />
               )}

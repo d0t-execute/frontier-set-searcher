@@ -285,6 +285,7 @@ function ExclusionList<T extends Named>({
         <HoveredSkillSummary
           hovered={hovered && { skills: hovered.skills ?? [] }}
           skillNameById={skillNameById}
+          skillSearchTextById={skillSearchTextById}
           query={search}
         />
       )}

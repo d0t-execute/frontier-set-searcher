@@ -75,6 +75,7 @@ from etl.parse.gear_category import (
     CATEGORY_DIVA_DEFENSE,
     CATEGORY_DIVA_DEFENSE_GX,
     CATEGORY_DIVA_DEFENSE_ZENITH,
+    CATEGORY_DIVA_DEFENSE_ZENITH_ZF,
     CATEGORY_DIVA_DEFENSE_ZENITH_ZX,
     CATEGORY_DIVA_DEFENSE_ZENITH_ZY,
     CATEGORY_EVENT_EXTREME_G,
@@ -555,17 +556,21 @@ def test_diva_defense_gx_marker_can_be_glued_to_other_text() -> None:
 
 
 def test_diva_defense_zenith() -> None:
-    # 2026-10-20: confirmed via the project owner's screenshot of the
-    # reference tool's own tree that this leaf merges both the bare "Z" and
-    # "ZF" name-suffix variants (unlike Road/Event Zenith, which each split
-    # ZF into its own leaf) -- no separate "ZF" child exists in the real tree.
+    # 2026-10-20: split from a single merged "Z"/"ZF" leaf into its own ZF
+    # leaf, for consistency with Road/Event Zenith (which already split ZF
+    # out) -- the real dataset splits cleanly by this same "ZF" name-suffix
+    # marker (100 "Z" rows, 100 "ZF" rows), confirmed directly against
+    # etl/.data/cache/equip.body.
     assert (
         classify_equipment_category(_row("Katante Z Helm", cre="2u", clazz="P"))
         == CATEGORY_DIVA_DEFENSE_ZENITH
     )
+
+
+def test_diva_defense_zenith_zf() -> None:
     assert (
         classify_equipment_category(_row("Katante ZF Helm", cre="2u", clazz="P"))
-        == CATEGORY_DIVA_DEFENSE_ZENITH
+        == CATEGORY_DIVA_DEFENSE_ZENITH_ZF
     )
 
 

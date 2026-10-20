@@ -141,7 +141,12 @@ export function PreferredArmorPicker({
         onHoverChange={setHovered}
       />
       {search.trim().length >= MIN_SEARCH_LENGTH && (
-        <HoveredSkillSummary hovered={hovered} skillNameById={skillNameById} query={search} />
+        <HoveredSkillSummary
+          hovered={hovered}
+          skillNameById={skillNameById}
+          skillSearchTextById={skillSearchTextById}
+          query={search}
+        />
       )}
     </div>
   )

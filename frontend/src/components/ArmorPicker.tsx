@@ -253,6 +253,7 @@ function ArmorSlotPicker({
             <HoveredSkillSummary
               hovered={hoveredCandidate}
               skillNameById={skillNameById}
+              skillSearchTextById={skillSearchTextById}
               query={candidateSearch}
             />
           )}
@@ -318,6 +319,7 @@ function ArmorSlotPicker({
                 <HoveredSkillSummary
                   hovered={hoveredSlotDecoration}
                   skillNameById={skillNameById}
+                  skillSearchTextById={skillSearchTextById}
                   query={decorationSearch}
                 />
               )}
@@ -443,6 +445,7 @@ function SlotDecorationOnlyPicker({
             <HoveredSkillSummary
               hovered={hoveredDecoration}
               skillNameById={skillNameById}
+              skillSearchTextById={skillSearchTextById}
               query={search}
             />
           )}

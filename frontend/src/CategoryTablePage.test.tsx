@@ -48,6 +48,18 @@ const BUNDLE = {
           defenseMax: null,
           resistances: { fire: 0, water: 0, thunder: 0, ice: 0, dragon: 0 },
         },
+        {
+          id: 'head:0004',
+          name: 'Gunner Helm',
+          skills: [{ skillId: 1, points: -10 }],
+          category: 'standard_plain',
+          grankOrLater: false,
+          hunterType: 'gunner',
+          exoticSkillId: null,
+          defenseMax: 15,
+          resistances: { fire: 0, water: 0, thunder: 0, ice: 0, dragon: 0 },
+          openSlotCount: 0,
+        },
       ],
     },
   ],
@@ -71,7 +83,13 @@ const BUNDLE = {
       category: 'standard_plain',
     },
   ],
-  skills: [],
+  skills: [
+    {
+      id: 1,
+      name: 'Attack',
+      tiers: [{ label: 'Berserker', minPoints: 10 }],
+    },
+  ],
   zenithSkills: [],
   skillNames: new Map([[1, 'Attack']]),
   weaponZenithSkillIds: [],
@@ -147,12 +165,94 @@ describe('CategoryTablePage', () => {
     await user.click(screen.getByRole('button', { name: /^Name/ }))
     let rows = screen.getAllByRole('row').slice(1)
     expect(rows[0]).toHaveTextContent('Amber Helm')
-    expect(rows[1]).toHaveTextContent('Zenny Helm')
+    expect(rows[1]).toHaveTextContent('Gunner Helm')
+    expect(rows[2]).toHaveTextContent('Zenny Helm')
 
     await user.click(screen.getByRole('button', { name: /^Name/ }))
     rows = screen.getAllByRole('row').slice(1)
     expect(rows[0]).toHaveTextContent('Zenny Helm')
-    expect(rows[1]).toHaveTextContent('Amber Helm')
+    expect(rows[1]).toHaveTextContent('Gunner Helm')
+    expect(rows[2]).toHaveTextContent('Amber Helm')
+  })
+
+  it('shows Blademaster and Gunner checkboxes checked by default for the gear table', () => {
+    render(<CategoryTablePage kind="gear" categoryKey="standard_plain" onBackToSearch={vi.fn()} />)
+    expect(screen.getByRole('checkbox', { name: 'Blademaster' })).toBeChecked()
+    expect(screen.getByRole('checkbox', { name: 'Gunner' })).toBeChecked()
+  })
+
+  it('does not show hunter type checkboxes for the cuffs table', () => {
+    render(<CategoryTablePage kind="cuffs" categoryKey="standard_plain" onBackToSearch={vi.fn()} />)
+    expect(screen.queryByRole('checkbox', { name: 'Blademaster' })).not.toBeInTheDocument()
+  })
+
+  it('unchecking Blademaster hides blademaster-only pieces but keeps common and gunner pieces', async () => {
+    const user = userEvent.setup()
+    render(<CategoryTablePage kind="gear" categoryKey="standard_plain" onBackToSearch={vi.fn()} />)
+
+    await user.click(screen.getByRole('checkbox', { name: 'Blademaster' }))
+
+    expect(screen.getByText('Zenny Helm')).toBeInTheDocument()
+    expect(screen.getByText('Gunner Helm')).toBeInTheDocument()
+    expect(screen.queryByText('Amber Helm')).not.toBeInTheDocument()
+  })
+
+  it('unchecking Gunner hides gunner-only pieces but keeps common and blademaster pieces', async () => {
+    const user = userEvent.setup()
+    render(<CategoryTablePage kind="gear" categoryKey="standard_plain" onBackToSearch={vi.fn()} />)
+
+    await user.click(screen.getByRole('checkbox', { name: 'Gunner' }))
+
+    expect(screen.getByText('Zenny Helm')).toBeInTheDocument()
+    expect(screen.getByText('Amber Helm')).toBeInTheDocument()
+    expect(screen.queryByText('Gunner Helm')).not.toBeInTheDocument()
+  })
+
+  it('formats a negative skill point value as "-10", not "+-10"', () => {
+    render(<CategoryTablePage kind="gear" categoryKey="standard_plain" onBackToSearch={vi.fn()} />)
+    expect(screen.getByText('Attack -10')).toBeInTheDocument()
+    expect(screen.queryByText(/\+-/)).not.toBeInTheDocument()
+  })
+
+  it('filters rows by name', async () => {
+    const user = userEvent.setup()
+    render(<CategoryTablePage kind="gear" categoryKey="standard_plain" onBackToSearch={vi.fn()} />)
+
+    await user.type(screen.getByRole('textbox', { name: 'Filter by name' }), 'zenny')
+
+    expect(screen.getByText('Zenny Helm')).toBeInTheDocument()
+    expect(screen.queryByText('Amber Helm')).not.toBeInTheDocument()
+  })
+
+  it('filters rows by a skill matching an item by its own name', async () => {
+    const user = userEvent.setup()
+    render(<CategoryTablePage kind="gear" categoryKey="standard_plain" onBackToSearch={vi.fn()} />)
+
+    await user.type(screen.getByRole('textbox', { name: 'Filter by skill' }), 'attack')
+
+    expect(screen.getByText('Zenny Helm')).toBeInTheDocument()
+    expect(screen.queryByText('Amber Helm')).not.toBeInTheDocument()
+  })
+
+  it('filters rows by a skill matching one of its tier/threshold labels, not just its own name', async () => {
+    const user = userEvent.setup()
+    render(<CategoryTablePage kind="gear" categoryKey="standard_plain" onBackToSearch={vi.fn()} />)
+
+    await user.type(screen.getByRole('textbox', { name: 'Filter by skill' }), 'berserker')
+
+    expect(screen.getByText('Zenny Helm')).toBeInTheDocument()
+    expect(screen.queryByText('Amber Helm')).not.toBeInTheDocument()
+  })
+
+  it('combines the name and skill filters', async () => {
+    const user = userEvent.setup()
+    render(<CategoryTablePage kind="gear" categoryKey="standard_plain" onBackToSearch={vi.fn()} />)
+
+    await user.type(screen.getByRole('textbox', { name: 'Filter by name' }), 'amber')
+    await user.type(screen.getByRole('textbox', { name: 'Filter by skill' }), 'attack')
+
+    expect(screen.queryByText('Zenny Helm')).not.toBeInTheDocument()
+    expect(screen.queryByText('Amber Helm')).not.toBeInTheDocument()
   })
 
   it('calls onBackToSearch when the back link is clicked', async () => {

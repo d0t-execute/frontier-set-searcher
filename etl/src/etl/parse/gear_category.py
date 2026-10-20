@@ -166,17 +166,22 @@ CATEGORY_GUILD_GX = "guild_gx"
 # CLASS=P Zenith "Diva" family + 10 CLASS=I GX "Burning Cliff"/"Crimson
 # Cliff") -- already flagged in this file's own history as a candidate for
 # the same Z/ZF/ZY/ZX-style split Road Zenith and Event Zenith already have.
-# The project owner supplied a screenshot of the reference tool's own Diva
-# Defense node (nested under Guild, not top-level -- see gear-categories.ts),
-# showing exactly 5 children: plain/GX/辿(Zenith)/辿ZY/辿ZX -- no separate ZF
-# leaf, unlike Road/Event Zenith. Confirmed against the real dataset: the 200
-# "辿" rows are a real Z(100)+ZF(100) merge, not a parsing gap -- the
-# screenshot is the direct source for keeping them merged here. The plain
-# leaf has 0 real rows today (same no-real-rows situation as a few other
-# defensive-default base tiers in this file), kept as the defensive fallback.
+# The project owner initially supplied a screenshot of the reference tool's
+# own Diva Defense node showing exactly 5 children (plain/GX/辿/辿ZY/辿ZX, no
+# separate ZF) and the 200 "辿" rows were kept merged to match it, despite the
+# real dataset splitting cleanly into Z(100)/ZF(100) by an explicit "ZF"
+# name-suffix marker (`Katante Z Helm` vs `Katante ZF Helm`), the same way
+# Road/Event Zenith's own ZF rows are told apart.
+#
+# **Update (2026-10-20, split after all):** the project owner decided to
+# split it regardless, for consistency with Road/Event Zenith's own ZF leaf.
+# The plain leaf has 0 real rows today (same no-real-rows situation as a few
+# other defensive-default base tiers in this file), kept as the defensive
+# fallback.
 CATEGORY_DIVA_DEFENSE = "diva_defense"
 CATEGORY_DIVA_DEFENSE_GX = "diva_defense_gx"
 CATEGORY_DIVA_DEFENSE_ZENITH = "diva_defense_zenith"
+CATEGORY_DIVA_DEFENSE_ZENITH_ZF = "diva_defense_zenith_zf"
 CATEGORY_DIVA_DEFENSE_ZENITH_ZY = "diva_defense_zenith_zy"
 CATEGORY_DIVA_DEFENSE_ZENITH_ZX = "diva_defense_zenith_zx"
 
@@ -795,7 +800,9 @@ def classify_equipment_category(fields: list[str]) -> str:
                 return CATEGORY_DIVA_DEFENSE_ZENITH_ZX
             if "ZY" in tokens:
                 return CATEGORY_DIVA_DEFENSE_ZENITH_ZY
-            return CATEGORY_DIVA_DEFENSE_ZENITH  # "Z" or "ZF" -- merged, see comment above
+            if "ZF" in tokens:
+                return CATEGORY_DIVA_DEFENSE_ZENITH_ZF
+            return CATEGORY_DIVA_DEFENSE_ZENITH
         return CATEGORY_DIVA_DEFENSE
     if cre == "2m":
         if clazz == "":

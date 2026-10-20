@@ -14,10 +14,21 @@ import type { SkillContribution, SkillId } from '../search-engine/types'
 export function HoveredSkillSummary({
   hovered,
   skillNameById,
+  skillSearchTextById,
   query,
 }: {
   hovered: { readonly skills: readonly SkillContribution[] } | null
   skillNameById: ReadonlyMap<SkillId, string>
+  /** Every skill id's own name plus its tier labels, pre-joined and
+   * lowercased -- lets a skill highlight here the same way a search result
+   * itself was matched, by a tier/threshold name (e.g. "BBQ Master") and not
+   * just the skill's own name (e.g. "Cooking") (2026-10-20, per the project
+   * owner: searching "bbq" finds the right pieces already, but didn't
+   * highlight the matching skill in this summary the way searching "cooking"
+   * does). Optional, same convention as every other caller of this same map
+   * -- a caller with nothing meaningful to give (none exist today) would
+   * fall back to matching on `skillNameById` alone. */
+  skillSearchTextById?: ReadonlyMap<SkillId, string>
   query: string
 }) {
   if (!hovered) {
@@ -32,7 +43,8 @@ export function HoveredSkillSummary({
       {hovered.skills.map((c, i) => {
         const name = skillNameById.get(c.skillId) ?? `Skill ${c.skillId}`
         const text = `${name}: ${c.points}`
-        const highlighted = q.length > 0 && name.toLowerCase().includes(q)
+        const searchText = skillSearchTextById?.get(c.skillId) ?? name.toLowerCase()
+        const highlighted = q.length > 0 && searchText.includes(q)
         return (
           <span key={c.skillId}>
             {i > 0 && ', '}

@@ -31,25 +31,34 @@ describe('gear-level category partition', () => {
   })
 })
 
-describe('Exotic leaves (2026-10-20: corrected to Pre-G-Rank, moved under Standard Armor)', () => {
-  const exoticKeys = ['grank_exotic', 'grank_exotic_g', 'grank_exotic_gf', 'grank_exotic_gx']
+describe('Exotic leaves (2026-10-20: only the plain leaf is Pre-G-Rank / moved under Standard Armor)', () => {
+  const preGrankExoticKeys = ['grank_exotic']
+  const grankExoticKeys = ['grank_exotic_g', 'grank_exotic_gf', 'grank_exotic_gx']
 
-  it('are classified Pre-G-Rank, not G-Rank', () => {
-    for (const key of exoticKeys) {
+  it("the plain leaf is classified Pre-G-Rank; its G/GF/GX tiers stay G-Rank", () => {
+    for (const key of preGrankExoticKeys) {
       expect(GEAR_LEVEL_GRANK_CATEGORIES).not.toContain(key)
       expect(GEAR_LEVEL_PRE_GRANK_CATEGORIES).toContain(key)
+    }
+    for (const key of grankExoticKeys) {
+      expect(GEAR_LEVEL_GRANK_CATEGORIES).toContain(key)
+      expect(GEAR_LEVEL_PRE_GRANK_CATEGORIES).not.toContain(key)
     }
     expect(GEAR_LEVEL_GRANK_CATEGORIES).not.toContain('paid_gachapon_exotic')
     expect(GEAR_LEVEL_PRE_GRANK_CATEGORIES).toContain('paid_gachapon_exotic')
   })
 
-  it('live under Standard Armor, not G Rank Armor', () => {
+  it('the plain leaf lives under Standard Armor; its G/GF/GX tiers stay under G Rank Armor', () => {
     const standardArmor = GEAR_CATEGORY_GROUPS.find((g) => g.label === 'Standard Armor')
     const gRankArmor = GEAR_CATEGORY_GROUPS.find((g) => g.label === 'G Rank Armor')
 
-    for (const key of exoticKeys) {
+    for (const key of preGrankExoticKeys) {
       expect(standardArmor?.categories.map((c) => c.key)).toContain(key)
       expect(gRankArmor?.categories.map((c) => c.key)).not.toContain(key)
+    }
+    for (const key of grankExoticKeys) {
+      expect(gRankArmor?.categories.map((c) => c.key)).toContain(key)
+      expect(standardArmor?.categories.map((c) => c.key)).not.toContain(key)
     }
   })
 })

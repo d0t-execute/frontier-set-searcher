@@ -43,6 +43,11 @@
  * The empty "Diva Defense (plain)" leaf (`diva_defense`, confirmed 0 real
  * rows) was removed from the Diva Defense section entirely (2026-10-20) --
  * it's still a valid ETL category key, just no longer surfaced in this tree.
+ *
+ * **Update (2026-10-20, Diva Defense Zenith split):** `diva_defense_zenith`
+ * used to merge both the bare "Z" and "ZF" name-suffix rows (100 each); split
+ * into its own `diva_defense_zenith_zf` leaf for consistency with Road/Event
+ * Zenith's own ZF leaf (gear_category.py's own history has the full story).
  */
 
 export interface GearCategoryOption {
@@ -187,6 +192,7 @@ export const GEAR_CATEGORY_GROUPS: readonly GearCategoryGroup[] = [
       categories: [
         { key: 'diva_defense_gx', label: 'Diva Defense GX' },
         { key: 'diva_defense_zenith', label: 'Diva Defense Zenith' },
+        { key: 'diva_defense_zenith_zf', label: 'Diva Defense Zenith ZF' },
         { key: 'diva_defense_zenith_zy', label: 'Diva Defense Zenith ZY' },
         { key: 'diva_defense_zenith_zx', label: 'Diva Defense Zenith ZX' },
       ],
@@ -263,6 +269,14 @@ export const GEAR_CATEGORY_GROUPS: readonly GearCategoryGroup[] = [
         { key: 'grank_g_hiden_g', label: 'G-Hiden' },
         { key: 'grank_g_hiden_gf', label: 'G-Hiden GF' },
         { key: 'grank_g_hiden_gx', label: 'G-Hiden GX' },
+      ],
+    },
+    {
+      label: 'Exotic',
+      categories: [
+        { key: 'grank_exotic_g', label: 'Exotic G' },
+        { key: 'grank_exotic_gf', label: 'Exotic GF' },
+        { key: 'grank_exotic_gx', label: 'Exotic GX' },
       ],
     },
   ]),
@@ -360,12 +374,7 @@ export const GEAR_CATEGORY_GROUPS: readonly GearCategoryGroup[] = [
     },
     {
       label: 'Exotic',
-      categories: [
-        { key: 'grank_exotic', label: 'Exotic' },
-        { key: 'grank_exotic_g', label: 'Exotic G' },
-        { key: 'grank_exotic_gf', label: 'Exotic GF' },
-        { key: 'grank_exotic_gx', label: 'Exotic GX' },
-      ],
+      categories: [{ key: 'grank_exotic', label: 'Exotic' }],
     },
   ]),
 ]
@@ -397,17 +406,18 @@ function allLeafKeys(groups: readonly GearCategoryGroup[]): readonly string[] {
  * pieces have) and the CLASS-only Pre-G-Rank tiers (Hiden, Burst Species's
  * 烈種, Gou, Heavenly Storm, Supremacy, SP).
  *
- * **Update (2026-10-20, Exotic corrected to Pre-G-Rank):** both "Exotic"
- * leaf-sets (Gachapon's own, and the one that used to live under "G Rank
- * Armor") are Pre-G-Rank per the project owner's own reference taxonomy, not
- * G-Rank -- despite `CLASS O` being one of `is_grank_or_later_equipment`'s
- * `_GRANK_OR_LATER_CLASSES` in gear_category.py. That ETL function answers a
- * different, unrelated question (whether a piece counts for the real in-game
- * active-skill-cap G-Rank piece-count bonus) and is intentionally left
- * untouched; this list is purely the "Gear levels" UI tier, which the
- * project owner has now corrected for Exotic specifically. The
- * `grank_exotic*` leaves also moved from the "G Rank Armor" group to
- * "Standard Armor" (as an "Exotic" section) to match.
+ * **Update (2026-10-20, Exotic's plain leaf corrected to Pre-G-Rank):**
+ * Gachapon's own "Exotic" leaf-set is Pre-G-Rank per the project owner's own
+ * reference taxonomy, not G-Rank -- despite `CLASS O` being one of
+ * `is_grank_or_later_equipment`'s `_GRANK_OR_LATER_CLASSES` in
+ * gear_category.py. That ETL function answers a different, unrelated
+ * question (whether a piece counts for the real in-game active-skill-cap
+ * G-Rank piece-count bonus) and is intentionally left untouched; this list
+ * is purely the "Gear levels" UI tier. Of "G Rank Armor"'s own Exotic
+ * leaf-set, only the plain `grank_exotic` leaf is Pre-G-Rank -- it moved out
+ * to "Standard Armor" (as its own "Exotic" section) to match. Its G/GF/GX
+ * tiers (`grank_exotic_g`/`_gf`/`_gx`) are still G-Rank and stayed in "G Rank
+ * Armor", in their own "Exotic" section there.
  *
  * Kept as an explicit list, not derived from a group label match, so a
  * future taxonomy reshuffle has to touch this deliberately rather than
@@ -421,6 +431,9 @@ export const GEAR_LEVEL_GRANK_CATEGORIES: readonly string[] = [
   'grank_g_hiden_g',
   'grank_g_hiden_gf',
   'grank_g_hiden_gx',
+  'grank_exotic_g',
+  'grank_exotic_gf',
+  'grank_exotic_gx',
   'grank_origin',
   'paid_package_gs',
   'paid_package_gp',
@@ -492,6 +505,7 @@ export const GEAR_LEVEL_ZENITH_CATEGORIES: readonly string[] = [
   'event_zenith_zy',
   'event_zenith_zx',
   'diva_defense_zenith',
+  'diva_defense_zenith_zf',
   'diva_defense_zenith_zy',
   'diva_defense_zenith_zx',
 ]
