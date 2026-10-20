@@ -415,9 +415,9 @@ describe('App', () => {
 
     await user.click(screen.getByRole('button', { name: 'Attack' }))
     // Standard is included by default -- unchecking it leaves only the
-    // Premium cuff enabled. Both the gear-level and cuff filters have their
-    // own "Standard" leaf, so the last match is the cuff one (Poogie cuffs
-    // renders after Gear levels).
+    // Premium cuff enabled. Both the gear-category and cuff filters have
+    // their own "Standard" leaf, so the last match is the cuff one (Poogie
+    // Cuff Categories renders after Gear categories).
     const standardCheckboxes = screen.getAllByRole('checkbox', { name: 'Standard' })
     await user.click(standardCheckboxes[standardCheckboxes.length - 1])
     await user.click(screen.getByRole('button', { name: /search/i }))
@@ -906,7 +906,7 @@ describe('App', () => {
       const user = userEvent.setup()
       render(<App />)
 
-      await user.click(screen.getByRole('button', { name: /gear levels/i }))
+      await user.click(screen.getByRole('button', { name: /gear categories/i }))
       await user.click(screen.getByRole('checkbox', { name: 'Zenith gear level' }))
       // Expand every group/section the assertions below reach into -- the
       // quick toggle itself works across collapsed trees (it only touches
@@ -933,7 +933,7 @@ describe('App', () => {
       const user = userEvent.setup()
       render(<App />)
 
-      await user.click(screen.getByRole('button', { name: /gear levels/i }))
+      await user.click(screen.getByRole('button', { name: /gear categories/i }))
       await user.click(screen.getByRole('button', { name: 'Expand G Rank Armor' }))
       await user.click(screen.getByRole('button', { name: 'Expand G Rank Armor: Base' }))
       await user.click(screen.getByRole('checkbox', { name: 'Origin' }))
@@ -952,7 +952,7 @@ describe('App', () => {
       const user = userEvent.setup()
       render(<App />)
 
-      await user.click(screen.getByRole('button', { name: /gear levels/i }))
+      await user.click(screen.getByRole('button', { name: /gear categories/i }))
       await user.click(screen.getByRole('checkbox', { name: 'ZP gear level' }))
       await user.click(screen.getByRole('button', { name: 'Expand Premium Kit' }))
       await user.click(screen.getByRole('button', { name: 'Expand Zenith Armor' }))
@@ -970,7 +970,7 @@ describe('App', () => {
       const user = userEvent.setup()
       render(<App />)
 
-      await user.click(screen.getByRole('button', { name: /gear levels/i }))
+      await user.click(screen.getByRole('button', { name: /gear categories/i }))
       await user.click(screen.getByRole('button', { name: 'Expand Premium Kit' }))
       await user.click(screen.getByRole('checkbox', { name: 'Premium Kit' }))
 
@@ -985,7 +985,7 @@ describe('App', () => {
       const user = userEvent.setup()
       render(<App />)
 
-      await user.click(screen.getByRole('button', { name: /gear levels/i }))
+      await user.click(screen.getByRole('button', { name: /gear categories/i }))
       await user.click(screen.getByRole('button', { name: 'Expand Premium Kit' }))
       await user.click(screen.getByRole('checkbox', { name: 'Premium Kit' }))
 
@@ -1046,7 +1046,7 @@ describe('App', () => {
 
       expect(screen.getByText('White Cat Mask')).toBeInTheDocument()
 
-      await user.click(screen.getByRole('button', { name: /gear levels/i }))
+      await user.click(screen.getByRole('button', { name: /gear categories/i }))
       await user.click(screen.getByRole('button', { name: 'Expand Premium Kit' }))
       await user.click(screen.getByRole('checkbox', { name: 'Premium Kit' }))
 

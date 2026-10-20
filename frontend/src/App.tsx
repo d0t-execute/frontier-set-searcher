@@ -196,7 +196,7 @@ const GEAR_LEVEL_LEAF_COUNT = countLeaves(GEAR_CATEGORY_GROUPS)
 const CUFF_LEAF_COUNT = countLeaves(CUFF_CATEGORY_GROUPS)
 const DECORATION_LEAF_COUNT = countLeaves(DECORATION_CATEGORY_GROUPS)
 
-/** The "Gear levels" disclosure's own top-level quick toggles -- one
+/** The "Gear categories" disclosure's own top-level quick toggles -- one
  * checkbox per gear-strength tier, each including/excluding every leaf
  * category under it in one click (docs/feedback.md Round 2 #6, 2026-10-19).
  * Separate from `GEAR_CATEGORY_GROUPS`'s own group headers, since a tier
@@ -387,6 +387,19 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
 
   const bundle = bundleQuery.data
 
+  // Deferred (React 19 `useDeferredValue`), same reasoning as
+  // `deferredQueryFormState` further down -- `pinnableSlots`/
+  // `pinnableDecorations` below re-filter the whole ~62k-candidate bundle on
+  // every change, and the top-level "Gear categories" rank-toggle checkboxes
+  // (Pre-G-Rank/G-Rank/Zenith/ZP) can each flip dozens of categories in one
+  // click, so without this a click there stalls until that refilter finishes
+  // instead of repainting immediately (2026-10-20, per the project owner:
+  // "the gear level checkboxes at the top can still be quite slow... fix
+  // that the same way").
+  const deferredExcludedCategories = useDeferredValue(excludedCategories)
+  const deferredExcludedDecorationCategories = useDeferredValue(excludedDecorationCategories)
+  const deferredHunterTypeFilter = useDeferredValue(hunterTypeFilter)
+
   // Pure client-side re-sort of the already-solved `results` (docs/
   // feedback.md Round 2 #3) -- 'default' keeps the solver's own ranking
   // untouched (including while `bundle` hasn't loaded yet, though `results`
@@ -423,9 +436,13 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
   // build-query.ts's `decorationsAfterCategoryFilter`) -- otherwise a player
   // could still pin an excluded decoration into a slot through ArmorPicker
   // even though the search itself never would.
-  const pinnableDecorations = bundle
-    ? decorationsAfterCategoryFilter(bundle.decorations, excludedDecorationCategories)
-    : []
+  const pinnableDecorations = useMemo(
+    () =>
+      bundle
+        ? decorationsAfterCategoryFilter(bundle.decorations, deferredExcludedDecorationCategories)
+        : [],
+    [bundle, deferredExcludedDecorationCategories],
+  )
 
   // Same reasoning, for "Pin specific armor" itself (docs/skill-system-
   // roadmap.md TODOs #33/#35): without this, the piece search/pin could
@@ -441,21 +458,22 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
   // nothing were pinned there -- the actual search still honors the pin
   // either way, since `slotsAfterPinning` resolves it from the unfiltered
   // `bundle.slots`.
-  const pinnableSlots = bundle
-    ? slotsAfterHunterTypeFilter(
-        slotsAfterCategoryFilter(bundle.slots, excludedCategories),
-        hunterTypeFilter,
-      ).map((slot) => {
-        const pin = pinnedArmor.get(slot.slotId)
-        if (!pin || slot.candidates.some((c) => c.id === pin.candidateId)) return slot
-        const pinnedCandidate = bundle.slots
-          .find((s) => s.slotId === slot.slotId)
-          ?.candidates.find((c) => c.id === pin.candidateId)
-        return pinnedCandidate
-          ? { ...slot, candidates: [...slot.candidates, pinnedCandidate] }
-          : slot
-      })
-    : []
+  const pinnableSlots = useMemo(() => {
+    if (!bundle) return []
+    return slotsAfterHunterTypeFilter(
+      slotsAfterCategoryFilter(bundle.slots, deferredExcludedCategories),
+      deferredHunterTypeFilter,
+    ).map((slot) => {
+      const pin = pinnedArmor.get(slot.slotId)
+      if (!pin || slot.candidates.some((c) => c.id === pin.candidateId)) return slot
+      const pinnedCandidate = bundle.slots
+        .find((s) => s.slotId === slot.slotId)
+        ?.candidates.find((c) => c.id === pin.candidateId)
+      return pinnedCandidate
+        ? { ...slot, candidates: [...slot.candidates, pinnedCandidate] }
+        : slot
+    })
+  }, [bundle, deferredExcludedCategories, deferredHunterTypeFilter, pinnedArmor])
 
   // Flattened once for the exclusion picker (EquipmentExclusionPicker.tsx),
   // which searches across every slot's armor at once rather than per-slot
@@ -1048,7 +1066,19 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
         <>
           <div className="app-columns">
             <div className="app-column">
-              <Disclosure title="Skills" summary={skillsSummary} defaultOpen>
+              <Disclosure
+                title="Skills"
+                summary={skillsSummary}
+                defaultOpen
+                info={
+                  <InfoTooltip label="About skills">
+                    Define the skills that the Set Searcher should look for. These are hard
+                    requirements: each returned result has to contain every single one of these
+                    skills at the specified level. <br />
+                    <b>You can search by skill name and skill level/threshold names.</b>
+                  </InfoTooltip>
+                }
+              >
                 <SkillPicker
                   skills={bundle.skills}
                   requirements={requirements}
@@ -1056,7 +1086,18 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                 />
               </Disclosure>
 
-              <Disclosure title="Zenith skills" summary={zenithSkillsSummary}>
+              <Disclosure
+                title="Zenith skills"
+                summary={zenithSkillsSummary}
+                info={
+                  <InfoTooltip label="About Zenith skills">
+                    Define the Zenith skills that the Set Searcher should look for. These are hard
+                    requirements: each returned result has to contain every single one of these
+                    skills at the specified level. <br />
+                    <b>You can search by skill name and skill level/threshold names.</b>
+                  </InfoTooltip>
+                }
+              >
                 <SkillPicker
                   skills={bundle.zenithSkills}
                   requirements={zenithRequirements}
@@ -1074,7 +1115,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                   <InfoTooltip label="About pinning armor">
                     Pins a specific piece or decoration to force the solver to use it. Type at
                     least 2 characters to search. <br />
-                    <b>You can also search by skill name.</b>
+                    <b>You can search by skill name and skill level/threshold names.</b>
                   </InfoTooltip>
                 }
               >
@@ -1100,7 +1141,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                     forcing an exact slot assignment the way pinning does. Type at least 2
                     characters to search.
                     <br />
-                    You can also search by skill name.
+                    <b>You can search by skill name and skill level/threshold names.</b>
                   </InfoTooltip>
                 }
               >
@@ -1113,7 +1154,18 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                 />
               </Disclosure>
 
-              <Disclosure title="Gear levels" summary={gearLevelsSummary}>
+              <Disclosure
+                title="Gear categories"
+                summary={gearLevelsSummary}
+                info={
+                  <InfoTooltip label="About the gear category list">
+                    Choose which armor categories are included in the search. This affects both
+                    the final results as well as the search elements in the sections. The
+                    categories can be expanded and collapsed. The gear rank buttons at the top
+                    will include/exclude all categories of that rank.
+                  </InfoTooltip>
+                }
+              >
                 <div className="gear-level-tiers d-flex gap-3 mb-2">
                   {GEAR_LEVEL_TIERS.map((tier) => {
                     const excludedCount = tier.keys.filter((key) =>
@@ -1156,7 +1208,17 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                 />
               </Disclosure>
 
-              <Disclosure title="Poogie cuffs" summary={cuffsSummary}>
+              <Disclosure
+                title="Poogie Cuff Categories"
+                summary={cuffsSummary}
+                info={
+                  <InfoTooltip label="About the cuff category list">
+                    Choose which cuff categories are included in the search. This affects both the
+                    final results as well as the search elements in the sections. The categories
+                    can be expanded and collapsed.
+                  </InfoTooltip>
+                }
+              >
                 <CategoryFilter
                   groups={CUFF_CATEGORY_GROUPS}
                   excludedCategories={excludedCuffCategories}
@@ -1166,7 +1228,17 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                 />
               </Disclosure>
 
-              <Disclosure title="Decorations" summary={decorationsSummary}>
+              <Disclosure
+                title="Decoration Categories"
+                summary={decorationsSummary}
+                info={
+                  <InfoTooltip label="About the decoration category list">
+                    Choose which decoration categories are included in the search. This affects
+                    both the final results as well as the search elements in the sections. The
+                    categories can be expanded and collapsed.
+                  </InfoTooltip>
+                }
+              >
                 <CategoryFilter
                   groups={DECORATION_CATEGORY_GROUPS}
                   excludedCategories={excludedDecorationCategories}
@@ -1181,9 +1253,9 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                 summary={pinnedCuffsSummary}
                 info={
                   <InfoTooltip label="About pinning cuffs">
-                    Pins a cuff slot to an exact cuff, or just to a skill (or Zenith skill) --
-                    letting the solver pick whichever cuff variant best serves the rest of the
-                    build. Type at least 2 characters to search. <br />
+                    Pins a specific cuff to force the solver to use it, or pins a skill (or Zenith
+                    skill), letting the solver pick whichever cuff with that skill best serves the
+                    rest of the build. Type at least 2 characters to search. <br />
                     <b>You can also search cuffs by skill name.</b>
                   </InfoTooltip>
                 }
@@ -1203,12 +1275,13 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                 summary={exclusionsSummary}
                 info={
                   <InfoTooltip label="About excluding gear">
-                    Excluded armor, decorations, and cuffs never appear in a search result, unless
-                    also pinned above -- a pin always wins. Excluding a skill works differently: a
-                    result is simply never allowed to make that skill active, but equipment that
-                    grants it stays eligible otherwise. Type at least 2 characters to search.
+                    Exclude armor, decorations, cuffs and skills to never appear in a search
+                    result. If that same piece is pinned above, the pin is prioritized. Excluding a
+                    skill means a result is never allowed to make that skill active, but equipment
+                    that grants it stays eligible otherwise. Type at least 2 characters to search.
                     <br />
-                    You can also search armor, decorations, and cuffs by skill name.
+                    <b>You can search armor, decorations, and cuffs by skill name and skill
+                    level/threshold names.</b>
                   </InfoTooltip>
                 }
               >
@@ -1243,7 +1316,17 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                 </button>
               </div>
 
-              <Disclosure title="Weapon" summary={weaponSummary}>
+              <Disclosure
+                title="Weapon"
+                summary={weaponSummary}
+                info={
+                  <InfoTooltip label="About the weapon">
+                    Choose which Zenith skill is allowed to be on the weapon and how many
+                    decoration slots are reserved for sigils and should not be used to reach the
+                    skill requirements.
+                  </InfoTooltip>
+                }
+              >
                 <div className="app-field-group">
                   <CategoryFilter
                     groups={weaponZenithSkillGroups}
@@ -1276,7 +1359,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                 info={
                   <InfoTooltip label="About resistances">
                     Force a result's summed resistance to never drop below zero for the elements
-                    checked below -- avoids a build with a glaring elemental weakness.
+                    checked below.
                   </InfoTooltip>
                 }
               >
@@ -1324,9 +1407,10 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                 summary="By text code"
                 info={
                   <InfoTooltip label="About save/load">
-                    Get a text code for every search input above, to reuse or share later --
-                    unlike the automatic restore-on-reload, you can keep as many of these as you
-                    want.
+                    Get a text code for every search input above, to reuse or share later. More
+                    compact text codes can be generated by clicking "Get shareable link" on a
+                    result, which also allows to use that result as the basis for another search
+                    query.
                   </InfoTooltip>
                 }
               >
