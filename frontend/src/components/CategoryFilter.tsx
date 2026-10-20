@@ -63,6 +63,14 @@ export interface CategoryFilterProps {
    * smaller Poogie cuffs/Decorations/Weapon Zenith-skill trees keep their
    * original always-expanded behavior unless they ask for this too. */
   readonly defaultCollapsed?: boolean
+  /** When given, persists which groups/sections are collapsed to
+   * `localStorage` under this key and restores it on the next mount, instead
+   * of always falling back to `defaultCollapsed` (2026-10-20, per the project
+   * owner). Omitted by callers with nothing worth persisting -- the Poogie
+   * cuffs/Decorations/Weapon Zenith-skill trees are small enough that
+   * re-expanding them costs nothing, so only the much larger gear-category
+   * tree opts in. */
+  readonly persistCollapseKey?: string
 }
 
 /** A section's collapse state is tracked alongside its group's own, under a
@@ -72,6 +80,52 @@ function sectionKey(groupLabel: string, sectionLabel: string): string {
   return `${groupLabel}::${sectionLabel}`
 }
 
+/** The shape persisted under `persistCollapseKey` -- plain string arrays, not
+ * the component's own `Set`s, since `Set` isn't `JSON.stringify`-safe (same
+ * convention `search-form-state.ts` uses for its own persisted sets). */
+interface PersistedCollapseState {
+  readonly collapsedGroups: readonly string[]
+  readonly collapsedSections: readonly string[]
+}
+
+function isPersistedCollapseState(value: unknown): value is PersistedCollapseState {
+  if (typeof value !== 'object' || value === null) return false
+  const v = value as Record<string, unknown>
+  return (
+    Array.isArray(v.collapsedGroups) &&
+    v.collapsedGroups.every((g) => typeof g === 'string') &&
+    Array.isArray(v.collapsedSections) &&
+    v.collapsedSections.every((s) => typeof s === 'string')
+  )
+}
+
+/** Returns `null` for anything that doesn't decode into a usable
+ * `PersistedCollapseState` (nothing stored yet, corrupted JSON, or a stored
+ * value from before this shape last changed) -- same fail-soft convention
+ * `search-form-state.ts`'s `loadSearchFormState` already uses, and for the
+ * same reason: this is a convenience restore, not data worth crashing over. */
+function loadCollapseState(key: string): PersistedCollapseState | null {
+  try {
+    const raw = localStorage.getItem(key)
+    if (raw === null) return null
+    const parsed: unknown = JSON.parse(raw)
+    return isPersistedCollapseState(parsed) ? parsed : null
+  } catch {
+    return null
+  }
+}
+
+/** Silently does nothing if `localStorage` throws (private browsing,
+ * exhausted quota, or disabled entirely) -- losing this convenience is never
+ * worth surfacing as an error to the user. */
+function saveCollapseState(key: string, state: PersistedCollapseState): void {
+  try {
+    localStorage.setItem(key, JSON.stringify(state))
+  } catch {
+    // Unavailable storage -- see this function's own docstring.
+  }
+}
+
 export function CategoryFilter({
   groups,
   excludedCategories,
@@ -79,24 +133,48 @@ export function CategoryFilter({
   itemsByCategory,
   tableLinkHash,
   defaultCollapsed = false,
+  persistCollapseKey,
 }: CategoryFilterProps) {
+  // Read once per mount, same as `search-form-state.ts`'s own
+  // `useState(() => loadSearchFormState())` -- `localStorage` is only worth
+  // consulting at mount, not on every render.
+  const [storedCollapse] = useState(() =>
+    persistCollapseKey ? loadCollapseState(persistCollapseKey) : null,
+  )
+
   // Collapsed-by-label, not a boolean-per-group array, so a group's collapse
   // state survives `groups` changing identity (e.g. a parent re-render) as
   // long as its label doesn't. The initializer only runs once per mount, so
   // `defaultCollapsed` only affects a tree's *initial* shape -- the user is
   // still free to expand/collapse individual groups and sections afterward.
-  const [collapsedGroups, setCollapsedGroups] = useState<ReadonlySet<string>>(() =>
-    defaultCollapsed ? new Set(groups.map((group) => group.label)) : new Set(),
-  )
-  const [collapsedSections, setCollapsedSections] = useState<ReadonlySet<string>>(() =>
-    defaultCollapsed
+  // A persisted value (when `persistCollapseKey` is given and something was
+  // actually stored) wins over `defaultCollapsed`, since it reflects what the
+  // user themselves last left expanded/collapsed.
+  const [collapsedGroups, setCollapsedGroups] = useState<ReadonlySet<string>>(() => {
+    if (storedCollapse) return new Set(storedCollapse.collapsedGroups)
+    return defaultCollapsed ? new Set(groups.map((group) => group.label)) : new Set()
+  })
+  const [collapsedSections, setCollapsedSections] = useState<ReadonlySet<string>>(() => {
+    if (storedCollapse) return new Set(storedCollapse.collapsedSections)
+    return defaultCollapsed
       ? new Set(
           groups.flatMap((group) =>
             (group.sections ?? []).map((section) => sectionKey(group.label, section.label)),
           ),
         )
-      : new Set(),
-  )
+      : new Set()
+  })
+
+  // Saves on every collapse/expand (not just on unmount), same
+  // always-up-to-date convention `App.tsx`'s own `saveSearchFormState` effect
+  // uses -- a page refresh or crash should never lose the last toggle.
+  useEffect(() => {
+    if (!persistCollapseKey) return
+    saveCollapseState(persistCollapseKey, {
+      collapsedGroups: [...collapsedGroups],
+      collapsedSections: [...collapsedSections],
+    })
+  }, [persistCollapseKey, collapsedGroups, collapsedSections])
 
   function toggleGroupCollapsed(label: string): void {
     setCollapsedGroups((prev) => {

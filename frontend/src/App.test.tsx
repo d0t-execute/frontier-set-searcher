@@ -947,6 +947,22 @@ describe('App', () => {
 
       expect(screen.getByRole('checkbox', { name: 'Origin' })).toBeChecked()
     })
+
+    it('unchecking the top-level ZP toggle excludes every ZP leaf but leaves Zenith and G-Rank untouched (2026-10-20: ZP split into its own tier)', async () => {
+      const user = userEvent.setup()
+      render(<App />)
+
+      await user.click(screen.getByRole('button', { name: /gear levels/i }))
+      await user.click(screen.getByRole('checkbox', { name: 'ZP gear level' }))
+      await user.click(screen.getByRole('button', { name: 'Expand Premium Kit' }))
+      await user.click(screen.getByRole('button', { name: 'Expand Zenith Armor' }))
+      await user.click(screen.getByRole('button', { name: 'Expand G Rank Armor' }))
+      await user.click(screen.getByRole('button', { name: 'Expand G Rank Armor: Base' }))
+
+      expect(screen.getByRole('checkbox', { name: 'Premium Kit ZP' })).not.toBeChecked()
+      expect(screen.getByRole('checkbox', { name: 'Zenith' })).toBeChecked()
+      expect(screen.getByRole('checkbox', { name: 'Origin' })).toBeChecked()
+    })
   })
 
   describe('"Pin specific armor" scoping (docs/skill-system-roadmap.md #33/#35)', () => {

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useDeferredValue, useEffect, useMemo, useState } from 'react'
 import { ArmorPicker } from './components/ArmorPicker'
 import { CategoryFilter, GroupCheckbox } from './components/CategoryFilter'
 import type { CategoryFilterGroup } from './components/CategoryFilter'
@@ -29,6 +29,7 @@ import {
   GEAR_LEVEL_GRANK_CATEGORIES,
   GEAR_LEVEL_PRE_GRANK_CATEGORIES,
   GEAR_LEVEL_ZENITH_CATEGORIES,
+  GEAR_LEVEL_ZP_CATEGORIES,
 } from './search-engine/gear-categories'
 import type { PinnedSlot } from './search-engine/pinned-armor'
 import { decodeQueryCode, encodeQueryCode } from './search-engine/query-code'
@@ -199,11 +200,16 @@ const DECORATION_LEAF_COUNT = countLeaves(DECORATION_CATEGORY_GROUPS)
  * category under it in one click (docs/feedback.md Round 2 #6, 2026-10-19).
  * Separate from `GEAR_CATEGORY_GROUPS`'s own group headers, since a tier
  * here spans several of those groups (e.g. "Zenith" covers the base Zenith
- * group plus the Zenith leaves inside Hunter's Road and Event Armor). */
+ * group plus the Zenith leaves inside Hunter's Road and Event Armor).
+ *
+ * **Update (2026-10-20):** added "ZP" as its own 4th tier (previously folded
+ * into "Zenith"), per the project owner -- it sits last, after "Zenith" on
+ * the rank ladder (see `GEAR_LEVEL_ZP_CATEGORIES`'s own doc comment). */
 const GEAR_LEVEL_TIERS: readonly { readonly label: string; readonly keys: readonly string[] }[] = [
   { label: 'Pre-G-Rank', keys: GEAR_LEVEL_PRE_GRANK_CATEGORIES },
   { label: 'G-Rank', keys: GEAR_LEVEL_GRANK_CATEGORIES },
   { label: 'Zenith', keys: GEAR_LEVEL_ZENITH_CATEGORIES },
+  { label: 'ZP', keys: GEAR_LEVEL_ZP_CATEGORIES },
 ]
 
 function pluralize(count: number, noun: string, plural: string = `${noun}s`): string {
@@ -690,14 +696,26 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
     ],
   )
 
+  // Deferred (React 19 `useDeferredValue`), not the raw state, so a checkbox
+  // click -- especially a parent/group toggle, which can flip dozens of
+  // category keys in one `onChange` -- repaints immediately instead of
+  // waiting on `buildSearchQuery`/`previewActiveSkillCap` below to finish
+  // re-filtering the ~62k-candidate bundle first (2026-10-20, per the project
+  // owner: "clicking the checkmark on a parent category ... doesn't feel
+  // responsive"). The checkboxes themselves still render off the immediate
+  // `excludedCategories` etc. (via `queryFormState`), so they flip instantly;
+  // only this expensive downstream preview lags behind by one low-priority
+  // render, then catches up on its own.
+  const deferredQueryFormState = useDeferredValue(queryFormState)
+
   // The solver's exact resolved candidate pool for the *current* selection,
   // before running an actual search -- reused by the live active-skill-cap
   // preview below (docs/feedback.md Round 2 #4) so it automatically honors
   // every existing category/id exclusion, pin, and Hunter Type filter the
   // same way a real search does, with no separate filtering logic of its own.
   const builtQuery = useMemo(
-    () => (bundle ? buildSearchQuery(bundle, queryFormState) : null),
-    [bundle, queryFormState],
+    () => (bundle ? buildSearchQuery(bundle, deferredQueryFormState) : null),
+    [bundle, deferredQueryFormState],
   )
 
   // Shown before running a search, so the player can see the ceiling their
@@ -1123,6 +1141,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                   itemsByCategory={gearItemsByCategory}
                   tableLinkHash={(key) => categoryRouteHash('gear', key)}
                   defaultCollapsed
+                  persistCollapseKey="frontier-set-searcher:gear-category-collapse:v1"
                 />
               </Disclosure>
 

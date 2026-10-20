@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { CategoryFilter } from './CategoryFilter'
 
 // A small fixture tree, independent of the real (much larger) taxonomy in
@@ -146,6 +146,64 @@ describe('CategoryFilter', () => {
       // The group header itself (and its own select-all checkbox) still
       // renders regardless of collapse state.
       expect(screen.getByRole('checkbox', { name: 'Guild (all)' })).toBeInTheDocument()
+    })
+  })
+
+  describe('persistCollapseKey (2026-10-20: caches which categories are expanded)', () => {
+    const STORAGE_KEY = 'test:category-filter-collapse'
+
+    afterEach(() => localStorage.clear())
+
+    it('persists a collapse toggle to localStorage', async () => {
+      const user = userEvent.setup()
+      render(
+        <CategoryFilter
+          groups={GROUPS}
+          excludedCategories={new Set()}
+          onChange={vi.fn()}
+          persistCollapseKey={STORAGE_KEY}
+        />,
+      )
+
+      await user.click(screen.getByRole('button', { name: 'Collapse Guild' }))
+
+      const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? 'null')
+      expect(stored?.collapsedGroups).toEqual(['Guild'])
+    })
+
+    it('restores collapse state from localStorage on mount, overriding defaultCollapsed', () => {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ collapsedGroups: ['Guild'], collapsedSections: [] }))
+
+      render(
+        <CategoryFilter
+          groups={GROUPS}
+          excludedCategories={new Set()}
+          onChange={vi.fn()}
+          persistCollapseKey={STORAGE_KEY}
+        />,
+      )
+
+      // Guild (stored as collapsed) stays collapsed...
+      expect(screen.queryByRole('checkbox', { name: 'Guild GX' })).not.toBeInTheDocument()
+      // ...while a group absent from the stored value falls back to expanded
+      // (no defaultCollapsed given), not to some other default.
+      expect(screen.getByRole('checkbox', { name: 'Tower Plain' })).toBeInTheDocument()
+    })
+
+    it('ignores corrupted localStorage and falls back to defaultCollapsed', () => {
+      localStorage.setItem(STORAGE_KEY, '{ not valid json')
+
+      render(
+        <CategoryFilter
+          groups={GROUPS}
+          excludedCategories={new Set()}
+          onChange={vi.fn()}
+          defaultCollapsed
+          persistCollapseKey={STORAGE_KEY}
+        />,
+      )
+
+      expect(screen.queryByRole('checkbox', { name: 'Guild GX' })).not.toBeInTheDocument()
     })
   })
 
