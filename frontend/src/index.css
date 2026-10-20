@@ -136,8 +136,20 @@ code {
   border: 1px solid var(--border);
   border-radius: 10px;
   background: var(--bg);
-  overflow: hidden;
   text-align: left;
+}
+
+/* Neither this row nor `.disclosure` itself clips overflow (unlike
+ * `.disclosure-body-inner` below, which still needs it for the open/close
+ * height animation) -- `.disclosure-info` (the `InfoTooltip` icon) is also a
+ * child of this row, and an `overflow: hidden` ancestor would clip its
+ * floating tooltip content wherever it pokes outside the row's own bounds
+ * (2026-10-20). `.disclosure-header`'s own top corners are rounded and
+ * clipped instead, scoped to just the button, so its hover highlight still
+ * looks clipped to the container without needing an ancestor's overflow. */
+.disclosure-header-row {
+  display: flex;
+  align-items: center;
 }
 
 .disclosure-header {
@@ -146,11 +158,28 @@ code {
   display: flex;
   align-items: center;
   gap: 10px;
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   padding: 14px 18px;
+  border-radius: 10px 10px 0 0;
+  overflow: hidden;
   cursor: pointer;
   color: var(--text-h);
   font-weight: 500;
+}
+
+.disclosure-info {
+  flex: none;
+  margin-right: 18px;
+}
+
+/* While closed, the header IS the whole box (the body collapses to 0
+ * height) -- round its bottom corners too in that case, so a hover
+ * highlight's fill doesn't peek past the container's own rounded corners at
+ * the bottom (it only needs square bottom corners while open, to butt
+ * cleanly against `.disclosure-body-inner`'s top border below it). */
+.disclosure:has(.disclosure-body[data-open='false']) .disclosure-header {
+  border-radius: 10px;
 }
 
 .disclosure-header:hover {
@@ -210,6 +239,73 @@ code {
 .disclosure-body[data-open='true'] .disclosure-body-inner {
   padding: 14px 18px 20px;
   border-top: 1px solid var(--border);
+}
+
+/* InfoTooltip.tsx -- a hoverable/focusable "i" icon revealing explanatory
+ * text that used to sit inline as its own permanent paragraph (2026-10-20,
+ * per the project owner). Pure CSS show/hide, see that component's own
+ * docstring for why. */
+.info-tooltip {
+  position: relative;
+  display: inline-flex;
+}
+
+.info-tooltip-icon {
+  all: unset;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--text-muted);
+  border-radius: 50%;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-style: italic;
+  font-weight: 700;
+  font-family: Georgia, 'Times New Roman', serif;
+  cursor: help;
+}
+
+.info-tooltip-icon:hover,
+.info-tooltip-icon:focus-visible {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.info-tooltip-icon:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.info-tooltip-content {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 6px);
+  right: 0;
+  width: max-content;
+  max-width: 320px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.4;
+  text-align: left;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.12s ease,
+    visibility 0.12s ease;
+}
+
+.info-tooltip:hover .info-tooltip-content,
+.info-tooltip:focus-within .info-tooltip-content {
+  opacity: 1;
+  visibility: visible;
 }
 
 /* -- Category filter tree (components/CategoryFilter.tsx) ----------------

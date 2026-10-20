@@ -5,6 +5,7 @@ import type { CategoryFilterGroup } from './components/CategoryFilter'
 import { CuffPicker } from './components/CuffPicker'
 import { Disclosure } from './components/Disclosure'
 import { EquipmentExclusionPicker } from './components/EquipmentExclusionPicker'
+import { InfoTooltip } from './components/InfoTooltip'
 import { PreferredArmorPicker } from './components/PreferredArmorPicker'
 import { ResultsList } from './components/ResultsList'
 import { SkillPicker } from './components/SkillPicker'
@@ -1066,12 +1067,17 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
             </div>
 
             <div className="app-column">
-              <Disclosure title="Pin specific armor" summary={pinnedArmorSummary}>
-                <p className="form-text">
-                  Pins a specific piece or decoration to force the solver to use it. Type at least 2
-                  characters to search. <br />
-                  <b>You can also search by skill name.</b>
-                </p>
+              <Disclosure
+                title="Pin specific armor"
+                summary={pinnedArmorSummary}
+                info={
+                  <InfoTooltip label="About pinning armor">
+                    Pins a specific piece or decoration to force the solver to use it. Type at
+                    least 2 characters to search. <br />
+                    <b>You can also search by skill name.</b>
+                  </InfoTooltip>
+                }
+              >
                 <ArmorPicker
                   slots={pinnableSlots}
                   decorations={pinnableDecorations}
@@ -1083,16 +1089,21 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                 />
               </Disclosure>
 
-              <Disclosure title="Preferred pieces" summary={preferredPiecesSummary}>
-                <p className="form-text">
-                  The solver will always favor using more of these pieces over fewer, outranking any
-                  other difference in a build -- only dropping one if it would otherwise make a
-                  skill requirement unreachable. Optimize around gear you already own, without
-                  forcing an exact slot assignment the way pinning does. Type at least 2 characters
-                  to search.
-                  <br />
-                  You can also search by skill name.
-                </p>
+              <Disclosure
+                title="Preferred pieces"
+                summary={preferredPiecesSummary}
+                info={
+                  <InfoTooltip label="About favored armor pieces">
+                    The solver will always favor using more of these pieces over fewer, outranking
+                    any other difference in a build -- only dropping one if it would otherwise make
+                    a skill requirement unreachable. Optimize around gear you already own, without
+                    forcing an exact slot assignment the way pinning does. Type at least 2
+                    characters to search.
+                    <br />
+                    You can also search by skill name.
+                  </InfoTooltip>
+                }
+              >
                 <PreferredArmorPicker
                   armorCandidates={allArmorCandidates}
                   preferredIds={preferredArmorIds}
@@ -1165,13 +1176,18 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                 />
               </Disclosure>
 
-              <Disclosure title="Pin specific cuffs" summary={pinnedCuffsSummary}>
-                <p className="form-text">
-                  Pins a cuff slot to an exact cuff, or just to a skill (or Zenith skill) -- letting
-                  the solver pick whichever cuff variant best serves the rest of the build. Type at
-                  least 2 characters to search. <br />
-                  <b>You can also search cuffs by skill name.</b>
-                </p>
+              <Disclosure
+                title="Pin specific cuffs"
+                summary={pinnedCuffsSummary}
+                info={
+                  <InfoTooltip label="About pinning cuffs">
+                    Pins a cuff slot to an exact cuff, or just to a skill (or Zenith skill) --
+                    letting the solver pick whichever cuff variant best serves the rest of the
+                    build. Type at least 2 characters to search. <br />
+                    <b>You can also search cuffs by skill name.</b>
+                  </InfoTooltip>
+                }
+              >
                 <CuffPicker
                   cuffs={bundle.cuffs}
                   pinned={pinnedCuffSlots}
@@ -1182,15 +1198,20 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                 />
               </Disclosure>
 
-              <Disclosure title="Exclusions" summary={exclusionsSummary}>
-                <p className="form-text">
-                  Excluded armor, decorations, and cuffs never appear in a search result, unless
-                  also pinned above -- a pin always wins. Excluding a skill works differently: a
-                  result is simply never allowed to make that skill active, but equipment that
-                  grants it stays eligible otherwise. Type at least 2 characters to search.
-                  <br />
-                  You can also search armor, decorations, and cuffs by skill name.
-                </p>
+              <Disclosure
+                title="Exclusions"
+                summary={exclusionsSummary}
+                info={
+                  <InfoTooltip label="About excluding gear">
+                    Excluded armor, decorations, and cuffs never appear in a search result, unless
+                    also pinned above -- a pin always wins. Excluding a skill works differently: a
+                    result is simply never allowed to make that skill active, but equipment that
+                    grants it stays eligible otherwise. Type at least 2 characters to search.
+                    <br />
+                    You can also search armor, decorations, and cuffs by skill name.
+                  </InfoTooltip>
+                }
+              >
                 <EquipmentExclusionPicker
                   armorCandidates={allArmorCandidates}
                   decorations={bundle.decorations}
@@ -1249,11 +1270,16 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                 </div>
               </Disclosure>
 
-              <Disclosure title="Resistances" summary={resistancesSummary}>
-                <p className="form-text">
-                  Force a result's summed resistance to never drop below zero for the elements
-                  checked below -- avoids a build with a glaring elemental weakness.
-                </p>
+              <Disclosure
+                title="Resistances"
+                summary={resistancesSummary}
+                info={
+                  <InfoTooltip label="About resistances">
+                    Force a result's summed resistance to never drop below zero for the elements
+                    checked below -- avoids a build with a glaring elemental weakness.
+                  </InfoTooltip>
+                }
+              >
                 <div className="app-field-group d-flex flex-column gap-1">
                   <GroupCheckbox
                     label="All"
@@ -1293,11 +1319,17 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                 </div>
               </Disclosure>
 
-              <Disclosure title="Save/load this query" summary="By text code">
-                <p className="form-text">
-                  Get a text code for every search input above, to reuse or share later -- unlike
-                  the automatic restore-on-reload, you can keep as many of these as you want.
-                </p>
+              <Disclosure
+                title="Save/load this query"
+                summary="By text code"
+                info={
+                  <InfoTooltip label="About save/load">
+                    Get a text code for every search input above, to reuse or share later --
+                    unlike the automatic restore-on-reload, you can keep as many of these as you
+                    want.
+                  </InfoTooltip>
+                }
+              >
                 <div className="app-field-group d-flex flex-column gap-1">
                   <button
                     type="button"

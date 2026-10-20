@@ -70,4 +70,23 @@ describe('Disclosure', () => {
 
     expect(screen.getByRole('button', { name: 'Do a thing' })).toBeInTheDocument()
   })
+
+  it('renders info next to the title, outside the toggle button, whether open or closed (2026-10-20)', async () => {
+    const user = userEvent.setup()
+    render(
+      <Disclosure title="Weapon" info={<span>Some help text</span>}>
+        <p>weapon content</p>
+      </Disclosure>,
+    )
+
+    expect(screen.getByText('Some help text')).toBeInTheDocument()
+    // The toggle button's accessible name is unaffected by `info` -- it
+    // isn't nested inside the button (that would be invalid HTML and
+    // unreachable by keyboard on its own).
+    const header = screen.getByRole('button', { name: 'Weapon' })
+    expect(header).not.toHaveTextContent('Some help text')
+
+    await user.click(header)
+    expect(screen.getByText('Some help text')).toBeInTheDocument()
+  })
 })

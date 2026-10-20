@@ -12,6 +12,14 @@ export interface DisclosureProps {
    * already restates this once expanded (e.g. `SkillPicker`'s picked-count
    * line) should drop its own copy rather than show the same count twice. */
   readonly summary?: string
+  /** An `InfoTooltip` (or any other node) shown next to the title, outside
+   * the toggle button itself -- a nested `<button>` inside this component's
+   * own toggle `<button>` would be invalid HTML and unreachable by keyboard
+   * independently of the toggle, so it renders as a sibling instead
+   * (2026-10-20, per the project owner: "move the explaining text over to
+   * hoverable info icons" -- see `InfoTooltip.tsx`). Visible whether the
+   * section is open or closed, same as `summary`. */
+  readonly info?: ReactNode
   readonly defaultOpen?: boolean
   readonly children: ReactNode
 }
@@ -28,25 +36,34 @@ export interface DisclosureProps {
  * first" step) and assistive tech that tabs through the page, at the minor
  * cost of a collapsed section's controls still being keyboard-reachable.
  * Acceptable trade-off for this pass -- see the roadmap doc. */
-export function Disclosure({ title, summary, defaultOpen = false, children }: DisclosureProps) {
+export function Disclosure({
+  title,
+  summary,
+  info,
+  defaultOpen = false,
+  children,
+}: DisclosureProps) {
   const [open, setOpen] = useState(defaultOpen)
   const contentId = useId()
 
   return (
     <section className="disclosure">
-      <button
-        type="button"
-        className="disclosure-header"
-        aria-expanded={open}
-        aria-controls={contentId}
-        onClick={() => setOpen((o) => !o)}
-      >
-        <span className="disclosure-chevron" aria-hidden="true">
-          ▸
-        </span>
-        <span className="disclosure-title">{title}</span>
-        {summary && <span className="disclosure-summary">{summary}</span>}
-      </button>
+      <div className="disclosure-header-row">
+        <button
+          type="button"
+          className="disclosure-header"
+          aria-expanded={open}
+          aria-controls={contentId}
+          onClick={() => setOpen((o) => !o)}
+        >
+          <span className="disclosure-chevron" aria-hidden="true">
+            ▸
+          </span>
+          <span className="disclosure-title">{title}</span>
+          {summary && <span className="disclosure-summary">{summary}</span>}
+        </button>
+        {info && <span className="disclosure-info">{info}</span>}
+      </div>
       <div className="disclosure-body" data-open={open} id={contentId}>
         <div className="disclosure-body-inner">{children}</div>
       </div>
