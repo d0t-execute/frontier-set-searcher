@@ -261,6 +261,31 @@ code {
   border-left: 1.5px solid color-mix(in srgb, var(--border), var(--text) 45%);
 }
 
+/* A group's optional third tree level (components/CategoryFilter.tsx's
+ * `CategoryFilterSection`, 2026-10-20) -- same trunk-line/branch-tick visual
+ * pattern as `.category-group-children` above, nested one level deeper, so a
+ * section reads as "inside its group" exactly the way a leaf reads as
+ * "inside its group" today. */
+.category-section-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.category-section-children {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+  margin-left: 9px;
+  padding-left: 16px;
+  border-left: 1.5px solid color-mix(in srgb, var(--border), var(--text) 45%);
+}
+
+.category-section + .category-section {
+  margin-top: 8px;
+}
+
 .category-leaf {
   position: relative;
 }

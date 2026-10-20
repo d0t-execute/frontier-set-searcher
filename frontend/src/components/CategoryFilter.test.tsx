@@ -123,6 +123,102 @@ describe('CategoryFilter', () => {
     expect(screen.getByRole('checkbox', { name: 'Guild GX' })).toBeInTheDocument()
   })
 
+  describe('defaultCollapsed', () => {
+    it('renders every group expanded by default', () => {
+      render(<CategoryFilter groups={GROUPS} excludedCategories={new Set()} onChange={vi.fn()} />)
+
+      expect(screen.getByRole('checkbox', { name: 'Guild GX' })).toBeInTheDocument()
+      expect(screen.getByRole('checkbox', { name: 'Tower Plain' })).toBeInTheDocument()
+    })
+
+    it('renders every group collapsed when defaultCollapsed is set', () => {
+      render(
+        <CategoryFilter
+          groups={GROUPS}
+          excludedCategories={new Set()}
+          onChange={vi.fn()}
+          defaultCollapsed
+        />,
+      )
+
+      expect(screen.queryByRole('checkbox', { name: 'Guild GX' })).not.toBeInTheDocument()
+      expect(screen.queryByRole('checkbox', { name: 'Tower Plain' })).not.toBeInTheDocument()
+      // The group header itself (and its own select-all checkbox) still
+      // renders regardless of collapse state.
+      expect(screen.getByRole('checkbox', { name: 'Guild (all)' })).toBeInTheDocument()
+    })
+  })
+
+  describe('sections (third tree level)', () => {
+    const SECTIONED_GROUPS = [
+      {
+        label: 'Guild',
+        categories: [
+          { key: 'guild_plain', label: 'Guild' },
+          { key: 'diva_defense', label: 'Diva Defense' },
+          { key: 'diva_defense_zenith_zx', label: 'Diva Defense Zenith ZX' },
+        ],
+        sections: [
+          { label: 'Base', categories: [{ key: 'guild_plain', label: 'Guild' }] },
+          {
+            label: 'Diva Defense',
+            categories: [
+              { key: 'diva_defense', label: 'Diva Defense' },
+              { key: 'diva_defense_zenith_zx', label: 'Diva Defense Zenith ZX' },
+            ],
+          },
+        ],
+      },
+    ]
+
+    it('renders a section header and nests its own leaves under it', () => {
+      render(
+        <CategoryFilter groups={SECTIONED_GROUPS} excludedCategories={new Set()} onChange={vi.fn()} />,
+      )
+
+      expect(screen.getByRole('checkbox', { name: 'Guild: Diva Defense (all)' })).toBeInTheDocument()
+      expect(screen.getByRole('checkbox', { name: 'Diva Defense' })).toBeInTheDocument()
+      expect(screen.getByRole('checkbox', { name: 'Diva Defense Zenith ZX' })).toBeInTheDocument()
+    })
+
+    it('collapses and expands one section independently of its sibling', async () => {
+      render(
+        <CategoryFilter groups={SECTIONED_GROUPS} excludedCategories={new Set()} onChange={vi.fn()} />,
+      )
+
+      await userEvent.click(screen.getByRole('button', { name: 'Collapse Guild: Diva Defense' }))
+
+      expect(screen.queryByRole('checkbox', { name: 'Diva Defense' })).not.toBeInTheDocument()
+      // The sibling "Base" section is untouched.
+      expect(screen.getByRole('checkbox', { name: 'Guild' })).toBeInTheDocument()
+    })
+
+    it("a section's checkbox excludes only its own leaves, not its sibling section's", async () => {
+      const onChange = vi.fn()
+      render(
+        <CategoryFilter groups={SECTIONED_GROUPS} excludedCategories={new Set()} onChange={onChange} />,
+      )
+
+      await userEvent.click(screen.getByRole('checkbox', { name: 'Guild: Diva Defense (all)' }))
+
+      expect(onChange).toHaveBeenCalledWith(new Set(['diva_defense', 'diva_defense_zenith_zx']))
+    })
+
+    it('starts every section collapsed too when defaultCollapsed is set', () => {
+      render(
+        <CategoryFilter
+          groups={SECTIONED_GROUPS}
+          excludedCategories={new Set()}
+          onChange={vi.fn()}
+          defaultCollapsed
+        />,
+      )
+
+      // The group itself is collapsed, so no section header renders yet.
+      expect(screen.queryByRole('checkbox', { name: 'Guild: Diva Defense (all)' })).not.toBeInTheDocument()
+    })
+  })
+
   describe('itemsByCategory', () => {
     const ITEMS_BY_CATEGORY = new Map([
       ['guild_gx', [{ name: 'Guardian Mask' }, { name: 'Carnage Mask' }]],

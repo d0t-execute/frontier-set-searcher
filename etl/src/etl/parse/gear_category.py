@@ -45,81 +45,197 @@ _CLASS_ZENITH_SHUGO = "Q"
 # Category leaf keys -- names and groupings match docs/gear-category-taxonomy.md.
 # Paid and Premium armor -- each of the 5 acquisition routes below further
 # splits by CLASS into the same tier structure (confirmed against the real
-# dataset, 2026-10-18): a plain base tier, plus whichever of Shugo/G-Shugo/HC/
+# dataset, 2026-10-18): a plain base tier, plus whichever of Shugo/GS/GP/HC/
 # Zenith-Shugo/Hiden/G-Hiden/Exotic that route actually has real rows for (not
 # every route has every tier -- no leaf is defined for a tier with 0 real
 # rows in a given route, same no-leaf-for-confirmed-empty convention as
 # Taiwanese Premium). The project owner asked for this precisely because the
 # un-split buckets were huge (Premium Kit alone was 21,733 rows in one leaf).
+#
+# Update (2026-10-20): the CLASS=J tier was originally a single "G-Shugo"
+# leaf per route, merging 2 name-suffix variants ("GS"/"GP") that share that
+# one CLASS value. The project owner asked for these split to mirror the
+# in-game piece names -- confirmed against the real dataset that every route
+# with a CLASS=J row has both variants, roughly evenly split (exactly even
+# for Premium Kit/Gachapon/Net Cafe; close but not exact for Package 440/360
+# and Promotional 230/203, i.e. real, not an artifact of the audit). The
+# marker can be glued directly onto a kana name with no preceding space (e.g.
+# "メトリーGS Helm"), so it's detected via regex, not `_tokens` membership.
+#
+# Update (2026-10-20, later same day): each route's own "base" tier (CLASS
+# "") further splits into up to 3 rank-ladder rungs -- confirmed against the
+# real dataset via a direct stat comparison (Package's own "Secuti" line:
+# RARE 7/DEF 13 -> RARE 7/DEF 50 ("F") -> RARE 7/DEF 88 ("FZ") -> jumps to
+# RARE 9+/DEF 116+ at CLASS=J). "FY" is a differently-worded name for the
+# same tier position as "FZ" (a given armor set's own upgrade chain uses
+# either FY or FZ, never both), so both map to the one `_fz`-suffixed leaf;
+# see `_f_or_fz`.
 CATEGORY_PAID_PACKAGE = "paid_package"  # CRE=5p, CLASS "" (base tier)
+CATEGORY_PAID_PACKAGE_F = "paid_package_f"
+CATEGORY_PAID_PACKAGE_FZ = "paid_package_fz"
 CATEGORY_PAID_PACKAGE_HS = "paid_package_hs"
-CATEGORY_PAID_PACKAGE_G_SHUGO = "paid_package_g_shugo"
+CATEGORY_PAID_PACKAGE_GS = "paid_package_gs"
+CATEGORY_PAID_PACKAGE_GP = "paid_package_gp"
 CATEGORY_PAID_PACKAGE_HC = "paid_package_hc"
 
 CATEGORY_PAID_PREMIUM_KIT = "paid_premium_kit"  # CRE=4k, CLASS "" (base tier)
+CATEGORY_PAID_PREMIUM_KIT_F = "paid_premium_kit_f"
+CATEGORY_PAID_PREMIUM_KIT_FZ = "paid_premium_kit_fz"
 CATEGORY_PAID_PREMIUM_KIT_HS = "paid_premium_kit_hs"
-CATEGORY_PAID_PREMIUM_KIT_G_SHUGO = "paid_premium_kit_g_shugo"
+CATEGORY_PAID_PREMIUM_KIT_GS = "paid_premium_kit_gs"
+CATEGORY_PAID_PREMIUM_KIT_GP = "paid_premium_kit_gp"
 CATEGORY_PAID_PREMIUM_KIT_HC = "paid_premium_kit_hc"
 CATEGORY_PAID_PREMIUM_KIT_ZP = "paid_premium_kit_zp"
 
 CATEGORY_PAID_GACHAPON = "paid_gachapon"  # CRE=4g, CLASS "" (base tier)
+CATEGORY_PAID_GACHAPON_F = "paid_gachapon_f"
+CATEGORY_PAID_GACHAPON_FZ = "paid_gachapon_fz"
 CATEGORY_PAID_GACHAPON_HS = "paid_gachapon_hs"
-CATEGORY_PAID_GACHAPON_G_SHUGO = "paid_gachapon_g_shugo"
+CATEGORY_PAID_GACHAPON_GS = "paid_gachapon_gs"
+CATEGORY_PAID_GACHAPON_GP = "paid_gachapon_gp"
 CATEGORY_PAID_GACHAPON_HC = "paid_gachapon_hc"
 CATEGORY_PAID_GACHAPON_ZP = "paid_gachapon_zp"
-CATEGORY_PAID_GACHAPON_HIDEN = "paid_gachapon_hiden"
-CATEGORY_PAID_GACHAPON_G_HIDEN = "paid_gachapon_g_hiden"
+CATEGORY_PAID_GACHAPON_HIDEN = "paid_gachapon_hiden"  # plain Hiden -- "F" tier only, no FZ/FY
+CATEGORY_PAID_GACHAPON_HIDEN_F = "paid_gachapon_hiden_f"
+# G-Hiden (CLASS=L) within Gachapon has no "plain" rows of its own -- every
+# real row carries G/GF/GX (confirmed against the real dataset: 280/280/280,
+# summing exactly to the old flat total), so there's no base leaf to keep.
+CATEGORY_PAID_GACHAPON_G_HIDEN_G = "paid_gachapon_g_hiden_g"
+CATEGORY_PAID_GACHAPON_G_HIDEN_GF = "paid_gachapon_g_hiden_gf"
+CATEGORY_PAID_GACHAPON_G_HIDEN_GX = "paid_gachapon_g_hiden_gx"
+# Exotic (CLASS=O) within Gachapon has its own internal G/GF/GX escalation on
+# top of a plain Exotic tier (confirmed: 62/62/62/62, summing exactly to the
+# old flat total) -- the same nested ladder `grank_exotic` below also has.
 CATEGORY_PAID_GACHAPON_EXOTIC = "paid_gachapon_exotic"
+CATEGORY_PAID_GACHAPON_EXOTIC_G = "paid_gachapon_exotic_g"
+CATEGORY_PAID_GACHAPON_EXOTIC_GF = "paid_gachapon_exotic_gf"
+CATEGORY_PAID_GACHAPON_EXOTIC_GX = "paid_gachapon_exotic_gx"
 
 CATEGORY_PAID_NET_CAFE = "paid_net_cafe"  # CRE=3-/3e, CLASS "" (base tier)
+CATEGORY_PAID_NET_CAFE_F = "paid_net_cafe_f"
+CATEGORY_PAID_NET_CAFE_FZ = "paid_net_cafe_fz"
 CATEGORY_PAID_NET_CAFE_HS = "paid_net_cafe_hs"
-CATEGORY_PAID_NET_CAFE_G_SHUGO = "paid_net_cafe_g_shugo"
+CATEGORY_PAID_NET_CAFE_GS = "paid_net_cafe_gs"
+CATEGORY_PAID_NET_CAFE_GP = "paid_net_cafe_gp"
 CATEGORY_PAID_NET_CAFE_HC = "paid_net_cafe_hc"
 CATEGORY_PAID_NET_CAFE_ZP = "paid_net_cafe_zp"
 
 CATEGORY_PAID_PROMOTIONAL = "paid_promotional"  # CRE=5-, CLASS "" (base tier)
+CATEGORY_PAID_PROMOTIONAL_F = "paid_promotional_f"
+CATEGORY_PAID_PROMOTIONAL_FZ = "paid_promotional_fz"
 CATEGORY_PAID_PROMOTIONAL_HS = "paid_promotional_hs"
-CATEGORY_PAID_PROMOTIONAL_G_SHUGO = "paid_promotional_g_shugo"
+CATEGORY_PAID_PROMOTIONAL_GS = "paid_promotional_gs"
+CATEGORY_PAID_PROMOTIONAL_GP = "paid_promotional_gp"
 CATEGORY_PAID_PROMOTIONAL_HC = "paid_promotional_hc"
 CATEGORY_PAID_PROMOTIONAL_ZP = "paid_promotional_zp"
 
+# Festival (2026-10-20): previously one unsplit leaf (2,548 rows, with its FX
+# rows diverted into the shared HR100 FX leaf). The project owner supplied a
+# screenshot of the reference tool's own Festival node, which splits into 9
+# leaves of its own -- confirmed against the real dataset, a complete
+# partition summing to the same 2,548 total. The screenshot also shows "FX
+# Festival" as Festival's own child, not merged with CRE=1-/1e's FX rows under
+# the shared HR100 bucket, so Festival's FX rows are carved out of
+# CATEGORY_HR100_FX into their own leaf here (HR100 FX now only covers
+# CRE=1-/1e, 242 of the previous 282 rows).
 CATEGORY_GUILD_FESTIVAL = "guild_festival"
+CATEGORY_GUILD_FESTIVAL_F = "guild_festival_f"
+CATEGORY_GUILD_FESTIVAL_FZ = "guild_festival_fz"
+CATEGORY_GUILD_FESTIVAL_FX = "guild_festival_fx"
+CATEGORY_GUILD_FESTIVAL_RX = "guild_festival_rx"
+CATEGORY_GUILD_FESTIVAL_LX = "guild_festival_lx"
+CATEGORY_GUILD_FESTIVAL_HC = "guild_festival_hc"
+CATEGORY_GUILD_FESTIVAL_HS = "guild_festival_hs"
+CATEGORY_GUILD_FESTIVAL_G = "guild_festival_g"
+CATEGORY_GUILD_FESTIVAL_GF = "guild_festival_gf"
+CATEGORY_GUILD_FESTIVAL_GX = "guild_festival_gx"
+# "Winner and Loser Crowns" -- CRE=2m, plain CLASS, curated by name (no field
+# combination distinguishes these 5 rows from the other 1,264 plain Festival
+# rows): "祭のあとに【勝ち猫】"(Winner Cat)/"祭のあとに【負け犬】"(Loser Dog),
+# each with "旧"(old)/"(劣)"(inferior) variants.
+CATEGORY_GUILD_FESTIVAL_OTHER = "guild_festival_other"
 CATEGORY_GUILD_PLAIN = "guild_plain"
+CATEGORY_GUILD_PLAIN_F = "guild_plain_f"
+CATEGORY_GUILD_PLAIN_FZ = "guild_plain_fz"
 CATEGORY_GUILD_HS = "guild_hs"
 CATEGORY_GUILD_G = "guild_g"
+CATEGORY_GUILD_GF = "guild_gf"
 CATEGORY_GUILD_GX = "guild_gx"
 
+# Diva Defense (2026-10-20): previously one unsplit leaf (410 rows: 400
+# CLASS=P Zenith "Diva" family + 10 CLASS=I GX "Burning Cliff"/"Crimson
+# Cliff") -- already flagged in this file's own history as a candidate for
+# the same Z/ZF/ZY/ZX-style split Road Zenith and Event Zenith already have.
+# The project owner supplied a screenshot of the reference tool's own Diva
+# Defense node (nested under Guild, not top-level -- see gear-categories.ts),
+# showing exactly 5 children: plain/GX/辿(Zenith)/辿ZY/辿ZX -- no separate ZF
+# leaf, unlike Road/Event Zenith. Confirmed against the real dataset: the 200
+# "辿" rows are a real Z(100)+ZF(100) merge, not a parsing gap -- the
+# screenshot is the direct source for keeping them merged here. The plain
+# leaf has 0 real rows today (same no-real-rows situation as a few other
+# defensive-default base tiers in this file), kept as the defensive fallback.
 CATEGORY_DIVA_DEFENSE = "diva_defense"
+CATEGORY_DIVA_DEFENSE_GX = "diva_defense_gx"
+CATEGORY_DIVA_DEFENSE_ZENITH = "diva_defense_zenith"
+CATEGORY_DIVA_DEFENSE_ZENITH_ZY = "diva_defense_zenith_zy"
+CATEGORY_DIVA_DEFENSE_ZENITH_ZX = "diva_defense_zenith_zx"
 
 CATEGORY_TOWER_PLAIN = "tower_plain"
+CATEGORY_TOWER_PLAIN_F = "tower_plain_f"
+CATEGORY_TOWER_PLAIN_FZ = "tower_plain_fz"
 CATEGORY_TOWER_HS = "tower_hs"
 CATEGORY_TOWER_G = "tower_g"
+CATEGORY_TOWER_GF = "tower_gf"
 CATEGORY_TOWER_GX_CUSTOM = "tower_gx_custom"  # 刻GX
 
 CATEGORY_CARAVAN_PLAIN = "caravan_plain"
+CATEGORY_CARAVAN_PLAIN_F = "caravan_plain_f"
+CATEGORY_CARAVAN_PLAIN_FZ = "caravan_plain_fz"
 CATEGORY_CARAVAN_RX = "caravan_rx"
 CATEGORY_CARAVAN_HS = "caravan_hs"
 CATEGORY_CARAVAN_G = "caravan_g"
+CATEGORY_CARAVAN_GF = "caravan_gf"
 CATEGORY_CARAVAN_GX = "caravan_gx"
 
 CATEGORY_ROAD_PLAIN = "road_plain"
+CATEGORY_ROAD_PLAIN_F = "road_plain_f"
+CATEGORY_ROAD_PLAIN_FZ = "road_plain_fz"
 CATEGORY_ROAD_HS = "road_hs"
 CATEGORY_ROAD_G = "road_g"
+CATEGORY_ROAD_GF = "road_gf"
 CATEGORY_ROAD_GX = "road_gx"
 CATEGORY_ROAD_ZENITH = "road_zenith"
 CATEGORY_ROAD_ZENITH_ZF = "road_zenith_zf"
 CATEGORY_ROAD_ZENITH_ZY = "road_zenith_zy"
 CATEGORY_ROAD_ZENITH_ZX = "road_zenith_zx"
 
+# Update (2026-10-20): "G" used to merge 2 real, sequential power tiers ("G"
+# and "GF") -- confirmed against the real dataset via a direct stat
+# comparison (Festival's own "Roses" line: RARE 8/DEF 137 ("G") -> RARE
+# 10/DEF 146 ("GF") -> RARE 11/DEF 233 ("GX"); TYPE=0 for all 3, so this
+# isn't a Blademaster/Gunner naming pair like Mail/Vest). Exotic (CLASS=O)
+# and G-Hiden (CLASS=L) each carry this same 3-step ladder as their own
+# *internal* escalation (on top of already being G-rank via CLASS alone),
+# confirmed by the same stat-comparison method -- see their own leaves below.
 CATEGORY_GRANK_G = "grank_g"
+CATEGORY_GRANK_GF = "grank_gf"
 CATEGORY_GRANK_GX = "grank_gx"
 CATEGORY_GRANK_G_HASHU = "grank_g_hashu"
 CATEGORY_GRANK_BURST_SPECIES = (
     "grank_burst_species"  # CLASS H -- label unconfirmed, see taxonomy doc
 )
-CATEGORY_GRANK_G_HIDEN = "grank_g_hiden"
+# G-Hiden (CLASS=L) has no "plain" rows of its own -- every real row carries
+# G/GF/GX (confirmed: 280/280/280, summing exactly to the old flat total).
+CATEGORY_GRANK_G_HIDEN_G = "grank_g_hiden_g"
+CATEGORY_GRANK_G_HIDEN_GF = "grank_g_hiden_gf"
+CATEGORY_GRANK_G_HIDEN_GX = "grank_g_hiden_gx"
 CATEGORY_GRANK_ORIGIN = "grank_origin"
+# Exotic (CLASS=O) has its own internal G/GF/GX escalation on top of a plain
+# Exotic tier (confirmed: 110/110/110/110, summing exactly to the old flat
+# total).
 CATEGORY_GRANK_EXOTIC = "grank_exotic"
+CATEGORY_GRANK_EXOTIC_G = "grank_exotic_g"
+CATEGORY_GRANK_EXOTIC_GF = "grank_exotic_gf"
 CATEGORY_GRANK_EXOTIC_GX = "grank_exotic_gx"
 
 CATEGORY_ZENITH_PLAIN = "zenith_plain"
@@ -133,13 +249,28 @@ CATEGORY_HARDCORE_HC = "hardcore_hc"
 CATEGORY_HARDCORE_HS = "hardcore_hs"
 CATEGORY_HARDCORE_TENRAN = "hardcore_tenran"
 CATEGORY_HARDCORE_HASHU = "hardcore_hashu"
-CATEGORY_HARDCORE_HIDEN = "hardcore_hiden"
+CATEGORY_HARDCORE_HIDEN = "hardcore_hiden"  # plain Hiden -- "F" tier only, no FZ/FY
+CATEGORY_HARDCORE_HIDEN_F = "hardcore_hiden_f"
 
 CATEGORY_HR100_FX = "hr100_fx"
 CATEGORY_HR100_GOU = "hr100_gou"
 
 CATEGORY_EVENT_PLAIN = "event_plain"
+CATEGORY_EVENT_PLAIN_F = "event_plain_f"
+CATEGORY_EVENT_PLAIN_FZ = "event_plain_fz"
 CATEGORY_EVENT_GX = "event_gx"
+# CLASS=J (G-Shugo) rows (2026-10-20 audit: 80 real rows, GS/GP evenly split)
+# had no branch at all here and were silently falling into CATEGORY_EVENT_PLAIN.
+CATEGORY_EVENT_GS = "event_gs"
+CATEGORY_EVENT_GP = "event_gp"
+# 2026-10-20: CLASS F/E/A (HS/HC/SP) rows had no branch at all here either,
+# same bug shape as the GS/GP one above -- 255/91/3 real rows were silently
+# falling into CATEGORY_EVENT_PLAIN, found while inspecting event_plain's own
+# CLASS breakdown for further structure (every other acquisition route in
+# this taxonomy already splits its own HS/HC/SP tier into its own leaf).
+CATEGORY_EVENT_HS = "event_hs"
+CATEGORY_EVENT_HC = "event_hc"
+CATEGORY_EVENT_SP = "event_sp"
 CATEGORY_EVENT_ZENITH = "event_zenith"
 CATEGORY_EVENT_ZENITH_ZF = "event_zenith_zf"
 CATEGORY_EVENT_ZENITH_ZY = "event_zenith_zy"
@@ -154,35 +285,43 @@ CATEGORY_EVENT_MYSTERY = "event_mystery"  # 謎 -- Luxt series, GX tier only
 # has a genuine two-name split for 2 of the 9 monsters (Guanzorumu, Mi Ru) --
 # the other 7 use a single name common to both hunter types. See
 # docs/gear-category-taxonomy.md for the full per-monster name table.
-CATEGORY_EVENT_MUSOU_NARGACUGA = "event_musou_nargacuga"  # Demonclad
-CATEGORY_EVENT_MUSOU_GUANZORUMU = "event_musou_guanzorumu"  # 鬼凛ノ / 童凛ノ
-CATEGORY_EVENT_MUSOU_BOGABADORUMU = "event_musou_bogabadorumu"  # Rapin
-CATEGORY_EVENT_MUSOU_ZINOGRE = "event_musou_zinogre"  # Chiru
-CATEGORY_EVENT_MUSOU_ZERUREUSU = "event_musou_zerureusu"  # Elysi
-CATEGORY_EVENT_MUSOU_ELZELION = "event_musou_elzelion"  # Fonse
-CATEGORY_EVENT_MUSOU_MIRU = "event_musou_miru"  # Demon Tale / 童伝ノ
-CATEGORY_EVENT_MUSOU_PARIAPURIA = "event_musou_pariapuria"  # Ganeto
-CATEGORY_EVENT_MUSOU_DUREMUDIRA = "event_musou_duremudira"  # Bonne
+#
+# 2026-10-20: split by G/GF/GX tier rather than by monster -- the project
+# owner asked for "level instead of source" once it was confirmed every one
+# of the 9 monster sets independently carries all 3 tiers (audit: 2026-10-20).
+# The monster name itself stays visible in the item name; it's no longer a
+# separate category branch.
+CATEGORY_EVENT_MUSOU_G = "event_musou_g"
+CATEGORY_EVENT_MUSOU_GF = "event_musou_gf"
+CATEGORY_EVENT_MUSOU_GX = "event_musou_gx"
 
 # Extreme Quest armor -- also carved out of event_plain/event_gx, confirmed
 # by the project owner: 4 distinct quests, none tied to an actual Musou
 # monster. "Demon Lord"/"童子ノ" is a full 5-slot set (two hunter-type-
 # flavored names, same shape as the dual-named Musou monsters above); the
-# other 3 are head-slot-only items with no other-slot counterpart.
-CATEGORY_EVENT_EXTREME_DEMON_LORD = "event_extreme_demon_lord"  # Demon Lord / 童子ノ
-CATEGORY_EVENT_EXTREME_HERUTO = "event_extreme_heruto"
-CATEGORY_EVENT_EXTREME_IROASU = "event_extreme_iroasu"
-CATEGORY_EVENT_EXTREME_LUCHAR = "event_extreme_luchar"
+# other 3 are head-slot-only items with no other-slot counterpart. Split by
+# G/GF/GX tier rather than by quest, same as Musou above (2026-10-20).
+CATEGORY_EVENT_EXTREME_G = "event_extreme_g"
+CATEGORY_EVENT_EXTREME_GF = "event_extreme_gf"
+CATEGORY_EVENT_EXTREME_GX = "event_extreme_gx"
 
 CATEGORY_TOURNAMENT_PLAIN = "tournament_plain"
+CATEGORY_TOURNAMENT_PLAIN_F = "tournament_plain_f"
+CATEGORY_TOURNAMENT_PLAIN_FZ = "tournament_plain_fz"
 CATEGORY_TOURNAMENT_HC = "tournament_hc"
 CATEGORY_TOURNAMENT_HS = "tournament_hs"
 CATEGORY_TOURNAMENT_G = "tournament_g"
+CATEGORY_TOURNAMENT_GF = "tournament_gf"
 CATEGORY_TOURNAMENT_GX = "tournament_gx"
+# CLASS=J (G-Shugo): previously one leaf hardcoded to GP, mislabeling half of
+# the 6 real rows -- 2026-10-20 audit found 3 GS + 3 GP, not 6 GP.
+CATEGORY_TOURNAMENT_GS = "tournament_gs"
 CATEGORY_TOURNAMENT_GP = "tournament_gp"
 CATEGORY_TOURNAMENT_ZP = "tournament_zp"
 
 CATEGORY_STANDARD_PLAIN = "standard_plain"
+CATEGORY_STANDARD_PLAIN_F = "standard_plain_f"
+CATEGORY_STANDARD_PLAIN_FZ = "standard_plain_fz"
 CATEGORY_STANDARD_SP = "standard_sp"
 
 CATEGORY_UNAVAILABLE_NOT_IMPLEMENTED = "unavailable_not_implemented"
@@ -294,10 +433,14 @@ CATEGORY_DECO_OTHER = "deco_other"  # anything unmodeled
 # upgrade markers, which appear within every category uniformly and don't
 # affect classification -- confirmed against the real dataset, e.g. "Ranvuo F
 # Coil"/"Ranvuo FY Coil" are just upgraded Caravan-GX armor, not a different
-# category). Always appear as a standalone whitespace-delimited token in
-# equipment names ("{Series} [{SUFFIX}] {SlotWord}"), unlike the decoration
-# named-series matching elsewhere in this project, which anchors on the
-# series name instead and allows the suffix to appear glued to other text.
+# category). Almost always appear as a standalone whitespace-delimited token
+# in equipment names ("{Series} [{SUFFIX}] {SlotWord}"), unlike the
+# decoration named-series matching elsewhere in this project, which anchors
+# on the series name instead and allows the suffix to appear glued to other
+# text -- except the GS/GP marker specifically, which can be glued directly
+# onto a kana series name with no preceding space (e.g. "メトリーGS Helm・
+# Blue"), confirmed in ~10% of Package's G-Shugo rows during the 2026-10-20
+# GS/GP split audit, so `_gs_or_gp` below uses a regex instead of `_tokens`.
 
 
 def _field(fields: list[str], index: int) -> str:
@@ -306,6 +449,71 @@ def _field(fields: list[str], index: int) -> str:
 
 def _tokens(name: str) -> frozenset[str]:
     return frozenset(name.split())
+
+
+_GS_OR_GP_RE = re.compile(r"(?<![A-Za-z])(GS|GP)(?![A-Za-z])")
+
+
+def _gs_or_gp(name: str) -> str | None:
+    """Returns "GS", "GP", or None, for the name-suffix marker that
+    distinguishes the two real, evenly-split variants sharing CLASS=J
+    (G-Shugo) -- see `_paid_premium_subcategory`.
+    """
+    match = _GS_OR_GP_RE.search(name)
+    return match.group(1) if match else None
+
+
+def _has_marker(name: str, marker: str) -> bool:
+    """Like `marker in _tokens(name)`, but also matches a marker glued
+    directly onto other text with no surrounding whitespace -- confirmed
+    necessary for "Burning Cliff GX【胴当て】" (Diva Defense's own GX tier),
+    the same glued-token situation `_gs_or_gp` above already has to handle.
+    """
+    return re.search(rf"(?<![A-Za-z]){re.escape(marker)}(?![A-Za-z])", name) is not None
+
+
+def _f_or_fz(name: str) -> str | None:
+    """Returns "F", "FZ", or None, for the tier-2/tier-3 forge-upgrade
+    name-suffix marker within a "plain" (`CLASS=""`) bucket -- confirmed via
+    direct stat comparison against the real dataset (e.g. Package's "Secuti"
+    line: RARE 7/DEF 13 (plain) -> RARE 7/DEF 50 ("F") -> RARE 7/DEF 88
+    ("FZ"), before CLASS=F/J pick up from there). "FY" is a differently-
+    worded name for the same tier-2 position as "FZ" -- a given armor set's
+    own upgrade chain uses either "FY" or "FZ", never both (confirmed: no
+    row carries both tokens) -- so both map to the `_fz`-suffixed leaf.
+
+    Only call this where `clazz == ""` -- unlike GS/GP, a bare "F"/"G" token
+    is common enough in ordinary item/skill names (e.g. "G・Guard", "Rider
+    Head G") that this isn't safe to run unconditionally; restricting it to
+    the blank-CLASS "plain" bucket (where only real forge-upgrade rows and
+    the already-excluded FX/RX/LX tiers live) avoids every false positive
+    found during the 2026-10-20 audit.
+    """
+    if _has_marker(name, "FZ") or _has_marker(name, "FY"):
+        return "FZ"
+    if _has_marker(name, "F"):
+        return "F"
+    return None
+
+
+def _g_or_gf_or_gx(name: str) -> str | None:
+    """Returns "G", "GF", "GX", or None, for the 3-step G-rank upgrade chain
+    a CLASS=I/L/O row may carry -- confirmed via direct stat comparison
+    against the real dataset (e.g. Festival's "Roses" line: RARE 8/DEF 137
+    ("G") -> RARE 10/DEF 146 ("GF") -> RARE 11/DEF 233 ("GX"); TYPE=0 for all
+    3, so this isn't a Blademaster/Gunner naming pair).
+
+    Only call this where `clazz` is already confirmed G-rank (I/L/O) -- see
+    `_f_or_fz`'s own docstring for why a bare "G" token isn't safe to check
+    unconditionally.
+    """
+    if _has_marker(name, "GX"):
+        return "GX"
+    if _has_marker(name, "GF"):
+        return "GF"
+    if _has_marker(name, "G"):
+        return "G"
+    return None
 
 
 # Whether a piece is "G Rank or later" (the in-game active-skill-cap piece-
@@ -359,73 +567,127 @@ def is_grank_or_later_equipment(fields: list[str]) -> bool:
 # all 9 Musou-tier monsters. Each tuple's names are TYPE=0 (common to both
 # hunter types) except where noted; a monster with two names has them as
 # wholly separate common armor sets, not a Blademaster/Gunner-restricted
-# pair (see CATEGORY_EVENT_MUSOU_NARGACUGA's own comment above).
-_EVENT_MUSOU_NAME_PREFIXES: tuple[tuple[tuple[str, ...], str], ...] = (
-    (("Demonclad",), CATEGORY_EVENT_MUSOU_NARGACUGA),
-    (("鬼凛ノ", "童凛ノ"), CATEGORY_EVENT_MUSOU_GUANZORUMU),
-    (("Rapin",), CATEGORY_EVENT_MUSOU_BOGABADORUMU),
-    (("Chiru",), CATEGORY_EVENT_MUSOU_ZINOGRE),
-    (("Elysi",), CATEGORY_EVENT_MUSOU_ZERUREUSU),
-    (("Fonse",), CATEGORY_EVENT_MUSOU_ELZELION),
-    (("Demon Tale", "童伝ノ"), CATEGORY_EVENT_MUSOU_MIRU),
-    (("Ganeto",), CATEGORY_EVENT_MUSOU_PARIAPURIA),
-    (("Bonne",), CATEGORY_EVENT_MUSOU_DUREMUDIRA),
+# pair (see CATEGORY_EVENT_MUSOU_G's own comment above). Used only to tell
+# "is this Musou armor at all" apart from plain event armor -- the resulting
+# category is then decided by G/GF/GX tier, not by which prefix matched.
+_EVENT_MUSOU_NAME_PREFIXES: tuple[str, ...] = (
+    "Demonclad",
+    "鬼凛ノ",
+    "童凛ノ",
+    "Rapin",
+    "Chiru",
+    "Elysi",
+    "Fonse",
+    "Demon Tale",
+    "童伝ノ",
+    "Ganeto",
+    "Bonne",
 )
 
 # Extreme Quest armor name prefixes (CRE=1e, CLASS=I) -- confirmed by the
 # project owner: 4 distinct quests, none tied to an actual Musou monster (see
-# CATEGORY_EVENT_EXTREME_DEMON_LORD's own comment above).
-_EVENT_EXTREME_NAME_PREFIXES: tuple[tuple[tuple[str, ...], str], ...] = (
-    (("Demon Lord", "童子ノ"), CATEGORY_EVENT_EXTREME_DEMON_LORD),
-    (("Heruto",), CATEGORY_EVENT_EXTREME_HERUTO),
-    (("Iroasu",), CATEGORY_EVENT_EXTREME_IROASU),
-    (("Luchar",), CATEGORY_EVENT_EXTREME_LUCHAR),
+# CATEGORY_EVENT_EXTREME_G's own comment above). Used only to tell "is this
+# Extreme Quest armor at all" apart from plain event armor -- the resulting
+# category is then decided by G/GF/GX tier, not by which prefix matched.
+_EVENT_EXTREME_NAME_PREFIXES: tuple[str, ...] = (
+    "Demon Lord",
+    "童子ノ",
+    "Heruto",
+    "Iroasu",
+    "Luchar",
 )
+
+# "Winner and Loser Crowns" (CRE=2m, plain CLASS) -- see
+# CATEGORY_GUILD_FESTIVAL_OTHER's own comment above. Only 5 real rows, none
+# with a Blademaster/Gunner-pair name.
+_FESTIVAL_OTHER_NAME_PREFIX = "祭のあとに"
 
 
 def _paid_premium_subcategory(
     clazz: str,
+    name: str,
     *,
     base: str,
+    base_f: str | None = None,
+    base_fz: str | None = None,
     hs: str,
-    g_shugo: str,
+    gs: str,
+    gp: str,
     hc: str,
     zp: str | None = None,
     hiden: str | None = None,
-    g_hiden: str | None = None,
+    hiden_f: str | None = None,
+    g_hiden_g: str | None = None,
+    g_hiden_gf: str | None = None,
+    g_hiden_gx: str | None = None,
     exotic: str | None = None,
+    exotic_g: str | None = None,
+    exotic_gf: str | None = None,
+    exotic_gx: str | None = None,
 ) -> str:
     """Shared CLASS-tier split for every "Paid and Premium" acquisition route
     (CRE 5p/4k/4g/3-/3e/5-) -- confirmed against the real dataset (2026-10-18)
     to be a complete partition of each route by CLASS alone (name-suffix
-    tokens like "HS"/"GS"/"GP"/"HC"/"ZP" just corroborate the CLASS value,
-    the same way "HS" already corroborates `_CLASS_SHUGO` elsewhere in this
-    file -- they're not needed to decide the leaf). A route's own caller only
-    passes the keyword leaves it actually has real rows for; any CLASS value
-    without a matching keyword falls back to `base` rather than raising, as a
-    defensive default (every real route's CLASS set was confirmed complete at
+    tokens like "HS"/"HC"/"ZP" just corroborate the CLASS value, the same way
+    "HS" already corroborates `_CLASS_SHUGO` elsewhere in this file -- they're
+    not needed to decide the leaf). A route's own caller only passes the
+    keyword leaves it actually has real rows for; any CLASS value without a
+    matching keyword falls back to `base` rather than raising, as a defensive
+    default (every real route's CLASS set was confirmed complete at
     implementation time, but a cache refresh could in principle surface a
     CLASS value this project hasn't seen yet).
 
-    `g_shugo` merges 2 real, evenly-split, name-suffix variants ("GS"/"GP")
-    that share this one CLASS value -- what actually distinguishes them
-    in-game is unconfirmed (both are `TYPE=0`, i.e. not a Blademaster/Gunner
-    pair), so they're kept as one leaf rather than guessing a further split.
+    CLASS=J (G-Shugo) is one exception within this shared tier: it holds 2
+    real, evenly-split name-suffix variants ("GS"/"GP") that the project
+    owner asked to be split into separate `gs`/`gp` leaves (2026-10-20) to
+    match the in-game piece names, via `_gs_or_gp`.
+
+    CLASS "" (`base`), Hiden (`hiden`), G-Hiden, and Exotic are the other
+    exceptions (2026-10-20, later same day): each further splits by its own
+    rank-ladder rung via `_f_or_fz`/`_g_or_gf_or_gx` -- `base`/`hiden` by
+    F/FZ (`base_f`/`base_fz`/`hiden_f`), G-Hiden/Exotic by their own internal
+    G/GF/GX escalation (`exotic`/`exotic_g`/`exotic_gf`/`exotic_gx`; G-Hiden
+    has no "plain" rows of its own, hence no bare `g_hiden` kwarg). All are
+    optional, same no-leaf-for-a-tier-with-0-real-rows convention as every
+    other kwarg here.
     """
     if clazz == _CLASS_SHUGO:
         return hs
     if clazz == _CLASS_G_SHUGO:
-        return g_shugo
+        marker = _gs_or_gp(name)
+        return gp if marker == "GP" else gs
     if clazz == _CLASS_HC:
         return hc
     if zp is not None and clazz == _CLASS_ZENITH_SHUGO:
         return zp
     if hiden is not None and clazz == _CLASS_HIDEN:
+        marker = _f_or_fz(name)
+        if marker == "F" and hiden_f is not None:
+            return hiden_f
         return hiden
-    if g_hiden is not None and clazz == _CLASS_G_HIDEN:
-        return g_hiden
+    if g_hiden_g is not None and clazz == _CLASS_G_HIDEN:
+        marker = _g_or_gf_or_gx(name)
+        if marker == "GX":
+            return g_hiden_gx if g_hiden_gx is not None else g_hiden_g
+        if marker == "GF":
+            return g_hiden_gf if g_hiden_gf is not None else g_hiden_g
+        return g_hiden_g
     if exotic is not None and clazz == _CLASS_EXOTIC:
+        marker = _g_or_gf_or_gx(name)
+        if marker == "GX" and exotic_gx is not None:
+            return exotic_gx
+        if marker == "GF" and exotic_gf is not None:
+            return exotic_gf
+        if marker == "G" and exotic_g is not None:
+            return exotic_g
         return exotic
+    if clazz == "":
+        marker = _f_or_fz(name)
+        if marker == "FZ" and base_fz is not None:
+            return base_fz
+        if marker == "F" and base_f is not None:
+            return base_f
+        return base
     return base
 
 
@@ -454,74 +716,148 @@ def classify_equipment_category(fields: list[str]) -> str:
     if cre == "5p":
         return _paid_premium_subcategory(
             clazz,
+            name,
             base=CATEGORY_PAID_PACKAGE,
+            base_f=CATEGORY_PAID_PACKAGE_F,
+            base_fz=CATEGORY_PAID_PACKAGE_FZ,
             hs=CATEGORY_PAID_PACKAGE_HS,
-            g_shugo=CATEGORY_PAID_PACKAGE_G_SHUGO,
+            gs=CATEGORY_PAID_PACKAGE_GS,
+            gp=CATEGORY_PAID_PACKAGE_GP,
             hc=CATEGORY_PAID_PACKAGE_HC,
         )
     if cre == "4k":
         return _paid_premium_subcategory(
             clazz,
+            name,
             base=CATEGORY_PAID_PREMIUM_KIT,
+            base_f=CATEGORY_PAID_PREMIUM_KIT_F,
+            base_fz=CATEGORY_PAID_PREMIUM_KIT_FZ,
             hs=CATEGORY_PAID_PREMIUM_KIT_HS,
-            g_shugo=CATEGORY_PAID_PREMIUM_KIT_G_SHUGO,
+            gs=CATEGORY_PAID_PREMIUM_KIT_GS,
+            gp=CATEGORY_PAID_PREMIUM_KIT_GP,
             hc=CATEGORY_PAID_PREMIUM_KIT_HC,
             zp=CATEGORY_PAID_PREMIUM_KIT_ZP,
         )
     if cre == "4g":
         return _paid_premium_subcategory(
             clazz,
+            name,
             base=CATEGORY_PAID_GACHAPON,
+            base_f=CATEGORY_PAID_GACHAPON_F,
+            base_fz=CATEGORY_PAID_GACHAPON_FZ,
             hs=CATEGORY_PAID_GACHAPON_HS,
-            g_shugo=CATEGORY_PAID_GACHAPON_G_SHUGO,
+            gs=CATEGORY_PAID_GACHAPON_GS,
+            gp=CATEGORY_PAID_GACHAPON_GP,
             hc=CATEGORY_PAID_GACHAPON_HC,
             zp=CATEGORY_PAID_GACHAPON_ZP,
             hiden=CATEGORY_PAID_GACHAPON_HIDEN,
-            g_hiden=CATEGORY_PAID_GACHAPON_G_HIDEN,
+            hiden_f=CATEGORY_PAID_GACHAPON_HIDEN_F,
+            g_hiden_g=CATEGORY_PAID_GACHAPON_G_HIDEN_G,
+            g_hiden_gf=CATEGORY_PAID_GACHAPON_G_HIDEN_GF,
+            g_hiden_gx=CATEGORY_PAID_GACHAPON_G_HIDEN_GX,
             exotic=CATEGORY_PAID_GACHAPON_EXOTIC,
+            exotic_g=CATEGORY_PAID_GACHAPON_EXOTIC_G,
+            exotic_gf=CATEGORY_PAID_GACHAPON_EXOTIC_GF,
+            exotic_gx=CATEGORY_PAID_GACHAPON_EXOTIC_GX,
         )
     if cre in ("3-", "3e"):
         return _paid_premium_subcategory(
             clazz,
+            name,
             base=CATEGORY_PAID_NET_CAFE,
+            base_f=CATEGORY_PAID_NET_CAFE_F,
+            base_fz=CATEGORY_PAID_NET_CAFE_FZ,
             hs=CATEGORY_PAID_NET_CAFE_HS,
-            g_shugo=CATEGORY_PAID_NET_CAFE_G_SHUGO,
+            gs=CATEGORY_PAID_NET_CAFE_GS,
+            gp=CATEGORY_PAID_NET_CAFE_GP,
             hc=CATEGORY_PAID_NET_CAFE_HC,
             zp=CATEGORY_PAID_NET_CAFE_ZP,
         )
     if cre == "5-":
         return _paid_premium_subcategory(
             clazz,
+            name,
             base=CATEGORY_PAID_PROMOTIONAL,
+            base_f=CATEGORY_PAID_PROMOTIONAL_F,
+            base_fz=CATEGORY_PAID_PROMOTIONAL_FZ,
             hs=CATEGORY_PAID_PROMOTIONAL_HS,
-            g_shugo=CATEGORY_PAID_PROMOTIONAL_G_SHUGO,
+            gs=CATEGORY_PAID_PROMOTIONAL_GS,
+            gp=CATEGORY_PAID_PROMOTIONAL_GP,
             hc=CATEGORY_PAID_PROMOTIONAL_HC,
             zp=CATEGORY_PAID_PROMOTIONAL_ZP,
         )
 
     if cre == "2u":
+        if clazz == _CLASS_G:
+            return CATEGORY_DIVA_DEFENSE_GX if _has_marker(name, "GX") else CATEGORY_DIVA_DEFENSE
+        if clazz == _CLASS_ZENITH:
+            if "ZX" in tokens:
+                return CATEGORY_DIVA_DEFENSE_ZENITH_ZX
+            if "ZY" in tokens:
+                return CATEGORY_DIVA_DEFENSE_ZENITH_ZY
+            return CATEGORY_DIVA_DEFENSE_ZENITH  # "Z" or "ZF" -- merged, see comment above
         return CATEGORY_DIVA_DEFENSE
     if cre == "2m":
-        if clazz == "" and "FX" in tokens:
-            return CATEGORY_HR100_FX
+        if clazz == "":
+            if "FX" in tokens:
+                return CATEGORY_GUILD_FESTIVAL_FX
+            if "RX" in tokens:
+                return CATEGORY_GUILD_FESTIVAL_RX
+            if "LX" in tokens:
+                return CATEGORY_GUILD_FESTIVAL_LX
+            if name.startswith(_FESTIVAL_OTHER_NAME_PREFIX):
+                return CATEGORY_GUILD_FESTIVAL_OTHER
+            marker = _f_or_fz(name)
+            if marker == "FZ":
+                return CATEGORY_GUILD_FESTIVAL_FZ
+            if marker == "F":
+                return CATEGORY_GUILD_FESTIVAL_F
+            return CATEGORY_GUILD_FESTIVAL
+        if clazz == _CLASS_HC:
+            return CATEGORY_GUILD_FESTIVAL_HC
+        if clazz == _CLASS_SHUGO:
+            return CATEGORY_GUILD_FESTIVAL_HS
+        if clazz == _CLASS_G:
+            marker = _g_or_gf_or_gx(name)
+            if marker == "GX":
+                return CATEGORY_GUILD_FESTIVAL_GX
+            if marker == "GF":
+                return CATEGORY_GUILD_FESTIVAL_GF
+            return CATEGORY_GUILD_FESTIVAL_G
         return CATEGORY_GUILD_FESTIVAL
     if cre == "2-":
-        if "GX" in tokens:
+        if _has_marker(name, "GX"):
             return CATEGORY_GUILD_GX
         if clazz == _CLASS_SHUGO:
             return CATEGORY_GUILD_HS
-        if tokens & {"G", "GF"}:
-            return CATEGORY_GUILD_G
+        if clazz == _CLASS_G or clazz == _CLASS_G_SHUGO:
+            if _has_marker(name, "GF"):
+                return CATEGORY_GUILD_GF
+            if _has_marker(name, "G"):
+                return CATEGORY_GUILD_G
+        if clazz == "":
+            marker = _f_or_fz(name)
+            if marker == "FZ":
+                return CATEGORY_GUILD_PLAIN_FZ
+            if marker == "F":
+                return CATEGORY_GUILD_PLAIN_F
         return CATEGORY_GUILD_PLAIN
 
     if cre == "1t":
         if clazz == _CLASS_TOWER:
-            if "GX" in tokens:
+            if _has_marker(name, "GX"):
                 return CATEGORY_TOWER_GX_CUSTOM
             if "HS" in tokens:
                 return CATEGORY_TOWER_HS
-            if tokens & {"G", "GF"}:
+            if _has_marker(name, "GF"):
+                return CATEGORY_TOWER_GF
+            if _has_marker(name, "G"):
                 return CATEGORY_TOWER_G
+            marker = _f_or_fz(name)
+            if marker == "FZ":
+                return CATEGORY_TOWER_PLAIN_FZ
+            if marker == "F":
+                return CATEGORY_TOWER_PLAIN_F
             return CATEGORY_TOWER_PLAIN
         if clazz == _CLASS_ZENITH:
             if "ZX" in tokens:
@@ -531,12 +867,21 @@ def classify_equipment_category(fields: list[str]) -> str:
             if "ZF" in tokens:
                 return CATEGORY_ROAD_ZENITH_ZF
             return CATEGORY_ROAD_ZENITH
-        if "GX" in tokens:
+        if _has_marker(name, "GX"):
             return CATEGORY_ROAD_GX
         if clazz == _CLASS_SHUGO:
             return CATEGORY_ROAD_HS
-        if tokens & {"G", "GF"}:
-            return CATEGORY_ROAD_G
+        if clazz == _CLASS_G:
+            if _has_marker(name, "GF"):
+                return CATEGORY_ROAD_GF
+            if _has_marker(name, "G"):
+                return CATEGORY_ROAD_G
+        if clazz == "":
+            marker = _f_or_fz(name)
+            if marker == "FZ":
+                return CATEGORY_ROAD_PLAIN_FZ
+            if marker == "F":
+                return CATEGORY_ROAD_PLAIN_F
         return CATEGORY_ROAD_PLAIN
 
     if cre == "1c":
@@ -544,27 +889,39 @@ def classify_equipment_category(fields: list[str]) -> str:
             return CATEGORY_CARAVAN_RX
         return CATEGORY_CARAVAN_PLAIN
     if cre == "1s":
-        if "GX" in tokens:
+        if _has_marker(name, "GX"):
             return CATEGORY_CARAVAN_GX
         if clazz == _CLASS_SHUGO:
             return CATEGORY_CARAVAN_HS
         if clazz == _CLASS_G:
-            return CATEGORY_CARAVAN_G
+            return CATEGORY_CARAVAN_GF if _has_marker(name, "GF") else CATEGORY_CARAVAN_G
+        if clazz == "":
+            marker = _f_or_fz(name)
+            if marker == "FZ":
+                return CATEGORY_CARAVAN_PLAIN_FZ
+            if marker == "F":
+                return CATEGORY_CARAVAN_PLAIN_F
         return CATEGORY_CARAVAN_PLAIN
 
     if cre == "1i":
         if clazz == _CLASS_ZENITH_SHUGO:
             return CATEGORY_TOURNAMENT_ZP
         if clazz == _CLASS_G_SHUGO:
-            return CATEGORY_TOURNAMENT_GP
-        if "GX" in tokens:
+            return CATEGORY_TOURNAMENT_GP if _gs_or_gp(name) == "GP" else CATEGORY_TOURNAMENT_GS
+        if _has_marker(name, "GX"):
             return CATEGORY_TOURNAMENT_GX
         if clazz == _CLASS_HC:
             return CATEGORY_TOURNAMENT_HC
         if clazz == _CLASS_SHUGO:
             return CATEGORY_TOURNAMENT_HS
         if clazz == _CLASS_G:
-            return CATEGORY_TOURNAMENT_G
+            return CATEGORY_TOURNAMENT_GF if _has_marker(name, "GF") else CATEGORY_TOURNAMENT_G
+        if clazz == "":
+            marker = _f_or_fz(name)
+            if marker == "FZ":
+                return CATEGORY_TOURNAMENT_PLAIN_FZ
+            if marker == "F":
+                return CATEGORY_TOURNAMENT_PLAIN_F
         return CATEGORY_TOURNAMENT_PLAIN
 
     if cre == "1e":
@@ -576,19 +933,50 @@ def classify_equipment_category(fields: list[str]) -> str:
             if "ZF" in tokens:
                 return CATEGORY_EVENT_ZENITH_ZF
             return CATEGORY_EVENT_ZENITH
-        if name.startswith("Luxt") and "GX" in tokens:
-            return CATEGORY_EVENT_MYSTERY
+        if clazz == _CLASS_G_SHUGO:
+            return CATEGORY_EVENT_GP if _gs_or_gp(name) == "GP" else CATEGORY_EVENT_GS
+        if clazz == _CLASS_SHUGO:
+            return CATEGORY_EVENT_HS
+        if clazz == _CLASS_HC:
+            return CATEGORY_EVENT_HC
+        if clazz == _CLASS_SP:
+            return CATEGORY_EVENT_SP
         if clazz == "" and "FX" in tokens:
             return CATEGORY_HR100_FX
         if clazz == _CLASS_G:
-            for prefixes, category in _EVENT_EXTREME_NAME_PREFIXES:
-                if name.startswith(prefixes):
-                    return category
-            for prefixes, category in _EVENT_MUSOU_NAME_PREFIXES:
-                if name.startswith(prefixes):
-                    return category
-            if "GX" in tokens:
+            if name.startswith(_EVENT_EXTREME_NAME_PREFIXES):
+                marker = _g_or_gf_or_gx(name)
+                if marker == "GX":
+                    return CATEGORY_EVENT_EXTREME_GX
+                if marker == "GF":
+                    return CATEGORY_EVENT_EXTREME_GF
+                return CATEGORY_EVENT_EXTREME_G
+            if name.startswith(_EVENT_MUSOU_NAME_PREFIXES):
+                marker = _g_or_gf_or_gx(name)
+                if marker == "GX":
+                    return CATEGORY_EVENT_MUSOU_GX
+                if marker == "GF":
+                    return CATEGORY_EVENT_MUSOU_GF
+                return CATEGORY_EVENT_MUSOU_G
+            # G/GF-tier non-curated rows deliberately stay merged into
+            # event_plain here, matching the reference tool's own 2-leaf
+            # "イ/イGX" shape (confirmed via the project owner's screenshot,
+            # see CATEGORY_EVENT_PLAIN's own module-level note) -- unlike
+            # every other route in this file, Event's G/GF isn't split out.
+            # `_has_marker`, not a plain `"GX" in tokens` membership check --
+            # 2026-10-20 audit found 29 rows with "GX" glued directly onto
+            # following kana/kanji/bracket text (e.g. "若Crimson葉GX【角】",
+            # "Youthclad ノ肩鎧GX", "Shirukku GXグローブ") silently falling
+            # into event_plain instead, the same glued-marker bug shape fixed
+            # elsewhere in this file (road_gx, caravan_gx, grank_exotic_gx).
+            if _has_marker(name, "GX"):
                 return CATEGORY_EVENT_GX
+        if clazz == "":
+            marker = _f_or_fz(name)
+            if marker == "FZ":
+                return CATEGORY_EVENT_PLAIN_FZ
+            if marker == "F":
+                return CATEGORY_EVENT_PLAIN_F
         return CATEGORY_EVENT_PLAIN
 
     # Standard tier: CRE is blank/"1"/"-"/"1-" (no special acquisition path).
@@ -608,7 +996,7 @@ def classify_equipment_category(fields: list[str]) -> str:
     if clazz == _CLASS_SHUGO:
         return CATEGORY_HARDCORE_HS
     if clazz == _CLASS_HIDEN:
-        return CATEGORY_HARDCORE_HIDEN
+        return CATEGORY_HARDCORE_HIDEN_F if _f_or_fz(name) == "F" else CATEGORY_HARDCORE_HIDEN
     if clazz == "" and "LX" in tokens:
         return CATEGORY_HARDCORE_LX
     if clazz == "" and "RX" in tokens:
@@ -618,11 +1006,23 @@ def classify_equipment_category(fields: list[str]) -> str:
     if clazz == _CLASS_RESSHU:
         return CATEGORY_GRANK_BURST_SPECIES
     if clazz == _CLASS_G_HIDEN:
-        return CATEGORY_GRANK_G_HIDEN
+        marker = _g_or_gf_or_gx(name)
+        if marker == "GX":
+            return CATEGORY_GRANK_G_HIDEN_GX
+        if marker == "GF":
+            return CATEGORY_GRANK_G_HIDEN_GF
+        return CATEGORY_GRANK_G_HIDEN_G
     if clazz == _CLASS_SISYU:
         return CATEGORY_GRANK_ORIGIN
     if clazz == _CLASS_EXOTIC:
-        return CATEGORY_GRANK_EXOTIC_GX if "GX" in tokens else CATEGORY_GRANK_EXOTIC
+        marker = _g_or_gf_or_gx(name)
+        if marker == "GX":
+            return CATEGORY_GRANK_EXOTIC_GX
+        if marker == "GF":
+            return CATEGORY_GRANK_EXOTIC_GF
+        if marker == "G":
+            return CATEGORY_GRANK_EXOTIC_G
+        return CATEGORY_GRANK_EXOTIC
     if clazz == _CLASS_ZENITH:
         if "ZX" in tokens:
             return CATEGORY_ZENITH_ZX
@@ -632,8 +1032,27 @@ def classify_equipment_category(fields: list[str]) -> str:
             return CATEGORY_ZENITH_ZF
         return CATEGORY_ZENITH_PLAIN
     if clazz == _CLASS_G:
-        return CATEGORY_GRANK_GX if "GX" in tokens else CATEGORY_GRANK_G
+        # Mystery Quest Armour ("Luxt" series, GX tier only) -- confirmed by
+        # the project owner, but originally miswired into the `cre == "1e"`
+        # branch above under the assumption its rows used CRE=1e. The real
+        # rows (2026-10-20 audit) are full standard-tier sets (plain/F/FY/HS/
+        # G/GF/GX) at CRE=1-, same as any other G-rank armor -- only the GX
+        # tier is pulled into its own "Mystery Quest Armour" leaf; G/GF stay
+        # in the ordinary grank_g/grank_gf leaves below.
+        if name.startswith("Luxt") and _has_marker(name, "GX"):
+            return CATEGORY_EVENT_MYSTERY
+        marker = _g_or_gf_or_gx(name)
+        if marker == "GX":
+            return CATEGORY_GRANK_GX
+        if marker == "GF":
+            return CATEGORY_GRANK_GF
+        return CATEGORY_GRANK_G
 
+    marker = _f_or_fz(name)
+    if marker == "FZ":
+        return CATEGORY_STANDARD_PLAIN_FZ
+    if marker == "F":
+        return CATEGORY_STANDARD_PLAIN_F
     return CATEGORY_STANDARD_PLAIN
 
 

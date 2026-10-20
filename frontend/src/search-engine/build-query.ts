@@ -176,14 +176,27 @@ export function buildWeaponSlot(bundle: DataBundle, state: QueryFormState): Name
   return { slotId: 'weapon', candidates }
 }
 
+/** Equipment categories this project has confirmed are impossible to ever
+ * obtain in-game (Not Implemented, Training Only -- see docs/gear-category-
+ * taxonomy.md's "Unavailable" table) -- excluded from the general pool
+ * unconditionally, the same convention `_UNOBTAINABLE_DECORATION_CATEGORIES`
+ * below already uses (confirmed by the project owner, 2026-10-20). Not one
+ * of gear-categories.ts's leaves at all (see its own docstring). */
+const _UNOBTAINABLE_EQUIPMENT_CATEGORIES: ReadonlySet<string> = new Set([
+  'unavailable_not_implemented',
+  'unavailable_training_only',
+])
+
 export function slotsAfterCategoryFilter(
   slots: readonly NamedSlotQuery[],
   excludedCategories: ReadonlySet<string>,
 ): NamedSlotQuery[] {
-  if (excludedCategories.size === 0) return [...slots]
   return slots.map((slot) => ({
     ...slot,
-    candidates: slot.candidates.filter((c) => !excludedCategories.has(c.category)),
+    candidates: slot.candidates.filter(
+      (c) =>
+        !_UNOBTAINABLE_EQUIPMENT_CATEGORIES.has(c.category) && !excludedCategories.has(c.category),
+    ),
   }))
 }
 
@@ -281,12 +294,28 @@ export function slotsAfterPinning(
   })
 }
 
+/** Cuff categories this project has confirmed are impossible to ever obtain
+ * in-game (Unavailable, Training Only -- see docs/gear-category-taxonomy.md's
+ * cuff tables) -- excluded from the general pool unconditionally, the same
+ * convention `_UNOBTAINABLE_EQUIPMENT_CATEGORIES` above and
+ * `_UNOBTAINABLE_DECORATION_CATEGORIES` below already use (confirmed by the
+ * project owner, 2026-10-20). Not one of cuff-categories.ts's leaves at all
+ * (see its own docstring) -- previously a default-excluded-but-togglable
+ * choice (`App.tsx`'s old `DEFAULT_EXCLUDED_CUFF_CATEGORIES`), superseded by
+ * this unconditional treatment. */
+const _UNOBTAINABLE_CUFF_CATEGORIES: ReadonlySet<string> = new Set([
+  'cuff_premium_unavailable',
+  'cuff_standard_unavailable',
+  'cuff_standard_training_only',
+])
+
 export function cuffsAfterCategoryFilter(
   cuffs: readonly NamedCuff[],
   excludedCuffCategories: ReadonlySet<string>,
 ): NamedCuff[] {
-  if (excludedCuffCategories.size === 0) return [...cuffs]
-  return cuffs.filter((c) => !excludedCuffCategories.has(c.category))
+  return cuffs.filter(
+    (c) => !_UNOBTAINABLE_CUFF_CATEGORIES.has(c.category) && !excludedCuffCategories.has(c.category),
+  )
 }
 
 /** Drops every cuff the player has explicitly excluded by id (docs/skill-
@@ -314,6 +343,11 @@ const _UNOBTAINABLE_DECORATION_CATEGORIES: ReadonlySet<string> = new Set([
   'deco_training_only',
   'deco_unimplemented',
   'deco_impossible_to_create',
+  // "do not use" per the reference tool's own tree -- previously a
+  // default-excluded-but-togglable leaf (see the roadmap doc's 2026-10-15
+  // follow-up), folded in here on 2026-10-20 since there's no legitimate
+  // reason to re-include it.
+  'deco_lottery_hiden',
 ])
 
 /** Tower Gems and regular decorations are strictly exclusive with each other

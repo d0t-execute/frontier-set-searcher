@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
   buildSearchQuery,
+  cuffsAfterCategoryFilter,
   cuffsAfterExcludedIds,
   decorationsAfterCategoryFilter,
   decorationsAfterExcludedIds,
   resolvePinnedSlotDecorations,
+  slotsAfterCategoryFilter,
   slotsAfterExcludedIds,
   slotsAfterHunterTypeFilter,
 } from './build-query'
@@ -42,11 +44,12 @@ function candidate(
   hunterType: HunterType,
   openSlotCount = 0,
   skills: readonly SkillContribution[] = [],
+  category = 'standard_plain',
 ): NamedCandidate {
   return {
     id,
     name: id,
-    category: 'standard_plain',
+    category,
     grankOrLater: false,
     hunterType,
     exoticSkillId: null,
@@ -131,6 +134,81 @@ describe('decorationsAfterCategoryFilter', () => {
     )
 
     expect(result.map((d) => d.id)).toEqual(['a'])
+  })
+
+  it('drops unobtainable-category decorations unconditionally, even with no categories excluded', () => {
+    const result = decorationsAfterCategoryFilter(
+      [
+        deco('a', false, 'deco_standard'),
+        deco('b', false, 'deco_training_only'),
+        deco('c', false, 'deco_unimplemented'),
+        deco('d', false, 'deco_impossible_to_create'),
+        deco('e', false, 'deco_lottery_hiden'),
+      ],
+      new Set(),
+    )
+
+    expect(result.map((d) => d.id)).toEqual(['a'])
+  })
+})
+
+describe('cuffsAfterCategoryFilter', () => {
+  it('drops unobtainable-category cuffs unconditionally, even with no categories excluded', () => {
+    const result = cuffsAfterCategoryFilter(
+      [
+        cuffFixture('a', 'cuff_standard_tier1'),
+        cuffFixture('b', 'cuff_premium_unavailable'),
+        cuffFixture('c', 'cuff_standard_unavailable'),
+        cuffFixture('d', 'cuff_standard_training_only'),
+      ],
+      new Set(),
+    )
+
+    expect(result.map((c) => c.id)).toEqual(['a'])
+  })
+
+  it('drops cuffs whose own category is excluded, independent of the unobtainable check', () => {
+    const result = cuffsAfterCategoryFilter(
+      [cuffFixture('a', 'cuff_standard_tier1'), cuffFixture('b', 'cuff_premium_tier1')],
+      new Set(['cuff_premium_tier1']),
+    )
+
+    expect(result.map((c) => c.id)).toEqual(['a'])
+  })
+})
+
+describe('slotsAfterCategoryFilter', () => {
+  it('drops unavailable-category candidates unconditionally, even with no categories excluded', () => {
+    const slots: NamedSlotQuery[] = [
+      {
+        slotId: 'head',
+        candidates: [
+          candidate('a', 'common', 0, [], 'standard_plain'),
+          candidate('b', 'common', 0, [], 'unavailable_not_implemented'),
+          candidate('c', 'common', 0, [], 'unavailable_training_only'),
+        ],
+      },
+    ]
+
+    const result = slotsAfterCategoryFilter(slots, new Set())
+
+    expect(result[0]?.candidates.map((c) => c.id)).toEqual(['a'])
+  })
+
+  it('drops candidates whose own category is excluded, independent of the unavailable check', () => {
+    const slots: NamedSlotQuery[] = [
+      {
+        slotId: 'head',
+        candidates: [
+          candidate('a', 'common', 0, [], 'standard_plain'),
+          candidate('b', 'common', 0, [], 'paid_package_gp'),
+        ],
+      },
+    ]
+
+    const result = slotsAfterCategoryFilter(slots, new Set(['paid_package_gp']))
+
+    expect(result[0]?.candidates.map((c) => c.id)).toEqual(['a'])
   })
 })
 

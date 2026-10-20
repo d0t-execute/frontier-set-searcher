@@ -161,39 +161,30 @@ const RESULT_SORT_LABELS: Record<ResultSortOption, string> = {
   skillsOverCap: 'Skills over cap (fewest first)',
 }
 
-// A piece/cuff that's unobtainable in the real game (removed, unimplemented,
-// or training-quest-only) is never worth surfacing by default -- these start
-// excluded everywhere they exist, both for equipment's own "Unavailable"
-// group and for the matching leaves under each cuff tier. Confirmed by the
-// project owner (2026-10-15): Premium cuffs themselves are fine to offer by
-// default despite needing Poogie to be wearing Premium clothes (an earlier
-// pass here excluded the whole "Premium Poogie Cuffs" group for that reason
-// -- superseded by this narrower rule).
-const DEFAULT_EXCLUDED_EQUIPMENT_CATEGORIES = new Set(
-  GEAR_CATEGORY_GROUPS.find((group) => group.label === 'Unavailable')!.categories.map((c) => c.key),
-)
-const DEFAULT_EXCLUDED_CUFF_CATEGORIES = new Set(
-  ['Premium Poogie Cuffs', 'Standard Poogie Cuffs']
-    .flatMap((label) => CUFF_CATEGORY_GROUPS.find((group) => group.label === label)!.categories)
-    .map((c) => c.key)
-    .filter((key) => key.includes('unavailable') || key.includes('training_only')),
-)
-// Tower Gems and the 3 "Unavailable" leaves are excluded unconditionally, not
-// via this set at all (they're not even leaves in DECORATION_CATEGORY_GROUPS
-// -- see decoration-categories.ts's own docstring and
-// `decorationsAfterCategoryFilter`'s `_UNOBTAINABLE_DECORATION_CATEGORIES`).
-// SP Decorations are ALSO excluded unconditionally via the same mechanism,
-// but stay real, visible leaves here -- default-excluded purely so their
-// checkbox state matches that unconditional exclusion (2026-10-18, per the
-// project owner). Lottery Hiden decorations ("do not use" per the reference
-// tool's own tree) are excluded by default too, but stay a togglable choice
-// since they're at least equippable.
-const DEFAULT_EXCLUDED_DECORATION_CATEGORIES = new Set([
-  'deco_lottery_hiden',
-  'deco_sp',
-  'deco_sp_lv2',
-  'deco_sp_lv3',
-])
+// A cuff that's unobtainable in the real game (removed, unimplemented, or
+// training-quest-only) is excluded from the general pool unconditionally --
+// not even a leaf in CUFF_CATEGORY_GROUPS at all (see its own docstring and
+// `cuffsAfterCategoryFilter`'s `_UNOBTAINABLE_CUFF_CATEGORIES` in
+// build-query.ts). Equipment's own matching leaves ("Unavailable") got the
+// same treatment on 2026-10-20, and cuffs' own (previously a narrower,
+// default-excluded-but-togglable `DEFAULT_EXCLUDED_CUFF_CATEGORIES` set)
+// followed suit the same day -- there was never a legitimate reason to
+// re-include any of them. Premium cuffs themselves are still fine to offer by
+// default despite needing Poogie to be wearing Premium clothes (confirmed by
+// the project owner, 2026-10-15) -- only their own Unavailable leaf is gone,
+// not the whole "Premium Poogie Cuffs" group.
+//
+// Tower Gems and the 3 equipment-side "Unavailable" leaves get the identical
+// unconditional treatment on the decoration side -- not even leaves in
+// DECORATION_CATEGORY_GROUPS at all (see decoration-categories.ts's own
+// docstring and `decorationsAfterCategoryFilter`'s
+// `_UNOBTAINABLE_DECORATION_CATEGORIES`, which also folds in Lottery Hiden
+// Decorations as of 2026-10-20, previously this set's own
+// `deco_lottery_hiden` entry). SP Decorations are ALSO excluded
+// unconditionally via that same mechanism, but stay real, visible leaves
+// here -- default-excluded purely so their checkbox state matches that
+// unconditional exclusion (2026-10-18, per the project owner).
+const DEFAULT_EXCLUDED_DECORATION_CATEGORIES = new Set(['deco_sp', 'deco_sp_lv2', 'deco_sp_lv3'])
 
 function countLeaves(groups: readonly CategoryFilterGroup[]): number {
   return groups.reduce((sum, group) => sum + group.categories.length, 0)
@@ -287,20 +278,10 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
     ...(initialState?.zenithRequirements ?? persisted?.zenithRequirements ?? []),
   ])
   const [excludedCategories, setExcludedCategories] = useState<Set<string>>(
-    () =>
-      new Set(
-        initialState?.excludedCategories ??
-          persisted?.excludedCategories ??
-          DEFAULT_EXCLUDED_EQUIPMENT_CATEGORIES,
-      ),
+    () => new Set(initialState?.excludedCategories ?? persisted?.excludedCategories ?? []),
   )
   const [excludedCuffCategories, setExcludedCuffCategories] = useState<Set<string>>(
-    () =>
-      new Set(
-        initialState?.excludedCuffCategories ??
-          persisted?.excludedCuffCategories ??
-          DEFAULT_EXCLUDED_CUFF_CATEGORIES,
-      ),
+    () => new Set(initialState?.excludedCuffCategories ?? persisted?.excludedCuffCategories ?? []),
   )
   const [excludedDecorationCategories, setExcludedDecorationCategories] = useState<Set<string>>(
     () =>
@@ -374,9 +355,9 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
   )
   // Elements required to stay at or above zero (docs/feedback.md Round 1 #4)
   // -- empty by default, same "don't silently assume a new feature's most
-  // restrictive state" precedent as `DEFAULT_EXCLUDED_CUFF_CATEGORIES`, just
-  // in the opposite direction (nothing constrained until the player opts an
-  // element in).
+  // restrictive state" precedent as `DEFAULT_EXCLUDED_DECORATION_CATEGORIES`,
+  // just in the opposite direction (nothing constrained until the player
+  // opts an element in).
   const [nonNegativeResistances, setNonNegativeResistances] = useState<Set<ResistanceElement>>(
     () => new Set(initialState?.nonNegativeResistances ?? persisted?.nonNegativeResistances ?? []),
   )
@@ -581,8 +562,9 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
   // Starts with every real Zenith skill excluded (only the "no Zenith skill"
   // leaf included) -- today's app has no weapon slot at all, so this exact
   // starting point is the one that changes nothing about an existing search
-  // until the player opts a skill in, matching DEFAULT_EXCLUDED_CUFF_CATEGORIES's
-  // own "don't silently assume a new feature's most permissive state" precedent.
+  // until the player opts a skill in, matching
+  // DEFAULT_EXCLUDED_DECORATION_CATEGORIES's own "don't silently assume a new
+  // feature's most permissive state" precedent.
   const defaultExcludedWeaponZenithSkillIds = useMemo(
     () => new Set((bundle?.weaponZenithSkillIds ?? []).map(String)),
     [bundle],
@@ -1140,6 +1122,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                   onChange={setExcludedCategories}
                   itemsByCategory={gearItemsByCategory}
                   tableLinkHash={(key) => categoryRouteHash('gear', key)}
+                  defaultCollapsed
                 />
               </Disclosure>
 

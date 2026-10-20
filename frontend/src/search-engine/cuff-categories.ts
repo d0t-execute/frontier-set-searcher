@@ -13,6 +13,13 @@
  * reference tool's own (unconfirmed) label text -- see the taxonomy doc's
  * note that only the `cuff_*` category keys themselves, not their eventual
  * display label, have been verified against the real dataset.
+ *
+ * The "Unavailable"/"Training Only" leaves (`cuff_premium_unavailable`,
+ * `cuff_standard_unavailable`, `cuff_standard_training_only`) are deliberately
+ * not leaves in this tree at all (2026-10-20, per the project owner) -- same
+ * not-a-leaf-at-all, unconditionally-excluded treatment equipment's own
+ * "Unavailable" categories already got, rather than left as a default-off-but-
+ * togglable choice -- see `_UNOBTAINABLE_CUFF_CATEGORIES` in build-query.ts.
  */
 
 import type { GearCategoryGroup } from './gear-categories'
@@ -29,7 +36,6 @@ export const CUFF_CATEGORY_GROUPS: readonly GearCategoryGroup[] = [
       { key: 'cuff_premium_event', label: 'Premium (Event)' },
       { key: 'cuff_premium_special', label: 'Premium (Special)' },
       { key: 'cuff_premium_zenith', label: 'Premium (Zenith)' },
-      { key: 'cuff_premium_unavailable', label: 'Premium (Unavailable)' },
     ],
   },
   {
@@ -42,8 +48,6 @@ export const CUFF_CATEGORY_GROUPS: readonly GearCategoryGroup[] = [
       { key: 'cuff_standard_guild', label: 'Standard (Guild)' },
       { key: 'cuff_standard_festival', label: 'Standard (Festival)' },
       { key: 'cuff_standard_zenith', label: 'Standard (Zenith)' },
-      { key: 'cuff_standard_unavailable', label: 'Standard (Unavailable)' },
-      { key: 'cuff_standard_training_only', label: 'Standard (Training Only)' },
     ],
   },
   {

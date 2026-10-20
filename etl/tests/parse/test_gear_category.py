@@ -9,9 +9,12 @@ test needs to name a real example row for traceability.
 
 from etl.parse.gear_category import (
     CATEGORY_CARAVAN_G,
+    CATEGORY_CARAVAN_GF,
     CATEGORY_CARAVAN_GX,
     CATEGORY_CARAVAN_HS,
     CATEGORY_CARAVAN_PLAIN,
+    CATEGORY_CARAVAN_PLAIN_F,
+    CATEGORY_CARAVAN_PLAIN_FZ,
     CATEGORY_CARAVAN_RX,
     CATEGORY_CUFF_HIDEN,
     CATEGORY_CUFF_PREMIUM_EVENT,
@@ -54,6 +57,8 @@ from etl.parse.gear_category import (
     CATEGORY_DECO_MUSOU_NARGACUGA,
     CATEGORY_DECO_MUSOU_ZERUREUSU,
     CATEGORY_DECO_OTHER,
+    # (decorations keep their own, unmodified category module -- unaffected by
+    # the equipment-side F/FZ and G/GF/GX split below)
     CATEGORY_DECO_RAVIENTE,
     CATEGORY_DECO_ROAD,
     CATEGORY_DECO_ROAD_GX,
@@ -68,42 +73,64 @@ from etl.parse.gear_category import (
     CATEGORY_DECO_TRUE_HIDEN,
     CATEGORY_DECO_UNIMPLEMENTED,
     CATEGORY_DIVA_DEFENSE,
-    CATEGORY_EVENT_EXTREME_DEMON_LORD,
-    CATEGORY_EVENT_EXTREME_HERUTO,
-    CATEGORY_EVENT_EXTREME_IROASU,
-    CATEGORY_EVENT_EXTREME_LUCHAR,
+    CATEGORY_DIVA_DEFENSE_GX,
+    CATEGORY_DIVA_DEFENSE_ZENITH,
+    CATEGORY_DIVA_DEFENSE_ZENITH_ZX,
+    CATEGORY_DIVA_DEFENSE_ZENITH_ZY,
+    CATEGORY_EVENT_EXTREME_G,
+    CATEGORY_EVENT_EXTREME_GF,
+    CATEGORY_EVENT_EXTREME_GX,
+    CATEGORY_EVENT_GP,
+    CATEGORY_EVENT_GS,
     CATEGORY_EVENT_GX,
-    CATEGORY_EVENT_MUSOU_BOGABADORUMU,
-    CATEGORY_EVENT_MUSOU_DUREMUDIRA,
-    CATEGORY_EVENT_MUSOU_ELZELION,
-    CATEGORY_EVENT_MUSOU_GUANZORUMU,
-    CATEGORY_EVENT_MUSOU_MIRU,
-    CATEGORY_EVENT_MUSOU_NARGACUGA,
-    CATEGORY_EVENT_MUSOU_PARIAPURIA,
-    CATEGORY_EVENT_MUSOU_ZERUREUSU,
-    CATEGORY_EVENT_MUSOU_ZINOGRE,
+    CATEGORY_EVENT_HC,
+    CATEGORY_EVENT_HS,
+    CATEGORY_EVENT_MUSOU_G,
+    CATEGORY_EVENT_MUSOU_GF,
+    CATEGORY_EVENT_MUSOU_GX,
     CATEGORY_EVENT_MYSTERY,
     CATEGORY_EVENT_PLAIN,
+    CATEGORY_EVENT_PLAIN_F,
+    CATEGORY_EVENT_PLAIN_FZ,
+    CATEGORY_EVENT_SP,
     CATEGORY_EVENT_ZENITH,
     CATEGORY_EVENT_ZENITH_ZF,
     CATEGORY_EVENT_ZENITH_ZX,
     CATEGORY_EVENT_ZENITH_ZY,
     CATEGORY_GRANK_BURST_SPECIES,
     CATEGORY_GRANK_EXOTIC,
+    CATEGORY_GRANK_EXOTIC_G,
+    CATEGORY_GRANK_EXOTIC_GF,
     CATEGORY_GRANK_EXOTIC_GX,
     CATEGORY_GRANK_G,
     CATEGORY_GRANK_G_HASHU,
-    CATEGORY_GRANK_G_HIDEN,
+    CATEGORY_GRANK_G_HIDEN_G,
+    CATEGORY_GRANK_G_HIDEN_GF,
+    CATEGORY_GRANK_G_HIDEN_GX,
+    CATEGORY_GRANK_GF,
     CATEGORY_GRANK_GX,
     CATEGORY_GRANK_ORIGIN,
     CATEGORY_GUILD_FESTIVAL,
+    CATEGORY_GUILD_FESTIVAL_FX,
+    CATEGORY_GUILD_FESTIVAL_G,
+    CATEGORY_GUILD_FESTIVAL_GF,
+    CATEGORY_GUILD_FESTIVAL_GX,
+    CATEGORY_GUILD_FESTIVAL_HC,
+    CATEGORY_GUILD_FESTIVAL_HS,
+    CATEGORY_GUILD_FESTIVAL_LX,
+    CATEGORY_GUILD_FESTIVAL_OTHER,
+    CATEGORY_GUILD_FESTIVAL_RX,
     CATEGORY_GUILD_G,
+    CATEGORY_GUILD_GF,
     CATEGORY_GUILD_GX,
     CATEGORY_GUILD_HS,
     CATEGORY_GUILD_PLAIN,
+    CATEGORY_GUILD_PLAIN_F,
+    CATEGORY_GUILD_PLAIN_FZ,
     CATEGORY_HARDCORE_HASHU,
     CATEGORY_HARDCORE_HC,
     CATEGORY_HARDCORE_HIDEN,
+    CATEGORY_HARDCORE_HIDEN_F,
     CATEGORY_HARDCORE_HS,
     CATEGORY_HARDCORE_LX,
     CATEGORY_HARDCORE_RX,
@@ -112,52 +139,73 @@ from etl.parse.gear_category import (
     CATEGORY_HR100_GOU,
     CATEGORY_PAID_GACHAPON,
     CATEGORY_PAID_GACHAPON_EXOTIC,
-    CATEGORY_PAID_GACHAPON_G_HIDEN,
-    CATEGORY_PAID_GACHAPON_G_SHUGO,
+    CATEGORY_PAID_GACHAPON_EXOTIC_GX,
+    CATEGORY_PAID_GACHAPON_G_HIDEN_GX,
+    CATEGORY_PAID_GACHAPON_GP,
+    CATEGORY_PAID_GACHAPON_GS,
     CATEGORY_PAID_GACHAPON_HC,
     CATEGORY_PAID_GACHAPON_HIDEN,
     CATEGORY_PAID_GACHAPON_HS,
     CATEGORY_PAID_GACHAPON_ZP,
     CATEGORY_PAID_NET_CAFE,
-    CATEGORY_PAID_NET_CAFE_G_SHUGO,
+    CATEGORY_PAID_NET_CAFE_GP,
+    CATEGORY_PAID_NET_CAFE_GS,
     CATEGORY_PAID_NET_CAFE_HC,
     CATEGORY_PAID_NET_CAFE_HS,
     CATEGORY_PAID_NET_CAFE_ZP,
     CATEGORY_PAID_PACKAGE,
-    CATEGORY_PAID_PACKAGE_G_SHUGO,
+    CATEGORY_PAID_PACKAGE_F,
+    CATEGORY_PAID_PACKAGE_FZ,
+    CATEGORY_PAID_PACKAGE_GP,
+    CATEGORY_PAID_PACKAGE_GS,
     CATEGORY_PAID_PACKAGE_HC,
     CATEGORY_PAID_PACKAGE_HS,
     CATEGORY_PAID_PREMIUM_KIT,
-    CATEGORY_PAID_PREMIUM_KIT_G_SHUGO,
+    CATEGORY_PAID_PREMIUM_KIT_FZ,
+    CATEGORY_PAID_PREMIUM_KIT_GP,
+    CATEGORY_PAID_PREMIUM_KIT_GS,
     CATEGORY_PAID_PREMIUM_KIT_HC,
     CATEGORY_PAID_PREMIUM_KIT_HS,
     CATEGORY_PAID_PREMIUM_KIT_ZP,
     CATEGORY_PAID_PROMOTIONAL,
-    CATEGORY_PAID_PROMOTIONAL_G_SHUGO,
+    CATEGORY_PAID_PROMOTIONAL_GP,
+    CATEGORY_PAID_PROMOTIONAL_GS,
     CATEGORY_PAID_PROMOTIONAL_HC,
     CATEGORY_PAID_PROMOTIONAL_HS,
     CATEGORY_PAID_PROMOTIONAL_ZP,
     CATEGORY_ROAD_G,
+    CATEGORY_ROAD_GF,
     CATEGORY_ROAD_GX,
     CATEGORY_ROAD_HS,
     CATEGORY_ROAD_PLAIN,
+    CATEGORY_ROAD_PLAIN_F,
+    CATEGORY_ROAD_PLAIN_FZ,
     CATEGORY_ROAD_ZENITH,
     CATEGORY_ROAD_ZENITH_ZF,
     CATEGORY_ROAD_ZENITH_ZX,
     CATEGORY_ROAD_ZENITH_ZY,
     CATEGORY_STANDARD_PLAIN,
+    CATEGORY_STANDARD_PLAIN_F,
+    CATEGORY_STANDARD_PLAIN_FZ,
     CATEGORY_STANDARD_SP,
     CATEGORY_TOURNAMENT_G,
+    CATEGORY_TOURNAMENT_GF,
     CATEGORY_TOURNAMENT_GP,
+    CATEGORY_TOURNAMENT_GS,
     CATEGORY_TOURNAMENT_GX,
     CATEGORY_TOURNAMENT_HC,
     CATEGORY_TOURNAMENT_HS,
     CATEGORY_TOURNAMENT_PLAIN,
+    CATEGORY_TOURNAMENT_PLAIN_F,
+    CATEGORY_TOURNAMENT_PLAIN_FZ,
     CATEGORY_TOURNAMENT_ZP,
     CATEGORY_TOWER_G,
+    CATEGORY_TOWER_GF,
     CATEGORY_TOWER_GX_CUSTOM,
     CATEGORY_TOWER_HS,
     CATEGORY_TOWER_PLAIN,
+    CATEGORY_TOWER_PLAIN_F,
+    CATEGORY_TOWER_PLAIN_FZ,
     CATEGORY_UNAVAILABLE_NOT_IMPLEMENTED,
     CATEGORY_UNAVAILABLE_TRAINING_ONLY,
     CATEGORY_ZENITH_PLAIN,
@@ -237,7 +285,11 @@ def test_paid_premium_subcategories() -> None:
     )
     assert (
         classify_equipment_category(_row("Secuti GS Helm", cre="5p", clazz="J"))
-        == CATEGORY_PAID_PACKAGE_G_SHUGO
+        == CATEGORY_PAID_PACKAGE_GS
+    )
+    assert (
+        classify_equipment_category(_row("Secuti GP Helm", cre="5p", clazz="J"))
+        == CATEGORY_PAID_PACKAGE_GP
     )
     assert (
         classify_equipment_category(_row("Teriogu HC Cap", cre="5p", clazz="E"))
@@ -249,8 +301,12 @@ def test_paid_premium_subcategories() -> None:
         == CATEGORY_PAID_PREMIUM_KIT_HS
     )
     assert (
+        classify_equipment_category(_row("Secuti GS Helm", cre="4k", clazz="J"))
+        == CATEGORY_PAID_PREMIUM_KIT_GS
+    )
+    assert (
         classify_equipment_category(_row("Secuti GP Helm", cre="4k", clazz="J"))
-        == CATEGORY_PAID_PREMIUM_KIT_G_SHUGO
+        == CATEGORY_PAID_PREMIUM_KIT_GP
     )
     assert (
         classify_equipment_category(_row("Teriogu HC Cap", cre="4k", clazz="E"))
@@ -267,7 +323,11 @@ def test_paid_premium_subcategories() -> None:
     )
     assert (
         classify_equipment_category(_row("Ukon GS Head", cre="4g", clazz="J"))
-        == CATEGORY_PAID_GACHAPON_G_SHUGO
+        == CATEGORY_PAID_GACHAPON_GS
+    )
+    assert (
+        classify_equipment_category(_row("Shoko GP Head", cre="4g", clazz="J"))
+        == CATEGORY_PAID_GACHAPON_GP
     )
     assert (
         classify_equipment_category(_row("Teriogu HC Cap", cre="4g", clazz="E"))
@@ -283,11 +343,15 @@ def test_paid_premium_subcategories() -> None:
     )
     assert (
         classify_equipment_category(_row("White Kensei GX Helm", cre="4g", clazz="L"))
-        == CATEGORY_PAID_GACHAPON_G_HIDEN
+        == CATEGORY_PAID_GACHAPON_G_HIDEN_GX
+    )
+    assert (
+        classify_equipment_category(_row("Yukumo Kasa", cre="4g", clazz="O"))
+        == CATEGORY_PAID_GACHAPON_EXOTIC
     )
     assert (
         classify_equipment_category(_row("Yukumo Kasa GX", cre="4g", clazz="O"))
-        == CATEGORY_PAID_GACHAPON_EXOTIC
+        == CATEGORY_PAID_GACHAPON_EXOTIC_GX
     )
 
     assert (
@@ -296,7 +360,11 @@ def test_paid_premium_subcategories() -> None:
     )
     assert (
         classify_equipment_category(_row("Regyukusu GS Head", cre="3e", clazz="J"))
-        == CATEGORY_PAID_NET_CAFE_G_SHUGO
+        == CATEGORY_PAID_NET_CAFE_GS
+    )
+    assert (
+        classify_equipment_category(_row("Regyukusu GP Head", cre="3e", clazz="J"))
+        == CATEGORY_PAID_NET_CAFE_GP
     )
     assert (
         classify_equipment_category(_row("Teriogu HC Cap", cre="3-", clazz="E"))
@@ -313,11 +381,37 @@ def test_paid_premium_subcategories() -> None:
     )
     assert (
         classify_equipment_category(_row("Welf GS Helm", cre="5-", clazz="J"))
-        == CATEGORY_PAID_PROMOTIONAL_G_SHUGO
+        == CATEGORY_PAID_PROMOTIONAL_GS
+    )
+    assert (
+        classify_equipment_category(_row("Holy King GP Head", cre="5-", clazz="J"))
+        == CATEGORY_PAID_PROMOTIONAL_GP
     )
     assert (
         classify_equipment_category(_row("Evol ZP Head", cre="5-", clazz="Q"))
         == CATEGORY_PAID_PROMOTIONAL_ZP
+    )
+
+
+def test_paid_premium_base_tier_f_and_fz() -> None:
+    # The "plain" (CLASS="") base tier also splits into F/FZ sub-tiers,
+    # confirmed via direct stat comparison (2026-10-20 audit) -- same split
+    # as every other plain bucket in this file.
+    assert classify_equipment_category(_row("Secuti F Helm", cre="5p")) == CATEGORY_PAID_PACKAGE_F
+    assert classify_equipment_category(_row("Secuti FZ Helm", cre="5p")) == CATEGORY_PAID_PACKAGE_FZ
+    assert (
+        classify_equipment_category(_row("Secuti FY Helm", cre="4k"))
+        == CATEGORY_PAID_PREMIUM_KIT_FZ
+    )
+
+
+def test_paid_premium_gs_gp_marker_can_be_glued_to_a_kana_name() -> None:
+    # Confirmed against the real dataset (2026-10-20 audit): ~10% of Package's
+    # CLASS=J rows have no space before the marker (e.g. "メトリーGS Helm・
+    # Blue") -- `_gs_or_gp` must find it via regex, not whitespace tokens.
+    assert (
+        classify_equipment_category(_row("メトリーGS Helm・Blue", cre="5p", clazz="J"))
+        == CATEGORY_PAID_PACKAGE_GS
     )
 
 
@@ -360,12 +454,54 @@ def test_guild_festival() -> None:
     )
 
 
-def test_guild_festival_fx_goes_to_hr100_fx_instead() -> None:
-    assert classify_equipment_category(_row("Himeros FX Helm", cre="2m")) == CATEGORY_HR100_FX
+def test_guild_festival_subcategories() -> None:
+    # 2026-10-20: the reference tool's own Festival node (confirmed via the
+    # project owner's screenshot) splits into 9 leaves -- a complete
+    # partition of CRE=2m, confirmed against the real dataset.
+    assert (
+        classify_equipment_category(_row("Eques FX Helm", cre="2m")) == CATEGORY_GUILD_FESTIVAL_FX
+    )
+    assert (
+        classify_equipment_category(_row("Khezu RX Helm", cre="2m")) == CATEGORY_GUILD_FESTIVAL_RX
+    )
+    assert (
+        classify_equipment_category(_row("High Metal LX Helm", cre="2m"))
+        == CATEGORY_GUILD_FESTIVAL_LX
+    )
+    assert (
+        classify_equipment_category(_row("Eques HC Helm", cre="2m", clazz="E"))
+        == CATEGORY_GUILD_FESTIVAL_HC
+    )
+    assert (
+        classify_equipment_category(_row("Nisuru HS Helm", cre="2m", clazz="F"))
+        == CATEGORY_GUILD_FESTIVAL_HS
+    )
+    assert (
+        classify_equipment_category(_row("Roses G Helm", cre="2m", clazz="I"))
+        == CATEGORY_GUILD_FESTIVAL_G
+    )
+    assert (
+        classify_equipment_category(_row("Roses GF Helm", cre="2m", clazz="I"))
+        == CATEGORY_GUILD_FESTIVAL_GF
+    )
+    assert (
+        classify_equipment_category(_row("Roses GX Helm", cre="2m", clazz="I"))
+        == CATEGORY_GUILD_FESTIVAL_GX
+    )
+    assert (
+        classify_equipment_category(_row("祭のあとに【勝ち猫】", cre="2m"))
+        == CATEGORY_GUILD_FESTIVAL_OTHER
+    )
 
 
 def test_guild_plain() -> None:
     assert classify_equipment_category(_row("Comrade Helm", cre="2-")) == CATEGORY_GUILD_PLAIN
+
+
+def test_guild_plain_f_and_fz() -> None:
+    assert classify_equipment_category(_row("Deliver F Helm", cre="2-")) == CATEGORY_GUILD_PLAIN_F
+    assert classify_equipment_category(_row("Deliver FZ Helm", cre="2-")) == CATEGORY_GUILD_PLAIN_FZ
+    assert classify_equipment_category(_row("Deliver FY Helm", cre="2-")) == CATEGORY_GUILD_PLAIN_FZ
 
 
 def test_guild_hs() -> None:
@@ -380,6 +516,12 @@ def test_guild_g() -> None:
     )
 
 
+def test_guild_gf() -> None:
+    assert (
+        classify_equipment_category(_row("Mixes GF Helm", cre="2-", clazz="I")) == CATEGORY_GUILD_GF
+    )
+
+
 def test_guild_gx() -> None:
     assert classify_equipment_category(_row("Mixes GX Helm", cre="2-")) == CATEGORY_GUILD_GX
 
@@ -387,10 +529,57 @@ def test_guild_gx() -> None:
 # -- Diva Defense ---------------------------------------------------------------
 
 
-def test_diva_defense() -> None:
+def test_diva_defense_plain() -> None:
+    # 0 real rows today (same defensive-default situation as other base
+    # tiers in this file) -- kept as the fallback for anything that isn't
+    # CLASS I or CLASS P under CRE=2u.
+    assert classify_equipment_category(_row("Placeholder", cre="2u")) == CATEGORY_DIVA_DEFENSE
+
+
+def test_diva_defense_gx() -> None:
+    assert (
+        classify_equipment_category(_row("Burning Cliff GX Kabuto", cre="2u", clazz="I"))
+        == CATEGORY_DIVA_DEFENSE_GX
+    )
+
+
+def test_diva_defense_gx_marker_can_be_glued_to_other_text() -> None:
+    # Real example: "Burning Cliff GX【胴当て】" has no space between "GX" and
+    # the following bracket, so `_tokens` membership misses it -- confirmed
+    # while regenerating the data bundle after this split (these 2 rows were
+    # silently falling into the plain leaf instead of GX).
+    assert (
+        classify_equipment_category(_row("Burning Cliff GX【胴当て】", cre="2u", clazz="I"))
+        == CATEGORY_DIVA_DEFENSE_GX
+    )
+
+
+def test_diva_defense_zenith() -> None:
+    # 2026-10-20: confirmed via the project owner's screenshot of the
+    # reference tool's own tree that this leaf merges both the bare "Z" and
+    # "ZF" name-suffix variants (unlike Road/Event Zenith, which each split
+    # ZF into its own leaf) -- no separate "ZF" child exists in the real tree.
     assert (
         classify_equipment_category(_row("Katante Z Helm", cre="2u", clazz="P"))
-        == CATEGORY_DIVA_DEFENSE
+        == CATEGORY_DIVA_DEFENSE_ZENITH
+    )
+    assert (
+        classify_equipment_category(_row("Katante ZF Helm", cre="2u", clazz="P"))
+        == CATEGORY_DIVA_DEFENSE_ZENITH
+    )
+
+
+def test_diva_defense_zenith_zy() -> None:
+    assert (
+        classify_equipment_category(_row("Katante ZY Helm", cre="2u", clazz="P"))
+        == CATEGORY_DIVA_DEFENSE_ZENITH_ZY
+    )
+
+
+def test_diva_defense_zenith_zx() -> None:
+    assert (
+        classify_equipment_category(_row("Katante ZX Helm", cre="2u", clazz="P"))
+        == CATEGORY_DIVA_DEFENSE_ZENITH_ZX
     )
 
 
@@ -404,6 +593,17 @@ def test_tower_plain() -> None:
     )
 
 
+def test_tower_plain_f_and_fz() -> None:
+    assert (
+        classify_equipment_category(_row("Ranvuo F Helm", cre="1t", clazz="N"))
+        == CATEGORY_TOWER_PLAIN_F
+    )
+    assert (
+        classify_equipment_category(_row("Ranvuo FZ Helm", cre="1t", clazz="N"))
+        == CATEGORY_TOWER_PLAIN_FZ
+    )
+
+
 def test_tower_hs() -> None:
     assert (
         classify_equipment_category(_row("Nyui HS Helm", cre="1t", clazz="N")) == CATEGORY_TOWER_HS
@@ -412,6 +612,12 @@ def test_tower_hs() -> None:
 
 def test_tower_g() -> None:
     assert classify_equipment_category(_row("Once G Helm", cre="1t", clazz="N")) == CATEGORY_TOWER_G
+
+
+def test_tower_gf() -> None:
+    assert (
+        classify_equipment_category(_row("Once GF Helm", cre="1t", clazz="N")) == CATEGORY_TOWER_GF
+    )
 
 
 def test_tower_gx_custom() -> None:
@@ -435,6 +641,11 @@ def test_road_plain() -> None:
     assert classify_equipment_category(_row("Rios Helm", cre="1t")) == CATEGORY_ROAD_PLAIN
 
 
+def test_road_plain_f_and_fz() -> None:
+    assert classify_equipment_category(_row("Rios F Helm", cre="1t")) == CATEGORY_ROAD_PLAIN_F
+    assert classify_equipment_category(_row("Rios FZ Helm", cre="1t")) == CATEGORY_ROAD_PLAIN_FZ
+
+
 def test_road_hs() -> None:
     assert (
         classify_equipment_category(_row("Rodokuru HS Head", cre="1t", clazz="F"))
@@ -444,6 +655,10 @@ def test_road_hs() -> None:
 
 def test_road_g() -> None:
     assert classify_equipment_category(_row("Bonito G", cre="1t", clazz="I")) == CATEGORY_ROAD_G
+
+
+def test_road_gf() -> None:
+    assert classify_equipment_category(_row("Bonito GF", cre="1t", clazz="I")) == CATEGORY_ROAD_GF
 
 
 def test_road_gx() -> None:
@@ -456,6 +671,17 @@ def test_road_gx_includes_the_class_i_g_rank_only_ambiguous_rows() -> None:
     # a separate "Event Cycle" leaf.
     assert (
         classify_equipment_category(_row("Nympha GX Helm", cre="1t", clazz="I")) == CATEGORY_ROAD_GX
+    )
+
+
+def test_road_plain_includes_the_glued_white_fatalis_gx_marker() -> None:
+    # Real example: "White Fatalis GXクロウ" has no space between "GX" and the
+    # following kana, so a plain `"GX" in tokens` membership check misses it
+    # -- confirmed in the 2026-10-20 audit (4 rows were silently falling into
+    # the plain leaf instead of road_gx).
+    assert (
+        classify_equipment_category(_row("White Fatalis GXクロウ", cre="1t", clazz="I"))
+        == CATEGORY_ROAD_GX
     )
 
 
@@ -495,6 +721,13 @@ def test_caravan_plain() -> None:
     assert classify_equipment_category(_row("Deliver Helm", cre="1s")) == CATEGORY_CARAVAN_PLAIN
 
 
+def test_caravan_plain_f_and_fz() -> None:
+    assert classify_equipment_category(_row("Deliver F Helm", cre="1s")) == CATEGORY_CARAVAN_PLAIN_F
+    assert (
+        classify_equipment_category(_row("Deliver FZ Helm", cre="1s")) == CATEGORY_CARAVAN_PLAIN_FZ
+    )
+
+
 def test_caravan_rx() -> None:
     assert classify_equipment_category(_row("Espinas RX Brain", cre="1c")) == CATEGORY_CARAVAN_RX
 
@@ -512,8 +745,25 @@ def test_caravan_g() -> None:
     )
 
 
+def test_caravan_gf() -> None:
+    assert (
+        classify_equipment_category(_row("Asaku GF Helm", cre="1s", clazz="I"))
+        == CATEGORY_CARAVAN_GF
+    )
+
+
 def test_caravan_gx() -> None:
     assert classify_equipment_category(_row("Asaku GX Helm", cre="1s")) == CATEGORY_CARAVAN_GX
+
+
+def test_caravan_g_includes_the_glued_brooke_gx_marker() -> None:
+    # Real example: "Brooke GXグローブ" has no space between "GX" and the
+    # following kana -- confirmed in the 2026-10-20 audit (4 rows were
+    # silently falling into caravan_g instead of caravan_gx).
+    assert (
+        classify_equipment_category(_row("Brooke GXグローブ", cre="1s", clazz="I"))
+        == CATEGORY_CARAVAN_GX
+    )
 
 
 # -- Hunting Tournament (衛) ------------------------------------------------------
@@ -521,6 +771,13 @@ def test_caravan_gx() -> None:
 
 def test_tournament_plain() -> None:
     assert classify_equipment_category(_row("Tandress", cre="1i")) == CATEGORY_TOURNAMENT_PLAIN
+
+
+def test_tournament_plain_f_and_fz() -> None:
+    assert classify_equipment_category(_row("Tandress F", cre="1i")) == CATEGORY_TOURNAMENT_PLAIN_F
+    assert (
+        classify_equipment_category(_row("Tandress FZ", cre="1i")) == CATEGORY_TOURNAMENT_PLAIN_FZ
+    )
 
 
 def test_tournament_hc() -> None:
@@ -544,8 +801,24 @@ def test_tournament_g() -> None:
     )
 
 
+def test_tournament_gf() -> None:
+    assert (
+        classify_equipment_category(_row("Tandress GF", cre="1i", clazz="I"))
+        == CATEGORY_TOURNAMENT_GF
+    )
+
+
 def test_tournament_gx() -> None:
     assert classify_equipment_category(_row("Tandress GX", cre="1i")) == CATEGORY_TOURNAMENT_GX
+
+
+def test_tournament_gs() -> None:
+    # 2026-10-20 audit: this CLASS=J leaf was previously hardcoded to GP,
+    # mislabeling the 3 real GS rows ("Patapatagook GS・Gold/Silver/Copper").
+    assert (
+        classify_equipment_category(_row("Patapatagook GS・Gold", cre="1i", clazz="J"))
+        == CATEGORY_TOURNAMENT_GS
+    )
 
 
 def test_tournament_gp() -> None:
@@ -574,9 +847,65 @@ def test_event_plain() -> None:
     assert classify_equipment_category(_row("Hunger Helm", cre="1e")) == CATEGORY_EVENT_PLAIN
 
 
+def test_event_plain_f_and_fz() -> None:
+    # Unlike event_plain's G/GF merge (deliberately kept, see the module-level
+    # note on CATEGORY_EVENT_PLAIN), the F/FZ split still applies here -- the
+    # reference-tool screenshot that justified the G/GF merge only covered
+    # G/GX, not F/FZ.
+    assert classify_equipment_category(_row("Hunger F Helm", cre="1e")) == CATEGORY_EVENT_PLAIN_F
+    assert classify_equipment_category(_row("Hunger FZ Helm", cre="1e")) == CATEGORY_EVENT_PLAIN_FZ
+
+
 def test_event_gx() -> None:
     assert (
         classify_equipment_category(_row("Jess GX Helm", cre="1e", clazz="I")) == CATEGORY_EVENT_GX
+    )
+
+
+def test_event_gx_marker_can_be_glued_to_other_text() -> None:
+    # Real example: "Youthclad ノ肩鎧GX" has no space before "GX" -- confirmed
+    # in the 2026-10-20 audit (29 rows with a glued GX marker were silently
+    # falling into event_plain instead of event_gx).
+    assert (
+        classify_equipment_category(_row("Youthclad ノ肩鎧GX", cre="1e", clazz="I"))
+        == CATEGORY_EVENT_GX
+    )
+
+
+def test_event_hs() -> None:
+    # 2026-10-20 audit: CLASS F (HS) had no branch at all under CRE=1e, same
+    # bug shape as the GS/GP one below -- 255 real rows were silently falling
+    # into CATEGORY_EVENT_PLAIN.
+    assert (
+        classify_equipment_category(_row("Oleum HS Helm", cre="1e", clazz="F")) == CATEGORY_EVENT_HS
+    )
+
+
+def test_event_hc() -> None:
+    assert (
+        classify_equipment_category(_row("Harubadaa HC Head", cre="1e", clazz="E"))
+        == CATEGORY_EVENT_HC
+    )
+
+
+def test_event_sp() -> None:
+    assert (
+        classify_equipment_category(_row("Vashimu Charm SP", cre="1e", clazz="A"))
+        == CATEGORY_EVENT_SP
+    )
+
+
+def test_event_gs_and_gp() -> None:
+    # 2026-10-20 audit: CLASS=J (G-Shugo) had no branch at all under CRE=1e
+    # and was silently falling into CATEGORY_EVENT_PLAIN -- 80 real rows
+    # (40 GS + 40 GP), e.g. "Marble GS Head"/"Marble GP Head".
+    assert (
+        classify_equipment_category(_row("Marble GS Head", cre="1e", clazz="J"))
+        == CATEGORY_EVENT_GS
+    )
+    assert (
+        classify_equipment_category(_row("Marble GP Head", cre="1e", clazz="J"))
+        == CATEGORY_EVENT_GP
     )
 
 
@@ -610,28 +939,22 @@ def test_event_zenith_zx() -> None:
 
 def test_event_mystery() -> None:
     # 謎 -- confirmed: the Luxt series, GX tier, all 10 rows (all 5 slots x
-    # both weapon-TYPE variants).
-    assert (
-        classify_equipment_category(_row("Luxt GX Helm", cre="1e", clazz="I"))
-        == CATEGORY_EVENT_MYSTERY
-    )
-    assert (
-        classify_equipment_category(_row("Luxt GX Vest", cre="1e", clazz="I"))
-        == CATEGORY_EVENT_MYSTERY
-    )
+    # both weapon-TYPE variants). 2026-10-20: this check was originally wired
+    # into the `cre == "1e"` branch under the (wrong) assumption Luxt's rows
+    # used CRE=1e -- the real rows (etl/.data/cache/equip.body) are a full
+    # standard-tier set (plain/F/FY/HS/G/GF/GX) at CRE=1-/CLASS=I, same as any
+    # other G-rank armor; only its GX tier gets pulled into this leaf.
+    assert classify_equipment_category(_row("Luxt GX Helm", clazz="I")) == CATEGORY_EVENT_MYSTERY
+    assert classify_equipment_category(_row("Luxt GX Vest", clazz="I")) == CATEGORY_EVENT_MYSTERY
 
 
 def test_event_mystery_requires_the_luxt_name_to_be_anchored_at_the_start() -> None:
     # A name merely containing "Luxt" later, or without the GX tier, isn't
-    # Mystery Quest Armour -- it's a normal Event-series item (GX-tier, so
-    # event_gx; the non-GX one falls to event_plain).
-    assert (
-        classify_equipment_category(_row("Deluxt GX Helm", cre="1e", clazz="I"))
-        == CATEGORY_EVENT_GX
-    )
-    assert (
-        classify_equipment_category(_row("Luxt Helm", cre="1e", clazz="I")) == CATEGORY_EVENT_PLAIN
-    )
+    # Mystery Quest Armour -- it's a normal G-rank item (GX-tier, so grank_gx;
+    # the non-GX one falls to the normal grank_g/grank_gf tiers).
+    assert classify_equipment_category(_row("Deluxt GX Helm", clazz="I")) == CATEGORY_GRANK_GX
+    assert classify_equipment_category(_row("Luxt G Helm", clazz="I")) == CATEGORY_GRANK_G
+    assert classify_equipment_category(_row("Luxt GF Helm", clazz="I")) == CATEGORY_GRANK_GF
 
 
 def test_event_fx_goes_to_hr100_fx_instead() -> None:
@@ -642,80 +965,60 @@ def test_event_musou_armor() -> None:
     # Real armor names confirmed by the project owner for all 9 Musou-tier
     # monsters (2026-10-18) -- differ from the matching Musou *decoration*
     # names for Bogabadorumu/Zerureusu/Elzelion (Rafan/Elysium/Fonce there vs
-    # Rapin/Elysi/Fonse here).
+    # Rapin/Elysi/Fonse here). 2026-10-20: split by G/GF/GX tier rather than
+    # by monster (project owner: "split musou by level instead of source") --
+    # the monster name stays visible in the item name but is no longer a
+    # separate category branch.
+    for name in (
+        "Demonclad Horn G",
+        "鬼凛ノ角G",
+        "童凛ノ角G",
+        "Rapin G Helm",
+        "Chiru G Head",
+        "Elysi G Helm",
+        "Fonse G Helm",
+        "Demon Tale Horn G",
+        "童伝ノ角G",
+        "Ganeto G Head",
+        "Bonne G Helm",
+    ):
+        assert (
+            classify_equipment_category(_row(name, cre="1e", clazz="I")) == CATEGORY_EVENT_MUSOU_G
+        )
     assert (
-        classify_equipment_category(_row("Demonclad Horn G", cre="1e", clazz="I"))
-        == CATEGORY_EVENT_MUSOU_NARGACUGA
-    )
-    assert (
-        classify_equipment_category(_row("鬼凛ノ角G", cre="1e", clazz="I"))
-        == CATEGORY_EVENT_MUSOU_GUANZORUMU
-    )
-    assert (
-        classify_equipment_category(_row("童凛ノ角G", cre="1e", clazz="I"))
-        == CATEGORY_EVENT_MUSOU_GUANZORUMU
-    )
-    assert (
-        classify_equipment_category(_row("Rapin G Helm", cre="1e", clazz="I"))
-        == CATEGORY_EVENT_MUSOU_BOGABADORUMU
-    )
-    assert (
-        classify_equipment_category(_row("Chiru G Head", cre="1e", clazz="I"))
-        == CATEGORY_EVENT_MUSOU_ZINOGRE
-    )
-    assert (
-        classify_equipment_category(_row("Elysi G Helm", cre="1e", clazz="I"))
-        == CATEGORY_EVENT_MUSOU_ZERUREUSU
-    )
-    assert (
-        classify_equipment_category(_row("Fonse G Helm", cre="1e", clazz="I"))
-        == CATEGORY_EVENT_MUSOU_ELZELION
-    )
-    assert (
-        classify_equipment_category(_row("Demon Tale Horn G", cre="1e", clazz="I"))
-        == CATEGORY_EVENT_MUSOU_MIRU
-    )
-    assert (
-        classify_equipment_category(_row("童伝ノ角G", cre="1e", clazz="I"))
-        == CATEGORY_EVENT_MUSOU_MIRU
-    )
-    assert (
-        classify_equipment_category(_row("Ganeto G Head", cre="1e", clazz="I"))
-        == CATEGORY_EVENT_MUSOU_PARIAPURIA
-    )
-    assert (
-        classify_equipment_category(_row("Bonne G Helm", cre="1e", clazz="I"))
-        == CATEGORY_EVENT_MUSOU_DUREMUDIRA
+        classify_equipment_category(_row("Demonclad Horn GF", cre="1e", clazz="I"))
+        == CATEGORY_EVENT_MUSOU_GF
     )
     # A Musou name wins over the plain GX fallback too.
     assert (
         classify_equipment_category(_row("Demonclad Horn GX", cre="1e", clazz="I"))
-        == CATEGORY_EVENT_MUSOU_NARGACUGA
+        == CATEGORY_EVENT_MUSOU_GX
     )
 
 
 def test_event_extreme_quest_armor() -> None:
     # 4 distinct Extreme Quest rewards confirmed by the project owner
-    # (2026-10-18), none tied to an actual Musou monster.
+    # (2026-10-18), none tied to an actual Musou monster. 2026-10-20: split
+    # by G/GF/GX tier rather than by quest, same as Musou above.
     assert (
-        classify_equipment_category(_row("Demon Lord ノ肩鎧GX", cre="1e", clazz="I"))
-        == CATEGORY_EVENT_EXTREME_DEMON_LORD
+        classify_equipment_category(_row("Demon Lord ノ肩鎧G", cre="1e", clazz="I"))
+        == CATEGORY_EVENT_EXTREME_G
     )
     assert (
-        classify_equipment_category(_row("童子ノ角GX", cre="1e", clazz="I"))
-        == CATEGORY_EVENT_EXTREME_DEMON_LORD
+        classify_equipment_category(_row("童子ノ角GF", cre="1e", clazz="I"))
+        == CATEGORY_EVENT_EXTREME_GF
     )
     assert (
         classify_equipment_category(_row("Heruto GX Piercing", cre="1e", clazz="I"))
-        == CATEGORY_EVENT_EXTREME_HERUTO
+        == CATEGORY_EVENT_EXTREME_GX
     )
     assert (
         classify_equipment_category(_row("Iroasu GX Piercing", cre="1e", clazz="I"))
-        == CATEGORY_EVENT_EXTREME_IROASU
+        == CATEGORY_EVENT_EXTREME_GX
     )
     assert (
         classify_equipment_category(_row("Luchar GX Piercing", cre="1e", clazz="I"))
-        == CATEGORY_EVENT_EXTREME_LUCHAR
+        == CATEGORY_EVENT_EXTREME_GX
     )
 
 
@@ -724,6 +1027,10 @@ def test_event_extreme_quest_armor() -> None:
 
 def test_grank_g() -> None:
     assert classify_equipment_category(_row("Pietra G Helm", clazz="I")) == CATEGORY_GRANK_G
+
+
+def test_grank_gf() -> None:
+    assert classify_equipment_category(_row("Pietra GF Helm", clazz="I")) == CATEGORY_GRANK_GF
 
 
 def test_grank_gx() -> None:
@@ -742,9 +1049,19 @@ def test_grank_burst_species() -> None:
 
 
 def test_grank_g_hiden() -> None:
+    # G-Hiden (CLASS=L) has no "plain" variant -- every real row carries G,
+    # GF, or GX (2026-10-20 audit: 280/280/280 real split).
     assert (
         classify_equipment_category(_row("Byakko Kensei G Helm", clazz="L"))
-        == CATEGORY_GRANK_G_HIDEN
+        == CATEGORY_GRANK_G_HIDEN_G
+    )
+    assert (
+        classify_equipment_category(_row("Byakko Kensei GF Helm", clazz="L"))
+        == CATEGORY_GRANK_G_HIDEN_GF
+    )
+    assert (
+        classify_equipment_category(_row("Byakko Kensei GX Helm", clazz="L"))
+        == CATEGORY_GRANK_G_HIDEN_GX
     )
 
 
@@ -756,9 +1073,28 @@ def test_grank_exotic() -> None:
     assert classify_equipment_category(_row("Zinogre Helm", clazz="O")) == CATEGORY_GRANK_EXOTIC
 
 
+def test_grank_exotic_g() -> None:
+    assert classify_equipment_category(_row("Zinogre G Helm", clazz="O")) == CATEGORY_GRANK_EXOTIC_G
+
+
+def test_grank_exotic_gf() -> None:
+    assert (
+        classify_equipment_category(_row("Zinogre GF Helm", clazz="O")) == CATEGORY_GRANK_EXOTIC_GF
+    )
+
+
 def test_grank_exotic_gx() -> None:
     assert (
         classify_equipment_category(_row("Zinogre GX Helm", clazz="O")) == CATEGORY_GRANK_EXOTIC_GX
+    )
+
+
+def test_grank_exotic_gx_includes_the_glued_tempest_gx_marker() -> None:
+    # Real example: "Tempest GX【衣】" has no space between "GX" and the
+    # following bracket -- confirmed in the 2026-10-20 audit (8 rows were
+    # silently falling into grank_exotic instead of grank_exotic_gx).
+    assert (
+        classify_equipment_category(_row("Tempest GX【衣】", clazz="O")) == CATEGORY_GRANK_EXOTIC_GX
     )
 
 
@@ -816,6 +1152,14 @@ def test_hardcore_hiden() -> None:
     assert classify_equipment_category(_row("Garnet Helm", clazz="K")) == CATEGORY_HARDCORE_HIDEN
 
 
+def test_hardcore_hiden_f() -> None:
+    # Hiden has only "F" -- no FZ/FY in the real dataset (unlike the plain
+    # CLASS="" buckets elsewhere in this file).
+    assert (
+        classify_equipment_category(_row("Garnet F Helm", clazz="K")) == CATEGORY_HARDCORE_HIDEN_F
+    )
+
+
 # -- HR100~ --------------------------------------------------------------------
 
 
@@ -832,6 +1176,12 @@ def test_hr100_gou() -> None:
 
 def test_standard_plain() -> None:
     assert classify_equipment_category(_row("Leather Helm")) == CATEGORY_STANDARD_PLAIN
+
+
+def test_standard_plain_f_and_fz() -> None:
+    assert classify_equipment_category(_row("Leather F Helm")) == CATEGORY_STANDARD_PLAIN_F
+    assert classify_equipment_category(_row("Leather FZ Helm")) == CATEGORY_STANDARD_PLAIN_FZ
+    assert classify_equipment_category(_row("Leather FY Helm")) == CATEGORY_STANDARD_PLAIN_FZ
 
 
 def test_standard_sp() -> None:

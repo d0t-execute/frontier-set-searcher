@@ -26,3 +26,20 @@ describe('gear-level category partition', () => {
     expect(overlap).toEqual([])
   })
 })
+
+describe('gear category sections (third tree level)', () => {
+  it("every sectioned group's flat categories exactly match the union of its sections", () => {
+    for (const group of GEAR_CATEGORY_GROUPS) {
+      if (!group.sections) continue
+
+      const fromSections = group.sections.flatMap((section) => section.categories.map((c) => c.key))
+      const flat = group.categories.map((c) => c.key)
+
+      expect(fromSections).toEqual(flat)
+    }
+  })
+
+  it('has at least one sectioned group (the feature is actually in use)', () => {
+    expect(GEAR_CATEGORY_GROUPS.some((group) => group.sections)).toBe(true)
+  })
+})

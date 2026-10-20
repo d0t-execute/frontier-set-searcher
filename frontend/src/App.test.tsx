@@ -198,8 +198,8 @@ describe('App', () => {
         pinnedCuffSkillIds: [],
         preferredCandidateIds: new Set(),
       },
-      // The "Unavailable"-leaf cuff is excluded by default (see App.tsx's
-      // DEFAULT_EXCLUDED_CUFF_CATEGORIES) -- both real ones pass.
+      // The "Unavailable"-leaf cuff is excluded unconditionally (see build-
+      // query.ts's `_UNOBTAINABLE_CUFF_CATEGORIES`) -- both real ones pass.
       [BUNDLE.cuffs[0], BUNDLE.cuffs[1]],
     )
   })
@@ -351,6 +351,7 @@ describe('App', () => {
     render(<App />)
 
     await user.click(screen.getByRole('button', { name: 'Attack' }))
+    await user.click(screen.getByRole('button', { name: 'Expand Premium Kit' }))
     await user.click(screen.getByRole('checkbox', { name: 'Premium Kit' }))
     await user.click(screen.getByRole('button', { name: /search/i }))
 
@@ -370,8 +371,7 @@ describe('App', () => {
     const user = userEvent.setup()
     render(<App />)
 
-    // No cuff checkbox is touched here -- this is the out-of-the-box
-    // default (see App.tsx's DEFAULT_EXCLUDED_CUFF_CATEGORIES).
+    // No cuff checkbox is touched here -- this is the out-of-the-box default.
     await user.click(screen.getByRole('button', { name: 'Attack' }))
     await user.click(screen.getByRole('button', { name: /search/i }))
 
@@ -385,15 +385,15 @@ describe('App', () => {
     )
   })
 
-  it('excludes an unavailable-leaf cuff from the search by default', async () => {
+  it('excludes an unavailable-leaf cuff from the search unconditionally', async () => {
     const worker = makeWorker()
     mockUseSearchWorker.mockReturnValue(worker as unknown as ReturnType<typeof useSearchWorker>)
     const user = userEvent.setup()
     render(<App />)
 
     // A piece/cuff that's unobtainable in the real game is never worth
-    // surfacing by default -- see App.tsx's DEFAULT_EXCLUDED_CUFF_CATEGORIES.
-    // No checkbox touched here; this is the out-of-the-box default.
+    // surfacing -- see build-query.ts's `_UNOBTAINABLE_CUFF_CATEGORIES`; it's
+    // not even a toggle in the UI (no checkbox touched here).
     await user.click(screen.getByRole('button', { name: 'Attack' }))
     await user.click(screen.getByRole('button', { name: /search/i }))
 
@@ -908,6 +908,18 @@ describe('App', () => {
 
       await user.click(screen.getByRole('button', { name: /gear levels/i }))
       await user.click(screen.getByRole('checkbox', { name: 'Zenith gear level' }))
+      // Expand every group/section the assertions below reach into -- the
+      // quick toggle itself works across collapsed trees (it only touches
+      // `excludedCategories`), but a collapsed leaf isn't in the DOM to
+      // query against (see CategoryFilter.tsx's own collapse behavior).
+      await user.click(screen.getByRole('button', { name: 'Expand Zenith Armor' }))
+      await user.click(screen.getByRole('button', { name: "Expand Hunter's Road" }))
+      await user.click(screen.getByRole('button', { name: 'Expand Event Armor' }))
+      await user.click(screen.getByRole('button', { name: 'Expand Event Armor: Event' }))
+      await user.click(screen.getByRole('button', { name: 'Expand Guild' }))
+      await user.click(screen.getByRole('button', { name: 'Expand Guild: Base' }))
+      await user.click(screen.getByRole('button', { name: 'Expand G Rank Armor' }))
+      await user.click(screen.getByRole('button', { name: 'Expand G Rank Armor: Base' }))
 
       expect(screen.getByRole('checkbox', { name: 'Zenith' })).not.toBeChecked()
       expect(screen.getByRole('checkbox', { name: 'Road Zenith ZF' })).not.toBeChecked()
@@ -922,6 +934,8 @@ describe('App', () => {
       render(<App />)
 
       await user.click(screen.getByRole('button', { name: /gear levels/i }))
+      await user.click(screen.getByRole('button', { name: 'Expand G Rank Armor' }))
+      await user.click(screen.getByRole('button', { name: 'Expand G Rank Armor: Base' }))
       await user.click(screen.getByRole('checkbox', { name: 'Origin' }))
 
       const grankToggle = screen.getByRole('checkbox', {
@@ -941,6 +955,7 @@ describe('App', () => {
       render(<App />)
 
       await user.click(screen.getByRole('button', { name: /gear levels/i }))
+      await user.click(screen.getByRole('button', { name: 'Expand Premium Kit' }))
       await user.click(screen.getByRole('checkbox', { name: 'Premium Kit' }))
 
       await user.click(screen.getByRole('button', { name: /pin specific armor/i }))
@@ -955,6 +970,7 @@ describe('App', () => {
       render(<App />)
 
       await user.click(screen.getByRole('button', { name: /gear levels/i }))
+      await user.click(screen.getByRole('button', { name: 'Expand Premium Kit' }))
       await user.click(screen.getByRole('checkbox', { name: 'Premium Kit' }))
 
       await user.click(screen.getByRole('button', { name: /pin specific armor/i }))
@@ -1015,6 +1031,7 @@ describe('App', () => {
       expect(screen.getByText('White Cat Mask')).toBeInTheDocument()
 
       await user.click(screen.getByRole('button', { name: /gear levels/i }))
+      await user.click(screen.getByRole('button', { name: 'Expand Premium Kit' }))
       await user.click(screen.getByRole('checkbox', { name: 'Premium Kit' }))
 
       expect(screen.getByText('White Cat Mask')).toBeInTheDocument()

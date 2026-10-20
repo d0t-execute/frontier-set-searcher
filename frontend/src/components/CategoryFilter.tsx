@@ -5,9 +5,22 @@ export interface CategoryFilterOption {
   readonly label: string
 }
 
+/** An optional third tree level, nested between a group and its leaves, for
+ * a group whose leaves naturally cluster into named sub-families (2026-10-20,
+ * per the project owner: e.g. Guild -> Diva Defense -> Diva Defense Zenith
+ * ZX). A group's own `categories` stays the full, flat list either way --
+ * `sections` is purely a display grouping on top of it, so every "all
+ * excluded"/"some excluded" computation and `setGroup` keep working
+ * unchanged whether or not a group uses sections. */
+export interface CategoryFilterSection {
+  readonly label: string
+  readonly categories: readonly CategoryFilterOption[]
+}
+
 export interface CategoryFilterGroup {
   readonly label: string
   readonly categories: readonly CategoryFilterOption[]
+  readonly sections?: readonly CategoryFilterSection[]
 }
 
 /** The maximum number of item names shown when a leaf's contents are
@@ -43,6 +56,20 @@ export interface CategoryFilterProps {
    * with nothing meaningful to link to (e.g. the weapon Zenith skill tree,
    * which has no `itemsByCategory` at all) simply omits it. */
   readonly tableLinkHash?: (categoryKey: string) => string
+  /** Starts every group (and, for a group with `sections`, every section)
+   * collapsed instead of expanded (2026-10-20, per the project owner: with
+   * the gear taxonomy now well past 150 leaves, "categories should start
+   * collapsed"). Opt-in per caller rather than a global default, so the
+   * smaller Poogie cuffs/Decorations/Weapon Zenith-skill trees keep their
+   * original always-expanded behavior unless they ask for this too. */
+  readonly defaultCollapsed?: boolean
+}
+
+/** A section's collapse state is tracked alongside its group's own, under a
+ * `${groupLabel}::${sectionLabel}` key -- composite so two groups can each
+ * have a same-named section (none do today) without colliding. */
+function sectionKey(groupLabel: string, sectionLabel: string): string {
+  return `${groupLabel}::${sectionLabel}`
 }
 
 export function CategoryFilter({
@@ -51,18 +78,40 @@ export function CategoryFilter({
   onChange,
   itemsByCategory,
   tableLinkHash,
+  defaultCollapsed = false,
 }: CategoryFilterProps) {
   // Collapsed-by-label, not a boolean-per-group array, so a group's collapse
   // state survives `groups` changing identity (e.g. a parent re-render) as
-  // long as its label doesn't. Starts empty -- every group renders expanded,
-  // matching this component's pre-existing (always-expanded) behavior.
-  const [collapsedGroups, setCollapsedGroups] = useState<ReadonlySet<string>>(new Set())
+  // long as its label doesn't. The initializer only runs once per mount, so
+  // `defaultCollapsed` only affects a tree's *initial* shape -- the user is
+  // still free to expand/collapse individual groups and sections afterward.
+  const [collapsedGroups, setCollapsedGroups] = useState<ReadonlySet<string>>(() =>
+    defaultCollapsed ? new Set(groups.map((group) => group.label)) : new Set(),
+  )
+  const [collapsedSections, setCollapsedSections] = useState<ReadonlySet<string>>(() =>
+    defaultCollapsed
+      ? new Set(
+          groups.flatMap((group) =>
+            (group.sections ?? []).map((section) => sectionKey(group.label, section.label)),
+          ),
+        )
+      : new Set(),
+  )
 
   function toggleGroupCollapsed(label: string): void {
     setCollapsedGroups((prev) => {
       const next = new Set(prev)
       if (next.has(label)) next.delete(label)
       else next.add(label)
+      return next
+    })
+  }
+
+  function toggleSectionCollapsed(key: string): void {
+    setCollapsedSections((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
       return next
     })
   }
@@ -74,9 +123,9 @@ export function CategoryFilter({
     onChange(next)
   }
 
-  function setGroup(group: CategoryFilterGroup, included: boolean): void {
+  function setCategories(categories: readonly CategoryFilterOption[], included: boolean): void {
     const next = new Set(excludedCategories)
-    for (const category of group.categories) {
+    for (const category of categories) {
       if (included) next.delete(category.key)
       else next.add(category.key)
     }
@@ -112,21 +161,76 @@ export function CategoryFilter({
                 // `indeterminate`, which is purely visual).
                 checked={excludedCount === 0}
                 indeterminate={someExcluded}
-                onChange={(checked) => setGroup(group, checked)}
+                onChange={(checked) => setCategories(group.categories, checked)}
               />
             </div>
             {!collapsed && (
               <div className="category-group-children">
-                {group.categories.map((category) => (
-                  <CategoryLeaf
-                    key={category.key}
-                    category={category}
-                    checked={!excludedCategories.has(category.key)}
-                    onChange={(checked) => setLeaf(category.key, checked)}
-                    items={itemsByCategory?.get(category.key)}
-                    tableHref={tableLinkHash?.(category.key)}
-                  />
-                ))}
+                {group.sections
+                  ? group.sections.map((section) => {
+                      const key = sectionKey(group.label, section.label)
+                      const sectionCollapsed = collapsedSections.has(key)
+                      const sectionExcludedCount = section.categories.filter((c) =>
+                        excludedCategories.has(c.key),
+                      ).length
+                      const sectionAllExcluded = sectionExcludedCount === section.categories.length
+                      const sectionSomeExcluded = sectionExcludedCount > 0 && !sectionAllExcluded
+                      return (
+                        <div className="category-section" key={section.label}>
+                          <div className="category-section-header">
+                            <button
+                              type="button"
+                              className="category-group-collapse-toggle"
+                              onClick={() => toggleSectionCollapsed(key)}
+                              aria-expanded={!sectionCollapsed}
+                              // Composite, not just `${section.label}` --
+                              // several groups re-use short section labels
+                              // like "Base" (2026-10-20), so a bare label
+                              // would produce more than one same-named
+                              // "Expand Base" button once their groups are
+                              // both open.
+                              aria-label={`${sectionCollapsed ? 'Expand' : 'Collapse'} ${group.label}: ${section.label}`}
+                            >
+                              {sectionCollapsed ? '▸' : '▾'}
+                            </button>
+                            <GroupCheckbox
+                              label={section.label}
+                              checked={sectionExcludedCount === 0}
+                              indeterminate={sectionSomeExcluded}
+                              onChange={(checked) => setCategories(section.categories, checked)}
+                              // Composite, not just `${section.label} (all)` --
+                              // guards against the same cross-group label
+                              // reuse described above.
+                              ariaLabel={`${group.label}: ${section.label} (all)`}
+                            />
+                          </div>
+                          {!sectionCollapsed && (
+                            <div className="category-section-children">
+                              {section.categories.map((category) => (
+                                <CategoryLeaf
+                                  key={category.key}
+                                  category={category}
+                                  checked={!excludedCategories.has(category.key)}
+                                  onChange={(checked) => setLeaf(category.key, checked)}
+                                  items={itemsByCategory?.get(category.key)}
+                                  tableHref={tableLinkHash?.(category.key)}
+                                />
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })
+                  : group.categories.map((category) => (
+                      <CategoryLeaf
+                        key={category.key}
+                        category={category}
+                        checked={!excludedCategories.has(category.key)}
+                        onChange={(checked) => setLeaf(category.key, checked)}
+                        items={itemsByCategory?.get(category.key)}
+                        tableHref={tableLinkHash?.(category.key)}
+                      />
+                    ))}
               </div>
             )}
           </div>

@@ -6,6 +6,29 @@
  * labels for the UI, kept in its own file so the two can't silently drift
  * (a typo'd key here just shows an empty group, rather than breaking the
  * filter for every other candidate).
+ *
+ * The "Unavailable" group (`unavailable_not_implemented`/
+ * `unavailable_training_only`) is deliberately not one of this tree's
+ * leaves (2026-10-20, per the project owner) -- neither category is a real,
+ * obtainable item, so both are excluded from the general pool
+ * unconditionally in build-query.ts's `_UNOBTAINABLE_EQUIPMENT_CATEGORIES`,
+ * the same convention `deco_training_only`/`deco_unimplemented`/
+ * `deco_impossible_to_create` already use on the decoration side (see
+ * decoration-categories.ts's own docstring) rather than left as a
+ * togglable (if default-off) choice here.
+ *
+ * **2026-10-20 F/FZ and G/GF split:** every category below that used to merge
+ * a "plain" tier's F and FZ(/FY) name-suffix rows, or a G-rank tier's G and
+ * GF rows, into one leaf now splits them into their own leaves -- confirmed
+ * via direct stat comparison (RARE/DEF/HR1 escalation) against the real
+ * dataset that these are genuine, separate tiers, not naming variants (see
+ * gear_category.py's `_f_or_fz`/`_g_or_gf_or_gx` docstrings). The Musou and
+ * Extreme Quest Armor groups also moved from one leaf per monster/quest to
+ * one leaf per G/GF/GX tier, per the project owner ("split musou by level
+ * instead of source") -- the monster/quest name itself is still visible in
+ * the item name, just no longer a separate category branch. Event's own
+ * plain G/GF stays merged (a confirmed, intentional exception -- see
+ * `event_plain`'s own entry below).
  */
 
 export interface GearCategoryOption {
@@ -13,9 +36,31 @@ export interface GearCategoryOption {
   readonly label: string
 }
 
+/** A group's optional third tree level (2026-10-20, per the project owner:
+ * "categories should start collapsed" and some branches need a third level
+ * "like guild -> diva defense -> diva defense Zenith ZX" for clarity) -- see
+ * `CategoryFilterSection` in components/CategoryFilter.tsx for how this
+ * renders. Only the handful of groups that grew past ~15 leaves after the
+ * F/FZ and G/GF split (Guild, Gachapon, G Rank Armor, Event Armor) use this;
+ * every other group stays a flat leaf list, unchanged. */
+export interface GearCategorySection {
+  readonly label: string
+  readonly categories: readonly GearCategoryOption[]
+}
+
 export interface GearCategoryGroup {
   readonly label: string
   readonly categories: readonly GearCategoryOption[]
+  readonly sections?: readonly GearCategorySection[]
+}
+
+/** Builds a sectioned group's `categories` as the flattened union of its
+ * `sections`, so the two can never drift apart -- every "is this leaf
+ * G-Rank/Zenith" computation and the plain group-level select-all checkbox
+ * keep working off the flat list exactly as they did before sections
+ * existed; `sections` is purely an additional display subdivision on top. */
+function sectionedGroup(label: string, sections: readonly GearCategorySection[]): GearCategoryGroup {
+  return { label, categories: sections.flatMap((section) => section.categories), sections }
 }
 
 export const GEAR_CATEGORY_GROUPS: readonly GearCategoryGroup[] = [
@@ -23,8 +68,11 @@ export const GEAR_CATEGORY_GROUPS: readonly GearCategoryGroup[] = [
     label: 'Package',
     categories: [
       { key: 'paid_package', label: 'Package' },
+      { key: 'paid_package_f', label: 'Package F' },
+      { key: 'paid_package_fz', label: 'Package FZ' },
       { key: 'paid_package_hs', label: 'Package HS' },
-      { key: 'paid_package_g_shugo', label: 'Package G-Shugo' },
+      { key: 'paid_package_gs', label: 'Package GS' },
+      { key: 'paid_package_gp', label: 'Package GP' },
       { key: 'paid_package_hc', label: 'Package HC' },
     ],
   },
@@ -32,31 +80,58 @@ export const GEAR_CATEGORY_GROUPS: readonly GearCategoryGroup[] = [
     label: 'Premium Kit',
     categories: [
       { key: 'paid_premium_kit', label: 'Premium Kit' },
+      { key: 'paid_premium_kit_f', label: 'Premium Kit F' },
+      { key: 'paid_premium_kit_fz', label: 'Premium Kit FZ' },
       { key: 'paid_premium_kit_hs', label: 'Premium Kit HS' },
-      { key: 'paid_premium_kit_g_shugo', label: 'Premium Kit G-Shugo' },
+      { key: 'paid_premium_kit_gs', label: 'Premium Kit GS' },
+      { key: 'paid_premium_kit_gp', label: 'Premium Kit GP' },
       { key: 'paid_premium_kit_hc', label: 'Premium Kit HC' },
       { key: 'paid_premium_kit_zp', label: 'Premium Kit ZP' },
     ],
   },
-  {
-    label: 'Gachapon',
-    categories: [
-      { key: 'paid_gachapon', label: 'Gachapon' },
-      { key: 'paid_gachapon_hs', label: 'Gachapon HS' },
-      { key: 'paid_gachapon_g_shugo', label: 'Gachapon G-Shugo' },
-      { key: 'paid_gachapon_hc', label: 'Gachapon HC' },
-      { key: 'paid_gachapon_zp', label: 'Gachapon ZP' },
-      { key: 'paid_gachapon_hiden', label: 'Gachapon Hiden' },
-      { key: 'paid_gachapon_g_hiden', label: 'Gachapon G-Hiden' },
-      { key: 'paid_gachapon_exotic', label: 'Gachapon Exotic' },
-    ],
-  },
+  sectionedGroup('Gachapon', [
+    {
+      label: 'Base',
+      categories: [
+        { key: 'paid_gachapon', label: 'Gachapon' },
+        { key: 'paid_gachapon_f', label: 'Gachapon F' },
+        { key: 'paid_gachapon_fz', label: 'Gachapon FZ' },
+        { key: 'paid_gachapon_hs', label: 'Gachapon HS' },
+        { key: 'paid_gachapon_gs', label: 'Gachapon GS' },
+        { key: 'paid_gachapon_gp', label: 'Gachapon GP' },
+        { key: 'paid_gachapon_hc', label: 'Gachapon HC' },
+        { key: 'paid_gachapon_zp', label: 'Gachapon ZP' },
+      ],
+    },
+    {
+      label: 'Hiden',
+      categories: [
+        { key: 'paid_gachapon_hiden', label: 'Gachapon Hiden' },
+        { key: 'paid_gachapon_hiden_f', label: 'Gachapon Hiden F' },
+        { key: 'paid_gachapon_g_hiden_g', label: 'Gachapon G-Hiden' },
+        { key: 'paid_gachapon_g_hiden_gf', label: 'Gachapon G-Hiden GF' },
+        { key: 'paid_gachapon_g_hiden_gx', label: 'Gachapon G-Hiden GX' },
+      ],
+    },
+    {
+      label: 'Exotic',
+      categories: [
+        { key: 'paid_gachapon_exotic', label: 'Gachapon Exotic' },
+        { key: 'paid_gachapon_exotic_g', label: 'Gachapon Exotic G' },
+        { key: 'paid_gachapon_exotic_gf', label: 'Gachapon Exotic GF' },
+        { key: 'paid_gachapon_exotic_gx', label: 'Gachapon Exotic GX' },
+      ],
+    },
+  ]),
   {
     label: 'Net Cafe',
     categories: [
       { key: 'paid_net_cafe', label: 'Net Cafe' },
+      { key: 'paid_net_cafe_f', label: 'Net Cafe F' },
+      { key: 'paid_net_cafe_fz', label: 'Net Cafe FZ' },
       { key: 'paid_net_cafe_hs', label: 'Net Cafe HS' },
-      { key: 'paid_net_cafe_g_shugo', label: 'Net Cafe G-Shugo' },
+      { key: 'paid_net_cafe_gs', label: 'Net Cafe GS' },
+      { key: 'paid_net_cafe_gp', label: 'Net Cafe GP' },
       { key: 'paid_net_cafe_hc', label: 'Net Cafe HC' },
       { key: 'paid_net_cafe_zp', label: 'Net Cafe ZP' },
     ],
@@ -65,32 +140,65 @@ export const GEAR_CATEGORY_GROUPS: readonly GearCategoryGroup[] = [
     label: 'Promotional',
     categories: [
       { key: 'paid_promotional', label: 'Promotional' },
+      { key: 'paid_promotional_f', label: 'Promotional F' },
+      { key: 'paid_promotional_fz', label: 'Promotional FZ' },
       { key: 'paid_promotional_hs', label: 'Promotional HS' },
-      { key: 'paid_promotional_g_shugo', label: 'Promotional G-Shugo' },
+      { key: 'paid_promotional_gs', label: 'Promotional GS' },
+      { key: 'paid_promotional_gp', label: 'Promotional GP' },
       { key: 'paid_promotional_hc', label: 'Promotional HC' },
       { key: 'paid_promotional_zp', label: 'Promotional ZP' },
     ],
   },
-  {
-    label: 'Guild',
-    categories: [
-      { key: 'guild_festival', label: 'Festival' },
-      { key: 'guild_plain', label: 'Guild' },
-      { key: 'guild_hs', label: 'Guild HS' },
-      { key: 'guild_g', label: 'Guild G' },
-      { key: 'guild_gx', label: 'Guild GX' },
-    ],
-  },
-  {
-    label: 'Diva Defense',
-    categories: [{ key: 'diva_defense', label: 'Diva Defense' }],
-  },
+  sectionedGroup('Guild', [
+    {
+      label: 'Festival',
+      categories: [
+        { key: 'guild_festival', label: 'Festival' },
+        { key: 'guild_festival_f', label: 'Festival F' },
+        { key: 'guild_festival_fz', label: 'Festival FZ' },
+        { key: 'guild_festival_fx', label: 'Festival FX' },
+        { key: 'guild_festival_rx', label: 'Festival RX' },
+        { key: 'guild_festival_lx', label: 'Festival LX' },
+        { key: 'guild_festival_hc', label: 'Festival HC' },
+        { key: 'guild_festival_hs', label: 'Festival HS' },
+        { key: 'guild_festival_g', label: 'Festival G' },
+        { key: 'guild_festival_gf', label: 'Festival GF' },
+        { key: 'guild_festival_gx', label: 'Festival GX' },
+        { key: 'guild_festival_other', label: 'Winner and Loser Crowns' },
+      ],
+    },
+    {
+      label: 'Diva Defense',
+      categories: [
+        { key: 'diva_defense', label: 'Diva Defense' },
+        { key: 'diva_defense_gx', label: 'Diva Defense GX' },
+        { key: 'diva_defense_zenith', label: 'Diva Defense Zenith' },
+        { key: 'diva_defense_zenith_zy', label: 'Diva Defense Zenith ZY' },
+        { key: 'diva_defense_zenith_zx', label: 'Diva Defense Zenith ZX' },
+      ],
+    },
+    {
+      label: 'Base',
+      categories: [
+        { key: 'guild_plain', label: 'Guild' },
+        { key: 'guild_plain_f', label: 'Guild F' },
+        { key: 'guild_plain_fz', label: 'Guild FZ' },
+        { key: 'guild_hs', label: 'Guild HS' },
+        { key: 'guild_g', label: 'Guild G' },
+        { key: 'guild_gf', label: 'Guild GF' },
+        { key: 'guild_gx', label: 'Guild GX' },
+      ],
+    },
+  ]),
   {
     label: 'Tower',
     categories: [
       { key: 'tower_plain', label: 'Tower' },
+      { key: 'tower_plain_f', label: 'Tower F' },
+      { key: 'tower_plain_fz', label: 'Tower FZ' },
       { key: 'tower_hs', label: 'Tower HS' },
       { key: 'tower_g', label: 'Tower G' },
+      { key: 'tower_gf', label: 'Tower GF' },
       { key: 'tower_gx_custom', label: 'Customizable Tower GX' },
     ],
   },
@@ -98,9 +206,12 @@ export const GEAR_CATEGORY_GROUPS: readonly GearCategoryGroup[] = [
     label: 'Caravan and Diva Battle',
     categories: [
       { key: 'caravan_plain', label: 'Caravan' },
+      { key: 'caravan_plain_f', label: 'Caravan F' },
+      { key: 'caravan_plain_fz', label: 'Caravan FZ' },
       { key: 'caravan_rx', label: 'Caravan RX' },
       { key: 'caravan_hs', label: 'Caravan HS' },
       { key: 'caravan_g', label: 'Caravan G' },
+      { key: 'caravan_gf', label: 'Caravan GF' },
       { key: 'caravan_gx', label: 'Caravan GX' },
     ],
   },
@@ -108,8 +219,11 @@ export const GEAR_CATEGORY_GROUPS: readonly GearCategoryGroup[] = [
     label: "Hunter's Road",
     categories: [
       { key: 'road_plain', label: 'Road' },
+      { key: 'road_plain_f', label: 'Road F' },
+      { key: 'road_plain_fz', label: 'Road FZ' },
       { key: 'road_hs', label: 'Road HS' },
       { key: 'road_g', label: 'Road G' },
+      { key: 'road_gf', label: 'Road GF' },
       { key: 'road_gx', label: 'Road GX' },
       { key: 'road_zenith', label: 'Road Zenith' },
       { key: 'road_zenith_zf', label: 'Road Zenith ZF' },
@@ -117,19 +231,36 @@ export const GEAR_CATEGORY_GROUPS: readonly GearCategoryGroup[] = [
       { key: 'road_zenith_zx', label: 'Road Zenith ZX' },
     ],
   },
-  {
-    label: 'G Rank Armor',
-    categories: [
-      { key: 'grank_g', label: 'G' },
-      { key: 'grank_gx', label: 'GX' },
-      { key: 'grank_g_hashu', label: 'G Supremacy' },
-      { key: 'grank_burst_species', label: 'Burst Species' },
-      { key: 'grank_g_hiden', label: 'G-Hiden' },
-      { key: 'grank_origin', label: 'Origin' },
-      { key: 'grank_exotic', label: 'Exotic' },
-      { key: 'grank_exotic_gx', label: 'Exotic GX' },
-    ],
-  },
+  sectionedGroup('G Rank Armor', [
+    {
+      label: 'Base',
+      categories: [
+        { key: 'grank_g', label: 'G' },
+        { key: 'grank_gf', label: 'GF' },
+        { key: 'grank_gx', label: 'GX' },
+        { key: 'grank_g_hashu', label: 'G Supremacy' },
+        { key: 'grank_burst_species', label: 'Burst Species' },
+        { key: 'grank_origin', label: 'Origin' },
+      ],
+    },
+    {
+      label: 'G-Hiden',
+      categories: [
+        { key: 'grank_g_hiden_g', label: 'G-Hiden' },
+        { key: 'grank_g_hiden_gf', label: 'G-Hiden GF' },
+        { key: 'grank_g_hiden_gx', label: 'G-Hiden GX' },
+      ],
+    },
+    {
+      label: 'Exotic',
+      categories: [
+        { key: 'grank_exotic', label: 'Exotic' },
+        { key: 'grank_exotic_g', label: 'Exotic G' },
+        { key: 'grank_exotic_gf', label: 'Exotic GF' },
+        { key: 'grank_exotic_gx', label: 'Exotic GX' },
+      ],
+    },
+  ]),
   {
     label: 'Zenith Armor',
     categories: [
@@ -149,6 +280,7 @@ export const GEAR_CATEGORY_GROUPS: readonly GearCategoryGroup[] = [
       { key: 'hardcore_tenran', label: 'Heavenly Storm' },
       { key: 'hardcore_hashu', label: 'Supremacy' },
       { key: 'hardcore_hiden', label: 'Hiden' },
+      { key: 'hardcore_hiden_f', label: 'Hiden F' },
     ],
   },
   {
@@ -158,60 +290,66 @@ export const GEAR_CATEGORY_GROUPS: readonly GearCategoryGroup[] = [
       { key: 'hr100_gou', label: 'Gou' },
     ],
   },
-  {
-    label: 'Event Armor',
-    categories: [
-      { key: 'event_plain', label: 'Event' },
-      { key: 'event_gx', label: 'Event GX' },
-      { key: 'event_zenith', label: 'Event Zenith' },
-      { key: 'event_zenith_zf', label: 'Event Zenith ZF' },
-      { key: 'event_zenith_zy', label: 'Event Zenith ZY' },
-      { key: 'event_zenith_zx', label: 'Event Zenith ZX' },
-      { key: 'event_mystery', label: 'Mystery Quest Armor' },
-      { key: 'tournament_plain', label: 'Hunting Tournament' },
-      { key: 'tournament_hc', label: 'Hunting Tournament HC' },
-      { key: 'tournament_hs', label: 'Hunting Tournament HS' },
-      { key: 'tournament_g', label: 'Hunting Tournament G' },
-      { key: 'tournament_gx', label: 'Hunting Tournament GX' },
-      { key: 'tournament_gp', label: 'Hunting Tournament GP' },
-      { key: 'tournament_zp', label: 'Hunting Tournament ZP' },
-    ],
-  },
+  sectionedGroup('Event Armor', [
+    {
+      label: 'Event',
+      categories: [
+        { key: 'event_plain', label: 'Event' },
+        { key: 'event_plain_f', label: 'Event F' },
+        { key: 'event_plain_fz', label: 'Event FZ' },
+        { key: 'event_hs', label: 'Event HS' },
+        { key: 'event_hc', label: 'Event HC' },
+        { key: 'event_sp', label: 'Event SP' },
+        { key: 'event_gs', label: 'Event GS' },
+        { key: 'event_gp', label: 'Event GP' },
+        { key: 'event_gx', label: 'Event GX' },
+        { key: 'event_zenith', label: 'Event Zenith' },
+        { key: 'event_zenith_zf', label: 'Event Zenith ZF' },
+        { key: 'event_zenith_zy', label: 'Event Zenith ZY' },
+        { key: 'event_zenith_zx', label: 'Event Zenith ZX' },
+        { key: 'event_mystery', label: 'Mystery Quest Armor' },
+      ],
+    },
+    {
+      label: 'Hunting Tournament',
+      categories: [
+        { key: 'tournament_plain', label: 'Hunting Tournament' },
+        { key: 'tournament_plain_f', label: 'Hunting Tournament F' },
+        { key: 'tournament_plain_fz', label: 'Hunting Tournament FZ' },
+        { key: 'tournament_hc', label: 'Hunting Tournament HC' },
+        { key: 'tournament_hs', label: 'Hunting Tournament HS' },
+        { key: 'tournament_g', label: 'Hunting Tournament G' },
+        { key: 'tournament_gf', label: 'Hunting Tournament GF' },
+        { key: 'tournament_gx', label: 'Hunting Tournament GX' },
+        { key: 'tournament_gs', label: 'Hunting Tournament GS' },
+        { key: 'tournament_gp', label: 'Hunting Tournament GP' },
+        { key: 'tournament_zp', label: 'Hunting Tournament ZP' },
+      ],
+    },
+  ]),
   {
     label: 'Musou Armor',
     categories: [
-      { key: 'event_musou_nargacuga', label: 'Demonclad' },
-      { key: 'event_musou_guanzorumu', label: '鬼凛ノ / 童凛ノ' },
-      { key: 'event_musou_bogabadorumu', label: 'Rapin' },
-      { key: 'event_musou_zinogre', label: 'Chiru' },
-      { key: 'event_musou_zerureusu', label: 'Elysi' },
-      { key: 'event_musou_elzelion', label: 'Fonse' },
-      { key: 'event_musou_miru', label: 'Demon Tale / 童伝ノ' },
-      { key: 'event_musou_pariapuria', label: 'Ganeto' },
-      { key: 'event_musou_duremudira', label: 'Bonne' },
+      { key: 'event_musou_g', label: 'Musou G' },
+      { key: 'event_musou_gf', label: 'Musou GF' },
+      { key: 'event_musou_gx', label: 'Musou GX' },
     ],
   },
   {
     label: 'Extreme Quest Armor',
     categories: [
-      { key: 'event_extreme_demon_lord', label: 'Demon Lord' },
-      { key: 'event_extreme_heruto', label: 'Heruto' },
-      { key: 'event_extreme_iroasu', label: 'Iroasu' },
-      { key: 'event_extreme_luchar', label: 'Luchar' },
+      { key: 'event_extreme_g', label: 'Extreme Quest G' },
+      { key: 'event_extreme_gf', label: 'Extreme Quest GF' },
+      { key: 'event_extreme_gx', label: 'Extreme Quest GX' },
     ],
   },
   {
     label: 'Standard Armor',
     categories: [
       { key: 'standard_plain', label: 'Standard' },
+      { key: 'standard_plain_f', label: 'Standard F' },
+      { key: 'standard_plain_fz', label: 'Standard FZ' },
       { key: 'standard_sp', label: 'SP' },
-    ],
-  },
-  {
-    label: 'Unavailable',
-    categories: [
-      { key: 'unavailable_not_implemented', label: 'Not Implemented' },
-      { key: 'unavailable_training_only', label: 'Training Only' },
     ],
   },
 ]
@@ -222,25 +360,101 @@ function allLeafKeys(groups: readonly GearCategoryGroup[]): readonly string[] {
 
 /** Every leaf category key that's G-Rank or later, for the top-level
  * "Gear levels" Pre-G-Rank/G-Rank/Zenith quick toggles (docs/feedback.md
- * Round 2 #6, confirmed by the project owner 2026-10-19: "G-Rank" is the
- * whole "G Rank Armor" group, including Exotic, Origin, and G-Hiden). Kept
- * as an explicit list, not derived from a group label match, so a future
- * taxonomy reshuffle has to touch this deliberately rather than silently. */
+ * Round 2 #6).
+ *
+ * **Update (2026-10-20):** superseded the narrower 2026-10-19 rule ("G-Rank"
+ * = just the "G Rank Armor" group). The project owner instead gave the full
+ * rank ladder every category's own name-suffix tiers are drawn from -- not
+ * every category has every rung, but wherever a rung appears it sorts into
+ * this same ladder: no suffix -> F -> FZ -> HC -> HS -> GS -> GP -> G -> GF
+ * -> GX -> Z -> ZF -> ZY -> ZX -> ZP, with "G and up" G-Rank and "Z and up"
+ * Zenith (see `GEAR_LEVEL_ZENITH_CATEGORIES` below). This list is therefore
+ * every GS/GP/G/GF/GX-tier leaf in the whole tree, not just "G Rank Armor"'s
+ * own leaves -- plus Musou Armor and Extreme Quest Armor (both confirmed
+ * G-Rank by the project owner; since 2026-10-20 they're split by G/GF/GX
+ * tier rather than curated by monster/quest name, so those tiers now slot
+ * into the ladder directly) and the 2 CLASS-only tiers the ladder doesn't
+ * cover by suffix at all (G-Hiden, Exotic -- see `is_grank_or_later_equipment`
+ * in gear_category.py, the same CLASS set this mirrors). F/FZ, HC/HS all
+ * stay Pre-G-Rank (they sort below GS on the ladder), as do the FX/RX/LX
+ * "HR100~"/Hardcore tiers (not on the ladder at all -- each is `CLASS ""`,
+ * the same blank CLASS Pre-G-Rank pieces have) and the CLASS-only
+ * Pre-G-Rank tiers (Hiden, Burst Species's 烈種, Gou, Heavenly Storm,
+ * Supremacy, SP). Kept as an explicit list, not derived from a group label
+ * match, so a future taxonomy reshuffle has to touch this deliberately
+ * rather than silently. */
 export const GEAR_LEVEL_GRANK_CATEGORIES: readonly string[] = [
   'grank_g',
+  'grank_gf',
   'grank_gx',
   'grank_g_hashu',
   'grank_burst_species',
-  'grank_g_hiden',
+  'grank_g_hiden_g',
+  'grank_g_hiden_gf',
+  'grank_g_hiden_gx',
   'grank_origin',
   'grank_exotic',
+  'grank_exotic_g',
+  'grank_exotic_gf',
   'grank_exotic_gx',
+  'paid_package_gs',
+  'paid_package_gp',
+  'paid_premium_kit_gs',
+  'paid_premium_kit_gp',
+  'paid_gachapon_gs',
+  'paid_gachapon_gp',
+  'paid_gachapon_g_hiden_g',
+  'paid_gachapon_g_hiden_gf',
+  'paid_gachapon_g_hiden_gx',
+  'paid_gachapon_exotic',
+  'paid_gachapon_exotic_g',
+  'paid_gachapon_exotic_gf',
+  'paid_gachapon_exotic_gx',
+  'paid_net_cafe_gs',
+  'paid_net_cafe_gp',
+  'paid_promotional_gs',
+  'paid_promotional_gp',
+  'guild_festival_g',
+  'guild_festival_gf',
+  'guild_festival_gx',
+  'diva_defense_gx',
+  'guild_g',
+  'guild_gf',
+  'guild_gx',
+  'tower_g',
+  'tower_gf',
+  'tower_gx_custom',
+  'caravan_g',
+  'caravan_gf',
+  'caravan_gx',
+  'road_g',
+  'road_gf',
+  'road_gx',
+  'event_gs',
+  'event_gp',
+  'event_gx',
+  'event_mystery',
+  'tournament_g',
+  'tournament_gf',
+  'tournament_gx',
+  'tournament_gs',
+  'tournament_gp',
+  'event_musou_g',
+  'event_musou_gf',
+  'event_musou_gx',
+  'event_extreme_g',
+  'event_extreme_gf',
+  'event_extreme_gx',
 ]
 
-/** Every leaf category key that's Zenith, for the same toggles -- confirmed
- * by the project owner to include Road Zenith and Event Zenith (and their
- * ZF/ZY/ZX variants) alongside the base "Zenith Armor" group, not just the
- * latter. */
+/** Every leaf category key that's Zenith, for the same toggles -- per the
+ * same 2026-10-20 rank-ladder rule above ("Z and up" is Zenith), this is
+ * every Z/ZF/ZY/ZX/ZP-tier leaf in the whole tree: the base "Zenith Armor"
+ * group, Road/Event/Diva Defense's own Zenith tiers (already included before
+ * this update), plus the "ZP" (Zenith-Shugo) tier wherever it appears among
+ * the Paid-and-Premium routes and Hunting Tournament -- previously left in
+ * Pre-G-Rank since this list used to only cover the literal "Zenith" name,
+ * not the ladder's full Z-and-up range. */
 export const GEAR_LEVEL_ZENITH_CATEGORIES: readonly string[] = [
   'zenith_plain',
   'zenith_zf',
@@ -254,6 +468,14 @@ export const GEAR_LEVEL_ZENITH_CATEGORIES: readonly string[] = [
   'event_zenith_zf',
   'event_zenith_zy',
   'event_zenith_zx',
+  'diva_defense_zenith',
+  'diva_defense_zenith_zy',
+  'diva_defense_zenith_zx',
+  'paid_premium_kit_zp',
+  'paid_gachapon_zp',
+  'paid_net_cafe_zp',
+  'paid_promotional_zp',
+  'tournament_zp',
 ]
 
 /** Every leaf category key that's neither of the above -- "Pre-G-Rank" for

@@ -17,7 +17,12 @@
  * (Training/Unimplemented/Impossible to Create) get the identical
  * not-a-leaf-at-all, unconditionally-excluded treatment (2026-10-18, per the
  * project owner: these are confirmed impossible to ever obtain) -- see
- * `_UNOBTAINABLE_DECORATION_CATEGORIES` in build-query.ts.
+ * `_UNOBTAINABLE_DECORATION_CATEGORIES` in build-query.ts. Lottery Hiden
+ * Decorations (`deco_lottery_hiden`, "do not use" per the reference tool's
+ * own tree) got the identical treatment on 2026-10-20 -- previously a
+ * default-excluded-but-togglable leaf (see the roadmap doc's 2026-10-15
+ * follow-up), now folded into the same unconditional exclusion set instead,
+ * since there was never a legitimate reason to re-include it.
  *
  * SP Decorations (`deco_sp`/`deco_sp_lv2`/`deco_sp_lv3`) ARE togglable leaves
  * here (unlike Tower/Unavailable above), but excluded by default
@@ -121,9 +126,6 @@ export const DECORATION_CATEGORY_GROUPS: readonly GearCategoryGroup[] = [
   },
   {
     label: 'Lottery and Paid Decorations',
-    categories: [
-      { key: 'deco_lottery_hiden', label: 'Lottery Hiden Decorations (Do not use)' },
-      { key: 'deco_special', label: 'Special' },
-    ],
+    categories: [{ key: 'deco_special', label: 'Special' }],
   },
 ]
