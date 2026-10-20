@@ -191,21 +191,27 @@ describe('search against the real data bundle', () => {
 
     // Only 1 result is pulled -- this query's whole point is proving the
     // time box bounds a single round, not exercising the no-good-cut loop
-    // (already covered by the other real-data tests above). Budget allows
-    // for one retry at double the time box (see `MAX_TIME_BOX_ATTEMPTS`),
-    // which was observed to occasionally be needed on this exact query.
+    // (already covered by the other real-data tests above).
     //
-    // Budget widened 2026-10-20 -- see `engine.ts`'s `TIME_BOX_SECONDS`
-    // docstring: this query came back with zero results at all on CI (not
-    // just slower), since a slower CPU explores fewer branch-and-bound nodes
-    // in the same per-attempt wall-clock budget and this query is tight
-    // enough to need most of it. Widened in step with the bigger time box.
-    const { results, elapsedMs } = await firstResults(requirements, 1)
+    // This query specifically needs a much bigger per-attempt budget than
+    // `engine.ts`'s production `TIME_BOX_SECONDS`/`MAX_TIME_BOX_ATTEMPTS`
+    // defaults to reliably come back with a result at all on CI's slower
+    // runner (confirmed directly, 2026-10-20: it still returned zero results
+    // even after raising those module defaults to 45s/2 attempts) -- but
+    // raising the *defaults* isn't the right fix, since every other caller
+    // pays for it too (it cost `engine.property.test.ts` a timeout and
+    // nearly tripled this suite's CI runtime, with no benefit to any other
+    // query). `options.timeBoxSeconds`/`maxTimeBoxAttempts` let only this one
+    // test ask for a bigger budget (worst case 60+120+240=420s).
+    const { results, elapsedMs } = await firstResults(requirements, 1, {
+      timeBoxSeconds: 60,
+      maxTimeBoxAttempts: 3,
+    })
 
     expect(results.length).toBeGreaterThan(0)
-    expect(elapsedMs).toBeLessThan(150_000)
+    expect(elapsedMs).toBeLessThan(450_000)
     expectAllMeetRequirements(results, requirements)
-  }, 180_000)
+  }, 480_000)
 
   it('finds a result for the exceptionally tight sword-build query with preferExactMatches, without activating any bonus skill tier', async () => {
     // Same real, exceptionally tight query as above, but with

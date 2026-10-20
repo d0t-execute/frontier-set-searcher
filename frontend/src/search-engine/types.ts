@@ -246,6 +246,22 @@ export interface SearchOptions {
    * filtered out) simply never reaches any reward, the same graceful
    * degradation `preferredCandidateIds` already has for a filtered-out id. */
   readonly preferredCategoryCounts?: readonly PreferredCategoryCount[]
+
+  /** Internal/test-only override of `engine.ts`'s `TIME_BOX_SECONDS` module
+   * default, for one specific call rather than every search -- never surfaced
+   * in the UI. Exists because that module constant has to serve every caller
+   * at once (production searches, the property-based correctness test, and
+   * CI's real-data performance tests), and CI's runner solving measurably
+   * slower than a local dev machine for one particular hard query doesn't
+   * justify giving every *other* caller a bigger budget too (tried once,
+   * 2026-10-20: it cost `engine.property.test.ts` a timeout and nearly
+   * tripled the whole suite's CI runtime for no benefit to any other query). */
+  readonly timeBoxSeconds?: number
+
+  /** Internal/test-only override of `engine.ts`'s `MAX_TIME_BOX_ATTEMPTS`
+   * module default -- see `timeBoxSeconds`'s docstring for why this needs to
+   * be a per-call override rather than a global constant. */
+  readonly maxTimeBoxAttempts?: number
 }
 
 export interface PreferredCategoryCount {
