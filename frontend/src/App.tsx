@@ -1169,7 +1169,8 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                 <p className="form-text">
                   Pins a cuff slot to an exact cuff, or just to a skill (or Zenith skill) -- letting
                   the solver pick whichever cuff variant best serves the rest of the build. Type at
-                  least 2 characters to search.
+                  least 2 characters to search. <br />
+                  <b>You can also search cuffs by skill name.</b>
                 </p>
                 <CuffPicker
                   cuffs={bundle.cuffs}
@@ -1177,6 +1178,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                   onChange={setPinnedCuffSlots}
                   skillNameById={bundle.skillNames}
                   pinnableSkills={pinnableCuffSkillOptions}
+                  skillSearchTextById={skillSearchTextById}
                 />
               </Disclosure>
 

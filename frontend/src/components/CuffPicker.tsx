@@ -57,6 +57,18 @@ export interface CuffPickerProps {
    * `{id, name}` shape for `FilterableOptions`, ids stringified same
    * convention as `EquipmentExclusionPicker.tsx`'s own skills list. */
   readonly pinnableSkills: readonly SkillOption[]
+  /** Every skill id's own name plus its tier labels, pre-joined and
+   * lowercased -- lets the "Exact cuff" search below match on a skill/tier
+   * name too, not just a cuff's own name, the same skill-name/tier-label
+   * extension `ArmorPicker.tsx`/`EquipmentExclusionPicker.tsx` already have
+   * (docs/feedback.md Round 2 #8) -- missing here until now (2026-10-20, per
+   * the project owner). Optional, same convention as
+   * `EquipmentExclusionPicker.tsx`'s own prop of the same name -- falls back
+   * to matching on `skillNameById` alone (name only, no tier labels) when
+   * omitted, rather than every call site needing to supply it. The "By
+   * skill" mode's own search is unaffected either way: it already searches a
+   * flat list of skill names directly. */
+  readonly skillSearchTextById?: ReadonlyMap<SkillId, string>
 }
 
 export function CuffPicker({
@@ -65,6 +77,7 @@ export function CuffPicker({
   onChange,
   skillNameById,
   pinnableSkills,
+  skillSearchTextById,
 }: CuffPickerProps) {
   function setSlot(index: number, slot: PinnedCuffSlot | null): void {
     const next = [...pinned]
@@ -84,6 +97,7 @@ export function CuffPicker({
           onChange={(slot) => setSlot(i, slot)}
           skillNameById={skillNameById}
           pinnableSkills={pinnableSkills}
+          skillSearchTextById={skillSearchTextById}
         />
       ))}
     </div>
@@ -97,6 +111,7 @@ function CuffSlotPicker({
   onChange,
   skillNameById,
   pinnableSkills,
+  skillSearchTextById,
 }: {
   label: string
   cuffs: readonly NamedCuff[]
@@ -104,6 +119,7 @@ function CuffSlotPicker({
   onChange: (pin: PinnedCuffSlot | null) => void
   skillNameById: ReadonlyMap<SkillId, string>
   pinnableSkills: readonly SkillOption[]
+  skillSearchTextById?: ReadonlyMap<SkillId, string>
 }) {
   // Which mode the *in-progress* search shows -- only meaningful while
   // nothing is pinned yet, since an existing pin's own mode already comes
@@ -111,6 +127,15 @@ function CuffSlotPicker({
   const [mode, setMode] = useState<'exact' | 'skill'>('exact')
   const [search, setSearch] = useState('')
   const [hoveredCuff, setHoveredCuff] = useState<NamedCuff | null>(null)
+
+  function cuffMatches(cuff: NamedCuff, query: string): boolean {
+    if (cuff.name.toLowerCase().includes(query)) return true
+    return cuff.skills.some((s) =>
+      skillSearchTextById
+        ? (skillSearchTextById.get(s.skillId) ?? '').includes(query)
+        : (skillNameById.get(s.skillId) ?? '').toLowerCase().includes(query),
+    )
+  }
 
   const cuff = pin?.mode === 'exact' ? cuffs.find((c) => c.id === pin.cuffId) : undefined
   const pinnedSkillName =
@@ -187,12 +212,13 @@ function CuffSlotPicker({
                 placeholder="Type to search cuffs…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                onKeyDown={(e) => handleEnterToPickFirst(e, cuffs, search, pickCuff)}
+                onKeyDown={(e) => handleEnterToPickFirst(e, cuffs, search, pickCuff, cuffMatches)}
               />
               <FilterableOptions
                 items={cuffs}
                 search={search}
                 ariaLabel={`Cuffs matching search for ${label}`}
+                matches={cuffMatches}
                 describe={(c) => contributionSummary(c.skills, skillNameById)}
                 onPick={pickCuff}
                 onHoverChange={setHoveredCuff}

@@ -175,6 +175,70 @@ describe('ArmorPicker', () => {
     expect(matches).not.toHaveTextContent('Iron Helm')
   })
 
+  it("matches a decoration by one of its granted skill's tier labels when searching a pinned slot's decorations (2026-10-20: this extension hadn't reached either decoration search yet)", () => {
+    const skillsWithTiers: readonly NamedSkill[] = [
+      { id: 1, name: 'Attack', category: null, priorityRank: null, tiers: [] },
+      {
+        id: 2,
+        name: 'Defense',
+        category: null,
+        priorityRank: null,
+        tiers: [{ label: 'Iron Wall', minPoints: 10, description: null }],
+      },
+    ]
+    render(
+      <ArmorPicker
+        slots={slots}
+        decorations={decorations}
+        pinned={pinHead('head:0001')}
+        onChange={() => {}}
+        pinnedSlotDecorationIds={new Map()}
+        onChangeSlotDecorations={() => {}}
+        skills={skillsWithTiers}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText('Search decorations for head'), {
+      target: { value: 'iron wall' },
+    })
+
+    const matches = screen.getByLabelText('Add a decoration to head')
+    expect(matches).toHaveTextContent('Defense Jewel')
+    expect(matches).not.toHaveTextContent('Attack Jewel')
+  })
+
+  it("matches a decoration by one of its granted skill's tier labels when forcing a decoration into an unpinned slot", () => {
+    const skillsWithTiers: readonly NamedSkill[] = [
+      { id: 1, name: 'Attack', category: null, priorityRank: null, tiers: [] },
+      {
+        id: 2,
+        name: 'Defense',
+        category: null,
+        priorityRank: null,
+        tiers: [{ label: 'Iron Wall', minPoints: 10, description: null }],
+      },
+    ]
+    render(
+      <ArmorPicker
+        slots={slots}
+        decorations={decorations}
+        pinned={new Map()}
+        onChange={() => {}}
+        pinnedSlotDecorationIds={new Map()}
+        onChangeSlotDecorations={() => {}}
+        skills={skillsWithTiers}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText('Search decorations to force into head'), {
+      target: { value: 'iron wall' },
+    })
+
+    const matches = screen.getByLabelText('Force a decoration into head')
+    expect(matches).toHaveTextContent('Defense Jewel')
+    expect(matches).not.toHaveTextContent('Attack Jewel')
+  })
+
   it('pins a candidate when picked from the filtered list', () => {
     const onChange = vi.fn()
     render(

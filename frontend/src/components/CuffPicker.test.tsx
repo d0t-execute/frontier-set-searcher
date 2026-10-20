@@ -172,6 +172,31 @@ describe('CuffPicker', () => {
     expect(option).toHaveAttribute('title', 'Sharpening: 5')
   })
 
+  it("matches a cuff by one of its granted skill's tier labels, not just its own name (2026-10-20: this search extension hadn't reached CuffPicker yet)", () => {
+    const skillSearchTextById = new Map([
+      [1, 'sharpening'],
+      [2, 'guard up iron wall'],
+    ])
+    render(
+      <CuffPicker
+        cuffs={cuffs}
+        pinned={[]}
+        onChange={() => {}}
+        skillNameById={skillNameById}
+        pinnableSkills={pinnableSkills}
+        skillSearchTextById={skillSearchTextById}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText('Search cuffs for Cuff slot 1'), {
+      target: { value: 'iron wall' },
+    })
+
+    const options = screen.getAllByRole('option')
+    expect(options).toHaveLength(1)
+    expect(options[0]).toHaveTextContent('Guard Up SZ')
+  })
+
   it('shows a prompt to hover a result before anything is hovered', () => {
     render(
       <CuffPicker

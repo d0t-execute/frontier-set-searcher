@@ -160,7 +160,9 @@ function ArmorSlotPicker({
   skillNameById: ReadonlyMap<number, string>
   /** Every skill id's own name plus its tier labels, pre-joined and
    * lowercased, for the same piece search (docs/feedback.md Round 2 #8,
-   * 2026-10-19). */
+   * 2026-10-19) -- and, since 2026-10-20, both decoration searches below too
+   * (they'd been left out of this extension until the project owner flagged
+   * it as not working there). */
   skillSearchTextById: ReadonlyMap<number, string>
 }) {
   const [candidateSearch, setCandidateSearch] = useState('')
@@ -171,6 +173,15 @@ function ArmorSlotPicker({
   function candidateMatches(candidate: NamedCandidate, query: string): boolean {
     if (candidate.name.toLowerCase().includes(query)) return true
     return candidate.skills.some((s) => (skillSearchTextById.get(s.skillId) ?? '').includes(query))
+  }
+
+  // Same skill-name/tier-label search extension as `candidateMatches` above
+  // (docs/feedback.md Round 2 #8), just not wired into either decoration
+  // search below until now (2026-10-20, per the project owner: "search by
+  // skill threshold" wasn't working in ArmorPicker's decoration pickers).
+  function decorationMatches(decoration: NamedDecoration, query: string): boolean {
+    if (decoration.name.toLowerCase().includes(query)) return true
+    return decoration.skills.some((s) => (skillSearchTextById.get(s.skillId) ?? '').includes(query))
   }
 
   function pickCandidate(c: NamedCandidate): void {
@@ -290,6 +301,7 @@ function ArmorSlotPicker({
                     fittableDecorations,
                     decorationSearch,
                     pickSlotDecoration,
+                    decorationMatches,
                   )
                 }
               />
@@ -297,6 +309,7 @@ function ArmorSlotPicker({
                 items={fittableDecorations}
                 search={decorationSearch}
                 ariaLabel={`Add a decoration to ${slotId}`}
+                matches={decorationMatches}
                 describe={(d) => contributionSummary(d.skills, skillNameById)}
                 onPick={pickSlotDecoration}
                 onHoverChange={setHoveredSlotDecoration}
@@ -322,6 +335,7 @@ function ArmorSlotPicker({
           pinnedIds={slotDecorationIds}
           onChange={onChangeSlotDecorations}
           skillNameById={skillNameById}
+          skillSearchTextById={skillSearchTextById}
         />
       )}
     </div>
@@ -340,6 +354,7 @@ function SlotDecorationOnlyPicker({
   pinnedIds,
   onChange,
   skillNameById,
+  skillSearchTextById,
 }: {
   slotId: string
   candidates: readonly NamedCandidate[]
@@ -347,9 +362,19 @@ function SlotDecorationOnlyPicker({
   pinnedIds: readonly string[]
   onChange: (ids: readonly string[]) => void
   skillNameById: ReadonlyMap<SkillId, string>
+  /** Same skill-name/tier-label search extension as `ArmorSlotPicker`'s own
+   * `decorationMatches` (docs/feedback.md Round 2 #8) -- this is a sibling
+   * decoration search, not a nested one, so it needs its own copy of the
+   * match rule rather than inheriting it. */
+  skillSearchTextById: ReadonlyMap<SkillId, string>
 }) {
   const [search, setSearch] = useState('')
   const [hoveredDecoration, setHoveredDecoration] = useState<NamedDecoration | null>(null)
+
+  function decorationMatches(decoration: NamedDecoration, query: string): boolean {
+    if (decoration.name.toLowerCase().includes(query)) return true
+    return decoration.skills.some((s) => (skillSearchTextById.get(s.skillId) ?? '').includes(query))
+  }
 
   // No candidate is chosen yet, so there's no single known capacity to bound
   // against -- the largest any candidate here could offer is a looser, safe
@@ -402,13 +427,14 @@ function SlotDecorationOnlyPicker({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={(e) =>
-              handleEnterToPickFirst(e, fittableDecorations, search, pickDecoration)
+              handleEnterToPickFirst(e, fittableDecorations, search, pickDecoration, decorationMatches)
             }
           />
           <FilterableOptions
             items={fittableDecorations}
             search={search}
             ariaLabel={`Force a decoration into ${slotId}`}
+            matches={decorationMatches}
             describe={(d) => contributionSummary(d.skills, skillNameById)}
             onPick={pickDecoration}
             onHoverChange={setHoveredDecoration}
