@@ -101,7 +101,7 @@ export function PreferredCategoryPicker({ counts, onChange }: PreferredCategoryP
               <button
                 type="button"
                 aria-label={`Remove ${labelById.get(category) ?? category}`}
-                className="btn-close"
+                className="btn-close btn-close-white"
                 style={{ fontSize: '0.65rem' }}
                 onClick={() => remove(category)}
               />

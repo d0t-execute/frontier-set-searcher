@@ -108,12 +108,17 @@ describe('search against the real data bundle', () => {
     // for optimal, which can cost the solver more branch-and-bound effort
     // to *prove* optimal than a tighter, more selective query does. Only 2
     // results are pulled to keep this test's own CI cost reasonable.
+    //
+    // Budget widened 2026-10-20: GitHub Actions' runner measurably exceeded
+    // the old 40s budget (~48s observed) solving the exact same query --
+    // see `engine.ts`'s `TIME_BOX_SECONDS` docstring for why CI is simply
+    // slower here, not a regression in this codebase.
     const { results, elapsedMs } = await firstResults(requirements, 2)
 
     expect(results.length).toBeGreaterThan(0)
-    expect(elapsedMs).toBeLessThan(40_000)
+    expect(elapsedMs).toBeLessThan(60_000)
     expectAllMeetRequirements(results, requirements)
-  }, 60_000)
+  }, 90_000)
 
   it('finds results for a real end-game-scale 17-skill query that used to hang indefinitely', async () => {
     const requirements: SkillRequirement[] = [
@@ -142,12 +147,16 @@ describe('search against the real data bundle', () => {
     // synthetic performance tests) specifically to keep this regression
     // test's own CI cost reasonable while still proving the no-good-cut
     // re-solve loop (not just a single solve) works at real scale.
+    //
+    // Budget widened 2026-10-20 -- see the 4-skill test above and
+    // `engine.ts`'s `TIME_BOX_SECONDS` docstring: CI measurably exceeded the
+    // old 90s budget (~99s observed).
     const { results, elapsedMs } = await firstResults(requirements, 2)
 
     expect(results.length).toBeGreaterThan(0)
-    expect(elapsedMs).toBeLessThan(90_000)
+    expect(elapsedMs).toBeLessThan(130_000)
     expectAllMeetRequirements(results, requirements)
-  }, 120_000)
+  }, 180_000)
 
   it('finds a result for a real, exceptionally tight 17-skill sword-build query within the per-round time box', async () => {
     // A second real, user-supplied 17-skill query -- distinct from the one
@@ -185,12 +194,18 @@ describe('search against the real data bundle', () => {
     // (already covered by the other real-data tests above). Budget allows
     // for one retry at double the time box (see `MAX_TIME_BOX_ATTEMPTS`),
     // which was observed to occasionally be needed on this exact query.
+    //
+    // Budget widened 2026-10-20 -- see `engine.ts`'s `TIME_BOX_SECONDS`
+    // docstring: this query came back with zero results at all on CI (not
+    // just slower), since a slower CPU explores fewer branch-and-bound nodes
+    // in the same per-attempt wall-clock budget and this query is tight
+    // enough to need most of it. Widened in step with the bigger time box.
     const { results, elapsedMs } = await firstResults(requirements, 1)
 
     expect(results.length).toBeGreaterThan(0)
-    expect(elapsedMs).toBeLessThan(100_000)
+    expect(elapsedMs).toBeLessThan(150_000)
     expectAllMeetRequirements(results, requirements)
-  }, 120_000)
+  }, 180_000)
 
   it('finds a result for the exceptionally tight sword-build query with preferExactMatches, without activating any bonus skill tier', async () => {
     // Same real, exceptionally tight query as above, but with
@@ -203,6 +218,10 @@ describe('search against the real data bundle', () => {
     // equivalent test above since the extra machinery measurably slows this
     // particular query down (observed ~90s vs ~31s without it) -- still
     // comfortably inside "seconds to low minutes," the project's actual bar.
+    //
+    // Widened 2026-10-20 in step with the other real-data tests' budgets --
+    // see `engine.ts`'s `TIME_BOX_SECONDS` docstring for why CI needs more
+    // room than a dev machine does.
     const requirements: SkillRequirement[] = [
       { skillId: 100, minPoints: 30 }, // SnS Tech - Sword Saint
       { skillId: 175, minPoints: 10 }, // Determination - Solid Determination
@@ -232,7 +251,7 @@ describe('search against the real data bundle', () => {
     })
 
     expect(results.length).toBeGreaterThan(0)
-    expect(elapsedMs).toBeLessThan(110_000)
+    expect(elapsedMs).toBeLessThan(165_000)
     expectAllMeetRequirements(results, requirements)
     for (const [skillId, points] of results[0].skillTotals) {
       if (requestedSkillIds.has(skillId)) continue
@@ -241,5 +260,5 @@ describe('search against the real data bundle', () => {
         else expect(points).toBeGreaterThan(threshold)
       }
     }
-  }, 150_000)
+  }, 220_000)
 })

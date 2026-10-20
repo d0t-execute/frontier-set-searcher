@@ -76,15 +76,23 @@ import type { Highs, Model, ModelStatusCode, SymbolDisposable } from 'highs'
  * module's own docstring). Chosen from direct measurement: reliably produced
  * a fully valid build within this budget, every round, against the real
  * hard query that motivated this -- generous enough that most queries never
- * hit it at all (reaching proven-optimal well under it). */
-const TIME_BOX_SECONDS = 30
+ * hit it at all (reaching proven-optimal well under it).
+ *
+ * Raised from 30 (2026-10-20): CI's runner solves measurably slower than a
+ * local dev machine (confirmed directly -- the same queries that reliably
+ * found a feasible incumbent here came back with none at all on CI, not just
+ * slower), and `running_time` is wall-clock, so a slower CPU gets fewer
+ * branch-and-bound nodes explored in the same budget. A bigger per-attempt
+ * budget costs nothing on hardware that already finishes well under the old
+ * one; it only matters for the rare query that was genuinely budget-starved. */
+const TIME_BOX_SECONDS = 45
 
 /** If a round's first time box expires with no feasible incumbent at all --
  * observed to happen occasionally, not just hypothetically, when the box is
  * too tight for a given query -- one retry at double the budget meaningfully
  * reduces the chance of stopping early on a query that was merely unlucky in
  * which part of the search tree got explored first, while still keeping the
- * worst realistic case (90s) far inside "not half an hour." */
+ * worst realistic case (135s) far inside "not half an hour." */
 const MAX_TIME_BOX_ATTEMPTS = 2
 
 function runTimeBoxed(native: SymbolDisposable<Model>, highs: Highs): boolean {

@@ -662,14 +662,15 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
       excludedSkillIds.size
     return total === 0 ? 'None excluded' : `${pluralize(total, 'item')} excluded`
   })()
-  const preferredPiecesSummary =
-    preferredArmorIds.size === 0
-      ? 'None preferred'
-      : `${pluralize(preferredArmorIds.size, 'piece')} preferred`
-  const preferredCategoriesSummary =
-    preferredCategoryCounts.size === 0
-      ? 'None preferred'
-      : `${pluralize(preferredCategoryCounts.size, 'category', 'categories')} preferred`
+  const preferredSummary = (() => {
+    const parts = [
+      preferredArmorIds.size > 0 ? pluralize(preferredArmorIds.size, 'piece') : null,
+      preferredCategoryCounts.size > 0
+        ? pluralize(preferredCategoryCounts.size, 'category', 'categories')
+        : null,
+    ].filter((p): p is string => p !== null)
+    return parts.length === 0 ? 'None preferred' : `${parts.join(', ')} preferred`
+  })()
   const resistancesSummary =
     nonNegativeResistances.size === 0
       ? 'None required'
@@ -1178,19 +1179,23 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
 
               <Disclosure
                 title="Preferred pieces"
-                summary={preferredPiecesSummary}
+                summary={preferredSummary}
                 info={
-                  <InfoTooltip label="About favored armor pieces">
-                    The solver will always favor using more of these pieces over fewer, outranking
-                    any other difference in a build -- only dropping one if it would otherwise make
-                    a skill requirement unreachable. Optimize around gear you already own, without
-                    forcing an exact slot assignment the way pinning does. Type at least 2
-                    characters to search.
+                  <InfoTooltip label="About favoring gear">
+                    The solver favors using more of your preferred pieces, and at least the chosen
+                    count from each preferred category, outranking any other difference in a build
+                    -- only falling short of either if it would otherwise make a skill requirement
+                    unreachable. Neither forces an exact slot assignment the way pinning does.
                     <br />
-                    <b>You can search by skill name and skill level/threshold names.</b>
+                    <b>Pieces:</b> type at least 2 characters to search (also matches skill
+                    name/level names); using more is always better.
+                    <br />
+                    <b>Categories:</b> set a 1-5 target per category; using more than the target is
+                    never penalized.
                   </InfoTooltip>
                 }
               >
+                <div className="small text-muted mb-1">Pieces</div>
                 <PreferredArmorPicker
                   armorCandidates={allArmorCandidates}
                   preferredIds={preferredArmorIds}
@@ -1198,21 +1203,8 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                   skillNameById={bundle.skillNames}
                   skillSearchTextById={skillSearchTextById}
                 />
-              </Disclosure>
-
-              <Disclosure
-                title="Preferred categories"
-                summary={preferredCategoriesSummary}
-                info={
-                  <InfoTooltip label="About preferred piece categories">
-                    The solver will favor using at least this many pieces from a chosen category,
-                    outranking any other difference in a build -- only falling short if it would
-                    otherwise make a skill requirement unreachable. Using more than the chosen count
-                    is never penalized. Set several categories at once to split the 5 armor slots
-                    between them (e.g. 2 from one category and 3 from another).
-                  </InfoTooltip>
-                }
-              >
+                <hr className="my-2" />
+                <div className="small text-muted mb-1">Categories</div>
                 <PreferredCategoryPicker
                   counts={preferredCategoryCounts}
                   onChange={setPreferredCategoryCounts}
