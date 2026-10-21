@@ -51,6 +51,10 @@ feature below.
 - **Hosting**: a fully static GitHub Pages deployment — every push to `main` builds and publishes
   automatically (see [docs/hosting.md](docs/hosting.md)).
 
+## Feedback
+
+Found a bug, or have an idea for a feature? [Open an issue](https://github.com/d0t-execute/frontier-set-searcher/issues/new/choose) — feature requests have their own template.
+
 ## Credits
 
 - **[mertna](https://mertna.github.io/MHFZ-Skills/)** — skill-priority and active-skill-cap
