@@ -139,7 +139,7 @@ combinatorial search off the UI thread.
 | Data validation | `pydantic` v2 | Schema validation at the ETL boundary; the same field definitions double as documentation of the reverse-engineered column schema |
 | ETL staging store | SQLite, accessed via plain `sqlite3`/SQLAlchemy core | No server to run — it's a file. Enough relational power for joins/dedup/diffing while building the export; since nothing in production talks to a database anymore, Postgres would be unnecessary operational weight |
 | Data export format | Versioned static JSON (or a compact binary, e.g. MessagePack, if size/parse-time benchmarks demand it) | This is the only artifact that crosses from offline ETL to the online app — needs to be small (GitHub Pages serves gzip/brotli automatically) and fast to parse in-browser |
-| Search engine | TypeScript first, hand-written bitmask/DP + branch-and-bound (see §6), run in a Web Worker; Rust→WASM considered only if a Phase 3 benchmark shows TS isn't fast enough | Keeps one language (TS) across frontend+engine unless proven necessary to drop to WASM — avoids a second toolchain by default, per the "benchmark before you scale complexity" principle in §3 |
+| Search engine | TypeScript first, hand-written bitmask/DP + branch-and-bound (see §6), run in a Web Worker; Rust→WASM considered only if a Phase 3 benchmark shows TS isn't fast enough | Keeps one language (TS) across frontend+engine unless proven necessary to drop to WASM — avoids a second toolchain by default, per the "benchmark before you scale complexity" principle in §3. **Superseded, see the status note at the top of §6.** |
 | Correctness oracle (dev-only) | A small Python brute-force/`ortools` CP-SAT script, used offline to generate expected results for test fixtures | Never shipped; exists purely so the TS engine's test suite has a trustworthy "ground truth" to compare against on representative cases |
 | Frontend | React + TypeScript + Vite, TanStack Query (for loading the static data bundle) | Component-testable, large ecosystem; keep the already-vendored Bootstrap for styling, revisit Tailwind if Bootstrap gets in the way (no functional impact either way) |
 | Hosting | GitHub Pages, built by a GitHub Actions workflow on push | Free, matches the "ease of hosting" goal, no server to keep alive or pay for |
@@ -149,6 +149,19 @@ combinatorial search off the UI thread.
 | Lint/format | `ruff` + `mypy` (Python), `eslint` + `prettier` (TS) | Enforced in pre-commit + CI |
 
 ## 6. The search algorithm (the hard part)
+
+> **Status note:** the bitmask/DP + branch-and-bound + meet-in-the-middle design
+> below is the original plan, kept here as a historical record — it was built,
+> then replaced. That Pareto-dominance approach hit a real "curse of
+> dimensionality" wall once many skills are requested at once (a single
+> decoration-filling sub-problem's frontier grew from 294 to 32,093 entries
+> between adjacent slot capacities on a real ~17-skill query, and the search
+> never completed). The engine now formulates the whole query as a single
+> mixed-integer program and solves it with [HiGHS](https://highs.dev/)
+> (WebAssembly build) — see
+> [`frontend/src/search-engine/engine.ts`](../frontend/src/search-engine/engine.ts)'s
+> module docstring for the current algorithm, including how multiple ranked
+> results and per-round time-boxing work.
 
 This is the component responsible for the "hours → seconds" improvement, so it
 gets a dedicated design pass and its own spike (Phase 3) before full integration.

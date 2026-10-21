@@ -18,11 +18,15 @@ feature below.
   exclusivity, and an at-most-one-Hiden-cuff rule.
 - **Pin specific gear** — force a particular armor piece (with chosen decorations), a decoration on
   its own, or a cuff into the result, with the rest of the build optimized around it.
+- **Prefer specific gear** — name armor pieces or set a target piece-count per gear category that
+  the solver should favor using, outranking any other difference in a build without forcing an
+  exact slot the way pinning does.
 - **Exclude specific gear** — rule out individual armor pieces, decorations, or cuffs by name, on
   top of broader category-level filters (gear level/rank, Poogie cuff tier, decoration tier); a pin
   always overrides an exclusion.
 - **Hunter Type, weapon Zenith skill, and weapon slot controls**, G-Rank/Hiden/Exotic/etc. category
-  filters for armor, cuffs, and decorations, and a configurable number of ranked results.
+  filters for armor, cuffs, and decorations, a configurable number of ranked results, and a
+  sortable/filterable reference table for every item in a gear category.
 - **Shareable build links** — a generated link fully reproduces one exact result (including all its
   picks, decorations, and cuffs) without re-running the solver, and can be used as the starting
   point for a new search. Each result can also be exported as a downloadable image.
