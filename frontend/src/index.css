@@ -916,6 +916,25 @@ code {
   gap: 4px;
 }
 
+/* The "all items" view's own category-tree filter (docs/feedback.md Round 3
+ * #5) -- boxed off from the name/skill filter row below it since it's a much
+ * taller, hierarchical control rather than a single input. */
+.category-table-category-filter {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 14px;
+}
+
+/* The "Show all" link under a gear/cuff/decoration category tree
+ * (docs/feedback.md Round 3 #5), pointing at `CategoryTablePage`'s "all
+ * items" route -- a plain link rather than a `CategoryLeaf`-style row since
+ * it isn't itself a category. */
+.category-filter-show-all-link {
+  display: inline-block;
+  margin-top: 8px;
+}
+
 /* Same bug class as `.text-muted`/`.text-danger` above: this vendored
  * Bootstrap build's `.table`/`.table-striped` only re-theme under a
  * `[data-bs-theme=dark]` attribute this app never sets, so left alone they

@@ -768,6 +768,25 @@ describe('App', () => {
     expect(worker.cancel).toHaveBeenCalledWith('req-1')
   })
 
+  describe('"Show all" category links (docs/feedback.md Round 3 #5)', () => {
+    it('links to the "all items" route for armor, cuffs, and decorations', () => {
+      render(<App />)
+
+      expect(screen.getByRole('link', { name: 'Show all armor' })).toHaveAttribute(
+        'href',
+        '#/category/gear',
+      )
+      expect(screen.getByRole('link', { name: 'Show all cuffs' })).toHaveAttribute(
+        'href',
+        '#/category/cuffs',
+      )
+      expect(screen.getByRole('link', { name: 'Show all decorations' })).toHaveAttribute(
+        'href',
+        '#/category/decorations',
+      )
+    })
+  })
+
   describe('preferred pieces (docs/feedback.md Round 2 #2)', () => {
     it('passes a preferred piece straight through to the solver as preferredCandidateIds', async () => {
       const worker = makeWorker()

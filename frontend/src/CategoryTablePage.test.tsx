@@ -281,6 +281,41 @@ describe('CategoryTablePage', () => {
     expect(screen.getByText('Loading…')).toBeInTheDocument()
   })
 
+  describe('the "all items" view (categoryKey: null, docs/feedback.md Round 3 #5)', () => {
+    it('shows every category\'s items together, with an "All" page title', () => {
+      render(<CategoryTablePage kind="gear" categoryKey={null} onBackToSearch={vi.fn()} />)
+      expect(screen.getByRole('heading', { name: 'All Gear' })).toBeInTheDocument()
+      expect(screen.getByText('Zenny Helm')).toBeInTheDocument()
+      expect(screen.getByText('Other Category Helm')).toBeInTheDocument()
+    })
+
+    it('adds a Category column naming each item\'s own category', () => {
+      render(<CategoryTablePage kind="gear" categoryKey={null} onBackToSearch={vi.fn()} />)
+      expect(screen.getByRole('columnheader', { name: 'Category' })).toBeInTheDocument()
+      const row = screen.getByText('Other Category Helm').closest('tr')
+      expect(row).not.toBeNull()
+      expect(row).toHaveTextContent('Guild')
+    })
+
+    it('does not show a Category column for a single-category table', () => {
+      render(<CategoryTablePage kind="gear" categoryKey="standard_plain" onBackToSearch={vi.fn()} />)
+      expect(screen.queryByRole('columnheader', { name: 'Category' })).not.toBeInTheDocument()
+    })
+
+    it('excluding a category in the tree filter hides its items from the table', async () => {
+      const user = userEvent.setup()
+      render(<CategoryTablePage kind="gear" categoryKey={null} onBackToSearch={vi.fn()} />)
+
+      expect(screen.getByText('Other Category Helm')).toBeInTheDocument()
+      await user.click(screen.getByRole('button', { name: 'Expand Guild' }))
+      await user.click(screen.getByRole('button', { name: 'Expand Guild: Base' }))
+      await user.click(screen.getByRole('checkbox', { name: 'Guild' }))
+
+      expect(screen.queryByText('Other Category Helm')).not.toBeInTheDocument()
+      expect(screen.getByText('Zenny Helm')).toBeInTheDocument()
+    })
+  })
+
   it('shows an error message when the bundle fails to load', () => {
     mockUseDataBundle.mockReturnValue({
       data: undefined,

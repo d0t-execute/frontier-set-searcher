@@ -30,6 +30,7 @@ import type { CategoryTableKind } from './search-engine/category-route'
 import { CUFF_CATEGORY_GROUPS } from './search-engine/cuff-categories'
 import { DECORATION_CATEGORY_GROUPS } from './search-engine/decoration-categories'
 import { GEAR_CATEGORY_GROUPS } from './search-engine/gear-categories'
+import { CategoryFilter } from './components/CategoryFilter'
 import type { CategoryFilterGroup } from './components/CategoryFilter'
 import type {
   DataBundle,
@@ -42,7 +43,11 @@ import type { SkillContribution } from './search-engine/types'
 
 export interface CategoryTablePageProps {
   readonly kind: CategoryTableKind
-  readonly categoryKey: string
+  /** `null` shows every category of this kind at once (docs/feedback.md
+   * Round 3 #5's "show all" link), with an added Category column and its own
+   * category-tree filter instead of the single-category name/skill filters
+   * alone. */
+  readonly categoryKey: string | null
   readonly onBackToSearch: () => void
 }
 
@@ -68,6 +73,16 @@ function categoryLabel(kind: CategoryTableKind, categoryKey: string): string {
     if (match) return match.label
   }
   return categoryKey
+}
+
+const ALL_ITEMS_TITLE_BY_KIND: Record<CategoryTableKind, string> = {
+  gear: 'All Gear',
+  cuffs: 'All Poogie Cuffs',
+  decorations: 'All Decorations',
+}
+
+function pageTitle(kind: CategoryTableKind, categoryKey: string | null): string {
+  return categoryKey === null ? ALL_ITEMS_TITLE_BY_KIND[kind] : categoryLabel(kind, categoryKey)
 }
 
 const HUNTER_TYPE_LABEL: Record<HunterType, string> = {
@@ -175,15 +190,35 @@ function cuffColumns(skillNameById: ReadonlyMap<number, string>): readonly Colum
 function itemsForKind(
   bundle: DataBundle,
   kind: CategoryTableKind,
-  categoryKey: string,
+  // `null` means every category of this kind (docs/feedback.md Round 3 #5)
+  // -- the per-category `excludedCategories` filter applied afterward is
+  // what actually narrows an "all items" view, not this function.
+  categoryKey: string | null,
 ): readonly (NamedCandidate | NamedDecoration | NamedCuff)[] {
-  if (kind === 'gear') {
-    return bundle.slots.flatMap((slot) => slot.candidates).filter((c) => c.category === categoryKey)
+  const all =
+    kind === 'gear'
+      ? bundle.slots.flatMap((slot) => slot.candidates)
+      : kind === 'cuffs'
+        ? bundle.cuffs
+        : bundle.decorations
+  return categoryKey === null ? all : all.filter((item) => item.category === categoryKey)
+}
+
+/** Prepends a "Category" column naming which category an item belongs to
+ * (docs/feedback.md Round 3 #5: "include a column that names the category
+ * the piece is in") -- only meaningful on the "all items" view, since a
+ * single-category table's column would just repeat the same value in every
+ * row. */
+function withCategoryColumn<T extends { readonly category: string }>(
+  columns: readonly Column<T>[],
+  kind: CategoryTableKind,
+): readonly Column<T>[] {
+  const categoryColumn: Column<T> = {
+    key: 'category',
+    header: 'Category',
+    value: (i) => categoryLabel(kind, i.category),
   }
-  if (kind === 'cuffs') {
-    return bundle.cuffs.filter((c) => c.category === categoryKey)
-  }
-  return bundle.decorations.filter((d) => d.category === categoryKey)
+  return [columns[0], categoryColumn, ...columns.slice(1)]
 }
 
 function columnsForKind(
@@ -206,12 +241,19 @@ export function CategoryTablePage({ kind, categoryKey, onBackToSearch }: Categor
   const [skillFilter, setSkillFilter] = useState('')
   const [showBlademaster, setShowBlademaster] = useState(true)
   const [showGunner, setShowGunner] = useState(true)
+  // Only consulted on the "all items" view (`categoryKey === null`) -- a
+  // single-category page has nothing of its own to filter by category.
+  const [excludedCategories, setExcludedCategories] = useState<ReadonlySet<string>>(new Set())
 
-  const columns = useMemo(() => (bundle ? columnsForKind(bundle, kind) : []), [bundle, kind])
-  const items = useMemo(
-    () => (bundle ? itemsForKind(bundle, kind, categoryKey) : []),
-    [bundle, kind, categoryKey],
-  )
+  const columns = useMemo(() => {
+    if (!bundle) return []
+    const base = columnsForKind(bundle, kind)
+    return categoryKey === null ? withCategoryColumn(base, kind) : base
+  }, [bundle, kind, categoryKey])
+  const items = useMemo(() => {
+    const all = bundle ? itemsForKind(bundle, kind, categoryKey) : []
+    return categoryKey === null ? all.filter((item) => !excludedCategories.has(item.category)) : all
+  }, [bundle, kind, categoryKey, excludedCategories])
 
   // Every skill id's own name plus its tier labels, pre-joined and lowercased
   // -- same "search by skill name and skill level/threshold names" extension
@@ -286,7 +328,7 @@ export function CategoryTablePage({ kind, categoryKey, onBackToSearch }: Categor
 
   return (
     <main className="app-shell">
-      <h1>{categoryLabel(kind, categoryKey)}</h1>
+      <h1>{pageTitle(kind, categoryKey)}</h1>
       <p className="app-intro">
         <button type="button" className="btn btn-link p-0" onClick={onBackToSearch}>
           ← Back to search
@@ -300,6 +342,16 @@ export function CategoryTablePage({ kind, categoryKey, onBackToSearch }: Categor
 
       {bundle && (
         <>
+          {categoryKey === null && (
+            <div className="category-table-category-filter">
+              <CategoryFilter
+                groups={GROUPS_BY_KIND[kind]}
+                excludedCategories={excludedCategories}
+                onChange={setExcludedCategories}
+                defaultCollapsed
+              />
+            </div>
+          )}
           <div className="category-table-filters">
             <input
               type="text"

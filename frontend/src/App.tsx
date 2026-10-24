@@ -1294,6 +1294,9 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                   defaultCollapsed
                   persistCollapseKey="frontier-set-searcher:gear-category-collapse:v1"
                 />
+                <a href={categoryRouteHash('gear')} className="category-filter-show-all-link">
+                  Show all armor
+                </a>
               </Disclosure>
 
               <Disclosure
@@ -1314,6 +1317,9 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                   itemsByCategory={cuffItemsByCategory}
                   tableLinkHash={(key) => categoryRouteHash('cuffs', key)}
                 />
+                <a href={categoryRouteHash('cuffs')} className="category-filter-show-all-link">
+                  Show all cuffs
+                </a>
               </Disclosure>
 
               <Disclosure
@@ -1334,6 +1340,9 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                   itemsByCategory={decorationItemsByCategory}
                   tableLinkHash={(key) => categoryRouteHash('decorations', key)}
                 />
+                <a href={categoryRouteHash('decorations')} className="category-filter-show-all-link">
+                  Show all decorations
+                </a>
               </Disclosure>
 
               <Disclosure

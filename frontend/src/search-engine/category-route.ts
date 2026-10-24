@@ -10,7 +10,9 @@ export type CategoryTableKind = 'gear' | 'cuffs' | 'decorations'
 
 export interface CategoryRoute {
   readonly kind: CategoryTableKind
-  readonly categoryKey: string
+  /** `null` means "every category of this kind" (docs/feedback.md Round 3
+   * #5's "show all" link), not one specific leaf. */
+  readonly categoryKey: string | null
 }
 
 export const CATEGORY_HASH_PREFIX = '#/category/'
@@ -19,10 +21,12 @@ function isCategoryTableKind(value: string): value is CategoryTableKind {
   return value === 'gear' || value === 'cuffs' || value === 'decorations'
 }
 
-/** The hash a "show more" link should point at for a given category --
- * `CategoryFilter`'s own link-building, kept here instead so it doesn't need
- * to know this route's own encoding. */
-export function categoryRouteHash(kind: CategoryTableKind, categoryKey: string): string {
+/** The hash a "show more" link should point at for a given category, or (with
+ * `categoryKey` omitted) the "show all" link's target -- `CategoryFilter`'s
+ * own link-building, kept here instead so it doesn't need to know this
+ * route's own encoding. */
+export function categoryRouteHash(kind: CategoryTableKind, categoryKey?: string): string {
+  if (categoryKey === undefined) return `${CATEGORY_HASH_PREFIX}${kind}`
   return `${CATEGORY_HASH_PREFIX}${kind}/${encodeURIComponent(categoryKey)}`
 }
 
@@ -34,7 +38,10 @@ export function categoryRouteFromLocation(): CategoryRoute | null {
   if (!hash.startsWith(CATEGORY_HASH_PREFIX)) return null
   const rest = hash.slice(CATEGORY_HASH_PREFIX.length)
   const slashIndex = rest.indexOf('/')
-  if (slashIndex === -1) return null
+  if (slashIndex === -1) {
+    // No category key at all -- `#/category/<kind>`, the "show all" route.
+    return isCategoryTableKind(rest) ? { kind: rest, categoryKey: null } : null
+  }
   const kind = rest.slice(0, slashIndex)
   if (!isCategoryTableKind(kind)) return null
   return { kind, categoryKey: decodeURIComponent(rest.slice(slashIndex + 1)) }

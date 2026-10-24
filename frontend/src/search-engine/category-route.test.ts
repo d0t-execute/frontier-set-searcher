@@ -40,4 +40,20 @@ describe('categoryRouteFromLocation', () => {
     window.location.hash = categoryRouteHash('gear', 'a/b')
     expect(categoryRouteFromLocation()).toEqual({ kind: 'gear', categoryKey: 'a/b' })
   })
+
+  it('parses a "show all" hash with no category key as categoryKey: null (docs/feedback.md Round 3 #5)', () => {
+    window.location.hash = '#/category/decorations'
+    expect(categoryRouteFromLocation()).toEqual({ kind: 'decorations', categoryKey: null })
+  })
+
+  it('returns null for a "show all" hash with an unknown kind', () => {
+    window.location.hash = '#/category/weapons'
+    expect(categoryRouteFromLocation()).toBeNull()
+  })
+})
+
+describe('categoryRouteHash with no category key', () => {
+  it('builds the "show all" hash for a kind', () => {
+    expect(categoryRouteHash('cuffs')).toBe('#/category/cuffs')
+  })
 })
