@@ -219,6 +219,18 @@ function pluralize(count: number, noun: string, plural: string = `${noun}s`): st
   return `${count} ${count === 1 ? noun : plural}`
 }
 
+/** Renders the "Searching…" suffix from HiGHS's own `mip_gap` for the round
+ * in progress (docs/feedback.md Round 3 #3) -- e.g. "… (85%)" -- as a
+ * completion percentage (`1 - gap`), clamped since `mip_gap` can run above 1
+ * before a first incumbent is found. `null` (no callback has fired yet for
+ * this round, or `gap` wasn't a finite number) renders nothing, same as
+ * before this feature existed. */
+function formatSearchProgress(gap: number | null): string {
+  if (gap === null || !Number.isFinite(gap)) return '…'
+  const percent = Math.round(Math.max(0, Math.min(1, 1 - gap)) * 100)
+  return `… (${percent}%)`
+}
+
 /** Groups any `{category, name}`-shaped catalog (armor candidates, cuffs,
  * decorations) by its own `category` key, for `CategoryFilter`'s "View"
  * toggle (docs/feedback.md Round 1 #2). */
@@ -403,6 +415,10 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [activeRequestId, setActiveRequestId] = useState<string | null>(null)
   const [reachedCap, setReachedCap] = useState(false)
+  // HiGHS's own `mip_gap` for the round currently solving (docs/feedback.md
+  // Round 3 #3) -- `null` until the first callback fires each round, so the
+  // UI shows plain "Searching…" rather than a stale number from a prior one.
+  const [searchProgress, setSearchProgress] = useState<number | null>(null)
 
   const bundle = bundleQuery.data
 
@@ -899,6 +915,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
     }
 
     setStatus('searching')
+    setSearchProgress(null)
 
     let count = 0
     let capped = false
@@ -915,6 +932,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
           if (capped) return
           count++
           setResults((prev) => [...prev, result as unknown as NamedBuildResult])
+          setSearchProgress(null) // next round starts fresh
           if (count >= maxResults) {
             capped = true
             worker.cancel(requestId)
@@ -922,6 +940,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
             setStatus('done')
           }
         },
+        onProgress: (gap) => setSearchProgress(gap),
         onDone: () => setStatus('done'),
         onError: (message) => {
           setStatus('error')
@@ -1617,7 +1636,6 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
           {status !== 'idle' && (
             <div className="app-status">
               {status === 'error' && errorMessage && <p role="alert">{errorMessage}</p>}
-              {status === 'searching' && results.length === 0 && <p>Searching…</p>}
               {status === 'done' && results.length === 0 && <p>No matching builds found.</p>}
               {status === 'done' && reachedCap && (
                 <p>
@@ -1636,6 +1654,9 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
               zenithSkills={bundle.zenithSkills}
               getShareUrl={buildShareUrl}
             />
+            {status === 'searching' && (
+              <p>Searching{formatSearchProgress(searchProgress)}</p>
+            )}
           </div>
         </>
       )}

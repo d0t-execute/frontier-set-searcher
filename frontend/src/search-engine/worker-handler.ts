@@ -36,6 +36,7 @@ export async function handleSearchRequest(
       request.decorations ?? [],
       request.options ?? {},
       request.cuffs ?? [],
+      (gap) => post({ type: 'progress', requestId: request.requestId, gap }),
     )
     for await (const result of generator) {
       post({ type: 'result', requestId: request.requestId, result })

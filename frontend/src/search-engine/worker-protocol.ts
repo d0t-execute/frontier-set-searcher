@@ -39,6 +39,17 @@ export interface ResultMessage {
   readonly result: BuildResult
 }
 
+/** HiGHS's own `mip_gap` for the round currently being solved (see
+ * docs/feedback.md Round 3 #3) -- the fraction by which the best solution
+ * found so far could still improve before it's proven optimal. Purely
+ * informational: never affects which results are produced, only what the UI
+ * shows while waiting for the next one. */
+export interface ProgressMessage {
+  readonly type: 'progress'
+  readonly requestId: string
+  readonly gap: number
+}
+
 export interface DoneMessage {
   readonly type: 'done'
   readonly requestId: string
@@ -51,4 +62,4 @@ export interface ErrorMessage {
 }
 
 /** Sent from the worker back to the main thread. */
-export type WorkerResponse = ResultMessage | DoneMessage | ErrorMessage
+export type WorkerResponse = ResultMessage | ProgressMessage | DoneMessage | ErrorMessage

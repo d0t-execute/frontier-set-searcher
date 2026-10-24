@@ -104,6 +104,32 @@ describe('SearchWorkerClient', () => {
     expect(onDone).toHaveBeenCalledTimes(1)
   })
 
+  it('routes a progress message to onProgress (docs/feedback.md Round 3 #3)', () => {
+    const worker = new FakeWorker()
+    const client = new SearchWorkerClient(worker)
+    const onProgress = vi.fn()
+
+    const requestId = client.search(slots, [], [], {
+      onResult: vi.fn(),
+      onDone: vi.fn(),
+      onError: vi.fn(),
+      onProgress,
+    })
+
+    worker.emit({ type: 'progress', requestId, gap: 0.42 })
+
+    expect(onProgress).toHaveBeenCalledWith(0.42)
+  })
+
+  it('tolerates a progress message when no onProgress callback was given', () => {
+    const worker = new FakeWorker()
+    const client = new SearchWorkerClient(worker)
+
+    const requestId = client.search(slots, [], [], { onResult: vi.fn(), onDone: vi.fn(), onError: vi.fn() })
+
+    expect(() => worker.emit({ type: 'progress', requestId, gap: 0.1 })).not.toThrow()
+  })
+
   it('routes an error message to onError and stops tracking the request', () => {
     const worker = new FakeWorker()
     const client = new SearchWorkerClient(worker)

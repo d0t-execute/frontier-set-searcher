@@ -39,7 +39,11 @@ describe('handleSearchRequest', () => {
       new Set(),
     )
 
-    const types = post.mock.calls.map(([message]) => message.type)
+    // `progress` messages (docs/feedback.md Round 3 #3) can interleave any
+    // number of times depending on solve timing -- irrelevant to this test.
+    const types = post.mock.calls
+      .map(([message]) => message.type)
+      .filter((type) => type !== 'progress')
     expect(types).toEqual(['result', 'result', 'done'])
     expect(post.mock.calls.every(([message]) => message.requestId === 'req-1')).toBe(true)
   })
@@ -97,7 +101,11 @@ describe('handleSearchRequest', () => {
     )
 
     // Cancelled after the first result -- no further result or done message.
-    expect(post.mock.calls.map(([m]) => m.type)).toEqual(['result'])
+    // (`progress` messages are filtered out here for the same reason as the
+    // test above.)
+    expect(post.mock.calls.map(([m]) => m.type).filter((type) => type !== 'progress')).toEqual([
+      'result',
+    ])
   })
 
   it('never starts work for a request already cancelled before it began', async () => {

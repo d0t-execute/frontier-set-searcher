@@ -97,6 +97,7 @@ function runTimeBoxed(
   native: SymbolDisposable<Model>,
   highs: Highs,
   options: SearchOptions,
+  onProgress?: (gap: number) => void,
 ): boolean {
   let seconds = options.timeBoxSeconds ?? TIME_BOX_SECONDS
   const maxAttempts = options.maxTimeBoxAttempts ?? MAX_TIME_BOX_ATTEMPTS
@@ -105,6 +106,17 @@ function runTimeBoxed(
       [highs.constants.callbackType.mipInterrupt](event) {
         if ((event.data.running_time ?? 0) >= seconds) event.interrupt()
       },
+      // `mip_gap` is HiGHS's own "how far is the best-found solution from the
+      // proven-optimal bound" fraction -- the only genuine mid-solve progress
+      // signal available (see docs/feedback.md Round 3 #3). It isn't
+      // monotonic early on (can swing before the first incumbent is found),
+      // so this is reported as-is rather than smoothed; the UI only shows it
+      // once it's usefully close to done.
+      ...(onProgress && {
+        [highs.constants.callbackType.mipLogging](event) {
+          if (typeof event.data.mip_gap === 'number') onProgress(event.data.mip_gap)
+        },
+      }),
     })
     const modelStatus: ModelStatusCode = result.modelStatus
     const primalSolutionStatus = native.info.get('primal_solution_status') as number
@@ -121,6 +133,10 @@ export async function* search(
   decorations: readonly Decoration[] = [],
   options: SearchOptions = {},
   cuffs: readonly Cuff[] = [],
+  // Not part of `SearchOptions`: that type crosses the worker's `postMessage`
+  // boundary (structured-clone, so no functions survive it) -- this is only
+  // ever supplied locally, in-process, by `worker-handler.ts`.
+  onProgress?: (gap: number) => void,
 ): AsyncGenerator<BuildResult> {
   if (slots.length === 0) {
     // Nothing to choose, so nothing to solve for -- but an empty build still
@@ -169,7 +185,7 @@ export async function* search(
 
   try {
     for (;;) {
-      if (!runTimeBoxed(native, highs, options)) return
+      if (!runTimeBoxed(native, highs, options, onProgress)) return
 
       const solution = native.getSolution()
       const decoded = decodeSolution(columns, solution.colValue)

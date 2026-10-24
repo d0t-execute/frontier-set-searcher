@@ -26,6 +26,10 @@ export interface SearchCallbacks {
   readonly onResult: (result: BuildResult) => void
   readonly onDone: () => void
   readonly onError: (message: string) => void
+  /** HiGHS's `mip_gap` for the round currently being solved, 0-1 (see
+   * worker-protocol.ts's `ProgressMessage`). Optional -- most tests have no
+   * reason to care about this. */
+  readonly onProgress?: (gap: number) => void
 }
 
 export class SearchWorkerClient {
@@ -75,6 +79,9 @@ export class SearchWorkerClient {
     switch (message.type) {
       case 'result':
         callbacks.onResult(message.result)
+        break
+      case 'progress':
+        callbacks.onProgress?.(message.gap)
         break
       case 'done':
         this.pending.delete(message.requestId)
