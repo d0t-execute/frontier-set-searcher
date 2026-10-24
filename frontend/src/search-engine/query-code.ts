@@ -180,12 +180,14 @@ export async function encodeQueryCode(
     ],
     renderList(
       'Skill requirements',
-      state.requirements.map((r) => `${skillIdx.nameFor(String(r.skillId))}: ${r.minPoints}`),
+      state.requirements.map((r) =>
+        renderSkillRequirementLine(skillIdx.nameFor(String(r.skillId)), r),
+      ),
     ),
     renderList(
       'Zenith skill requirements',
-      state.zenithRequirements.map(
-        (r) => `${zenithIdx.nameFor(String(r.skillId))}: ${r.minPoints}`,
+      state.zenithRequirements.map((r) =>
+        renderSkillRequirementLine(zenithIdx.nameFor(String(r.skillId)), r),
       ),
     ),
     renderList(
@@ -324,17 +326,37 @@ function decodeIdList(lines: readonly string[], index: NameIndex): readonly stri
   return ids
 }
 
+/** Renders one "Skill requirements"/"Zenith skill requirements" line -- adds
+ * a "(optional, priority N)" suffix when `SkillRequirement.optional` is set
+ * (docs/feedback.md Round 3 #2), parsed back by `decodeSkillRequirements`'s
+ * own regex. A hard requirement's line is unchanged from before this
+ * feature, so an old save code with no optional skills decodes identically. */
+function renderSkillRequirementLine(name: string, r: SkillRequirement): string {
+  const suffix = r.optional ? ` (optional, priority ${r.priority ?? 1})` : ''
+  return `${name}: ${r.minPoints}${suffix}`
+}
+
 function decodeSkillRequirements(
   lines: readonly string[],
   index: NameIndex,
 ): readonly SkillRequirement[] | null {
   const result: SkillRequirement[] = []
   for (const line of lines) {
-    const match = /^(.*): (-?\d+)$/.exec(line)
+    const match = /^(.*): (-?\d+)(?: \(optional, priority (\d+)\))?$/.exec(line)
     if (!match) return null
     const id = index.idFor(match[1])
     if (id === null) return null
-    result.push({ skillId: Number(id), minPoints: Number(match[2]) })
+    const priority = match[3]
+    result.push(
+      priority !== undefined
+        ? {
+            skillId: Number(id),
+            minPoints: Number(match[2]),
+            optional: true,
+            priority: Number(priority),
+          }
+        : { skillId: Number(id), minPoints: Number(match[2]) },
+    )
   }
   return result
 }

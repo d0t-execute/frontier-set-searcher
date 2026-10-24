@@ -2347,3 +2347,75 @@ pick ~63ms in the `npm run dev` server (consistent with the TODO #39 perf-fix nu
 no perceptible regression. Updated `FilterableOptions.test.tsx`'s overflow-note test to use 205
 items / an expected 200 shown. `tsc -b`/`oxlint` clean; full suite 387/387 (the one known-flaky
 real-data timing test aside).
+
+## 40. Prefer a set of (Zenith) skills instead of hard-requiring them
+
+**Status: COMPLETE and verified (2026-10-24).** docs/feedback.md Round 3 #2: the project owner's own
+proposal was to give a selected skill (normal or Zenith) an "optional" checkbox -- a result satisfying
+it is preferred over one that doesn't, but it never blocks a search the way a hard requirement does --
+plus a priority order among optional skills, confirmed by two follow-up answers: preferred-pieces
+(`PREFERRED_ITEM_WEIGHT`) must still dominate optional-skill satisfaction, up to 7 distinct priority
+tiers get genuinely dominant treatment, and skills sharing a priority are **interchangeable** ("a way
+to make 2 skills interchangeable... so if one of them is satisfied the other one will be ignored" --
+an OR, not a sum: satisfying more than one in the same group earns no more than satisfying just one).
+
+- `frontend/src/search-engine/types.ts`: new `OptionalSkillRequirement { skillId, minPoints, priority }`
+  and `SearchOptions.optionalSkillRequirements?`. `SkillRequirement` itself gained `optional?: boolean`
+  and `priority?: number` -- UI-state-only fields `App.tsx` reads to split a single combined
+  `requirements`/`zenithRequirements` list right before calling `search()`, never seen by the engine on
+  a hard requirement (the same object shape carries both states, since the picked skill/level doesn't
+  change, only whether it's a hard constraint or a soft preference -- simpler than a parallel list).
+- **Numerical design** (`ilp-model.ts`): each priority tier is one binary "is this tier's group
+  satisfied" indicator, so for tier `i` to always outrank the *sum* of every lower tier combined, any
+  growth factor >= 2 is mathematically sufficient (`BASE*2^i - BASE*(2^i-1) = BASE > 0`, exact in
+  double-precision since every value is an integer well under 2^53) -- the smallest valid factor was
+  used deliberately to keep the top tier comfortably below `PREFERRED_ITEM_WEIGHT`. This needed more
+  headroom than the old gap between `OPEN_SLOT_WEIGHT`'s real ceiling (confirmed against the dataset:
+  exactly 200,000, not estimated) and the old `PREFERRED_ITEM_WEIGHT` (10,000,000) could fit alongside
+  7 dominant tiers, so `PREFERRED_ITEM_WEIGHT` was raised to 1,000,000,000 -- still tiny relative to
+  what a double represents exactly (2^53, ~9x10^15), so this costs nothing in solver precision.
+  `OPTIONAL_SKILL_BASE_WEIGHT` (1,000,000, the lowest tier) sits well clear of that ceiling with margin
+  to spare. New `MAX_OPTIONAL_SKILL_PRIORITY_TIERS = 7`, `OPTIONAL_SKILL_TIER_GROWTH = 2`,
+  `tierIndexForPriority` (inverts + clamps priority 1-7 into tier index 6-0), `optionalSkillTierWeight`.
+- **Interchangeable-group machinery**: per live optional-skill member (one whose effective threshold,
+  after subtracting any pinned-cuff contribution, is neither already-guaranteed nor ever-reachable --
+  both of those are a *constant* contribution to every candidate solution and are skipped entirely, the
+  same "a constant can't change which solution ranks best" reasoning `pinnedCuffs` already established)
+  a single row encodes the reverse-direction big-M indicator `total - bigM*reached >= rangeMin` (the
+  *opposite* direction from `preferExactMatches`'s existing tier-penalty machinery, which only forces
+  its indicator *up* -- that one-sided shape is correct there because it's a penalty the objective wants
+  to avoid and would never volunteer for free, but here `reached`/`groupMet` are *rewarded*, so the
+  solver would otherwise always claim the reward whether earned or not unless blocked from the other
+  side: `reached=1` forces `total >= effectiveMinPoints`, `reached=0` only requires `total >= rangeMin`,
+  always already true). Each `reached` column also feeds `-1` into its own priority tier's `groupMet`
+  row (`groupMet <= sum(this tier's reached columns)`), and only `groupMet` itself is ever rewarded --
+  so two same-priority skills both reached cost no more in the objective than just one of them being
+  reached. Optional-skill ids are folded into tier-machinery/bonus-point exclusion the same way hard-
+  requirement ids already are (`skillPreferenceIds`), so an optional skill never also gets hit by
+  `preferExactMatches`'s unrelated "penalize an unexpected tier crossing" machinery.
+- `frontend/src/components/SkillPicker.tsx`: an "Optional" checkbox per requirement row (flips the flag
+  in place, defaults a fresh optional requirement's priority to "added last" -- `requirements.filter(
+  (r) => r.optional).length + 1`, capped at 7 -- the suggested default, still freely editable including
+  down to a value another requirement already has) and a priority `<select>` (1-7) shown only once a
+  requirement is optional.
+- `App.tsx`'s `handleSearch`: splits the combined `requirements`/`zenithRequirements` list into
+  `hardRequirements` (passed to `search()`'s own positional parameter, and to the pre-flight
+  `findUnreachableRequirements` check -- an unreachable *optional* skill is never a reason to block the
+  search, the entire point of marking it optional) and `optionalSkillRequirements` (passed via
+  `SearchOptions`).
+- Persistence: `shared-state.ts`'s wire format extended `r`/`zr` from 2-tuples to 3-tuples
+  (`[skillId, minPoints, priority]`, `0` meaning "not optional") -- an old link missing the third
+  element decodes `priority` as `undefined`, which `priority > 0` evaluates `false` for, gracefully
+  falling back to "not optional" rather than crashing. `query-code.ts`'s human-readable save-code format
+  gained an optional `" (optional, priority N)"` line suffix, parsed back by an extended (but backward-
+  compatible) regex. `search-form-state.ts` (plain `JSON.stringify`/`parse` of the whole form state)
+  needed no changes at all -- the extra fields round-trip for free.
+- Verification: 6 new `ilp-model.test.ts` cases (never blocks an unreachable optional skill; wins over
+  far more open slots; higher priority dominates a conflicting lower one; same-priority skills are
+  interchangeable with no double-reward; still ranks below a preferred candidate; a pinned cuff's
+  contribution offsets the threshold the same way it does for a hard requirement), 4 new
+  `SkillPicker.test.tsx` cases, 2 new round-trip tests (`shared-state.test.ts`, `query-code.test.ts`).
+  Full suite 533/533, `tsc -b` and oxlint clean. Live-browser-verified: checked "Optional" on an "Attack
+  Up (Absolute)" requirement with zero other hard requirements, ran a search, and confirmed the winning
+  result's very first listed skill was `Attack Up (Small) (10/10)` -- the solver actively worked to
+  satisfy the optional skill even though nothing required it to.

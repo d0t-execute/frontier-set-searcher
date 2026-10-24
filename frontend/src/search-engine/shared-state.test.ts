@@ -52,6 +52,18 @@ describe('encodeSharedState / decodeSharedState', () => {
     expect(await decodeSharedState(encoded)).toEqual(state)
   })
 
+  it('round-trips an optional skill requirement with its priority (docs/feedback.md Round 3 #2)', async () => {
+    const withOptional: SharedSearchState = {
+      ...state,
+      requirements: [
+        { skillId: 1, minPoints: 10 },
+        { skillId: 2, minPoints: 5, optional: true, priority: 3 },
+      ],
+    }
+    const encoded = await encodeSharedState(withOptional)
+    expect(await decodeSharedState(encoded)).toEqual(withOptional)
+  })
+
   it('round-trips a non-null excludedWeaponZenithSkillIds too', async () => {
     const withWeaponExclusions: SharedSearchState = {
       ...state,

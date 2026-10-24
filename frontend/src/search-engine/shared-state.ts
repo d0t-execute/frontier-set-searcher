@@ -169,8 +169,10 @@ export interface SharedSearchState {
  * docstring). Internal to this module; nothing outside ever sees this
  * shape directly. */
 interface WireFormat {
-  readonly r: readonly (readonly [number, number])[]
-  readonly zr: readonly (readonly [number, number])[]
+  /** Third element is `OptionalSkillRequirement.priority` (1-7), or `0` for a
+   * hard requirement -- see `toWireFormat`/`fromWireFormat`'s own handling. */
+  readonly r: readonly (readonly [number, number, number])[]
+  readonly zr: readonly (readonly [number, number, number])[]
   readonly ec: readonly string[]
   readonly ecc: readonly string[]
   readonly edc: readonly string[]
@@ -202,8 +204,16 @@ interface WireFormat {
 
 function toWireFormat(state: SharedSearchState): WireFormat {
   return {
-    r: state.requirements.map((req) => [req.skillId, req.minPoints]),
-    zr: state.zenithRequirements.map((req) => [req.skillId, req.minPoints]),
+    r: state.requirements.map((req) => [
+      req.skillId,
+      req.minPoints,
+      req.optional ? (req.priority ?? 1) : 0,
+    ]),
+    zr: state.zenithRequirements.map((req) => [
+      req.skillId,
+      req.minPoints,
+      req.optional ? (req.priority ?? 1) : 0,
+    ]),
     ec: state.excludedCategories,
     ecc: state.excludedCuffCategories,
     edc: state.excludedDecorationCategories,
@@ -281,8 +291,12 @@ function fromWireFormat(parsed: unknown): SharedSearchState | null {
   const w = p as unknown as WireFormat
 
   return {
-    requirements: w.r.map(([skillId, minPoints]) => ({ skillId, minPoints })),
-    zenithRequirements: w.zr.map(([skillId, minPoints]) => ({ skillId, minPoints })),
+    requirements: w.r.map(([skillId, minPoints, priority]) =>
+      priority > 0 ? { skillId, minPoints, optional: true, priority } : { skillId, minPoints },
+    ),
+    zenithRequirements: w.zr.map(([skillId, minPoints, priority]) =>
+      priority > 0 ? { skillId, minPoints, optional: true, priority } : { skillId, minPoints },
+    ),
     excludedCategories: w.ec,
     excludedCuffCategories: w.ecc,
     excludedDecorationCategories: w.edc,

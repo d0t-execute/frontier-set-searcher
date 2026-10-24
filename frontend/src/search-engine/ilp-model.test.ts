@@ -629,6 +629,137 @@ describe('buildModel with options.preferredCategoryCounts (2026-10-20, per the p
   })
 })
 
+describe('buildModel with options.optionalSkillRequirements (docs/feedback.md Round 3 #2)', () => {
+  it('never blocks a search when the optional skill is unreachable', () => {
+    const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Helm', { 1: 5 })] }]
+    const { model, columns } = buildModel(highs, slots, [], [{ skillId: 1, minPoints: 3 }], {
+      optionalSkillRequirements: [{ skillId: 2, minPoints: 100, priority: 1 }],
+    })
+
+    const { colValue, native, modelStatus } = solve(model)
+    expect(modelStatus).not.toBe(highs.constants.modelStatus.infeasible)
+    const decoded = decodeSolution(columns, colValue)
+    expect(decoded.picks.get('head')?.id).toBe('Helm')
+    native.dispose()
+  })
+
+  it('prefers a candidate that also satisfies the optional skill over one with far more open slots', () => {
+    const slots: SlotQuery[] = [
+      {
+        slotId: 'head',
+        candidates: [
+          candidate('OpenSlots', { 1: 5 }, 4),
+          candidate('AlsoGrantsOptional', { 1: 5, 2: 10 }, 0),
+        ],
+      },
+    ]
+    const { model, columns } = buildModel(highs, slots, [], [{ skillId: 1, minPoints: 3 }], {
+      optionalSkillRequirements: [{ skillId: 2, minPoints: 10, priority: 1 }],
+    })
+
+    const { colValue, native } = solve(model)
+    const decoded = decodeSolution(columns, colValue)
+    // OPTIONAL_SKILL_BASE_WEIGHT dominates OPEN_SLOT_WEIGHT, the same
+    // "explicitly asked for always wins over incidental factors" reasoning
+    // preferredCandidateIds already has against open slots.
+    expect(decoded.picks.get('head')?.id).toBe('AlsoGrantsOptional')
+    native.dispose()
+  })
+
+  it('lets a higher-priority optional skill dominate a lower-priority one it conflicts with', () => {
+    const slots: SlotQuery[] = [
+      {
+        slotId: 'head',
+        candidates: [
+          candidate('GrantsHighPriority', { 1: 5, 2: 10 }),
+          candidate('GrantsLowPriority', { 1: 5, 3: 10 }),
+        ],
+      },
+    ]
+    const { model, columns } = buildModel(highs, slots, [], [{ skillId: 1, minPoints: 3 }], {
+      optionalSkillRequirements: [
+        { skillId: 2, minPoints: 10, priority: 1 },
+        { skillId: 3, minPoints: 10, priority: 2 },
+      ],
+    })
+
+    const { colValue, native } = solve(model)
+    const decoded = decodeSolution(columns, colValue)
+    expect(decoded.picks.get('head')?.id).toBe('GrantsHighPriority')
+    native.dispose()
+  })
+
+  it('treats same-priority skills as interchangeable: satisfying both earns no more than satisfying one', () => {
+    const slots: SlotQuery[] = [
+      {
+        slotId: 'head',
+        candidates: [
+          // Satisfies only skill 2, but with more open slots left over.
+          candidate('GrantsOneWithOpenSlots', { 1: 5, 2: 10 }, 2),
+          // Satisfies both interchangeable skills, but no open slots left --
+          // if satisfying both earned extra credit over satisfying just one,
+          // this would win despite its worse open-slot count.
+          candidate('GrantsBothNoOpenSlots', { 1: 5, 2: 10, 3: 10 }, 0),
+        ],
+      },
+    ]
+    const { model, columns } = buildModel(highs, slots, [], [{ skillId: 1, minPoints: 3 }], {
+      optionalSkillRequirements: [
+        { skillId: 2, minPoints: 10, priority: 1 },
+        { skillId: 3, minPoints: 10, priority: 1 },
+      ],
+    })
+
+    const { colValue, native } = solve(model)
+    const decoded = decodeSolution(columns, colValue)
+    expect(decoded.picks.get('head')?.id).toBe('GrantsOneWithOpenSlots')
+    native.dispose()
+  })
+
+  it('still ranks below a preferred candidate (docs/feedback.md Round 3 #2, confirmed by the project owner)', () => {
+    const slots: SlotQuery[] = [
+      {
+        slotId: 'head',
+        candidates: [
+          candidate('Preferred', { 1: 5 }),
+          candidate('GrantsOptionalOnly', { 1: 5, 2: 10 }),
+        ],
+      },
+    ]
+    const { model, columns } = buildModel(highs, slots, [], [{ skillId: 1, minPoints: 3 }], {
+      preferredCandidateIds: new Set(['Preferred']),
+      optionalSkillRequirements: [{ skillId: 2, minPoints: 10, priority: 1 }],
+    })
+
+    const { colValue, native } = solve(model)
+    const decoded = decodeSolution(columns, colValue)
+    expect(decoded.picks.get('head')?.id).toBe('Preferred')
+    native.dispose()
+  })
+
+  it('offsets the threshold by a pinned cuff contribution, same as a hard requirement', () => {
+    const slots: SlotQuery[] = [
+      {
+        slotId: 'head',
+        candidates: [candidate('OpenSlots', { 1: 5 }, 4), candidate('PlainNoBonus', { 1: 5 }, 0)],
+      },
+    ]
+    const pinned = cuff('PinnedCuff', 0, { 2: 10 })
+    const { model, columns } = buildModel(highs, slots, [], [{ skillId: 1, minPoints: 3 }], {
+      pinnedCuffs: [pinned],
+      optionalSkillRequirements: [{ skillId: 2, minPoints: 10, priority: 1 }],
+    })
+
+    const { colValue, native } = solve(model)
+    const decoded = decodeSolution(columns, colValue)
+    // The pin alone already reaches the optional skill's threshold, so it's
+    // "always met" regardless of which candidate is picked -- open slots
+    // decide instead, same as if the optional requirement didn't exist.
+    expect(decoded.picks.get('head')?.id).toBe('OpenSlots')
+    native.dispose()
+  })
+})
+
 describe('buildModel with cuffs', () => {
   it('does not add any cuff columns or rows when no cuffs are given', () => {
     const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Helm', { 1: 5 })] }]

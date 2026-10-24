@@ -69,6 +69,7 @@ import type {
   Candidate,
   Cuff,
   Decoration,
+  OptionalSkillRequirement,
   ResistanceFloor,
   SearchOptions,
   SkillContribution,
@@ -123,8 +124,69 @@ export const EXACT_MATCH_SKILL_PENALTY = 1
  * natural generalization of "optimize with my existing gear." Applied
  * unconditionally, independent of `preferExactMatches` -- the two features
  * bias different, unrelated things (incidental skill points vs. a player's
- * own named pieces). */
-export const PREFERRED_ITEM_WEIGHT = 10_000_000
+ * own named pieces).
+ *
+ * Raised from 10,000,000 (2026-10-24): confirmed by the project owner that
+ * preferred pieces should still dominate optional-skill satisfaction (see
+ * `OPTIONAL_SKILL_BASE_WEIGHT` below), which needs several dominant tiers of
+ * its own squeezed in *underneath* this constant but *above*
+ * `OPEN_SLOT_WEIGHT`'s realistic range -- the old gap (10,000,000 vs.
+ * `OPEN_SLOT_WEIGHT`'s realistic ~200,000 ceiling, a ~50x span) wasn't wide
+ * enough to fit 7 genuinely-dominant tiers. Still utterly tiny relative to
+ * what a double can represent as an exact integer (2^53, ~9×10^15) even
+ * summed across every preferred piece in a build, so this has no precision
+ * cost. */
+export const PREFERRED_ITEM_WEIGHT = 1_000_000_000
+
+/** How many distinct priority ranks `SearchOptions.optionalSkillRequirements`
+ * gets its own genuinely-dominant objective tier for (docs/feedback.md Round
+ * 3 #2) -- confirmed with the project owner as a reasonable cap, matching
+ * this app's other small-bounded-count conventions (`MAX_EQUIPPED_CUFFS`,
+ * weapon Zenith slots 0-3). `SkillPicker`'s own priority selector only offers
+ * values 1..7, so in practice every optional requirement always lands in a
+ * real tier -- `tierIndexForPriority` below only needs to clamp defensively
+ * (a stale shared link could in principle encode an out-of-range value). */
+export const MAX_OPTIONAL_SKILL_PRIORITY_TIERS = 7
+
+/** The lowest (least important) optional-skill priority tier's weight --
+ * see `tierIndexForPriority`/`OPTIONAL_SKILL_TIER_GROWTH` for how the other
+ * `MAX_OPTIONAL_SKILL_PRIORITY_TIERS - 1` tiers scale up from here. Chosen
+ * well above `OPEN_SLOT_WEIGHT`'s realistic ceiling (confirmed against the
+ * real dataset: at most 3 open slots per armor/weapon slot, 6 such slots, plus
+ * `CUFF_SLOT_BUDGET`'s own cap of 2 -- (6*3 + 2) * `OPEN_SLOT_WEIGHT` =
+ * 200,000 is the actual, not estimated, ceiling) -- a skill the player
+ * explicitly asked to prefer should always win over incidental leftover
+ * slots/bonus points, the same reasoning `PREFERRED_ITEM_WEIGHT` already
+ * uses against `OPEN_SLOT_WEIGHT`. */
+export const OPTIONAL_SKILL_BASE_WEIGHT = 1_000_000
+
+/** Growth factor between adjacent optional-skill priority tiers. Each tier is
+ * a single binary "is this priority group satisfied" indicator (0 or 1, see
+ * `buildModel`'s own comment on `optionalSkillRequirements`), so for tier `i`
+ * to always outrank the *sum* of every lower tier combined (`0`..`i-1`, each
+ * contributing at most 1 unit of its own weight), any growth factor >= 2
+ * suffices: `BASE*2^i - BASE*(2^i - 1) = BASE > 0` for every `i`, an exact
+ * calculation in double-precision floating point since every value involved
+ * is an integer well under 2^53. The smallest valid factor is used
+ * deliberately, to keep the top tier (`OPTIONAL_SKILL_BASE_WEIGHT *
+ * 2^(MAX_OPTIONAL_SKILL_PRIORITY_TIERS - 1)` = 64,000,000) comfortably below
+ * `PREFERRED_ITEM_WEIGHT` (confirmed by the project owner: preferred pieces
+ * must still dominate optional-skill satisfaction). */
+export const OPTIONAL_SKILL_TIER_GROWTH = 2
+
+/** Maps a `OptionalSkillRequirement.priority` (1 = most important) to its
+ * 0-indexed objective tier (0 = least important) -- the inverse ordering,
+ * since the *largest* tier weight must go to the *smallest* (most important)
+ * priority number. Clamps defensively to `[1, MAX_OPTIONAL_SKILL_PRIORITY_TIERS]`
+ * -- see that constant's own docstring. */
+function tierIndexForPriority(priority: number): number {
+  const clamped = Math.min(MAX_OPTIONAL_SKILL_PRIORITY_TIERS, Math.max(1, Math.round(priority)))
+  return MAX_OPTIONAL_SKILL_PRIORITY_TIERS - clamped
+}
+
+function optionalSkillTierWeight(tierIndex: number): number {
+  return OPTIONAL_SKILL_BASE_WEIGHT * OPTIONAL_SKILL_TIER_GROWTH ** tierIndex
+}
 
 /** The game's "at most 2 cuffs equipped" rule and its combined "Poogie slot"
  * cost budget -- confirmed in `etl/src/etl/db/schema.sql` ("at most 2
@@ -438,6 +500,18 @@ export function buildModel(
   cuffs: readonly Cuff[] = [],
 ): BuiltModel {
   const requestedSkillIds = new Set(requirements.map((r) => r.skillId))
+  const optionalSkillRequirements: readonly OptionalSkillRequirement[] =
+    options.optionalSkillRequirements ?? []
+  // Optional skills are "asked for," just not as a hard constraint -- they're
+  // excluded from the `preferExactMatches` tier-penalty machinery and the
+  // default bonus-point ranking the same way a hard requirement already is,
+  // so a skill the player explicitly marked as preferred is never also
+  // double-counted as an unrequested "bonus." See `skillPreferenceIds`'s own
+  // call sites below.
+  const skillPreferenceIds = new Set([
+    ...requestedSkillIds,
+    ...optionalSkillRequirements.map((r) => r.skillId),
+  ])
   const preferExactMatches = options.preferExactMatches ?? false
   const preferredCandidateIds = options.preferredCandidateIds ?? new Set<string>()
   const numSlots = slots.length
@@ -554,7 +628,7 @@ export function buildModel(
   // bonus skills can actually reach one of their own tiers in this query.
   let tierMachinery: readonly TierMachinery[] = []
   if (preferExactMatches && options.skillTiers) {
-    const breakpoints = resolveTierBreakpoints(options.skillTiers, requestedSkillIds)
+    const breakpoints = resolveTierBreakpoints(options.skillTiers, skillPreferenceIds)
     const ranges = computeAchievableRanges(
       slots,
       slotDecorationGroups,
@@ -598,6 +672,62 @@ export function buildModel(
   // never contribute anything.
   const preferredCategoryCounts = (options.preferredCategoryCounts ?? []).filter((p) => p.count > 0)
   const preferredCategoryRowOf: number[] = preferredCategoryCounts.map(() => rowCursor++)
+
+  // Optional skill requirements (see `SearchOptions.optionalSkillRequirements`
+  // and `OptionalSkillRequirement`'s own docstring for the interchangeable-
+  // priority-group semantics). Each entry's achievable range (reusing
+  // `computeAchievableRanges`, same safe-bound machinery `tierMachinery`
+  // above uses) sorts it into one of three buckets, mirroring how a hard
+  // requirement row's own bound is offset by a pin: *always* met regardless
+  // of any choice this model makes (its own minimum, after subtracting any
+  // pinned-cuff contribution, is already <= the achievable floor) or *never*
+  // achievable at all -- both are a constant contribution to every candidate
+  // solution, so (same reasoning already used for a pinned cuff's own skill
+  // points) they're left out of the objective entirely rather than given a
+  // column that could never change which solution ranks best; or genuinely
+  // conditional, which needs real machinery below.
+  interface LiveOptionalMember {
+    readonly skillId: SkillId
+    readonly rangeMin: number
+    readonly effectiveMinPoints: number
+    readonly bigM: number
+    readonly tierIndex: number
+  }
+  const optionalRanges = computeAchievableRanges(
+    slots,
+    slotDecorationGroups,
+    skillMaxCounts,
+    cuffs,
+    new Set(optionalSkillRequirements.map((r) => r.skillId)),
+  )
+  const liveOptionalMembers: LiveOptionalMember[] = []
+  for (const req of optionalSkillRequirements) {
+    const range = optionalRanges.get(req.skillId)!
+    const effectiveMinPoints = req.minPoints - pinnedPointsTowards(req.skillId)
+    if (effectiveMinPoints <= range.min || effectiveMinPoints > range.max) continue
+    liveOptionalMembers.push({
+      skillId: req.skillId,
+      rangeMin: range.min,
+      effectiveMinPoints,
+      bigM: effectiveMinPoints - range.min,
+      tierIndex: tierIndexForPriority(req.priority),
+    })
+  }
+  // Groups members sharing a priority tier -- see `OptionalSkillRequirement.
+  // priority`'s own docstring on why these are interchangeable (an OR, not a
+  // sum): the group's own reward column (added once members are resolved
+  // below) is bounded by "at least one member reached," never by how many.
+  const optionalGroupMembersByTier = new Map<number, number[]>()
+  liveOptionalMembers.forEach((member, i) => {
+    const list = optionalGroupMembersByTier.get(member.tierIndex) ?? []
+    list.push(i)
+    optionalGroupMembersByTier.set(member.tierIndex, list)
+  })
+  const optionalReachedRowOf: number[] = liveOptionalMembers.map(() => rowCursor++)
+  const optionalGroupMetRowOf = new Map<number, number>()
+  for (const tierIndex of optionalGroupMembersByTier.keys()) {
+    optionalGroupMetRowOf.set(tierIndex, rowCursor++)
+  }
 
   // Cuffs (see this function's own docstring): one one-hot group row per
   // cuff, plus two rows global to every cuff (not per-slot, since cuffs
@@ -672,6 +802,32 @@ export function buildModel(
     rowLower[row] = -highs.infinity
     rowUpper[row] = 0
   }
+  liveOptionalMembers.forEach((member, i) => {
+    // `total - bigM*reached >= rangeMin` (`total`'s own contributions are
+    // wired in below, alongside every other per-candidate/decoration/cuff
+    // row) -- `reached=1` forces `total >= effectiveMinPoints`; `reached=0`
+    // relaxes to `total >= rangeMin`, which the achievable range already
+    // guarantees unconditionally, so `reached` can never be falsely forced to
+    // 1 by a build that hasn't actually earned it (the reverse of
+    // `tierMachinery`'s own big-M direction, which instead only forces its
+    // indicator *up* -- that one-sided shape is correct there because it's a
+    // penalty the objective wants to avoid, never volunteered for free;
+    // here `reached`/`groupMet` are *rewarded*, so a solver would otherwise
+    // always claim the reward whether earned or not unless blocked from the
+    // other side). `rangeMin` is `rowLower` directly, since `effectiveMinPoints
+    // - bigM = rangeMin` by construction.
+    rowLower[optionalReachedRowOf[i]] = member.rangeMin
+    rowUpper[optionalReachedRowOf[i]] = highs.infinity
+  })
+  for (const row of optionalGroupMetRowOf.values()) {
+    // `groupMet - sum(reached in this group) <= 0` -- `groupMet` can only be
+    // 1 once at least one member's `reached` is 1 (see `OptionalSkillRequirement
+    // .priority`'s interchangeable-group docstring); any number of members
+    // reached beyond the first earns nothing further, since only `groupMet`
+    // itself carries the tier's reward.
+    rowLower[row] = -highs.infinity
+    rowUpper[row] = 0
+  }
   for (const row of cuffGroupRowOf) {
     rowLower[row] = 1
     rowUpper[row] = 1
@@ -738,12 +894,16 @@ export function buildModel(
         const points = pointsTowards(candidate.skills, m.skillId)
         if (points !== 0) entries.set(totalRowOf.get(m.skillId)!, points)
       }
+      liveOptionalMembers.forEach((member, i) => {
+        const points = pointsTowards(candidate.skills, member.skillId)
+        if (points !== 0) entries.set(optionalReachedRowOf[i], points)
+      })
       preferredCategoryCounts.forEach((p, i) => {
         if (candidate.category === p.category) entries.set(preferredCategoryRowOf[i], -1)
       })
 
       columns.push({ kind: 'candidate', slotIndex: s, slotId: slot.slotId, candidate })
-      const bonus = preferExactMatches ? 0 : bonusPointsOf(candidate.skills, requestedSkillIds)
+      const bonus = preferExactMatches ? 0 : bonusPointsOf(candidate.skills, skillPreferenceIds)
       const preferredBonus = preferredCandidateIds.has(candidate.id) ? PREFERRED_ITEM_WEIGHT : 0
       addColumn(OPEN_SLOT_WEIGHT * capacity + bonus + preferredBonus, entries)
     }
@@ -766,7 +926,7 @@ export function buildModel(
       const groupRow = groupRowOf[s][groupIndex]
       const decorationBonus = preferExactMatches
         ? 0
-        : bonusPointsOf(decoration.skills, requestedSkillIds)
+        : bonusPointsOf(decoration.skills, skillPreferenceIds)
 
       for (let count = 0; count <= maxCount; count++) {
         const entries = new Map<number, number>([[groupRow, 1]])
@@ -784,6 +944,10 @@ export function buildModel(
             const points = pointsTowards(decoration.skills, m.skillId)
             if (points !== 0) entries.set(totalRowOf.get(m.skillId)!, count * points)
           }
+          liveOptionalMembers.forEach((member, i) => {
+            const points = pointsTowards(decoration.skills, member.skillId)
+            if (points !== 0) entries.set(optionalReachedRowOf[i], count * points)
+          })
         }
 
         columns.push({ kind: 'decoration', slotIndex: s, slotId: slot.slotId, decoration, count })
@@ -806,7 +970,7 @@ export function buildModel(
     // limit allows regardless of its own cost.
     const maxCount = Math.min(MAX_EQUIPPED_CUFFS, Math.floor(CUFF_SLOT_BUDGET / cuff.slotSize))
     const groupRow = cuffGroupRowOf[i]
-    const cuffBonus = preferExactMatches ? 0 : bonusPointsOf(cuff.skills, requestedSkillIds)
+    const cuffBonus = preferExactMatches ? 0 : bonusPointsOf(cuff.skills, skillPreferenceIds)
 
     for (let count = 0; count <= maxCount; count++) {
       const entries = new Map<number, number>([[groupRow, 1]])
@@ -831,6 +995,10 @@ export function buildModel(
           const points = pointsTowards(cuff.skills, m.skillId)
           if (points !== 0) entries.set(totalRowOf.get(m.skillId)!, count * points)
         }
+        liveOptionalMembers.forEach((member, i) => {
+          const points = pointsTowards(cuff.skills, member.skillId)
+          if (points !== 0) entries.set(optionalReachedRowOf[i], count * points)
+        })
       }
 
       columns.push({ kind: 'cuff', cuff, count })
@@ -859,6 +1027,30 @@ export function buildModel(
       columns.push({ kind: 'auxiliary' })
       addColumn(-EXACT_MATCH_SKILL_PENALTY, new Map([[negIndicatorRowOf.get(m.skillId)!, bigM]]))
     }
+  }
+
+  // One `reached` indicator column per live optional-skill member (see
+  // `optionalReachedRowOf`'s own row-bounds comment above for the big-M
+  // direction) -- cost 0, since only the group's own `groupMet` column below
+  // is ever rewarded. Also feeds `-1` into its own priority tier's
+  // `groupMet` row (`entries` has two rows, not one): `groupMet <= sum(this
+  // tier's reached columns)`, so `groupMet` can only be 1 once at least one
+  // member here is.
+  liveOptionalMembers.forEach((member, i) => {
+    const entries = new Map<number, number>([[optionalReachedRowOf[i], -member.bigM]])
+    entries.set(optionalGroupMetRowOf.get(member.tierIndex)!, -1)
+    columns.push({ kind: 'auxiliary' })
+    addColumn(0, entries)
+  })
+
+  // One `groupMet` column per priority tier that has at least one live
+  // member -- the only place an optional skill's reward actually enters the
+  // objective. `tierIndexForPriority`'s ordering means a higher tier index
+  // here is a *more* important (lower `priority` number) group.
+  for (const tierIndex of optionalGroupMembersByTier.keys()) {
+    const row = optionalGroupMetRowOf.get(tierIndex)!
+    columns.push({ kind: 'auxiliary' })
+    addColumn(optionalSkillTierWeight(tierIndex), new Map([[row, 1]]))
   }
 
   // The capped accounting column for each preferred-category-count entry

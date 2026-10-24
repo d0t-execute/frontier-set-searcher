@@ -14,6 +14,45 @@ export type SkillId = number
 export interface SkillRequirement {
   readonly skillId: SkillId
   readonly minPoints: number
+  /** UI-state-only flag (docs/feedback.md Round 3 #2): when set, this
+   * requirement is carried as an `OptionalSkillRequirement` instead of a hard
+   * constraint -- `App.tsx` splits `requirements`/`zenithRequirements` on
+   * this flag right before calling `search()`, so the engine itself never
+   * sees it (a hard `SkillRequirement` handed to `search()`/`buildModel`
+   * never has `optional: true`). Kept on the same shape as `minPoints`/
+   * `skillId` rather than a parallel array, since the UI toggles a single
+   * picked skill between "required" and "preferred," not between two
+   * separate lists. */
+  readonly optional?: boolean
+  /** Only meaningful when `optional` is set -- see
+   * `OptionalSkillRequirement.priority`'s own docstring. */
+  readonly priority?: number
+}
+
+/**
+ * A skill/Zenith-skill requirement that's preferred, not required (docs/
+ * feedback.md Round 3 #2) -- a result satisfying it outranks one that
+ * doesn't, but a search is never blocked just because it can't be reached
+ * (unlike `SkillRequirement`, which is a hard constraint in `buildModel`).
+ * Mirrors `SearchOptions.preferredCandidateIds`/`preferredCategoryCounts`'s
+ * own "soft preference, not a hard constraint" shape, but on the
+ * *requirement* side instead of the candidate-pool side.
+ */
+export interface OptionalSkillRequirement {
+  readonly skillId: SkillId
+  readonly minPoints: number
+  /** Lower = more important. Requirements sharing the same `priority` are
+   * *interchangeable*: satisfying any one of them earns that priority's full
+   * reward, with no extra credit for satisfying more than one in the same
+   * group (confirmed by the project owner, 2026-10-24: "a way to make 2
+   * skills interchangeable... so if one of them is satisfied the other one
+   * will be ignored"). A build satisfying a higher-priority group always
+   * outranks one that doesn't, regardless of how many lower-priority groups
+   * it satisfies instead -- see `ilp-model.ts`'s `OPTIONAL_SKILL_BASE_WEIGHT`
+   * for the exact dominance argument. Clamped to the 1-7 range `SkillPicker`
+   * actually offers (`MAX_OPTIONAL_SKILL_PRIORITY_TIERS`) -- a value outside
+   * it (e.g. from a stale shared link) is clamped rather than rejected. */
+  readonly priority: number
 }
 
 export interface SkillContribution {
@@ -246,6 +285,18 @@ export interface SearchOptions {
    * filtered out) simply never reaches any reward, the same graceful
    * degradation `preferredCandidateIds` already has for a filtered-out id. */
   readonly preferredCategoryCounts?: readonly PreferredCategoryCount[]
+
+  /** Skill/Zenith-skill requirements that are preferred, not required (docs/
+   * feedback.md Round 3 #2) -- see `OptionalSkillRequirement`'s own docstring
+   * for the interchangeable-priority-group semantics. Never a hard
+   * constraint: a build satisfying none of them is still returned if that's
+   * the best available, same as `preferredCandidateIds`/
+   * `preferredCategoryCounts`'s own "never blocks a search" guarantee. An
+   * entry whose `skillId` also appears in the hard `requirements` array (the
+   * UI doesn't do this today, but nothing stops a future caller) is treated
+   * independently -- the hard floor is still enforced via `requirements`,
+   * and this asks for a *higher* bar on top of it, not a replacement. */
+  readonly optionalSkillRequirements?: readonly OptionalSkillRequirement[]
 
   /** Internal/test-only override of `engine.ts`'s `TIME_BOX_SECONDS` module
    * default, for one specific call rather than every search -- never surfaced

@@ -860,6 +860,17 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
       preferredCandidateIds,
     } = buildSearchQuery(bundle, queryFormState)
 
+    // Splits on `SkillRequirement.optional` (docs/feedback.md Round 3 #2,
+    // `SkillPicker.tsx`'s own "Optional" checkbox) -- only the hard ones ever
+    // reach `search()`'s own `requirements` parameter or the up-front
+    // unreachability check below; an optional one that can't be reached is
+    // never a reason to block the search, that's the entire point of marking
+    // it optional instead of leaving it a hard requirement.
+    const hardRequirements = allRequirements.filter((r) => !r.optional)
+    const optionalSkillRequirements = allRequirements
+      .filter((r) => r.optional)
+      .map((r) => ({ skillId: r.skillId, minPoints: r.minPoints, priority: r.priority ?? 1 }))
+
     // Caught before ever handing this to the solver (docs/feedback.md Round 1
     // #14) -- a requirement flagged here is provably unreachable no matter
     // what the solver tries, so there's no reason to spend a search round
@@ -868,7 +879,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
       slots,
       decorations,
       cuffs,
-      allRequirements,
+      hardRequirements,
       pinnedCuffs,
       pinnedSlotDecorations,
     )
@@ -893,7 +904,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
     let capped = false
     const requestId = worker.search(
       slots,
-      allRequirements,
+      hardRequirements,
       decorations,
       {
         onResult: (result) => {
@@ -930,6 +941,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
           category,
           count,
         })),
+        optionalSkillRequirements,
       },
       cuffs,
     )

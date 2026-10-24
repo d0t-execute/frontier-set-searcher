@@ -75,6 +75,19 @@ describe('encodeQueryCode / decodeQueryCode', () => {
     expect(await decodeQueryCode(encoded, catalog)).toEqual(state)
   })
 
+  it('round-trips an optional skill requirement with its priority (docs/feedback.md Round 3 #2)', async () => {
+    const withOptional: SearchFormState = {
+      ...state,
+      requirements: [
+        { skillId: 1, minPoints: 10 },
+        { skillId: 2, minPoints: 15, optional: true, priority: 3 },
+      ],
+    }
+    const encoded = await encodeQueryCode(withOptional, catalog)
+    expect(encoded).toContain('Sharpness: 15 (optional, priority 3)')
+    expect(await decodeQueryCode(encoded, catalog)).toEqual(withOptional)
+  })
+
   it('round-trips a non-null excludedWeaponZenithSkillIds, including the "no Zenith skill" sentinel', async () => {
     const withWeaponExclusions: SearchFormState = {
       ...state,

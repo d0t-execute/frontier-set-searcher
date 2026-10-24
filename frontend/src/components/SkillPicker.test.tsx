@@ -379,4 +379,76 @@ describe('SkillPicker', () => {
       expect(onChange).toHaveBeenCalledWith([{ skillId: 1, minPoints: -10 }])
     })
   })
+
+  describe('optional requirements (docs/feedback.md Round 3 #2)', () => {
+    it('does not show a priority selector until the requirement is marked optional', () => {
+      render(
+        <SkillPicker
+          skills={SKILLS}
+          requirements={[{ skillId: 1, minPoints: 5 }]}
+          onChange={vi.fn()}
+        />,
+      )
+
+      expect(screen.queryByRole('combobox', { name: /attack priority/i })).not.toBeInTheDocument()
+    })
+
+    it('marks a requirement optional and defaults its priority to the next available slot', async () => {
+      const onChange = vi.fn()
+      const user = userEvent.setup()
+      render(
+        <SkillPicker
+          skills={SKILLS}
+          requirements={[
+            { skillId: 1, minPoints: 5 },
+            { skillId: 2, minPoints: 3, optional: true, priority: 1 },
+          ]}
+          onChange={onChange}
+        />,
+      )
+
+      await user.click(screen.getByRole('checkbox', { name: /optional: attack/i }))
+
+      expect(onChange).toHaveBeenCalledWith([
+        { skillId: 1, minPoints: 5, optional: true, priority: 2 },
+        { skillId: 2, minPoints: 3, optional: true, priority: 1 },
+      ])
+    })
+
+    it('shows a priority selector once optional, and reports changes to it', async () => {
+      const onChange = vi.fn()
+      const user = userEvent.setup()
+      render(
+        <SkillPicker
+          skills={SKILLS}
+          requirements={[{ skillId: 1, minPoints: 5, optional: true, priority: 1 }]}
+          onChange={onChange}
+        />,
+      )
+
+      await user.selectOptions(screen.getByRole('combobox', { name: /attack priority/i }), '4')
+
+      expect(onChange).toHaveBeenCalledWith([
+        { skillId: 1, minPoints: 5, optional: true, priority: 4 },
+      ])
+    })
+
+    it('clears the priority when unmarking a requirement as optional', async () => {
+      const onChange = vi.fn()
+      const user = userEvent.setup()
+      render(
+        <SkillPicker
+          skills={SKILLS}
+          requirements={[{ skillId: 1, minPoints: 5, optional: true, priority: 3 }]}
+          onChange={onChange}
+        />,
+      )
+
+      await user.click(screen.getByRole('checkbox', { name: /optional: attack/i }))
+
+      expect(onChange).toHaveBeenCalledWith([
+        { skillId: 1, minPoints: 5, optional: false, priority: undefined },
+      ])
+    })
+  })
 })

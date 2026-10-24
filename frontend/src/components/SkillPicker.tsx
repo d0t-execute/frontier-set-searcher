@@ -8,10 +8,20 @@
  * `groupByCategory`'s existing grouping stays intact (now as visible
  * `role="group"` headings) so browsing by category still works exactly as it
  * did through the old dropdown's `<optgroup>`s, with typing narrowing it
- * further on top. */
+ * further on top.
+ *
+ * Each requirement also has an "Optional" checkbox (docs/feedback.md Round 3
+ * #2) -- flips `SkillRequirement.optional` on the same object instead of
+ * moving it to a separate list, since the picked skill and its level don't
+ * change, only whether it's a hard constraint or a soft preference. A
+ * priority `<select>` (1 = most important) appears only once a requirement is
+ * optional -- see `OptionalSkillRequirement.priority`'s own docstring for
+ * what happens when two share a priority. `App.tsx` splits the combined list
+ * on this flag right before calling `search()`. */
 
 import { useRef, useState } from 'react'
 import type { KeyboardEvent } from 'react'
+import { MAX_OPTIONAL_SKILL_PRIORITY_TIERS } from '../search-engine/ilp-model'
 import type { SkillRequirement } from '../search-engine/types'
 
 export interface SkillTierOption {
@@ -171,6 +181,32 @@ export function SkillPicker({
     onChange(requirements.filter((r) => r.skillId !== skillId))
   }
 
+  // Defaults a newly-marked-optional requirement's priority to "added last,
+  // so least important so far" (docs/feedback.md Round 3 #2's own suggested
+  // default: "by order of adding them"), capped at
+  // `MAX_OPTIONAL_SKILL_PRIORITY_TIERS` -- still editable afterward via the
+  // priority `<select>`, including down to a value another optional
+  // requirement already has (the interchangeable-group case,
+  // `OptionalSkillRequirement.priority`'s own docstring).
+  function nextDefaultPriority(): number {
+    const optionalCount = requirements.filter((r) => r.optional).length
+    return Math.min(optionalCount + 1, MAX_OPTIONAL_SKILL_PRIORITY_TIERS)
+  }
+
+  function setOptional(skillId: number, optional: boolean): void {
+    onChange(
+      requirements.map((r) =>
+        r.skillId === skillId
+          ? { ...r, optional, priority: optional ? nextDefaultPriority() : undefined }
+          : r,
+      ),
+    )
+  }
+
+  function setPriority(skillId: number, priority: number): void {
+    onChange(requirements.map((r) => (r.skillId === skillId ? { ...r, priority } : r)))
+  }
+
   return (
     <div>
       <ul className="list-unstyled d-flex flex-column gap-2">
@@ -204,6 +240,40 @@ export function SkillPicker({
                   value={requirement.minPoints}
                   onChange={(e) => setMinPoints(requirement.skillId, Number(e.target.value))}
                 />
+              )}
+              <div className="form-check form-check-inline m-0">
+                <input
+                  type="checkbox"
+                  className="form-check-input"
+                  id={`optional-${requirement.skillId}`}
+                  aria-label={`Optional: ${nameOf(requirement.skillId)}`}
+                  checked={requirement.optional ?? false}
+                  onChange={(e) => setOptional(requirement.skillId, e.target.checked)}
+                />
+                <label
+                  className="form-check-label"
+                  htmlFor={`optional-${requirement.skillId}`}
+                  aria-hidden="true"
+                >
+                  Optional
+                </label>
+              </div>
+              {requirement.optional && (
+                <select
+                  className="form-select form-select-sm"
+                  style={{ width: 'auto' }}
+                  aria-label={`${nameOf(requirement.skillId)} priority`}
+                  value={requirement.priority ?? 1}
+                  onChange={(e) => setPriority(requirement.skillId, Number(e.target.value))}
+                >
+                  {Array.from({ length: MAX_OPTIONAL_SKILL_PRIORITY_TIERS }, (_, i) => i + 1).map(
+                    (p) => (
+                      <option key={p} value={p}>
+                        Priority {p}
+                      </option>
+                    ),
+                  )}
+                </select>
               )}
               <button
                 type="button"

@@ -289,21 +289,16 @@ demographic" for this new tool.
    `deco_event` rows to `deco_event_g`/`deco_event_gx` (0 genuinely tier-free event decorations
    existed in the real dataset). No new category needed -- these landed in already-existing leaves.
 
-2. **Prefer a set of (Zenith) skills, not just hard-require them** -- same soft-preference family as
+2. ~~**Prefer a set of (Zenith) skills, not just hard-require them** -- same soft-preference family as
    the already-shipped "preferred pieces/categories" (Round 2 #2 above), but for skills instead of
    gear: mark a skill/Zenith-skill requirement as "optional" (a checkbox) so a result having it
    outranks one that doesn't, without making it infeasible to search at all when it can't be reached.
    Suggested optional extra: a priority order among the optional skills (by add-order, or a number
    field), so if only some optional skills are jointly reachable, the higher-priority ones are
-   preferred over lower ones (not just "more is better" with no ordering). **Not started.** Likely
-   needs real `ilp-model.ts` objective-function work, similar in shape to the preferred-pieces feature
-   but on the *requirement* side rather than the candidate-pool side -- a requirement currently either
-   exists (hard constraint) or doesn't exist (not searched for) at all, with no "soft" tier in between.
-   Priority ordering specifically needs a design decision: a strict lexicographic preference (any
-   build with a higher-priority skill always outranks one without it, regardless of what else differs)
-   mirrors how `PREFERRED_ITEM_WEIGHT` already dominates every lower-ranked factor, which this project
-   has precedent for -- but needs confirming that's actually the intended ranking semantics before
-   building.
+   preferred over lower ones (not just "more is better" with no ordering).~~ **DONE** (2026-10-24, see
+   [skill-system-roadmap.md #40](skill-system-roadmap.md)): confirmed with the project owner that
+   preferred pieces still dominate this, up to 7 priority tiers get real dominance, and same-priority
+   skills are interchangeable (satisfying more than one earns no more than satisfying just one).
 
 3. **A progress/loading indicator while a search runs** -- currently there's no feedback at all beyond
    results streaming in once found; a percentage or loading bar was requested. **Not started.** Needs
