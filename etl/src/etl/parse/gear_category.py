@@ -1246,6 +1246,19 @@ def classify_decoration_category(fields: list[str]) -> str:
             if _has_deco_g_or_gf_tier(tokens):
                 return CATEGORY_DECO_EVENT_G
             return CATEGORY_DECO_OTHER
+        # A row can carry CRE="1e" with no CLASS of its own (same blank-CLASS
+        # situation the Standard-tier branch below has) while still being a
+        # real G/GX-tier decoration by name alone -- confirmed against the
+        # real dataset (2026-10-24, reported by a beta tester): every one of
+        # deco_event's ~49 rows under the old code (which skipped this check
+        # whenever CLASS != G) turned out to carry a G/GF/GX name token (e.g.
+        # "G Attack・Style", "Blade Protect G"), none a genuinely G-rank-free
+        # event name -- so this checks the same way the CLASS=G branch above
+        # already does, rather than assuming blank CLASS means "not G-tier."
+        if _has_deco_gx_tier(tokens):
+            return CATEGORY_DECO_EVENT_GX
+        if _has_deco_g_or_gf_tier(tokens):
+            return CATEGORY_DECO_EVENT_G
         return CATEGORY_DECO_EVENT
 
     # Standard tier: CRE is "1-" (no special acquisition path). Everything
@@ -1273,5 +1286,17 @@ def classify_decoration_category(fields: list[str]) -> str:
             return CATEGORY_DECO_SP_LV2
         return CATEGORY_DECO_SP
     if clazz == "":
+        # Same bug as the CRE="1e" branch above, confirmed by the same beta
+        # report: a decoration with no CLASS of its own can still be a real
+        # G/GX-tier item by name (e.g. "G Rage・Attack", "Defense G") -- these
+        # were previously lumped into plain "Standard Production" (CLASS alone
+        # was trusted as the sole G/GX signal, same mistake TODO #1's
+        # `is_grank_or_later_equipment` fix already corrected for armor).
+        # Confirmed against the real dataset: 136 of 271 deco_standard rows
+        # carry a G or GX name token.
+        if _has_deco_gx_tier(tokens):
+            return CATEGORY_DECO_GX
+        if _has_deco_g_or_gf_tier(tokens):
+            return CATEGORY_DECO_G
         return CATEGORY_DECO_STANDARD
     return CATEGORY_DECO_OTHER  # anything unmodeled

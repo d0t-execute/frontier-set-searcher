@@ -1387,6 +1387,17 @@ def test_deco_standard() -> None:
     assert classify_decoration_category(_row("Attack Gem", cre="1-")) == CATEGORY_DECO_STANDARD
 
 
+def test_deco_standard_class_with_g_name_token_is_g_not_standard() -> None:
+    # Regression (2026-10-24, beta feedback): a decoration can carry a G or
+    # GX name token with no CLASS of its own -- these were previously
+    # miscategorized as plain Standard Production since only CLASS was
+    # checked, not the name. Real examples: "Defense G" (suffix), "G
+    # Rage・Attack" (prefix, a combo decoration).
+    assert classify_decoration_category(_row("Defense G", cre="1-")) == CATEGORY_DECO_G
+    assert classify_decoration_category(_row("G Rage・Attack", cre="1-")) == CATEGORY_DECO_G
+    assert classify_decoration_category(_row("Defense GX1", cre="1-")) == CATEGORY_DECO_GX
+
+
 def test_deco_g() -> None:
     assert classify_decoration_category(_row("Rathalos G", cre="1-", clazz="I")) == CATEGORY_DECO_G
 
@@ -1489,6 +1500,19 @@ def test_deco_event_g() -> None:
     assert (
         classify_decoration_category(_row("Jess BM G", cre="1e", clazz="I"))
         == CATEGORY_DECO_EVENT_G
+    )
+
+
+def test_deco_event_class_blank_with_g_name_token_is_event_g_not_event() -> None:
+    # Regression (2026-10-24, beta feedback): a CRE="1e" row with no CLASS of
+    # its own ("Blade Protect G", "G Attack・Style") was previously dumped
+    # into plain Event Decorations, since the tier-token check only ran when
+    # CLASS=="I" -- every real deco_event row turned out to carry a G/GX name
+    # token, none a genuinely tier-free event name.
+    assert classify_decoration_category(_row("Blade Protect G", cre="1e")) == CATEGORY_DECO_EVENT_G
+    assert classify_decoration_category(_row("G Attack・Style", cre="1e")) == CATEGORY_DECO_EVENT_G
+    assert (
+        classify_decoration_category(_row("Blade Protect GX1", cre="1e")) == CATEGORY_DECO_EVENT_GX
     )
 
 

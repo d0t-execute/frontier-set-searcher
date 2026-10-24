@@ -273,3 +273,66 @@ demographic" for this new tool.
    already handles any category key, this just needs the link always rendered.~~ **DONE** (2026-10-19):
    a "Table" link now renders next to every leaf's "View" toggle whenever it has items, regardless of
    category size.
+
+## Round 3 (2026-10-24)
+
+1. ~~**Several decorations need recategorizing out of "Standard Production"** -- reported via an
+   attached CSV of 47 decoration names (e.g. "G Rage・Attack", "G Attack・Draw"), all clearly G-rank
+   combo-skill decorations (crafted from G-rank monster materials) that were showing up as plain
+   Standard-tier items instead.~~ **DONE** (2026-10-24, see
+   [gear-category-taxonomy.md](gear-category-taxonomy.md)'s "Blank-`CLASS` G/GX decorations" note):
+   confirmed the real bug was broader than the 47 reported -- `classify_decoration_category` only
+   ever checked a decoration's name for a G/GF/GX tier token when its raw `CLASS` field was also
+   G-rank-tagged (`CLASS=I`); a decoration with a blank `CLASS` (which includes all 47 reported, plus
+   75 more like it) fell through to "Standard"/"Event" regardless of its own name. Fixed by running
+   the same name check unconditionally; moved 122 rows from `deco_standard` to `deco_g` and all 49
+   `deco_event` rows to `deco_event_g`/`deco_event_gx` (0 genuinely tier-free event decorations
+   existed in the real dataset). No new category needed -- these landed in already-existing leaves.
+
+2. **Prefer a set of (Zenith) skills, not just hard-require them** -- same soft-preference family as
+   the already-shipped "preferred pieces/categories" (Round 2 #2 above), but for skills instead of
+   gear: mark a skill/Zenith-skill requirement as "optional" (a checkbox) so a result having it
+   outranks one that doesn't, without making it infeasible to search at all when it can't be reached.
+   Suggested optional extra: a priority order among the optional skills (by add-order, or a number
+   field), so if only some optional skills are jointly reachable, the higher-priority ones are
+   preferred over lower ones (not just "more is better" with no ordering). **Not started.** Likely
+   needs real `ilp-model.ts` objective-function work, similar in shape to the preferred-pieces feature
+   but on the *requirement* side rather than the candidate-pool side -- a requirement currently either
+   exists (hard constraint) or doesn't exist (not searched for) at all, with no "soft" tier in between.
+   Priority ordering specifically needs a design decision: a strict lexicographic preference (any
+   build with a higher-priority skill always outranks one without it, regardless of what else differs)
+   mirrors how `PREFERRED_ITEM_WEIGHT` already dominates every lower-ranked factor, which this project
+   has precedent for -- but needs confirming that's actually the intended ranking semantics before
+   building.
+
+3. **A progress/loading indicator while a search runs** -- currently there's no feedback at all beyond
+   results streaming in once found; a percentage or loading bar was requested. **Not started.** Needs
+   scoping what "percentage" would even mean given this is a time-boxed MIP solve, not a
+   known-size enumeration -- there's no natural "N% done" signal from HiGHS mid-solve. An
+   indeterminate spinner/bar (just "searching...") is a much smaller lift than a real percentage and
+   may be what's actually achievable; worth confirming which the reporter would accept before
+   building either.
+
+4. **Bug report: excluding "G or GF" G-rank decorations causes a previously-successful search to find
+   nothing, even though the reporter says the returned build didn't use any G/GF decoration in the
+   first place.** Not yet reproduced -- no specific skill query was given. A second, maybe-unrelated
+   report mentioned a cached page not producing results, which could be an entirely separate stale-
+   data/service-worker issue rather than the same bug. Two working theories, both unconfirmed:
+   (a) the result shown actually does use a decoration from a category wrongly believed unused (the
+   reporter didn't double check), in which case excluding it is working as intended, not a bug; or
+   (b) removing a large decoration category changes the MIP's structure enough that the solver no
+   longer finds a feasible incumbent within its per-round time box (`engine.ts`'s `TIME_BOX_SECONDS`)
+   even though a feasible build still exists -- the same class of time-box-sensitivity issue already
+   hit and fixed for CI's hardest real-data test this week, just triggered by a UI toggle instead of
+   slower hardware. Needs the reporter's exact skill selections/settings to actually reproduce and
+   tell these apart.
+
+5. **A browsable database page listing every registered piece/deco/cuff** -- mirror the existing gear
+   category tree on a new page, showing every item and letting it be filtered down by the same active
+   categories; ideally with a column naming which category each row belongs to. Also requests a
+   top-level "show all" link for each of the three trees (armor, cuffs, decorations) in addition to
+   the existing per-leaf "Table" links (`CategoryTablePage.tsx`, Round 1 #2/Round 2 #9). **Not
+   started.** `CategoryTablePage.tsx` already does almost exactly this per-leaf -- extending it to an
+   "all categories, all items, filter by category" view is a plausible, fairly contained extension of
+   existing infrastructure rather than new groundwork, but the exact UI (one page per tree with a
+   category filter? one unified page?) needs scoping.
