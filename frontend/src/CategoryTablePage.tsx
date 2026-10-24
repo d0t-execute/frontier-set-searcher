@@ -24,7 +24,7 @@
  * of which boxes are checked.
  */
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useDataBundle } from './data/useDataBundle'
 import type { CategoryTableKind } from './search-engine/category-route'
 import { CUFF_CATEGORY_GROUPS } from './search-engine/cuff-categories'
@@ -66,6 +66,34 @@ const GROUPS_BY_KIND: Record<CategoryTableKind, readonly CategoryFilterGroup[]> 
   cuffs: CUFF_CATEGORY_GROUPS,
   decorations: DECORATION_CATEGORY_GROUPS,
 }
+
+/** Below this many rows, the table just renders every row directly -- the
+ * windowing machinery below only pays for itself once a list is big enough
+ * that rendering it all as real DOM nodes is itself the bottleneck (2026-10-24,
+ * per a project owner report: the real "All Gear" view, ~62,000 rows, took
+ * ~10s to open or re-filter -- confirmed via the real exported bundle that
+ * this was DOM-reconciliation cost, not the plain-array filter/sort work,
+ * which is sub-millisecond at that size). Comfortably above every normal
+ * single-category table (the largest real decoration category is in the
+ * high hundreds), so this never changes behavior for the common case. */
+const VIRTUALIZE_ROW_THRESHOLD = 300
+
+/** Matches `.category-table-scroll`'s CSS `max-height` -- kept as one named
+ * constant instead of measuring the container with a `ResizeObserver`, since
+ * a fixed-height scroll viewport is simplest and this page's layout never
+ * resizes that element at runtime. */
+const VIRTUALIZED_VIEWPORT_HEIGHT_PX = 600
+
+/** `table-sm`'s own row height at this page's font size -- approximate (not
+ * measured per-row), which only ever costs a few rows' worth of over/under
+ * rendering at the very top/bottom of the scroll range, never a visible gap
+ * (overscan below absorbs the error). */
+const VIRTUALIZED_ROW_HEIGHT_PX = 32
+
+/** Extra rows rendered beyond the visible viewport on each side, so a fast
+ * scroll (or the row-height approximation above being slightly off) doesn't
+ * flash empty space before the next render catches up. */
+const OVERSCAN_ROWS = 15
 
 function categoryLabel(kind: CategoryTableKind, categoryKey: string): string {
   for (const group of GROUPS_BY_KIND[kind]) {
@@ -244,6 +272,10 @@ export function CategoryTablePage({ kind, categoryKey, onBackToSearch }: Categor
   // Only consulted on the "all items" view (`categoryKey === null`) -- a
   // single-category page has nothing of its own to filter by category.
   const [excludedCategories, setExcludedCategories] = useState<ReadonlySet<string>>(new Set())
+  // Windowed-rendering state -- see `VIRTUALIZE_ROW_THRESHOLD`'s own
+  // docstring. Unused (and harmless) below that threshold.
+  const [scrollTop, setScrollTop] = useState(0)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
 
   const columns = useMemo(() => {
     if (!bundle) return []
@@ -316,6 +348,29 @@ export function CategoryTablePage({ kind, categoryKey, onBackToSearch }: Categor
     if (sortDirection === 'desc') sorted.reverse()
     return sorted
   }, [filteredItems, columns, sortKey, sortDirection])
+
+  // A new filter/sort/category selection can leave a previous scroll offset
+  // pointing well past the end of a now-shorter list (or just somewhere
+  // stale and confusing) -- snap back to the top whenever the row set itself
+  // changes, not on every render (`sortedItems` only gets a new identity when
+  // its content actually changes).
+  useEffect(() => {
+    setScrollTop(0)
+    if (scrollContainerRef.current) scrollContainerRef.current.scrollTop = 0
+  }, [sortedItems])
+
+  const isVirtualized = sortedItems.length > VIRTUALIZE_ROW_THRESHOLD
+  const visibleRowCapacity =
+    Math.ceil(VIRTUALIZED_VIEWPORT_HEIGHT_PX / VIRTUALIZED_ROW_HEIGHT_PX) + OVERSCAN_ROWS * 2
+  const windowStart = isVirtualized
+    ? Math.max(0, Math.floor(scrollTop / VIRTUALIZED_ROW_HEIGHT_PX) - OVERSCAN_ROWS)
+    : 0
+  const windowEnd = isVirtualized
+    ? Math.min(sortedItems.length, windowStart + visibleRowCapacity)
+    : sortedItems.length
+  const visibleItems = isVirtualized ? sortedItems.slice(windowStart, windowEnd) : sortedItems
+  const topSpacerHeight = windowStart * VIRTUALIZED_ROW_HEIGHT_PX
+  const bottomSpacerHeight = (sortedItems.length - windowEnd) * VIRTUALIZED_ROW_HEIGHT_PX
 
   function handleSort(key: string): void {
     if (sortKey === key) {
@@ -399,7 +454,11 @@ export function CategoryTablePage({ kind, categoryKey, onBackToSearch }: Categor
             )}
           </div>
           <p className="form-text">{sortedItems.length} items.</p>
-          <div className="table-responsive">
+          <div
+            className={`table-responsive${isVirtualized ? ' category-table-scroll' : ''}`}
+            ref={scrollContainerRef}
+            onScroll={isVirtualized ? (e) => setScrollTop(e.currentTarget.scrollTop) : undefined}
+          >
             <table className="table table-sm table-striped category-table">
               <thead>
                 <tr>
@@ -429,7 +488,12 @@ export function CategoryTablePage({ kind, categoryKey, onBackToSearch }: Categor
                 </tr>
               </thead>
               <tbody>
-                {sortedItems.map((item) => (
+                {topSpacerHeight > 0 && (
+                  <tr aria-hidden="true" className="category-table-spacer-row">
+                    <td colSpan={columns.length} style={{ height: topSpacerHeight }} />
+                  </tr>
+                )}
+                {visibleItems.map((item) => (
                   <tr key={item.id}>
                     {columns.map((column) => (
                       <td key={column.key}>
@@ -438,6 +502,11 @@ export function CategoryTablePage({ kind, categoryKey, onBackToSearch }: Categor
                     ))}
                   </tr>
                 ))}
+                {bottomSpacerHeight > 0 && (
+                  <tr aria-hidden="true" className="category-table-spacer-row">
+                    <td colSpan={columns.length} style={{ height: bottomSpacerHeight }} />
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>

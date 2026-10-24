@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { CategoryTablePage } from './CategoryTablePage'
@@ -279,6 +279,45 @@ describe('CategoryTablePage', () => {
     } as unknown as ReturnType<typeof useDataBundle>)
     render(<CategoryTablePage kind="gear" categoryKey="standard_plain" onBackToSearch={vi.fn()} />)
     expect(screen.getByText('Loading…')).toBeInTheDocument()
+  })
+
+  describe('windowed rendering for a large table (docs/feedback.md: "All Gear" took ~10s to open)', () => {
+    const MANY_CUFFS = Array.from({ length: 1000 }, (_, i) => ({
+      id: `cuff:${String(i).padStart(4, '0')}`,
+      name: `Cuff ${String(i).padStart(4, '0')}`,
+      slotSize: 1,
+      skills: [],
+      category: 'standard_plain',
+    }))
+
+    beforeEach(() => {
+      mockUseDataBundle.mockReturnValue({
+        data: { ...BUNDLE, cuffs: MANY_CUFFS },
+        isLoading: false,
+        isError: false,
+      } as unknown as ReturnType<typeof useDataBundle>)
+    })
+
+    it('renders far fewer row elements than the full 1000-item list', () => {
+      render(<CategoryTablePage kind="cuffs" categoryKey="standard_plain" onBackToSearch={vi.fn()} />)
+      // Header row + a bounded viewport window, nowhere near all 1000 items.
+      expect(screen.getAllByRole('row').length).toBeLessThan(100)
+      expect(screen.getByText('Cuff 0000')).toBeInTheDocument()
+      expect(screen.queryByText('Cuff 0999')).not.toBeInTheDocument()
+    })
+
+    it('scrolling the table reveals rows further down the list', () => {
+      const { container } = render(
+        <CategoryTablePage kind="cuffs" categoryKey="standard_plain" onBackToSearch={vi.fn()} />,
+      )
+      const scrollContainer = container.querySelector('.category-table-scroll')
+      expect(scrollContainer).not.toBeNull()
+
+      fireEvent.scroll(scrollContainer as Element, { target: { scrollTop: 32000 } })
+
+      expect(screen.queryByText('Cuff 0000')).not.toBeInTheDocument()
+      expect(screen.getByText('Cuff 0999')).toBeInTheDocument()
+    })
   })
 
   describe('the "all items" view (categoryKey: null, docs/feedback.md Round 3 #5)', () => {
