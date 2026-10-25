@@ -129,6 +129,42 @@ function HunterTypeToggle({
 
 type SearchStatus = 'idle' | 'searching' | 'done' | 'error'
 
+/** The three time-box budgets a search round can run at (docs/feedback.md
+ * Round 3 #4's two-stage "search longer" retry) -- see `searchStage` state's
+ * own docstring for what triggers each one. */
+type SearchStage = 'initial' | 'autoRetry' | 'manualRetry'
+
+/** `'initial'` omits both fields entirely, so it's just `engine.ts`'s own
+ * production defaults (`TIME_BOX_SECONDS`/`MAX_TIME_BOX_ATTEMPTS`) -- never
+ * hand-duplicated here, so the two can't drift apart.
+ *
+ * `'autoRetry'` only bumps `maxTimeBoxAttempts` (30+60+120=210s worst case,
+ * vs. the default 30+60=90s) -- one more of the same doubling
+ * `runTimeBoxed` already does internally, not a jump to a much bigger
+ * per-attempt budget. Deliberately modest: this fires completely
+ * automatically, with no player confirmation, for *every* search whose first
+ * round times out empty -- including a query that's genuinely infeasible but
+ * slow for HiGHS to prove infeasible (indistinguishable from a slow-but-
+ * feasible one at this point, see `engine.ts`'s `SearchEndReason`), so the
+ * extra cost it silently imposes on that far more common case has to stay
+ * small. The much bigger budget below is reserved for the player's own
+ * explicit choice instead.
+ *
+ * `'manualRetry'` is the same proven budget the original (single-stage)
+ * "Search longer" button shipped with -- worst case 60+120+240=420s -- the
+ * one `engine.real-data.performance.test.ts` confirmed reliably solves the
+ * hardest known real query. Only ever requested by an explicit player click,
+ * specifically because a cost this size has no business being paid silently
+ * by every timed-out search (2026-10-25, per the project owner: raising it
+ * as the automatic default "would indiscriminately slow down the far more
+ * common case of a query that's genuinely infeasible but slow... on every
+ * search, not just the rare one needing more time"). */
+const STAGE_TIME_BOX: Record<SearchStage, Pick<SearchOptions, 'timeBoxSeconds' | 'maxTimeBoxAttempts'>> = {
+  initial: {},
+  autoRetry: { maxTimeBoxAttempts: 3 },
+  manualRetry: { timeBoxSeconds: 60, maxTimeBoxAttempts: 3 },
+}
+
 // The search engine formulates each query as a mixed-integer program and
 // gets additional ranked results via a "solve, exclude, re-solve" loop (see
 // search-engine/engine.ts's module docstring) -- each one is a real solver
@@ -416,12 +452,22 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [activeRequestId, setActiveRequestId] = useState<string | null>(null)
   const [reachedCap, setReachedCap] = useState(false)
-  // Set when a search round's own time box ran out without proving the query
-  // either way (`engine.ts`'s `SearchEndReason`), with zero results so far --
-  // distinct from a confirmed-impossible query, which never sets this
-  // (docs/feedback.md Round 3 #4's "search longer" retry). Only meaningful
-  // together with `results.length === 0`; a later successful search clears it
-  // via `handleSearch`'s own reset, same as `reachedCap`.
+  // Which time-box budget the in-flight (or just-finished) search round used
+  // (docs/feedback.md Round 3 #4's two-stage "search longer" retry):
+  // `'initial'` is an ordinary search at `engine.ts`'s production defaults;
+  // `'autoRetry'` is the automatic, modest bump `handleSearch`'s own
+  // `onTimedOut` escalates to by itself (no button, just a "taking longer
+  // than usual" notice) the first time a round times out with zero results;
+  // `'manualRetry'` is the much bigger budget only ever requested by the
+  // player clicking "Search longer" after *both* of the above also timed out
+  // empty. Drives which status message renders below -- see `STAGE_TIME_BOX`.
+  const [searchStage, setSearchStage] = useState<SearchStage>('initial')
+  // Set once a round's own time box ran out without proving the query either
+  // way (`engine.ts`'s `SearchEndReason`), with zero results so far, *and*
+  // the automatic `'autoRetry'` escalation above also came back empty --
+  // distinct from a confirmed-impossible query, which never sets this. Only
+  // meaningful together with `results.length === 0`; a later successful
+  // search clears it via `handleSearch`'s own reset, same as `reachedCap`.
   const [timedOutEmpty, setTimedOutEmpty] = useState(false)
   // HiGHS's own `mip_gap` for the round currently solving (docs/feedback.md
   // Round 3 #3) -- `null` until the first callback fires each round, so the
@@ -865,19 +911,30 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
     maxResults,
   ])
 
-  /** `timeBoxOverride` is only ever passed by the "Search longer" button
-   * (docs/feedback.md Round 3 #4) -- an ordinary search always uses
-   * `engine.ts`'s production defaults (`{}`). Kept as a parameter rather than
-   * a second function so the retry reruns the *exact* same query (every
-   * other option, requirement, and exclusion derived identically) with only
-   * the time box itself widened. */
-  function handleSearch(timeBoxOverride: Pick<SearchOptions, 'timeBoxSeconds' | 'maxTimeBoxAttempts'> = {}): void {
+  /** `stage` picks the round's time-box budget via `STAGE_TIME_BOX` (docs/
+   * feedback.md Round 3 #4's two-stage "search longer" retry) -- kept as a
+   * parameter rather than separate functions so every stage reruns the
+   * *exact* same query (every other option, requirement, and exclusion
+   * derived identically), only the time box itself changes. `'initial'`
+   * (the default) is what the ordinary "Search" button calls; `'autoRetry'`
+   * is only ever reached by this function calling itself from its own
+   * `onTimedOut` below; `'manualRetry'` is only ever reached by
+   * `handleSearchLonger`, the explicit "Search longer" button's handler. */
+  function handleSearch(stage: SearchStage = 'initial'): void {
     const allRequirements = [...requirements, ...zenithRequirements]
     if (!worker || !bundle || allRequirements.length === 0) return
 
-    setResults([])
-    setErrorMessage(null)
-    setReachedCap(false)
+    // Only a fresh, player-initiated search clears a prior round's results --
+    // `'autoRetry'`/`'manualRetry'` resume the same empty-handed search, so
+    // there's nothing of value to clear (and clearing `searchStage`/
+    // `timedOutEmpty` here would erase the very state this function is about
+    // to recompute one line down).
+    if (stage === 'initial') {
+      setResults([])
+      setErrorMessage(null)
+      setReachedCap(false)
+    }
+    setSearchStage(stage)
     setTimedOutEmpty(false)
 
     const {
@@ -958,6 +1015,17 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
         onProgress: (gap) => setSearchProgress(gap),
         onDone: () => setStatus('done'),
         onTimedOut: () => {
+          if (stage === 'initial') {
+            // The modest, fully-automatic bump -- no player confirmation, so
+            // deliberately the cheaper budget (`STAGE_TIME_BOX`'s own
+            // docstring). `setStatus('searching')` isn't needed here: it's
+            // already 'searching' and `handleSearch` below sets it again
+            // regardless, so this never visibly flickers to 'done' first.
+            handleSearch('autoRetry')
+            return
+          }
+          // The automatic bump (or a previous manual retry) also came back
+          // empty -- only now offer the big, explicitly-requested budget.
           setTimedOutEmpty(true)
           setStatus('done')
         },
@@ -967,7 +1035,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
         },
       },
       {
-        ...timeBoxOverride,
+        ...STAGE_TIME_BOX[stage],
         preferExactMatches,
         skillTiers,
         pinnedCuffs,
@@ -987,19 +1055,14 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
     setActiveRequestId(requestId)
   }
 
-  /** The "Search longer" retry (docs/feedback.md Round 3 #4) -- reruns the
-   * exact same query with a much bigger per-round time box, for the one case
-   * where that's worth the wait: a prior round gave up without ever proving
-   * the query impossible (`onTimedOut` above), not a confirmed dead end.
-   * These exact values (worst case 60+120+240=420s) are the ones
-   * `engine.real-data.performance.test.ts` already confirmed reliably find a
-   * result for the hardest known real query at this scale -- not raised as
-   * the production *default* for every search, since that would equally
-   * slow down the far more common case of a query that's genuinely
-   * infeasible but slow for HiGHS to prove infeasible (see `engine.ts`'s
-   * module docstring). */
+  /** The explicit "Search longer" button's handler -- the third and final
+   * stage of docs/feedback.md Round 3 #4's retry, only reachable once both
+   * the ordinary search and the automatic `'autoRetry'` bump have already
+   * come back empty (`timedOutEmpty`). See `STAGE_TIME_BOX`'s own docstring
+   * for why this budget is reserved for an explicit player choice rather
+   * than ever triggered automatically. */
   function handleSearchLonger(): void {
-    handleSearch({ timeBoxSeconds: 60, maxTimeBoxAttempts: 3 })
+    handleSearch('manualRetry')
   }
 
   // Save/load this search by a pasteable text code (docs/feedback.md #18) --
@@ -1685,8 +1748,9 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
               )}
               {status === 'done' && results.length === 0 && timedOutEmpty && (
                 <p>
-                  No build found within the normal time limit -- this doesn't necessarily mean one
-                  doesn't exist, just that the search didn't finish checking in time.{' '}
+                  No build found even after automatically searching a bit longer -- this doesn't
+                  necessarily mean one doesn't exist, just that the search didn't finish checking in
+                  time.{' '}
                   <button type="button" className="btn btn-link p-0" onClick={handleSearchLonger}>
                     Search longer
                   </button>{' '}
@@ -1710,8 +1774,14 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
               zenithSkills={bundle.zenithSkills}
               getShareUrl={buildShareUrl}
             />
-            {status === 'searching' && (
+            {status === 'searching' && searchStage !== 'autoRetry' && (
               <p>Searching{formatSearchProgress(searchProgress)}</p>
+            )}
+            {status === 'searching' && searchStage === 'autoRetry' && (
+              <p>
+                This is taking longer than usual -- automatically searching a bit longer
+                {formatSearchProgress(searchProgress)}
+              </p>
             )}
           </div>
         </>

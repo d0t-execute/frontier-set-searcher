@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { act, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
@@ -1095,67 +1095,92 @@ describe('App', () => {
     })
   })
 
-  describe('"Search longer" retry (docs/feedback.md Round 3 #4)', () => {
-    function timedOutWorker() {
+  describe('Two-stage "search longer" retry (docs/feedback.md Round 3 #4)', () => {
+    /** Captures each `worker.search` call's own callbacks instead of
+     * reacting inside the mock synchronously -- firing a callback
+     * synchronously from within `worker.search` itself would let a whole
+     * chain of automatic retries run to completion inside one React batch,
+     * with no render in between to assert against the *intermediate*
+     * "autoRetry" stage (the whole point of these tests). Each captured
+     * `onTimedOut`/`onDone` call is wrapped in `act` since it's invoked
+     * directly, not through a `user` interaction. */
+    function stepWorker() {
       const worker = makeWorker()
+      const callbacksByCall: { onDone: () => void; onTimedOut?: () => void }[] = []
       worker.search.mockImplementation((...args: unknown[]) => {
-        const callbacks = args[3] as { onTimedOut?: () => void }
-        callbacks.onTimedOut?.()
-        return 'req-1'
+        callbacksByCall.push(args[3] as (typeof callbacksByCall)[number])
+        return `req-${callbacksByCall.length}`
       })
-      return worker
+      return { worker, callbacksByCall }
     }
 
-    it('offers a "Search longer" retry instead of the plain no-results message when the worker times out', async () => {
-      const worker = timedOutWorker()
+    /** `worker.search`'s own mock type is inferred narrowly from
+     * `makeWorker`'s zero-arg stub, so indexing a call's 5th (options)
+     * argument needs an explicit cast back to its real call shape. */
+    function searchOptionsAt(worker: ReturnType<typeof stepWorker>['worker'], callIndex: number): unknown {
+      return (worker.search.mock.calls[callIndex] as unknown as unknown[])[4]
+    }
+
+    it('automatically retries once at a modest bump before offering the "Search longer" button', async () => {
+      const { worker, callbacksByCall } = stepWorker()
       mockUseSearchWorker.mockReturnValue(worker as unknown as ReturnType<typeof useSearchWorker>)
       const user = userEvent.setup()
       render(<App />)
 
       await user.click(screen.getByRole('button', { name: 'Attack' }))
       await user.click(screen.getByRole('button', { name: /^search$/i }))
+      expect(worker.search).toHaveBeenCalledTimes(1)
+      expect(searchOptionsAt(worker, 0)).not.toHaveProperty('timeBoxSeconds')
+      expect(searchOptionsAt(worker, 0)).not.toHaveProperty('maxTimeBoxAttempts')
 
+      act(() => callbacksByCall[0].onTimedOut?.())
+
+      // No button yet -- this stage is fully automatic, just a notice.
+      expect(screen.getByText(/taking longer than usual/i)).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Search longer' })).not.toBeInTheDocument()
+      expect(worker.search).toHaveBeenCalledTimes(2)
+      expect(searchOptionsAt(worker, 1)).toMatchObject({ maxTimeBoxAttempts: 3 })
+      expect(searchOptionsAt(worker, 1)).not.toHaveProperty('timeBoxSeconds')
+
+      act(() => callbacksByCall[1].onTimedOut?.())
+
+      // Automatic bump also came back empty -- only now offer the button.
       expect(screen.getByRole('button', { name: 'Search longer' })).toBeInTheDocument()
       expect(screen.queryByText('No matching builds found.')).not.toBeInTheDocument()
     })
 
-    it('reruns the search with a bigger time box when "Search longer" is clicked', async () => {
-      const worker = timedOutWorker()
+    it('reruns the search with the much bigger budget only once "Search longer" is explicitly clicked', async () => {
+      const { worker, callbacksByCall } = stepWorker()
       mockUseSearchWorker.mockReturnValue(worker as unknown as ReturnType<typeof useSearchWorker>)
       const user = userEvent.setup()
       render(<App />)
 
       await user.click(screen.getByRole('button', { name: 'Attack' }))
       await user.click(screen.getByRole('button', { name: /^search$/i }))
+      act(() => callbacksByCall[0].onTimedOut?.())
+      act(() => callbacksByCall[1].onTimedOut?.())
       await user.click(screen.getByRole('button', { name: 'Search longer' }))
 
-      expect(worker.search).toHaveBeenCalledTimes(2)
-      expect(worker.search).toHaveBeenLastCalledWith(
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        expect.objectContaining({ timeBoxSeconds: 60, maxTimeBoxAttempts: 3 }),
-        expect.anything(),
-      )
+      expect(worker.search).toHaveBeenCalledTimes(3)
+      expect(searchOptionsAt(worker, 2)).toMatchObject({
+        timeBoxSeconds: 60,
+        maxTimeBoxAttempts: 3,
+      })
     })
 
     it('shows the plain no-results message (no retry offered) for an ordinary done with zero results', async () => {
-      const worker = makeWorker()
-      worker.search.mockImplementation((...args: unknown[]) => {
-        const callbacks = args[3] as { onDone: () => void }
-        callbacks.onDone()
-        return 'req-1'
-      })
+      const { worker, callbacksByCall } = stepWorker()
       mockUseSearchWorker.mockReturnValue(worker as unknown as ReturnType<typeof useSearchWorker>)
       const user = userEvent.setup()
       render(<App />)
 
       await user.click(screen.getByRole('button', { name: 'Attack' }))
       await user.click(screen.getByRole('button', { name: /^search$/i }))
+      act(() => callbacksByCall[0].onDone())
 
       expect(screen.getByText('No matching builds found.')).toBeInTheDocument()
       expect(screen.queryByRole('button', { name: 'Search longer' })).not.toBeInTheDocument()
+      expect(worker.search).toHaveBeenCalledTimes(1)
     })
   })
 
