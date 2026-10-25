@@ -168,7 +168,7 @@ const RESULT_SORT_LABELS: Record<ResultSortOption, string> = {
 // A cuff that's unobtainable in the real game (removed, unimplemented, or
 // training-quest-only) is excluded from the general pool unconditionally --
 // not even a leaf in CUFF_CATEGORY_GROUPS at all (see its own docstring and
-// `cuffsAfterCategoryFilter`'s `_UNOBTAINABLE_CUFF_CATEGORIES` in
+// `cuffsAfterCategoryFilter`'s `UNOBTAINABLE_CUFF_CATEGORIES` in
 // build-query.ts). Equipment's own matching leaves ("Unavailable") got the
 // same treatment on 2026-10-20, and cuffs' own (previously a narrower,
 // default-excluded-but-togglable `DEFAULT_EXCLUDED_CUFF_CATEGORIES` set)
@@ -182,7 +182,7 @@ const RESULT_SORT_LABELS: Record<ResultSortOption, string> = {
 // unconditional treatment on the decoration side -- not even leaves in
 // DECORATION_CATEGORY_GROUPS at all (see decoration-categories.ts's own
 // docstring and `decorationsAfterCategoryFilter`'s
-// `_UNOBTAINABLE_DECORATION_CATEGORIES`, which also folds in Lottery Hiden
+// `UNOBTAINABLE_DECORATION_CATEGORIES`, which also folds in Lottery Hiden
 // Decorations as of 2026-10-20, previously this set's own
 // `deco_lottery_hiden` entry). SP Decorations are ALSO excluded
 // unconditionally via that same mechanism, but stay real, visible leaves

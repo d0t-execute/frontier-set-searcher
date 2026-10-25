@@ -11,7 +11,7 @@
  * `unavailable_training_only`) is deliberately not one of this tree's
  * leaves (2026-10-20, per the project owner) -- neither category is a real,
  * obtainable item, so both are excluded from the general pool
- * unconditionally in build-query.ts's `_UNOBTAINABLE_EQUIPMENT_CATEGORIES`,
+ * unconditionally in build-query.ts's `UNOBTAINABLE_EQUIPMENT_CATEGORIES`,
  * the same convention `deco_training_only`/`deco_unimplemented`/
  * `deco_impossible_to_create` already use on the decoration side (see
  * decoration-categories.ts's own docstring) rather than left as a

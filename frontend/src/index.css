@@ -926,23 +926,16 @@ code {
   margin-bottom: 14px;
 }
 
-/* Windowed-rendering viewport for a large table (docs/feedback.md: the real
- * "All Gear" view took ~10s to open before this) -- `max-height` here must
- * match `CategoryTablePage.tsx`'s own `VIRTUALIZED_VIEWPORT_HEIGHT_PX`
- * constant. Only applied once a table's row count crosses
- * `VIRTUALIZE_ROW_THRESHOLD`, so an ordinary single-category table keeps its
- * normal (unbounded-height) layout. */
-.category-table-scroll {
-  max-height: 600px;
-  overflow-y: auto;
-}
-
-/* The two rows (docs/feedback.md, see `.category-table-scroll` above) that
- * stand in for every not-currently-rendered row above/below the visible
- * window, so the scrollbar stays the correct size without those rows
- * actually existing as DOM nodes. `aria-hidden` keeps them out of the
- * accessibility tree entirely (not just visually inert), so they never show
- * up to a `getByRole('row')` query. */
+/* The two rows (docs/feedback.md: large tables are windowed to only render
+ * their visible rows, tracking the page's own scroll position rather than a
+ * separate boxed-off scroll area -- 2026-10-25, per the project owner, who
+ * found the earlier fixed-height inner-scroll box too small and out of place
+ * next to this page's other, normally-laid-out tables) that stand in for
+ * every not-currently-rendered row above/below the visible window, so the
+ * scrollbar stays the correct size without those rows actually existing as
+ * DOM nodes. `aria-hidden` keeps them out of the accessibility tree entirely
+ * (not just visually inert), so they never show up to a `getByRole('row')`
+ * query. */
 .category-table-spacer-row td {
   padding: 0;
   border: none;

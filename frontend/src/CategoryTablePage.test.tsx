@@ -60,6 +60,17 @@ const BUNDLE = {
           resistances: { fire: 0, water: 0, thunder: 0, ice: 0, dragon: 0 },
           openSlotCount: 0,
         },
+        {
+          id: 'head:0005',
+          name: 'Unobtainable Helm',
+          skills: [],
+          category: 'unavailable_not_implemented',
+          grankOrLater: false,
+          hunterType: 'common',
+          exoticSkillId: null,
+          defenseMax: null,
+          resistances: { fire: 0, water: 0, thunder: 0, ice: 0, dragon: 0 },
+        },
       ],
     },
   ],
@@ -306,14 +317,14 @@ describe('CategoryTablePage', () => {
       expect(screen.queryByText('Cuff 0999')).not.toBeInTheDocument()
     })
 
-    it('scrolling the table reveals rows further down the list', () => {
-      const { container } = render(
-        <CategoryTablePage kind="cuffs" categoryKey="standard_plain" onBackToSearch={vi.fn()} />,
-      )
-      const scrollContainer = container.querySelector('.category-table-scroll')
-      expect(scrollContainer).not.toBeNull()
+    it('scrolling the page reveals rows further down the list (window-based, not a boxed-off scroll area)', () => {
+      render(<CategoryTablePage kind="cuffs" categoryKey="standard_plain" onBackToSearch={vi.fn()} />)
 
-      fireEvent.scroll(scrollContainer as Element, { target: { scrollTop: 32000 } })
+      // jsdom's `getBoundingClientRect()` always reports 0, so the table's
+      // own measured top offset is 0 regardless -- scrolling the window past
+      // that is enough to move the visible window.
+      Object.defineProperty(window, 'scrollY', { value: 32000, configurable: true })
+      fireEvent.scroll(window)
 
       expect(screen.queryByText('Cuff 0000')).not.toBeInTheDocument()
       expect(screen.getByText('Cuff 0999')).toBeInTheDocument()
@@ -352,6 +363,22 @@ describe('CategoryTablePage', () => {
 
       expect(screen.queryByText('Other Category Helm')).not.toBeInTheDocument()
       expect(screen.getByText('Zenny Helm')).toBeInTheDocument()
+    })
+
+    it('hides unavailable items by default, showing them once the checkbox is checked', async () => {
+      const user = userEvent.setup()
+      render(<CategoryTablePage kind="gear" categoryKey={null} onBackToSearch={vi.fn()} />)
+
+      expect(screen.queryByText('Unobtainable Helm')).not.toBeInTheDocument()
+      await user.click(screen.getByRole('checkbox', { name: 'Show unavailable items' }))
+      expect(screen.getByText('Unobtainable Helm')).toBeInTheDocument()
+    })
+
+    it('does not show the "Show unavailable items" checkbox on a single-category table', () => {
+      render(<CategoryTablePage kind="gear" categoryKey="standard_plain" onBackToSearch={vi.fn()} />)
+      expect(
+        screen.queryByRole('checkbox', { name: 'Show unavailable items' }),
+      ).not.toBeInTheDocument()
     })
   })
 

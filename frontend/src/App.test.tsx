@@ -201,7 +201,7 @@ describe('App', () => {
         optionalSkillRequirements: [],
       },
       // The "Unavailable"-leaf cuff is excluded unconditionally (see build-
-      // query.ts's `_UNOBTAINABLE_CUFF_CATEGORIES`) -- both real ones pass.
+      // query.ts's `UNOBTAINABLE_CUFF_CATEGORIES`) -- both real ones pass.
       [BUNDLE.cuffs[0], BUNDLE.cuffs[1]],
     )
   })
@@ -396,7 +396,7 @@ describe('App', () => {
     render(<App />)
 
     // A piece/cuff that's unobtainable in the real game is never worth
-    // surfacing -- see build-query.ts's `_UNOBTAINABLE_CUFF_CATEGORIES`; it's
+    // surfacing -- see build-query.ts's `UNOBTAINABLE_CUFF_CATEGORIES`; it's
     // not even a toggle in the UI (no checkbox touched here).
     await user.click(screen.getByRole('button', { name: 'Attack' }))
     await user.click(screen.getByRole('button', { name: /search/i }))

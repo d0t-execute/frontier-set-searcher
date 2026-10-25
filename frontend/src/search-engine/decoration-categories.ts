@@ -17,7 +17,7 @@
  * (Training/Unimplemented/Impossible to Create) get the identical
  * not-a-leaf-at-all, unconditionally-excluded treatment (2026-10-18, per the
  * project owner: these are confirmed impossible to ever obtain) -- see
- * `_UNOBTAINABLE_DECORATION_CATEGORIES` in build-query.ts. Lottery Hiden
+ * `UNOBTAINABLE_DECORATION_CATEGORIES` in build-query.ts. Lottery Hiden
  * Decorations (`deco_lottery_hiden`, "do not use" per the reference tool's
  * own tree) got the identical treatment on 2026-10-20 -- previously a
  * default-excluded-but-togglable leaf (see the roadmap doc's 2026-10-15

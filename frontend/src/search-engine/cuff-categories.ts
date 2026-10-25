@@ -19,7 +19,7 @@
  * not leaves in this tree at all (2026-10-20, per the project owner) -- same
  * not-a-leaf-at-all, unconditionally-excluded treatment equipment's own
  * "Unavailable" categories already got, rather than left as a default-off-but-
- * togglable choice -- see `_UNOBTAINABLE_CUFF_CATEGORIES` in build-query.ts.
+ * togglable choice -- see `UNOBTAINABLE_CUFF_CATEGORIES` in build-query.ts.
  */
 
 import type { GearCategoryGroup } from './gear-categories'

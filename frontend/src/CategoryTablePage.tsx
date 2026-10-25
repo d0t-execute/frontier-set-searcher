@@ -27,6 +27,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useDataBundle } from './data/useDataBundle'
 import type { CategoryTableKind } from './search-engine/category-route'
+import {
+  UNOBTAINABLE_CUFF_CATEGORIES,
+  UNOBTAINABLE_DECORATION_CATEGORIES,
+  UNOBTAINABLE_EQUIPMENT_CATEGORIES,
+} from './search-engine/build-query'
 import { CUFF_CATEGORY_GROUPS } from './search-engine/cuff-categories'
 import { DECORATION_CATEGORY_GROUPS } from './search-engine/decoration-categories'
 import { GEAR_CATEGORY_GROUPS } from './search-engine/gear-categories'
@@ -67,6 +72,23 @@ const GROUPS_BY_KIND: Record<CategoryTableKind, readonly CategoryFilterGroup[]> 
   decorations: DECORATION_CATEGORY_GROUPS,
 }
 
+/** The "Unavailable"/"Training Only"/etc. categories of each kind -- deliberately
+ * not a leaf in any of the trees above (see each one's own docstring), since
+ * the solver's own category filter always excludes them unconditionally, with
+ * no legitimate reason to re-include them in a search. This browse page has a
+ * legitimate reason to show them anyway (looking up an item's stats/name
+ * regardless of whether the solver can ever place it), so it gets its own
+ * independent "Show unavailable items" checkbox over the identical sets
+ * `build-query.ts` already defines, instead of a togglable tree leaf (2026-10-25,
+ * per the project owner: "include a category on these 'all gear' pages as well
+ * that filters/toggles all the unavailable entries"). Hidden by default, to
+ * match this page's "what the solver can actually use" default view. */
+const UNOBTAINABLE_CATEGORIES_BY_KIND: Record<CategoryTableKind, ReadonlySet<string>> = {
+  gear: UNOBTAINABLE_EQUIPMENT_CATEGORIES,
+  cuffs: UNOBTAINABLE_CUFF_CATEGORIES,
+  decorations: UNOBTAINABLE_DECORATION_CATEGORIES,
+}
+
 /** Below this many rows, the table just renders every row directly -- the
  * windowing machinery below only pays for itself once a list is big enough
  * that rendering it all as real DOM nodes is itself the bottleneck (2026-10-24,
@@ -77,12 +99,6 @@ const GROUPS_BY_KIND: Record<CategoryTableKind, readonly CategoryFilterGroup[]> 
  * single-category table (the largest real decoration category is in the
  * high hundreds), so this never changes behavior for the common case. */
 const VIRTUALIZE_ROW_THRESHOLD = 300
-
-/** Matches `.category-table-scroll`'s CSS `max-height` -- kept as one named
- * constant instead of measuring the container with a `ResizeObserver`, since
- * a fixed-height scroll viewport is simplest and this page's layout never
- * resizes that element at runtime. */
-const VIRTUALIZED_VIEWPORT_HEIGHT_PX = 600
 
 /** `table-sm`'s own row height at this page's font size -- approximate (not
  * measured per-row), which only ever costs a few rows' worth of over/under
@@ -272,10 +288,28 @@ export function CategoryTablePage({ kind, categoryKey, onBackToSearch }: Categor
   // Only consulted on the "all items" view (`categoryKey === null`) -- a
   // single-category page has nothing of its own to filter by category.
   const [excludedCategories, setExcludedCategories] = useState<ReadonlySet<string>>(new Set())
+  // Also only consulted (and only rendered as a checkbox) on the "all items"
+  // view -- see `UNOBTAINABLE_CATEGORIES_BY_KIND`'s own docstring.
+  const [showUnavailable, setShowUnavailable] = useState(false)
   // Windowed-rendering state -- see `VIRTUALIZE_ROW_THRESHOLD`'s own
-  // docstring. Unused (and harmless) below that threshold.
-  const [scrollTop, setScrollTop] = useState(0)
-  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  // docstring. Unused (and harmless) below that threshold. Tracks the WINDOW's
+  // own scroll position, not a boxed-off inner scroll container, so this
+  // table scrolls as part of the normal page like every other table here
+  // (2026-10-25, per the project owner: the earlier fixed-height inner-scroll
+  // box felt small and out of place next to the single-category tables).
+  const [scrollY, setScrollY] = useState(0)
+  // The table's own document-relative top offset, remeasured on mount/resize
+  // (not on every scroll tick -- in a real browser `getBoundingClientRect().
+  // top + window.scrollY` is already scroll-invariant, so there's nothing to
+  // gain from remeasuring more often than the page's layout can actually
+  // change). Approximate like the row height above: a few pixels of drift
+  // from content shifting elsewhere on the page only costs a slightly-off
+  // window edge, never a wrong one (overscan absorbs it).
+  const [tableTop, setTableTop] = useState(0)
+  const [viewportHeight, setViewportHeight] = useState(() =>
+    typeof window === 'undefined' ? 800 : window.innerHeight,
+  )
+  const tableWrapperRef = useRef<HTMLDivElement>(null)
 
   const columns = useMemo(() => {
     if (!bundle) return []
@@ -284,8 +318,13 @@ export function CategoryTablePage({ kind, categoryKey, onBackToSearch }: Categor
   }, [bundle, kind, categoryKey])
   const items = useMemo(() => {
     const all = bundle ? itemsForKind(bundle, kind, categoryKey) : []
-    return categoryKey === null ? all.filter((item) => !excludedCategories.has(item.category)) : all
-  }, [bundle, kind, categoryKey, excludedCategories])
+    const unavailableFiltered = showUnavailable
+      ? all
+      : all.filter((item) => !UNOBTAINABLE_CATEGORIES_BY_KIND[kind].has(item.category))
+    return categoryKey === null
+      ? unavailableFiltered.filter((item) => !excludedCategories.has(item.category))
+      : unavailableFiltered
+  }, [bundle, kind, categoryKey, excludedCategories, showUnavailable])
 
   // Every skill id's own name plus its tier labels, pre-joined and lowercased
   // -- same "search by skill name and skill level/threshold names" extension
@@ -349,21 +388,40 @@ export function CategoryTablePage({ kind, categoryKey, onBackToSearch }: Categor
     return sorted
   }, [filteredItems, columns, sortKey, sortDirection])
 
-  // A new filter/sort/category selection can leave a previous scroll offset
-  // pointing well past the end of a now-shorter list (or just somewhere
-  // stale and confusing) -- snap back to the top whenever the row set itself
-  // changes, not on every render (`sortedItems` only gets a new identity when
-  // its content actually changes).
-  useEffect(() => {
-    setScrollTop(0)
-    if (scrollContainerRef.current) scrollContainerRef.current.scrollTop = 0
-  }, [sortedItems])
-
   const isVirtualized = sortedItems.length > VIRTUALIZE_ROW_THRESHOLD
-  const visibleRowCapacity =
-    Math.ceil(VIRTUALIZED_VIEWPORT_HEIGHT_PX / VIRTUALIZED_ROW_HEIGHT_PX) + OVERSCAN_ROWS * 2
+
+  // Only wired up once virtualization is actually active -- a small table
+  // has no need to track the window's scroll position at all.
+  useEffect(() => {
+    if (!isVirtualized) return
+
+    function measureTableTop(): void {
+      if (tableWrapperRef.current) {
+        setTableTop(tableWrapperRef.current.getBoundingClientRect().top + window.scrollY)
+      }
+    }
+    function handleScroll(): void {
+      setScrollY(window.scrollY)
+    }
+    function handleResize(): void {
+      setViewportHeight(window.innerHeight)
+      measureTableTop()
+    }
+
+    measureTableTop()
+    handleScroll()
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    window.addEventListener('resize', handleResize)
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+      window.removeEventListener('resize', handleResize)
+    }
+  }, [isVirtualized])
+
+  const visibleRowCapacity = Math.ceil(viewportHeight / VIRTUALIZED_ROW_HEIGHT_PX) + OVERSCAN_ROWS * 2
+  const scrollPastTableTop = Math.max(0, scrollY - tableTop)
   const windowStart = isVirtualized
-    ? Math.max(0, Math.floor(scrollTop / VIRTUALIZED_ROW_HEIGHT_PX) - OVERSCAN_ROWS)
+    ? Math.max(0, Math.floor(scrollPastTableTop / VIRTUALIZED_ROW_HEIGHT_PX) - OVERSCAN_ROWS)
     : 0
   const windowEnd = isVirtualized
     ? Math.min(sortedItems.length, windowStart + visibleRowCapacity)
@@ -405,6 +463,18 @@ export function CategoryTablePage({ kind, categoryKey, onBackToSearch }: Categor
                 onChange={setExcludedCategories}
                 defaultCollapsed
               />
+              <div className="form-check">
+                <input
+                  type="checkbox"
+                  className="form-check-input"
+                  id="category-table-show-unavailable"
+                  checked={showUnavailable}
+                  onChange={(e) => setShowUnavailable(e.target.checked)}
+                />
+                <label className="form-check-label" htmlFor="category-table-show-unavailable">
+                  Show unavailable items
+                </label>
+              </div>
             </div>
           )}
           <div className="category-table-filters">
@@ -454,11 +524,7 @@ export function CategoryTablePage({ kind, categoryKey, onBackToSearch }: Categor
             )}
           </div>
           <p className="form-text">{sortedItems.length} items.</p>
-          <div
-            className={`table-responsive${isVirtualized ? ' category-table-scroll' : ''}`}
-            ref={scrollContainerRef}
-            onScroll={isVirtualized ? (e) => setScrollTop(e.currentTarget.scrollTop) : undefined}
-          >
+          <div className="table-responsive" ref={tableWrapperRef}>
             <table className="table table-sm table-striped category-table">
               <thead>
                 <tr>

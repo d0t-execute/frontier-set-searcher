@@ -187,10 +187,13 @@ export function buildWeaponSlot(bundle: DataBundle, state: QueryFormState): Name
 /** Equipment categories this project has confirmed are impossible to ever
  * obtain in-game (Not Implemented, Training Only -- see docs/gear-category-
  * taxonomy.md's "Unavailable" table) -- excluded from the general pool
- * unconditionally, the same convention `_UNOBTAINABLE_DECORATION_CATEGORIES`
+ * unconditionally, the same convention `UNOBTAINABLE_DECORATION_CATEGORIES`
  * below already uses (confirmed by the project owner, 2026-10-20). Not one
- * of gear-categories.ts's leaves at all (see its own docstring). */
-const _UNOBTAINABLE_EQUIPMENT_CATEGORIES: ReadonlySet<string> = new Set([
+ * of gear-categories.ts's leaves at all (see its own docstring). Exported
+ * (2026-10-25) so `CategoryTablePage`'s "All Gear" browse view can offer its
+ * own "Show unavailable items" toggle over the identical set, without this
+ * module-internal exclusion rule drifting out of sync with it. */
+export const UNOBTAINABLE_EQUIPMENT_CATEGORIES: ReadonlySet<string> = new Set([
   'unavailable_not_implemented',
   'unavailable_training_only',
 ])
@@ -203,7 +206,7 @@ export function slotsAfterCategoryFilter(
     ...slot,
     candidates: slot.candidates.filter(
       (c) =>
-        !_UNOBTAINABLE_EQUIPMENT_CATEGORIES.has(c.category) && !excludedCategories.has(c.category),
+        !UNOBTAINABLE_EQUIPMENT_CATEGORIES.has(c.category) && !excludedCategories.has(c.category),
     ),
   }))
 }
@@ -305,13 +308,15 @@ export function slotsAfterPinning(
 /** Cuff categories this project has confirmed are impossible to ever obtain
  * in-game (Unavailable, Training Only -- see docs/gear-category-taxonomy.md's
  * cuff tables) -- excluded from the general pool unconditionally, the same
- * convention `_UNOBTAINABLE_EQUIPMENT_CATEGORIES` above and
- * `_UNOBTAINABLE_DECORATION_CATEGORIES` below already use (confirmed by the
+ * convention `UNOBTAINABLE_EQUIPMENT_CATEGORIES` above and
+ * `UNOBTAINABLE_DECORATION_CATEGORIES` below already use (confirmed by the
  * project owner, 2026-10-20). Not one of cuff-categories.ts's leaves at all
  * (see its own docstring) -- previously a default-excluded-but-togglable
  * choice (`App.tsx`'s old `DEFAULT_EXCLUDED_CUFF_CATEGORIES`), superseded by
- * this unconditional treatment. */
-const _UNOBTAINABLE_CUFF_CATEGORIES: ReadonlySet<string> = new Set([
+ * this unconditional treatment. Exported (2026-10-25) for `CategoryTablePage`'s
+ * own "Show unavailable items" browse-page toggle -- see
+ * `UNOBTAINABLE_EQUIPMENT_CATEGORIES` above. */
+export const UNOBTAINABLE_CUFF_CATEGORIES: ReadonlySet<string> = new Set([
   'cuff_premium_unavailable',
   'cuff_standard_unavailable',
   'cuff_standard_training_only',
@@ -323,7 +328,7 @@ export function cuffsAfterCategoryFilter(
 ): NamedCuff[] {
   return cuffs.filter(
     (c) =>
-      !_UNOBTAINABLE_CUFF_CATEGORIES.has(c.category) && !excludedCuffCategories.has(c.category),
+      !UNOBTAINABLE_CUFF_CATEGORIES.has(c.category) && !excludedCuffCategories.has(c.category),
   )
 }
 
@@ -347,8 +352,11 @@ export function cuffsAfterExcludedIds(
  * general pool unconditionally, the same way Tower/SP decorations are, rather
  * than left as a togglable (if default-off) choice (confirmed by the project
  * owner, 2026-10-18). Not one of this tree's leaves at all (see
- * decoration-categories.ts's own docstring), same convention as `deco_tower`. */
-const _UNOBTAINABLE_DECORATION_CATEGORIES: ReadonlySet<string> = new Set([
+ * decoration-categories.ts's own docstring), same convention as `deco_tower`.
+ * Exported (2026-10-25) for `CategoryTablePage`'s own "Show unavailable
+ * items" browse-page toggle -- see `UNOBTAINABLE_EQUIPMENT_CATEGORIES`
+ * above. */
+export const UNOBTAINABLE_DECORATION_CATEGORIES: ReadonlySet<string> = new Set([
   'deco_training_only',
   'deco_unimplemented',
   'deco_impossible_to_create',
@@ -389,7 +397,7 @@ export function decorationsAfterCategoryFilter(
 ): NamedDecoration[] {
   return decorations.filter((d) => {
     if (d.isTower || d.isSp) return false
-    if (_UNOBTAINABLE_DECORATION_CATEGORIES.has(d.category)) return false
+    if (UNOBTAINABLE_DECORATION_CATEGORIES.has(d.category)) return false
     return !excludedCategories.has(d.category)
   })
 }
