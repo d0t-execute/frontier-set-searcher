@@ -272,7 +272,7 @@ function bonusPointsOf(
   return bonusPoints
 }
 
-interface TierBreakpoints {
+export interface TierBreakpoints {
   /** The smallest positive tier threshold for this skill, if it has one. */
   readonly posThreshold?: number
   /** The largest (closest to zero) negative tier threshold for this skill,
@@ -292,8 +292,12 @@ interface TierBreakpoints {
  * raw thresholds -- shared by `resolveTierBreakpoints` below and
  * `buildModel`'s excluded-active-skill rows (docs/skill-system-roadmap.md
  * TODO #37), both of which need exactly the same pos/neg reduction
- * `active-skill-cap.ts`'s `isSkillActive` also performs. */
-function breakpointsFromThresholds(tierThresholds: readonly number[]): TierBreakpoints {
+ * `active-skill-cap.ts`'s `isSkillActive` also performs. Exported for
+ * `engine.ts`'s own reuse (2026-10-26, the "Three Worlds" investigation's #4
+ * mitigation): deciding whether a solved incumbent still has an unwanted
+ * bonus skill active needs the exact same pos/neg reduction this module
+ * already uses to decide whether to build tier machinery for it at all. */
+export function breakpointsFromThresholds(tierThresholds: readonly number[]): TierBreakpoints {
   const positives = tierThresholds.filter((t) => t > 0)
   const negatives = tierThresholds.filter((t) => t < 0)
   return {

@@ -73,7 +73,8 @@
 
 import { filterRelevantCuffs, filterRelevantDecorations } from './expand'
 import { getHighs } from './highs-runtime'
-import { buildModel, decodeSolution, exclusionRow, isUsableResult } from './ilp-model'
+import { breakpointsFromThresholds, buildModel, decodeSolution, exclusionRow, isUsableResult } from './ilp-model'
+import type { ColumnMeta } from './ilp-model'
 import type {
   BuildResult,
   Cuff,
@@ -81,6 +82,7 @@ import type {
   SearchOptions,
   SkillId,
   SkillRequirement,
+  SkillTierThresholds,
   SlotQuery,
 } from './types'
 import type { Highs, Model, ModelStatusCode, SymbolDisposable } from 'highs'
@@ -120,35 +122,111 @@ const MAX_TIME_BOX_ATTEMPTS = 2
  * feasible build did exist, confirmed by widening the box). */
 type TimeBoxOutcome = 'found' | 'infeasible' | 'timedOut'
 
+/** HiGHS's own fraction of configured B&B effort spent on primal heuristics
+ * (default 0.05) -- raised only when `preferExactMatches` needs tier
+ * machinery (see `runTimeBoxed`'s `strict` flag), since that's the specific
+ * case observed (2026-10-25/26, the "Three Worlds" investigation) to need
+ * more heuristic search to find a *better* incumbent, not just any feasible
+ * one, within the same time box. Left at HiGHS's own default everywhere else
+ * to avoid slowing down the common (non-`preferExactMatches`, or
+ * `preferExactMatches` without a hard case) path for no benefit. */
+const PREFER_EXACT_MATCHES_HEURISTIC_EFFORT = 0.3
+
+/** Whether `skillTotals` still has a bonus (non-requested, non-optional)
+ * skill active -- the same pos/neg tier check `ilp-model.ts`'s own tier
+ * machinery is built to penalize, used here to decide whether an
+ * interrupted-but-feasible incumbent is actually good enough to accept under
+ * `preferExactMatches`, rather than a plausible-looking but merely-not-yet-
+ * improved one (see `runTimeBoxed`'s `strict` mode, 2026-10-26). */
+function hasActiveBonusSkill(
+  skillTotals: ReadonlyMap<SkillId, number>,
+  skillTiers: readonly SkillTierThresholds[],
+  skillPreferenceIds: ReadonlySet<SkillId>,
+): boolean {
+  for (const { skillId, tierThresholds } of skillTiers) {
+    if (skillPreferenceIds.has(skillId)) continue
+    const { posThreshold, negThreshold } = breakpointsFromThresholds(tierThresholds)
+    const total = skillTotals.get(skillId) ?? 0
+    if (posThreshold !== undefined && total >= posThreshold) return true
+    if (negThreshold !== undefined && total <= negThreshold) return true
+  }
+  return false
+}
+
 function runTimeBoxed(
   native: SymbolDisposable<Model>,
   highs: Highs,
+  columns: readonly ColumnMeta[],
+  requirements: readonly SkillRequirement[],
   options: SearchOptions,
   onProgress?: (gap: number) => void,
 ): TimeBoxOutcome {
   let seconds = options.timeBoxSeconds ?? TIME_BOX_SECONDS
   const maxAttempts = options.maxTimeBoxAttempts ?? MAX_TIME_BOX_ATTEMPTS
+
+  // "Strict" mode (2026-10-26, docs/feedback.md Round 3 #4's follow-up "Three
+  // Worlds" investigation): under `preferExactMatches`, an interrupted
+  // incumbent that still has a bonus skill active is not actually what the
+  // player asked for, even though `isUsableResult` alone would accept it (the
+  // model's hard constraints are satisfied either way). Rather than silently
+  // yield that plausible-looking-but-not-exact result, keep cutting it out
+  // and re-solving within the *same* shared deadline until either a clean
+  // incumbent is found or genuinely no time is left -- converting "wrong
+  // result" into the already-designed-for `'timedOut'` (offer "Search
+  // longer") rather than a confusing "I asked for exact matches and got extra
+  // skills anyway." Only engaged when there's tier data to check against --
+  // otherwise identical to the original single-solve-per-attempt behavior.
+  const strict = Boolean(options.preferExactMatches && options.skillTiers)
+  if (strict) native.options.set('mip_heuristic_effort', PREFER_EXACT_MATCHES_HEURISTIC_EFFORT)
+  const skillPreferenceIds = strict
+    ? new Set<SkillId>([
+        ...requirements.map((r) => r.skillId),
+        ...(options.optionalSkillRequirements ?? []).map((r) => r.skillId),
+      ])
+    : undefined
+
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    const result = native.run({
-      [highs.constants.callbackType.mipInterrupt](event) {
-        if ((event.data.running_time ?? 0) >= seconds) event.interrupt()
-      },
-      // `mip_gap` is HiGHS's own "how far is the best-found solution from the
-      // proven-optimal bound" fraction -- the only genuine mid-solve progress
-      // signal available (see docs/feedback.md Round 3 #3). It isn't
-      // monotonic early on (can swing before the first incumbent is found),
-      // so this is reported as-is rather than smoothed; the UI only shows it
-      // once it's usefully close to done.
-      ...(onProgress && {
-        [highs.constants.callbackType.mipLogging](event) {
-          if (typeof event.data.mip_gap === 'number') onProgress(event.data.mip_gap)
+    // Shared across every cut-and-retry sub-solve within this attempt in
+    // strict mode, so adding a cut never grants a fresh full budget -- only
+    // the original per-attempt allowance, same as the non-strict path's
+    // single `native.run()` call.
+    const deadline = performance.now() + seconds * 1000
+    for (;;) {
+      const result = native.run({
+        [highs.constants.callbackType.mipInterrupt](event) {
+          const outOfTime = strict
+            ? performance.now() >= deadline
+            : (event.data.running_time ?? 0) >= seconds
+          if (outOfTime) event.interrupt()
         },
-      }),
-    })
-    const modelStatus: ModelStatusCode = result.modelStatus
-    const primalSolutionStatus = native.info.get('primal_solution_status') as number
-    if (isUsableResult(highs, modelStatus, primalSolutionStatus)) return 'found'
-    if (modelStatus !== highs.constants.modelStatus.interrupted) return 'infeasible' // proven, not just out of time
+        // `mip_gap` is HiGHS's own "how far is the best-found solution from the
+        // proven-optimal bound" fraction -- the only genuine mid-solve progress
+        // signal available (see docs/feedback.md Round 3 #3). It isn't
+        // monotonic early on (can swing before the first incumbent is found),
+        // so this is reported as-is rather than smoothed; the UI only shows it
+        // once it's usefully close to done.
+        ...(onProgress && {
+          [highs.constants.callbackType.mipLogging](event) {
+            if (typeof event.data.mip_gap === 'number') onProgress(event.data.mip_gap)
+          },
+        }),
+      })
+      const modelStatus: ModelStatusCode = result.modelStatus
+      const primalSolutionStatus = native.info.get('primal_solution_status') as number
+      if (!isUsableResult(highs, modelStatus, primalSolutionStatus)) {
+        if (modelStatus !== highs.constants.modelStatus.interrupted) return 'infeasible' // proven, not just out of time
+        break // out of attempts for this deadline, double the budget below
+      }
+      if (!strict) return 'found'
+
+      const solution = native.getSolution()
+      const decoded = decodeSolution(columns, solution.colValue)
+      if (!hasActiveBonusSkill(decoded.skillTotals, options.skillTiers!, skillPreferenceIds!)) return 'found'
+      if (performance.now() >= deadline) break
+
+      const cut = exclusionRow(highs, columns, solution.colValue)
+      native.addRow(cut.lower, cut.upper, { indices: cut.indices, values: cut.values })
+    }
     seconds *= 2
   }
   return 'timedOut'
@@ -223,7 +301,7 @@ export async function* search(
 
   try {
     for (;;) {
-      const outcome = runTimeBoxed(native, highs, options, onProgress)
+      const outcome = runTimeBoxed(native, highs, columns, requirements, options, onProgress)
       if (outcome !== 'found') return outcome === 'timedOut' ? 'timedOut' : 'exhausted'
 
       const solution = native.getSolution()
