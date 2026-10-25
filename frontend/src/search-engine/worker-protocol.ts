@@ -55,6 +55,23 @@ export interface DoneMessage {
   readonly requestId: string
 }
 
+/** Sent instead of `DoneMessage` when a round's result generator stopped
+ * because its time box ran out without ever producing a single result in
+ * this request -- not because the query was proven impossible (see
+ * `engine.ts`'s `SearchEndReason`/docs/feedback.md Round 3 #4). Lets
+ * `SearchWorkerClient`'s caller offer a "search longer" retry only when one
+ * could plausibly help. Deliberately scoped to "zero results so far": once a
+ * request has already produced at least one result, `worker-handler.ts`
+ * reports a later timed-out round as an ordinary `DoneMessage` instead (the
+ * no-good-cut loop's own exclusion rows aren't retained across a fresh
+ * `search()` call, so a "search longer" retry can only safely restart from
+ * scratch -- which is only equivalent to "keep looking" when nothing has
+ * been found yet). */
+export interface TimedOutMessage {
+  readonly type: 'timedOut'
+  readonly requestId: string
+}
+
 export interface ErrorMessage {
   readonly type: 'error'
   readonly requestId: string
@@ -62,4 +79,9 @@ export interface ErrorMessage {
 }
 
 /** Sent from the worker back to the main thread. */
-export type WorkerResponse = ResultMessage | ProgressMessage | DoneMessage | ErrorMessage
+export type WorkerResponse =
+  | ResultMessage
+  | ProgressMessage
+  | DoneMessage
+  | TimedOutMessage
+  | ErrorMessage

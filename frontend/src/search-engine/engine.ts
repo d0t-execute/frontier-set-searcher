@@ -44,6 +44,20 @@
  * interrupting early only risks a worse-ranked (more decoration slots used,
  * or fewer bonus points) result than the true optimum, never an invalid one.
  *
+ * The time box can also run out before finding *any* usable incumbent at
+ * all, which looks identical to genuine infeasibility from the caller's
+ * perspective unless `search()`'s own generator return value (`SearchEndReason`)
+ * is consulted -- confirmed to really happen against a real query
+ * (docs/feedback.md Round 3 #4's 2026-10-25 investigation: the full
+ * decoration pool found nothing at production's default time box, yet a
+ * feasible build did exist, confirmed by widening it). `App.tsx` uses this
+ * distinction to offer an opt-in "Search longer" retry only when it's
+ * actually warranted, rather than silently showing "No matching builds
+ * found" either way or (the rejected alternative) just raising the default
+ * time box for every search, which would equally inflate the far more common
+ * case of a query that's genuinely infeasible but slow for HiGHS to *prove*
+ * infeasible.
+ *
  * `options.preferExactMatches` (see `types.ts`'s `SearchOptions`) only
  * changes that ranking, not which builds are valid: it asks `buildModel` to
  * penalize unrequested skill points instead of rewarding them, for a user
@@ -93,12 +107,25 @@ const TIME_BOX_SECONDS = 30
  * `options.maxTimeBoxAttempts`, same reasoning as `TIME_BOX_SECONDS`. */
 const MAX_TIME_BOX_ATTEMPTS = 2
 
+/** `runTimeBoxed`'s outcome for one round -- distinguishes *why* no solution
+ * came back, not just whether one did. `'infeasible'` means HiGHS proved no
+ * combination exists at all (more time would never help); `'timedOut'` means
+ * every attempt was interrupted before HiGHS could do that (a feasible build
+ * might still exist, just not found/proven in the time given). `search()`
+ * surfaces this distinction through its own generator return value (see
+ * `SearchEndReason`) so a caller can decide whether offering "search longer"
+ * even makes sense (2026-10-25, see docs/feedback.md Round 3 #4's
+ * investigation: a real query was confirmed to hit exactly this case -- the
+ * full decoration pool found nothing at production's default time box, but a
+ * feasible build did exist, confirmed by widening the box). */
+type TimeBoxOutcome = 'found' | 'infeasible' | 'timedOut'
+
 function runTimeBoxed(
   native: SymbolDisposable<Model>,
   highs: Highs,
   options: SearchOptions,
   onProgress?: (gap: number) => void,
-): boolean {
+): TimeBoxOutcome {
   let seconds = options.timeBoxSeconds ?? TIME_BOX_SECONDS
   const maxAttempts = options.maxTimeBoxAttempts ?? MAX_TIME_BOX_ATTEMPTS
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -120,12 +147,23 @@ function runTimeBoxed(
     })
     const modelStatus: ModelStatusCode = result.modelStatus
     const primalSolutionStatus = native.info.get('primal_solution_status') as number
-    if (isUsableResult(highs, modelStatus, primalSolutionStatus)) return true
-    if (modelStatus !== highs.constants.modelStatus.interrupted) return false // genuinely infeasible, not just out of time
+    if (isUsableResult(highs, modelStatus, primalSolutionStatus)) return 'found'
+    if (modelStatus !== highs.constants.modelStatus.interrupted) return 'infeasible' // proven, not just out of time
     seconds *= 2
   }
-  return false
+  return 'timedOut'
 }
+
+/** Why a `search()` generator stopped producing results, returned as the
+ * generator's own return value (distinct from its yielded `BuildResult`s --
+ * see `AsyncGenerator<BuildResult, SearchEndReason>` below). `'exhausted'`
+ * covers both the trivial empty-slots case and HiGHS proving no combination
+ * exists: more time would never produce another result. `'timedOut'` means a
+ * round gave up only because `runTimeBoxed` ran out of attempts, never
+ * reaching a proof either way -- a caller who wants a "search longer" retry
+ * (docs/feedback.md Round 3 #4) should only offer it for this reason, never
+ * for `'exhausted'`. */
+export type SearchEndReason = 'exhausted' | 'timedOut'
 
 export async function* search(
   slots: readonly SlotQuery[],
@@ -137,7 +175,7 @@ export async function* search(
   // boundary (structured-clone, so no functions survive it) -- this is only
   // ever supplied locally, in-process, by `worker-handler.ts`.
   onProgress?: (gap: number) => void,
-): AsyncGenerator<BuildResult> {
+): AsyncGenerator<BuildResult, SearchEndReason> {
   if (slots.length === 0) {
     // Nothing to choose, so nothing to solve for -- but an empty build still
     // only counts as a result if every requirement is trivially already met
@@ -154,7 +192,7 @@ export async function* search(
     if (meetsAll) {
       yield { picks: new Map(), decorations: new Map(), cuffs: [...pinnedCuffs], skillTotals }
     }
-    return
+    return 'exhausted'
   }
 
   // A pinned slot decoration (`options.pinnedSlotDecorations`, see TODO #12)
@@ -185,7 +223,8 @@ export async function* search(
 
   try {
     for (;;) {
-      if (!runTimeBoxed(native, highs, options, onProgress)) return
+      const outcome = runTimeBoxed(native, highs, options, onProgress)
+      if (outcome !== 'found') return outcome === 'timedOut' ? 'timedOut' : 'exhausted'
 
       const solution = native.getSolution()
       const decoded = decodeSolution(columns, solution.colValue)

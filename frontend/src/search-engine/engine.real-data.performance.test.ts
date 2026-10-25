@@ -21,6 +21,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { search } from './engine'
+import type { SearchEndReason } from './engine'
 import type {
   Decoration,
   SearchOptions,
@@ -28,6 +29,34 @@ import type {
   SkillTierThresholds,
   SlotQuery,
 } from './types'
+
+/** A second real, user-supplied 17-skill query, reused by several tests below
+ * -- distinct from the "end-game" one in a way that matters: several of these
+ * are niche, weapon-specific skills (SnS Tech, Sword God, Drawing Arts,
+ * Stylish/Stylish Assault) where even the single best available piece per
+ * slot barely contributes, leaving the solver very little room to also
+ * satisfy the other 16 requirements at once. Confirmed directly: this query
+ * didn't reach a proven-optimal answer within 20+ minutes on some rounds,
+ * without the per-round time box (`engine.ts`'s `TIME_BOX_SECONDS`). */
+const TIGHT_SWORD_BUILD_REQUIREMENTS: SkillRequirement[] = [
+  { skillId: 100, minPoints: 30 }, // SnS Tech - Sword Saint
+  { skillId: 175, minPoints: 10 }, // Determination - Solid Determination
+  { skillId: 125, minPoints: 50 }, // Strong Attack - Strong Attack+6
+  { skillId: 191, minPoints: 10 }, // Furious
+  { skillId: 166, minPoints: 10 }, // Thunder Clad
+  { skillId: 185, minPoints: 10 }, // Rush
+  { skillId: 164, minPoints: 20 }, // Sword God - Sword God+2
+  { skillId: 188, minPoints: 10 }, // Point Breakthrough
+  { skillId: 172, minPoints: 15 }, // Drawing Arts - Drawing Arts+2
+  { skillId: 154, minPoints: 20 }, // Vampirism - Vampirism+2
+  { skillId: 177, minPoints: 10 }, // Ice Age
+  { skillId: 171, minPoints: 10 }, // Vigorous
+  { skillId: 173, minPoints: 15 }, // Stylish Assault
+  { skillId: 163, minPoints: 15 }, // Stylish
+  { skillId: 114, minPoints: 10 }, // Elemental Attack - Elemental Attack Up
+  { skillId: 174, minPoints: 10 }, // Crit Conversion - Critical Conversion
+  { skillId: 186, minPoints: 10 }, // Ceaseless
+]
 
 const DATA_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'public', 'data')
 
@@ -75,12 +104,20 @@ async function firstResults(
   const start = performance.now()
   const generator = search(slots, requirements, decorations, options)
   const results = []
+  // `reason` only ends up meaningful when the loop stops because the
+  // generator itself finished (not because `take` was reached first) -- see
+  // the "search longer" test below, the one place this file actually checks
+  // it (docs/feedback.md Round 3 #4).
+  let reason: SearchEndReason | undefined
   for (let i = 0; i < take; i++) {
     const next = await generator.next()
-    if (next.done) break
+    if (next.done) {
+      reason = next.value
+      break
+    }
     results.push(next.value)
   }
-  return { results, elapsedMs: performance.now() - start }
+  return { results, elapsedMs: performance.now() - start, reason }
 }
 
 function expectAllMeetRequirements(
@@ -159,36 +196,6 @@ describe('search against the real data bundle', () => {
   }, 180_000)
 
   it('finds a result for a real, exceptionally tight 17-skill sword-build query within the per-round time box', async () => {
-    // A second real, user-supplied 17-skill query -- distinct from the one
-    // above in a way that matters: several of these are niche, weapon-
-    // specific skills (SnS Tech, Sword God, Drawing Arts, Stylish/Stylish
-    // Assault) where even the single best available piece per slot barely
-    // contributes, leaving the solver very little room to also satisfy the
-    // other 16 requirements at once. Confirmed directly: this query didn't
-    // reach a proven-optimal answer within 20+ minutes on some rounds,
-    // without the per-round time box (`engine.ts`'s `TIME_BOX_SECONDS`) --
-    // this test is what that fix is *for*, not just a harder version of the
-    // test above.
-    const requirements: SkillRequirement[] = [
-      { skillId: 100, minPoints: 30 }, // SnS Tech - Sword Saint
-      { skillId: 175, minPoints: 10 }, // Determination - Solid Determination
-      { skillId: 125, minPoints: 50 }, // Strong Attack - Strong Attack+6
-      { skillId: 191, minPoints: 10 }, // Furious
-      { skillId: 166, minPoints: 10 }, // Thunder Clad
-      { skillId: 185, minPoints: 10 }, // Rush
-      { skillId: 164, minPoints: 20 }, // Sword God - Sword God+2
-      { skillId: 188, minPoints: 10 }, // Point Breakthrough
-      { skillId: 172, minPoints: 15 }, // Drawing Arts - Drawing Arts+2
-      { skillId: 154, minPoints: 20 }, // Vampirism - Vampirism+2
-      { skillId: 177, minPoints: 10 }, // Ice Age
-      { skillId: 171, minPoints: 10 }, // Vigorous
-      { skillId: 173, minPoints: 15 }, // Stylish Assault
-      { skillId: 163, minPoints: 15 }, // Stylish
-      { skillId: 114, minPoints: 10 }, // Elemental Attack - Elemental Attack Up
-      { skillId: 174, minPoints: 10 }, // Crit Conversion - Critical Conversion
-      { skillId: 186, minPoints: 10 }, // Ceaseless
-    ]
-
     // Only 1 result is pulled -- this query's whole point is proving the
     // time box bounds a single round, not exercising the no-good-cut loop
     // (already covered by the other real-data tests above).
@@ -203,15 +210,37 @@ describe('search against the real data bundle', () => {
     // nearly tripled this suite's CI runtime, with no benefit to any other
     // query). `options.timeBoxSeconds`/`maxTimeBoxAttempts` let only this one
     // test ask for a bigger budget (worst case 60+120+240=420s).
-    const { results, elapsedMs } = await firstResults(requirements, 1, {
+    const { results, elapsedMs } = await firstResults(TIGHT_SWORD_BUILD_REQUIREMENTS, 1, {
       timeBoxSeconds: 60,
       maxTimeBoxAttempts: 3,
     })
 
     expect(results.length).toBeGreaterThan(0)
     expect(elapsedMs).toBeLessThan(450_000)
-    expectAllMeetRequirements(results, requirements)
+    expectAllMeetRequirements(results, TIGHT_SWORD_BUILD_REQUIREMENTS)
   }, 480_000)
+
+  it('reports "timedOut" (not "exhausted") when this same query finds nothing at production\'s default time box', async () => {
+    // Confirms docs/feedback.md Round 3 #4's 2026-10-25 investigation of a
+    // real bug report ("excluding a decoration category broke a previously-
+    // successful search") stays true: at `engine.ts`'s actual *production*
+    // defaults (no `timeBoxSeconds`/`maxTimeBoxAttempts` override, unlike the
+    // test above), this exact query -- already proven feasible by the test
+    // above -- comes back with zero results. The distinction this test
+    // guards is `reason`, not `results.length`: a caller must be able to tell
+    // this apart from genuine infeasibility (`'exhausted'`) to know whether
+    // offering a "search longer" retry (`App.tsx`) could possibly help.
+    //
+    // Observed directly (dev machine, full decoration pool): 90.8s, zero
+    // results, `reason: 'timedOut'` -- consistent with the test above finding
+    // a real result only once given a bigger box. No upper bound asserted on
+    // `elapsedMs` beyond this test's own timeout: the whole point is this
+    // path is the *slow*, give-up-without-an-answer one.
+    const { results, reason } = await firstResults(TIGHT_SWORD_BUILD_REQUIREMENTS, 1)
+
+    expect(results).toHaveLength(0)
+    expect(reason).toBe('timedOut')
+  }, 180_000)
 
   it('finds a result for the exceptionally tight sword-build query with preferExactMatches, without activating any bonus skill tier', async () => {
     // Same real, exceptionally tight query as above, but with
@@ -228,37 +257,18 @@ describe('search against the real data bundle', () => {
     // Widened 2026-10-20 in step with the other real-data tests' budgets --
     // see `engine.ts`'s `TIME_BOX_SECONDS` docstring for why CI needs more
     // room than a dev machine does.
-    const requirements: SkillRequirement[] = [
-      { skillId: 100, minPoints: 30 }, // SnS Tech - Sword Saint
-      { skillId: 175, minPoints: 10 }, // Determination - Solid Determination
-      { skillId: 125, minPoints: 50 }, // Strong Attack - Strong Attack+6
-      { skillId: 191, minPoints: 10 }, // Furious
-      { skillId: 166, minPoints: 10 }, // Thunder Clad
-      { skillId: 185, minPoints: 10 }, // Rush
-      { skillId: 164, minPoints: 20 }, // Sword God - Sword God+2
-      { skillId: 188, minPoints: 10 }, // Point Breakthrough
-      { skillId: 172, minPoints: 15 }, // Drawing Arts - Drawing Arts+2
-      { skillId: 154, minPoints: 20 }, // Vampirism - Vampirism+2
-      { skillId: 177, minPoints: 10 }, // Ice Age
-      { skillId: 171, minPoints: 10 }, // Vigorous
-      { skillId: 173, minPoints: 15 }, // Stylish Assault
-      { skillId: 163, minPoints: 15 }, // Stylish
-      { skillId: 114, minPoints: 10 }, // Elemental Attack - Elemental Attack Up
-      { skillId: 174, minPoints: 10 }, // Crit Conversion - Critical Conversion
-      { skillId: 186, minPoints: 10 }, // Ceaseless
-    ]
     const skillTiers = loadRealSkillTiers()
     const tierThresholdsById = new Map(skillTiers.map((s) => [s.skillId, s.tierThresholds]))
-    const requestedSkillIds = new Set(requirements.map((r) => r.skillId))
+    const requestedSkillIds = new Set(TIGHT_SWORD_BUILD_REQUIREMENTS.map((r) => r.skillId))
 
-    const { results, elapsedMs } = await firstResults(requirements, 1, {
+    const { results, elapsedMs } = await firstResults(TIGHT_SWORD_BUILD_REQUIREMENTS, 1, {
       preferExactMatches: true,
       skillTiers,
     })
 
     expect(results.length).toBeGreaterThan(0)
     expect(elapsedMs).toBeLessThan(165_000)
-    expectAllMeetRequirements(results, requirements)
+    expectAllMeetRequirements(results, TIGHT_SWORD_BUILD_REQUIREMENTS)
     for (const [skillId, points] of results[0].skillTotals) {
       if (requestedSkillIds.has(skillId)) continue
       for (const threshold of tierThresholdsById.get(skillId) ?? []) {

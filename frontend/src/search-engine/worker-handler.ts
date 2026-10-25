@@ -38,12 +38,26 @@ export async function handleSearchRequest(
       request.cuffs ?? [],
       (gap) => post({ type: 'progress', requestId: request.requestId, gap }),
     )
-    for await (const result of generator) {
-      post({ type: 'result', requestId: request.requestId, result })
+    // Driven manually (not `for await...of`, which discards a generator's own
+    // return value) so the final `{done: true, value}` iteration result's
+    // `SearchEndReason` reaches `post` below -- see `TimedOutMessage`'s own
+    // docstring for why this only matters when zero results came back.
+    let producedAny = false
+    for (;;) {
+      const next = await generator.next()
+      if (next.done) {
+        if (next.value === 'timedOut' && !producedAny) {
+          post({ type: 'timedOut', requestId: request.requestId })
+        } else {
+          post({ type: 'done', requestId: request.requestId })
+        }
+        return
+      }
+      producedAny = true
+      post({ type: 'result', requestId: request.requestId, result: next.value })
       await yieldToEventLoop()
       if (cancelled.has(request.requestId)) return
     }
-    post({ type: 'done', requestId: request.requestId })
   } catch (error) {
     post({
       type: 'error',

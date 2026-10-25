@@ -311,17 +311,58 @@ demographic" for this new tool.
 
 4. **Bug report: excluding "G or GF" G-rank decorations causes a previously-successful search to find
    nothing, even though the reporter says the returned build didn't use any G/GF decoration in the
-   first place.** Not yet reproduced -- no specific skill query was given. A second, maybe-unrelated
-   report mentioned a cached page not producing results, which could be an entirely separate stale-
-   data/service-worker issue rather than the same bug. Two working theories, both unconfirmed:
-   (a) the result shown actually does use a decoration from a category wrongly believed unused (the
-   reporter didn't double check), in which case excluding it is working as intended, not a bug; or
-   (b) removing a large decoration category changes the MIP's structure enough that the solver no
-   longer finds a feasible incumbent within its per-round time box (`engine.ts`'s `TIME_BOX_SECONDS`)
-   even though a feasible build still exists -- the same class of time-box-sensitivity issue already
-   hit and fixed for CI's hardest real-data test this week, just triggered by a UI toggle instead of
-   slower hardware. Needs the reporter's exact skill selections/settings to actually reproduce and
-   tell these apart.
+   first place.** Still not reproduced with the exact reported direction -- no specific skill query was
+   ever given. A second, maybe-unrelated report mentioned a cached page not producing results, which
+   could be an entirely separate stale-data/service-worker issue rather than the same bug.
+   **2026-10-25 investigation (no reporter query available, so both theories were probed against the
+   two hardest known real queries already in `engine.real-data.performance.test.ts`):**
+   - The 17-skill end-game query (`finds results for a real end-game-scale 17-skill query...`) doesn't
+     reproduce anything either way: its baseline result uses zero `deco_g`/`deco_gx` decorations, and
+     excluding that category entirely still solves in about the same time (~26s vs ~27s) -- theory (a)
+     doesn't apply here (the decoration genuinely wasn't used) and theory (b) doesn't trigger (removing
+     the category didn't make the solve meaningfully harder).
+   - The exceptionally tight 17-skill sword-build query (the one this suite already widens
+     `timeBoxSeconds`/`maxTimeBoxAttempts` for) tells a more interesting story, confirming theory (b)'s
+     underlying mechanism is real, just not in the reported direction: at the app's actual *production*
+     defaults (`TIME_BOX_SECONDS = 30`, `MAX_TIME_BOX_ATTEMPTS = 2`, i.e. a 90s worst case), the
+     **full** decoration pool (every category included) found **zero** results -- confirmed genuinely
+     feasible, not actually infeasible, only once given a much bigger box (`timeBoxSeconds: 60,
+     maxTimeBoxAttempts: 3`, 180.6s). Excluding `deco_g`/`deco_gx` from that same query, at the
+     *default* production box, instead found a result in just 30s -- faster and more reliable than the
+     full pool, not slower. So for this query, removing the category made the solve *easier*, the
+     mirror image of the bug report, but it proves the same root cause: this MIP's difficulty is highly
+     sensitive to exactly which decorations are in the pool, in either direction, and the production
+     app's time box (30s x2 attempts) is tight enough that some real, user-grade queries already sit
+     right on the feasible/infeasible-within-budget line even before any category toggle. A reporter
+     whose query sits on the opposite side of that line from this one would see exactly the reported
+     symptom: full pool solves fine, trimming a category (coincidentally, not causally in the "that
+     decoration was needed" sense) pushes the same solve past the time box into an apparent "no
+     results." **Still needs the reporter's exact skill selections/settings to actually reproduce their
+     direction and confirm it's this mechanism and not theory (a)** -- but theory (a) alone can no
+     longer be assumed the likelier explanation; both are live, and the production time box being
+     tighter than ideal for some real queries is itself now a confirmed, separate fact worth knowing
+     regardless of how this specific report resolves.
+
+   **2026-10-25, shipped mitigation ("Search longer" retry):** the underlying mechanism confirmed
+   above -- a search's time box can run out before HiGHS either finds a build or proves none exists,
+   indistinguishable from genuine infeasibility in the old UI -- is now surfaced and made actionable,
+   independent of whether it's the cause of this specific report. `engine.ts`'s `search()` generator
+   now returns a `SearchEndReason` (`'exhausted'` vs `'timedOut'`), plumbed through a new
+   `TimedOutMessage` in the worker protocol to `App.tsx`. When a search's first round ends `'timedOut'`
+   with zero results, the UI now shows "No build found within the normal time limit..." with a
+   **Search longer** button instead of the old, indistinguishable "No matching builds found." Clicking
+   it reruns the *exact same query* with `timeBoxSeconds: 60, maxTimeBoxAttempts: 3` (worst case 420s)
+   -- the same budget `engine.real-data.performance.test.ts` already proved reliably solves the hardest
+   known real query. Deliberately **not** a change to the production default time box: raising the
+   default was considered and rejected (see the investigation above and `engine.ts`'s own module
+   docstring) because it would indiscriminately slow down the more common case of a query that's
+   genuinely infeasible but slow for HiGHS to *prove* infeasible -- on every search, not just the rare
+   one needing more time. The retry is deliberately scoped to "zero results so far": once a request has
+   already produced at least one result, a later round timing out is still reported as an ordinary done
+   (continuing a partial result list would need the no-good-cut exclusion state carried into a fresh
+   `search()` call, which isn't implemented -- a known, documented limitation, not an oversight).
+   Verified live against the real app with the known-hardest real 17-skill sword-build query (confirmed
+   end-to-end: the retry found a valid result after the initial round timed out).
 
 5. ~~**A browsable database page listing every registered piece/deco/cuff** -- mirror the existing
    gear category tree on a new page, showing every item and letting it be filtered down by the same

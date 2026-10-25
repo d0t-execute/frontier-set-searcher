@@ -1,7 +1,28 @@
 import { describe, expect, it, vi } from 'vitest'
 import { handleSearchRequest } from './worker-handler'
+import * as engine from './engine'
 import type { WorkerResponse } from './worker-protocol'
-import type { Candidate, SlotQuery } from './types'
+import type { BuildResult, Candidate, SlotQuery } from './types'
+
+// A real `search()` solves these tiny synthetic models far too fast to ever
+// hit its time box, so the `'timedOut'` tests below spy on `search` instead
+// of trying to force a real HiGHS solve to time out deterministically (the
+// real thing is instead demonstrated against a known-hard real query in
+// engine.real-data.performance.test.ts). Every other test in this file keeps
+// using the real `search()` -- only `mockImplementationOnce` calls opt a
+// single test into a fake generator.
+vi.mock('./engine', async (importOriginal) => {
+  const actual = await importOriginal<typeof engine>()
+  return { ...actual, search: vi.fn(actual.search) }
+})
+
+async function* fakeGenerator(
+  results: readonly BuildResult[],
+  reason: engine.SearchEndReason,
+): AsyncGenerator<BuildResult, engine.SearchEndReason> {
+  for (const result of results) yield result
+  return reason
+}
 
 function candidate(id: string, skills: Record<number, number>): Candidate {
   return {
@@ -119,5 +140,48 @@ describe('handleSearchRequest', () => {
     )
 
     expect(post).not.toHaveBeenCalled()
+  })
+
+  // docs/feedback.md Round 3 #4's "search longer" retry -- see
+  // `TimedOutMessage`'s own docstring for why this only applies when zero
+  // results came back.
+  it('posts a timedOut message when the generator ends "timedOut" with no results yet', async () => {
+    vi.mocked(engine.search).mockImplementationOnce(() => fakeGenerator([], 'timedOut'))
+    const post = vi.fn<(message: WorkerResponse) => void>()
+
+    await handleSearchRequest(
+      { type: 'search', requestId: 'req-1', slots: [], requirements: [] },
+      post,
+      new Set(),
+    )
+
+    expect(post).toHaveBeenCalledWith({ type: 'timedOut', requestId: 'req-1' })
+  })
+
+  it('posts an ordinary done message when the generator ends "timedOut" after at least one result', async () => {
+    const result: BuildResult = { picks: new Map(), decorations: new Map(), cuffs: [], skillTotals: new Map() }
+    vi.mocked(engine.search).mockImplementationOnce(() => fakeGenerator([result], 'timedOut'))
+    const post = vi.fn<(message: WorkerResponse) => void>()
+
+    await handleSearchRequest(
+      { type: 'search', requestId: 'req-1', slots: [], requirements: [] },
+      post,
+      new Set(),
+    )
+
+    expect(post.mock.calls.map(([m]) => m.type)).toEqual(['result', 'done'])
+  })
+
+  it('posts an ordinary done message when the generator ends "exhausted"', async () => {
+    vi.mocked(engine.search).mockImplementationOnce(() => fakeGenerator([], 'exhausted'))
+    const post = vi.fn<(message: WorkerResponse) => void>()
+
+    await handleSearchRequest(
+      { type: 'search', requestId: 'req-1', slots: [], requirements: [] },
+      post,
+      new Set(),
+    )
+
+    expect(post).toHaveBeenCalledWith({ type: 'done', requestId: 'req-1' })
   })
 })

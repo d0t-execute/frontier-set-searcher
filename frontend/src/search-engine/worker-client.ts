@@ -30,6 +30,13 @@ export interface SearchCallbacks {
    * worker-protocol.ts's `ProgressMessage`). Optional -- most tests have no
    * reason to care about this. */
   readonly onProgress?: (gap: number) => void
+  /** A `TimedOutMessage` arrived instead of `DoneMessage` -- the search gave
+   * up because its time box ran out, not because it proved no build exists
+   * (see that message's own docstring). Optional, and falls back to `onDone`
+   * when omitted, so an existing caller that doesn't care about the
+   * distinction keeps working exactly as before (2026-10-25, docs/feedback.md
+   * Round 3 #4's "search longer" retry). */
+  readonly onTimedOut?: () => void
 }
 
 export class SearchWorkerClient {
@@ -86,6 +93,10 @@ export class SearchWorkerClient {
       case 'done':
         this.pending.delete(message.requestId)
         callbacks.onDone()
+        break
+      case 'timedOut':
+        this.pending.delete(message.requestId)
+        ;(callbacks.onTimedOut ?? callbacks.onDone)()
         break
       case 'error':
         this.pending.delete(message.requestId)

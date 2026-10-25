@@ -178,4 +178,35 @@ describe('SearchWorkerClient', () => {
 
     expect(() => worker.emit({ type: 'done', requestId: 'unknown' })).not.toThrow()
   })
+
+  // docs/feedback.md Round 3 #4's "search longer" retry -- see
+  // `TimedOutMessage`'s own docstring.
+  it('routes a timedOut message to onTimedOut and stops tracking the request', () => {
+    const worker = new FakeWorker()
+    const client = new SearchWorkerClient(worker)
+    const onDone = vi.fn()
+    const onTimedOut = vi.fn()
+
+    const requestId = client.search(slots, [], [], { onResult: vi.fn(), onDone, onError: vi.fn(), onTimedOut })
+    worker.emit({ type: 'timedOut', requestId })
+
+    expect(onTimedOut).toHaveBeenCalledTimes(1)
+    expect(onDone).not.toHaveBeenCalled()
+
+    // Stops tracking the request, same as `done` -- a later message for it is
+    // silently ignored rather than calling the callback again.
+    worker.emit({ type: 'timedOut', requestId })
+    expect(onTimedOut).toHaveBeenCalledTimes(1)
+  })
+
+  it('falls back to onDone for a timedOut message when onTimedOut was not given', () => {
+    const worker = new FakeWorker()
+    const client = new SearchWorkerClient(worker)
+    const onDone = vi.fn()
+
+    const requestId = client.search(slots, [], [], { onResult: vi.fn(), onDone, onError: vi.fn() })
+    worker.emit({ type: 'timedOut', requestId })
+
+    expect(onDone).toHaveBeenCalledTimes(1)
+  })
 })

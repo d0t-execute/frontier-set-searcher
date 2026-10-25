@@ -298,20 +298,29 @@ export interface SearchOptions {
    * and this asks for a *higher* bar on top of it, not a replacement. */
   readonly optionalSkillRequirements?: readonly OptionalSkillRequirement[]
 
-  /** Internal/test-only override of `engine.ts`'s `TIME_BOX_SECONDS` module
-   * default, for one specific call rather than every search -- never surfaced
-   * in the UI. Exists because that module constant has to serve every caller
-   * at once (production searches, the property-based correctness test, and
-   * CI's real-data performance tests), and CI's runner solving measurably
-   * slower than a local dev machine for one particular hard query doesn't
-   * justify giving every *other* caller a bigger budget too (tried once,
-   * 2026-10-20: it cost `engine.property.test.ts` a timeout and nearly
-   * tripled the whole suite's CI runtime for no benefit to any other query). */
+  /** Override of `engine.ts`'s `TIME_BOX_SECONDS` module default, for one
+   * specific call rather than every search. Exists because that module
+   * constant has to serve every caller at once (production searches, the
+   * property-based correctness test, and CI's real-data performance tests),
+   * and CI's runner solving measurably slower than a local dev machine for
+   * one particular hard query doesn't justify giving every *other* caller a
+   * bigger budget too (tried once, 2026-10-20: it cost
+   * `engine.property.test.ts` a timeout and nearly tripled the whole suite's
+   * CI runtime for no benefit to any other query). **Update (2026-10-25):**
+   * also now how `App.tsx`'s opt-in "Search longer" retry asks for a bigger
+   * budget on one specific rerun after a search's time box ran out without
+   * ever proving the query impossible (`engine.ts`'s `SearchEndReason`, docs/
+   * feedback.md Round 3 #4) -- raising it as a blanket default instead was
+   * rejected for the same reason as above, just confirmed again at
+   * production scale: it would equally slow down the (more common) case of a
+   * query that's genuinely infeasible but slow for HiGHS to *prove*
+   * infeasible, on every search, not just the rare one this is meant to
+   * rescue. */
   readonly timeBoxSeconds?: number
 
-  /** Internal/test-only override of `engine.ts`'s `MAX_TIME_BOX_ATTEMPTS`
-   * module default -- see `timeBoxSeconds`'s docstring for why this needs to
-   * be a per-call override rather than a global constant. */
+  /** Override of `engine.ts`'s `MAX_TIME_BOX_ATTEMPTS` module default -- see
+   * `timeBoxSeconds`'s docstring for why this needs to be a per-call override
+   * rather than a global constant, and for its own UI use since 2026-10-25. */
   readonly maxTimeBoxAttempts?: number
 }
 

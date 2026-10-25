@@ -48,6 +48,7 @@ import type { SharedSearchState } from './search-engine/shared-state'
 import type {
   PreferredCategoryCount,
   ResistanceElement,
+  SearchOptions,
   SkillRequirement,
   SkillTierThresholds,
 } from './search-engine/types'
@@ -415,6 +416,13 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [activeRequestId, setActiveRequestId] = useState<string | null>(null)
   const [reachedCap, setReachedCap] = useState(false)
+  // Set when a search round's own time box ran out without proving the query
+  // either way (`engine.ts`'s `SearchEndReason`), with zero results so far --
+  // distinct from a confirmed-impossible query, which never sets this
+  // (docs/feedback.md Round 3 #4's "search longer" retry). Only meaningful
+  // together with `results.length === 0`; a later successful search clears it
+  // via `handleSearch`'s own reset, same as `reachedCap`.
+  const [timedOutEmpty, setTimedOutEmpty] = useState(false)
   // HiGHS's own `mip_gap` for the round currently solving (docs/feedback.md
   // Round 3 #3) -- `null` until the first callback fires each round, so the
   // UI shows plain "Searching…" rather than a stale number from a prior one.
@@ -857,13 +865,20 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
     maxResults,
   ])
 
-  function handleSearch(): void {
+  /** `timeBoxOverride` is only ever passed by the "Search longer" button
+   * (docs/feedback.md Round 3 #4) -- an ordinary search always uses
+   * `engine.ts`'s production defaults (`{}`). Kept as a parameter rather than
+   * a second function so the retry reruns the *exact* same query (every
+   * other option, requirement, and exclusion derived identically) with only
+   * the time box itself widened. */
+  function handleSearch(timeBoxOverride: Pick<SearchOptions, 'timeBoxSeconds' | 'maxTimeBoxAttempts'> = {}): void {
     const allRequirements = [...requirements, ...zenithRequirements]
     if (!worker || !bundle || allRequirements.length === 0) return
 
     setResults([])
     setErrorMessage(null)
     setReachedCap(false)
+    setTimedOutEmpty(false)
 
     const {
       slots,
@@ -942,12 +957,17 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
         },
         onProgress: (gap) => setSearchProgress(gap),
         onDone: () => setStatus('done'),
+        onTimedOut: () => {
+          setTimedOutEmpty(true)
+          setStatus('done')
+        },
         onError: (message) => {
           setStatus('error')
           setErrorMessage(message)
         },
       },
       {
+        ...timeBoxOverride,
         preferExactMatches,
         skillTiers,
         pinnedCuffs,
@@ -965,6 +985,21 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
       cuffs,
     )
     setActiveRequestId(requestId)
+  }
+
+  /** The "Search longer" retry (docs/feedback.md Round 3 #4) -- reruns the
+   * exact same query with a much bigger per-round time box, for the one case
+   * where that's worth the wait: a prior round gave up without ever proving
+   * the query impossible (`onTimedOut` above), not a confirmed dead end.
+   * These exact values (worst case 60+120+240=420s) are the ones
+   * `engine.real-data.performance.test.ts` already confirmed reliably find a
+   * result for the hardest known real query at this scale -- not raised as
+   * the production *default* for every search, since that would equally
+   * slow down the far more common case of a query that's genuinely
+   * infeasible but slow for HiGHS to prove infeasible (see `engine.ts`'s
+   * module docstring). */
+  function handleSearchLonger(): void {
+    handleSearch({ timeBoxSeconds: 60, maxTimeBoxAttempts: 3 })
   }
 
   // Save/load this search by a pasteable text code (docs/feedback.md #18) --
@@ -1630,7 +1665,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                   !worker ||
                   status === 'searching'
                 }
-                onClick={handleSearch}
+                onClick={() => handleSearch()}
               >
                 Search
               </button>
@@ -1645,7 +1680,19 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
           {status !== 'idle' && (
             <div className="app-status">
               {status === 'error' && errorMessage && <p role="alert">{errorMessage}</p>}
-              {status === 'done' && results.length === 0 && <p>No matching builds found.</p>}
+              {status === 'done' && results.length === 0 && !timedOutEmpty && (
+                <p>No matching builds found.</p>
+              )}
+              {status === 'done' && results.length === 0 && timedOutEmpty && (
+                <p>
+                  No build found within the normal time limit -- this doesn't necessarily mean one
+                  doesn't exist, just that the search didn't finish checking in time.{' '}
+                  <button type="button" className="btn btn-link p-0" onClick={handleSearchLonger}>
+                    Search longer
+                  </button>{' '}
+                  (can take several minutes).
+                </p>
+              )}
               {status === 'done' && reachedCap && (
                 <p>
                   Showing the top {maxResults} {maxResults === 1 ? 'result' : 'results'}. Narrow

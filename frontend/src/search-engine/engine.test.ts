@@ -195,7 +195,7 @@ describe('search', () => {
     // two candidates that both meet a requirement as tied") -- there's no
     // guaranteed winner to assert on, only that a result streams out lazily,
     // before the generator is fully drained.
-    expect(first.done).toBe(false)
+    if (first.done) throw new Error('expected a result, not the generator to finish')
     expect(['Helm A', 'Helm B']).toContain(first.value.picks.get('head')?.id)
   })
 })
@@ -438,4 +438,27 @@ describe('search with options.pinnedSlotDecorations', () => {
     expect(results[0].picks.get('head')?.id).toBe('Strong Helm')
     expect(results[0].decorations.get('head')?.map((d) => d.id)).toEqual(['Attack Deco'])
   })
+})
+
+describe("search's own generator return value (SearchEndReason)", () => {
+  // See docs/feedback.md Round 3 #4: `App.tsx`'s "search longer" retry only
+  // makes sense when a round gave up for lack of time, never when HiGHS
+  // proved no build exists -- these two cases must stay distinguishable.
+  it('reports "exhausted" for the trivial empty-slots case', async () => {
+    const generator = search([], [{ skillId: 1, minPoints: 3 }])
+    const final = await generator.next()
+    expect(final).toEqual({ done: true, value: 'exhausted' })
+  })
+
+  it('reports "exhausted" once every real combination has been proven infeasible', async () => {
+    const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Helm', { 1: 1 })] }]
+    const generator = search(slots, [{ skillId: 1, minPoints: 99 }])
+    const final = await generator.next()
+    expect(final).toEqual({ done: true, value: 'exhausted' })
+  })
+
+  // A real timed-out round can't be forced deterministically from a tiny
+  // synthetic model (HiGHS solves these far too fast to ever hit the time
+  // box) -- that direction is instead demonstrated against a real, known-hard
+  // query in engine.real-data.performance.test.ts.
 })

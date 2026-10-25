@@ -1095,6 +1095,70 @@ describe('App', () => {
     })
   })
 
+  describe('"Search longer" retry (docs/feedback.md Round 3 #4)', () => {
+    function timedOutWorker() {
+      const worker = makeWorker()
+      worker.search.mockImplementation((...args: unknown[]) => {
+        const callbacks = args[3] as { onTimedOut?: () => void }
+        callbacks.onTimedOut?.()
+        return 'req-1'
+      })
+      return worker
+    }
+
+    it('offers a "Search longer" retry instead of the plain no-results message when the worker times out', async () => {
+      const worker = timedOutWorker()
+      mockUseSearchWorker.mockReturnValue(worker as unknown as ReturnType<typeof useSearchWorker>)
+      const user = userEvent.setup()
+      render(<App />)
+
+      await user.click(screen.getByRole('button', { name: 'Attack' }))
+      await user.click(screen.getByRole('button', { name: /^search$/i }))
+
+      expect(screen.getByRole('button', { name: 'Search longer' })).toBeInTheDocument()
+      expect(screen.queryByText('No matching builds found.')).not.toBeInTheDocument()
+    })
+
+    it('reruns the search with a bigger time box when "Search longer" is clicked', async () => {
+      const worker = timedOutWorker()
+      mockUseSearchWorker.mockReturnValue(worker as unknown as ReturnType<typeof useSearchWorker>)
+      const user = userEvent.setup()
+      render(<App />)
+
+      await user.click(screen.getByRole('button', { name: 'Attack' }))
+      await user.click(screen.getByRole('button', { name: /^search$/i }))
+      await user.click(screen.getByRole('button', { name: 'Search longer' }))
+
+      expect(worker.search).toHaveBeenCalledTimes(2)
+      expect(worker.search).toHaveBeenLastCalledWith(
+        expect.anything(),
+        expect.anything(),
+        expect.anything(),
+        expect.anything(),
+        expect.objectContaining({ timeBoxSeconds: 60, maxTimeBoxAttempts: 3 }),
+        expect.anything(),
+      )
+    })
+
+    it('shows the plain no-results message (no retry offered) for an ordinary done with zero results', async () => {
+      const worker = makeWorker()
+      worker.search.mockImplementation((...args: unknown[]) => {
+        const callbacks = args[3] as { onDone: () => void }
+        callbacks.onDone()
+        return 'req-1'
+      })
+      mockUseSearchWorker.mockReturnValue(worker as unknown as ReturnType<typeof useSearchWorker>)
+      const user = userEvent.setup()
+      render(<App />)
+
+      await user.click(screen.getByRole('button', { name: 'Attack' }))
+      await user.click(screen.getByRole('button', { name: /^search$/i }))
+
+      expect(screen.getByText('No matching builds found.')).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Search longer' })).not.toBeInTheDocument()
+    })
+  })
+
   describe('Reset button', () => {
     afterEach(() => localStorage.clear())
 
