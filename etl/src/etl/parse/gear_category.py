@@ -1184,6 +1184,36 @@ def _has_deco_g_or_gf_tier(tokens: frozenset[str]) -> bool:
     return any(_DECO_G_TIER_RE.fullmatch(t) or _DECO_GF_TIER_RE.fullmatch(t) for t in tokens)
 
 
+def _blank_class_name_prefix(name: str) -> str | None:
+    """Returns "G", "GF", or "GX" when a decoration's own name is actually
+    PREFIXED with that bare word (e.g. "G Attack・Draw", "G Issen・Herb", "G
+    Protect・Status"), or `None` otherwise -- the real G/GF/GX-tier marker for
+    a row with no `CLASS` of its own (`classify_decoration_category`'s two
+    blank-CLASS branches below).
+
+    Deliberately NOT `_has_deco_g_or_gf_tier`/`_has_deco_gx_tier` above (which
+    look for a *trailing* numbered token like "G2"/"GF3" -- correct for an
+    actual CLASS=G row such as "Shantien BM G2"): applying that suffix check
+    to a blank-CLASS row instead (2026-10-24's fix) wrongly swept up every
+    decoration whose name merely *ends* in an unrelated "G" word -- confirmed
+    wrong by the project owner against the real dataset (2026-10-25): e.g.
+    "Attack G", "Defense G", "Blade Protect G", "Gathering G", "Sharp Focus G"
+    are plain Standard/Event decorations with no G-rank tier at all, while the
+    genuine G-rank items in this same blank-CLASS pool are always *prefixed*
+    instead ("G Attack・...", "G Issen・...", "G Rage・...", "G Protect・...").
+    Confirmed against the real dataset: this reclassifies only 14 of the 122
+    decorations the broader suffix check had wrongly moved to Standard-tier G
+    (and 41 of 49 for Event-tier G), reverting the rest to their original
+    category.
+    """
+    first_word = name.split(maxsplit=1)[0] if name else ""
+    if first_word == "GX":
+        return "GX"
+    if first_word in ("G", "GF"):
+        return first_word
+    return None
+
+
 def classify_decoration_category(fields: list[str]) -> str:
     """Returns the decoration-tree category leaf key for one decoration row.
 
@@ -1248,16 +1278,13 @@ def classify_decoration_category(fields: list[str]) -> str:
             return CATEGORY_DECO_OTHER
         # A row can carry CRE="1e" with no CLASS of its own (same blank-CLASS
         # situation the Standard-tier branch below has) while still being a
-        # real G/GX-tier decoration by name alone -- confirmed against the
-        # real dataset (2026-10-24, reported by a beta tester): every one of
-        # deco_event's ~49 rows under the old code (which skipped this check
-        # whenever CLASS != G) turned out to carry a G/GF/GX name token (e.g.
-        # "G Attack・Style", "Blade Protect G"), none a genuinely G-rank-free
-        # event name -- so this checks the same way the CLASS=G branch above
-        # already does, rather than assuming blank CLASS means "not G-tier."
-        if _has_deco_gx_tier(tokens):
+        # real G/GF/GX-tier decoration by its name's own leading word -- see
+        # `_blank_class_name_prefix`'s own docstring for why this must be a
+        # prefix check, not the CLASS=G branch's suffix one above.
+        blank_prefix = _blank_class_name_prefix(name)
+        if blank_prefix == "GX":
             return CATEGORY_DECO_EVENT_GX
-        if _has_deco_g_or_gf_tier(tokens):
+        if blank_prefix in ("G", "GF"):
             return CATEGORY_DECO_EVENT_G
         return CATEGORY_DECO_EVENT
 
@@ -1286,17 +1313,18 @@ def classify_decoration_category(fields: list[str]) -> str:
             return CATEGORY_DECO_SP_LV2
         return CATEGORY_DECO_SP
     if clazz == "":
-        # Same bug as the CRE="1e" branch above, confirmed by the same beta
-        # report: a decoration with no CLASS of its own can still be a real
-        # G/GX-tier item by name (e.g. "G Rage・Attack", "Defense G") -- these
-        # were previously lumped into plain "Standard Production" (CLASS alone
-        # was trusted as the sole G/GX signal, same mistake TODO #1's
-        # `is_grank_or_later_equipment` fix already corrected for armor).
-        # Confirmed against the real dataset: 136 of 271 deco_standard rows
-        # carry a G or GX name token.
-        if _has_deco_gx_tier(tokens):
+        # A decoration with no CLASS of its own can still be a real G/GF/GX-
+        # tier item by its name's own leading word (e.g. "G Rage・Attack") --
+        # CLASS alone was wrongly trusted as the sole G-tier signal here (same
+        # mistake TODO #1's `is_grank_or_later_equipment` fix already
+        # corrected for armor). See `_blank_class_name_prefix`'s own docstring
+        # for why this must be a prefix check, not the CLASS=G branch's
+        # suffix one above -- a *trailing* "G" word here (e.g. "Defense G")
+        # is a coincidence, not a tier marker.
+        blank_prefix = _blank_class_name_prefix(name)
+        if blank_prefix == "GX":
             return CATEGORY_DECO_GX
-        if _has_deco_g_or_gf_tier(tokens):
+        if blank_prefix in ("G", "GF"):
             return CATEGORY_DECO_G
         return CATEGORY_DECO_STANDARD
     return CATEGORY_DECO_OTHER  # anything unmodeled

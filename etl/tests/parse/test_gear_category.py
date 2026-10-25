@@ -1387,15 +1387,24 @@ def test_deco_standard() -> None:
     assert classify_decoration_category(_row("Attack Gem", cre="1-")) == CATEGORY_DECO_STANDARD
 
 
-def test_deco_standard_class_with_g_name_token_is_g_not_standard() -> None:
-    # Regression (2026-10-24, beta feedback): a decoration can carry a G or
-    # GX name token with no CLASS of its own -- these were previously
+def test_deco_standard_class_with_g_name_prefix_is_g_not_standard() -> None:
+    # Regression (2026-10-24, beta feedback): a decoration can carry a real
+    # G/GF/GX-tier name with no CLASS of its own -- these were previously
     # miscategorized as plain Standard Production since only CLASS was
-    # checked, not the name. Real examples: "Defense G" (suffix), "G
-    # Rage・Attack" (prefix, a combo decoration).
-    assert classify_decoration_category(_row("Defense G", cre="1-")) == CATEGORY_DECO_G
+    # checked, not the name. "G Rage・Attack" is a real combo decoration.
     assert classify_decoration_category(_row("G Rage・Attack", cre="1-")) == CATEGORY_DECO_G
-    assert classify_decoration_category(_row("Defense GX1", cre="1-")) == CATEGORY_DECO_GX
+    assert classify_decoration_category(_row("GX Something", cre="1-")) == CATEGORY_DECO_GX
+
+
+def test_deco_standard_class_with_g_name_suffix_stays_standard() -> None:
+    # Regression (2026-10-25, project owner correction to the fix above): the
+    # first version of this fix matched a bare "G"/"GF"/"GX" word ANYWHERE in
+    # the name, which wrongly moved dozens of decorations whose name merely
+    # *ends* in an unrelated "G" word (e.g. "Attack G", "Defense G") into
+    # G-rank -- confirmed against the real dataset that only a *leading* "G"
+    # word is a real tier marker here; a trailing one is a coincidence.
+    assert classify_decoration_category(_row("Defense G", cre="1-")) == CATEGORY_DECO_STANDARD
+    assert classify_decoration_category(_row("Attack G", cre="1-")) == CATEGORY_DECO_STANDARD
 
 
 def test_deco_g() -> None:
@@ -1503,17 +1512,22 @@ def test_deco_event_g() -> None:
     )
 
 
-def test_deco_event_class_blank_with_g_name_token_is_event_g_not_event() -> None:
+def test_deco_event_class_blank_with_g_name_prefix_is_event_g_not_event() -> None:
     # Regression (2026-10-24, beta feedback): a CRE="1e" row with no CLASS of
-    # its own ("Blade Protect G", "G Attack・Style") was previously dumped
-    # into plain Event Decorations, since the tier-token check only ran when
-    # CLASS=="I" -- every real deco_event row turned out to carry a G/GX name
-    # token, none a genuinely tier-free event name.
-    assert classify_decoration_category(_row("Blade Protect G", cre="1e")) == CATEGORY_DECO_EVENT_G
+    # its own ("G Attack・Style") was previously dumped into plain Event
+    # Decorations, since the tier check only ran when CLASS=="I".
     assert classify_decoration_category(_row("G Attack・Style", cre="1e")) == CATEGORY_DECO_EVENT_G
-    assert (
-        classify_decoration_category(_row("Blade Protect GX1", cre="1e")) == CATEGORY_DECO_EVENT_GX
-    )
+    assert classify_decoration_category(_row("GX Something", cre="1e")) == CATEGORY_DECO_EVENT_GX
+
+
+def test_deco_event_class_blank_with_g_name_suffix_stays_event() -> None:
+    # Regression (2026-10-25, project owner correction to the fix above): the
+    # first version of this fix matched a bare "G"/"GX" word ANYWHERE in the
+    # name, which wrongly moved decorations like "Blade Protect G" (a plain
+    # Event decoration whose name just ends in an unrelated "G" word) into
+    # G-rank -- only a *leading* "G"/"GX" word is a real tier marker here.
+    assert classify_decoration_category(_row("Blade Protect G", cre="1e")) == CATEGORY_DECO_EVENT
+    assert classify_decoration_category(_row("Blade Protect GX1", cre="1e")) == CATEGORY_DECO_EVENT
 
 
 def test_deco_event_gx() -> None:

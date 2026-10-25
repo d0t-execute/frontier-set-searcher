@@ -279,15 +279,16 @@ demographic" for this new tool.
 1. ~~**Several decorations need recategorizing out of "Standard Production"** -- reported via an
    attached CSV of 47 decoration names (e.g. "G Rage・Attack", "G Attack・Draw"), all clearly G-rank
    combo-skill decorations (crafted from G-rank monster materials) that were showing up as plain
-   Standard-tier items instead.~~ **DONE** (2026-10-24, see
+   Standard-tier items instead.~~ **DONE** (2026-10-24, corrected 2026-10-25, see
    [gear-category-taxonomy.md](gear-category-taxonomy.md)'s "Blank-`CLASS` G/GX decorations" note):
-   confirmed the real bug was broader than the 47 reported -- `classify_decoration_category` only
-   ever checked a decoration's name for a G/GF/GX tier token when its raw `CLASS` field was also
-   G-rank-tagged (`CLASS=I`); a decoration with a blank `CLASS` (which includes all 47 reported, plus
-   75 more like it) fell through to "Standard"/"Event" regardless of its own name. Fixed by running
-   the same name check unconditionally; moved 122 rows from `deco_standard` to `deco_g` and all 49
-   `deco_event` rows to `deco_event_g`/`deco_event_gx` (0 genuinely tier-free event decorations
-   existed in the real dataset). No new category needed -- these landed in already-existing leaves.
+   the first pass (2026-10-24) was overcorrected -- it matched a bare "G"/"GF"/"GX" word *anywhere* in
+   a blank-`CLASS` decoration's name, which wrongly moved 122 `deco_standard` and all 49 `deco_event`
+   rows, including plenty whose name just *ends* in an unrelated "G" word (e.g. "Attack G", "Defense
+   G", "Blade Protect G"). The project owner confirmed (2026-10-25) only a name *prefixed* with
+   "G "/"GF "/"GX " (e.g. "G Attack・Draw", "G Issen・Herb", "G Protect・Status/Exploit", "G
+   Rage・Attack") is a real tier marker for these blank-`CLASS` rows -- re-fixed to check position, not
+   just presence; of the originally-moved 122/49, 14/41 were genuinely G-rank and stayed, the other
+   108/8 reverted to `deco_standard`/`deco_event`.
 
 2. ~~**Prefer a set of (Zenith) skills, not just hard-require them** -- same soft-preference family as
    the already-shipped "preferred pieces/categories" (Round 2 #2 above), but for skills instead of
@@ -300,13 +301,13 @@ demographic" for this new tool.
    preferred pieces still dominate this, up to 7 priority tiers get real dominance, and same-priority
    skills are interchangeable (satisfying more than one earns no more than satisfying just one).
 
-3. **A progress/loading indicator while a search runs** -- currently there's no feedback at all beyond
-   results streaming in once found; a percentage or loading bar was requested. **Not started.** Needs
-   scoping what "percentage" would even mean given this is a time-boxed MIP solve, not a
-   known-size enumeration -- there's no natural "N% done" signal from HiGHS mid-solve. An
-   indeterminate spinner/bar (just "searching...") is a much smaller lift than a real percentage and
-   may be what's actually achievable; worth confirming which the reporter would accept before
-   building either.
+3. ~~**A progress/loading indicator while a search runs** -- currently there's no feedback at all
+   beyond results streaming in once found; a percentage or loading bar was requested.~~ **DONE**
+   (2026-10-24): HiGHS's own `mipLogging` callback exposes a real `mip_gap` (how far the best-found
+   solution is from proven-optimal) that `engine.ts` wasn't reading at all (only `mipInterrupt`, for
+   the existing time-box). Surfaced through the worker protocol as a new `progress` message; the UI
+   now shows "Searching... (NN%)", persisting and updating across every no-good-cut round rather than
+   disappearing after the first result.
 
 4. **Bug report: excluding "G or GF" G-rank decorations causes a previously-successful search to find
    nothing, even though the reporter says the returned build didn't use any G/GF decoration in the
@@ -322,12 +323,15 @@ demographic" for this new tool.
    slower hardware. Needs the reporter's exact skill selections/settings to actually reproduce and
    tell these apart.
 
-5. **A browsable database page listing every registered piece/deco/cuff** -- mirror the existing gear
-   category tree on a new page, showing every item and letting it be filtered down by the same active
-   categories; ideally with a column naming which category each row belongs to. Also requests a
+5. ~~**A browsable database page listing every registered piece/deco/cuff** -- mirror the existing
+   gear category tree on a new page, showing every item and letting it be filtered down by the same
+   active categories; ideally with a column naming which category each row belongs to. Also requests a
    top-level "show all" link for each of the three trees (armor, cuffs, decorations) in addition to
-   the existing per-leaf "Table" links (`CategoryTablePage.tsx`, Round 1 #2/Round 2 #9). **Not
-   started.** `CategoryTablePage.tsx` already does almost exactly this per-leaf -- extending it to an
-   "all categories, all items, filter by category" view is a plausible, fairly contained extension of
-   existing infrastructure rather than new groundwork, but the exact UI (one page per tree with a
-   category filter? one unified page?) needs scoping.
+   the existing per-leaf "Table" links (`CategoryTablePage.tsx`, Round 1 #2/Round 2 #9).~~ **DONE**
+   (2026-10-24): extended `CategoryTablePage.tsx` with a `categoryKey: null` "all items" mode -- every
+   armor/cuff/decoration of that kind at once, with an added Category column and its own
+   category-tree filter (reusing `CategoryFilter`). Added a "Show all armor/cuffs/decorations" link
+   under each tree on the main search page, pointing at the new `#/category/<kind>` route. The real
+   "All Gear" view (~62,000 rows) initially took ~10s to open or re-filter -- fixed separately by
+   windowing the table's rendering (only DOM-rendering the visible scroll range), not by changing the
+   filtering logic itself.

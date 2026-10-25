@@ -580,11 +580,11 @@ bucket, see docs/data-format-notes.md "Cuffs").
 
 | Leaf | Key | Rule | Count | Confidence |
 |---|---|---|---|---|
-| 無分類 | `deco_standard` | `CRE=1-`, plain, no G/GF/GX name token | 149 | HIGH |
+| 無分類 | `deco_standard` | `CRE=1-`, plain, no G/GF/GX name *prefix* (a blank-`CLASS` row's name may still end in an unrelated "G" word, e.g. "Attack G", "Defense G" -- not a tier marker, see note below) | 257 | HIGH |
 | SP | `deco_sp` | `CRE=1-` + `CLASS A`, name ends plain "SP" | 43 | CONFIRMED — see "SP Decorations" note below |
 | SP改 (SP Lv2) | `deco_sp_lv2` | `CRE=1-` + `CLASS A`, name ends "SP α" | 43 | CONFIRMED |
 | SP真 (SP Lv3) | `deco_sp_lv3` | `CRE=1-` + `CLASS A`, name ends "SP β" | 43 | CONFIRMED |
-| G | `deco_g` | `CRE=1-`, G/GF name token (incl. numbered `G2`.."G5"/`GF2`.."GF5" tier variants) — `CLASS I` (monster-material decorations) or blank `CLASS` (plain combo/skill decorations, e.g. "Defense G", "G Rage・Attack") | 482 | HIGH |
+| G | `deco_g` | `CRE=1-`, G/GF name token — `CLASS I` (monster-material decorations, incl. numbered `G2`.."G5"/`GF2`.."GF5" tier *suffix* variants) or blank `CLASS` with a leading "G "/"GF " name *prefix* (plain combo/skill decorations, e.g. "G Rage・Attack" -- not "Defense G", whose trailing "G" isn't a tier marker, see note below) | 374 | HIGH |
 | GX | `deco_gx` | `CRE=1-`, GX name token — `CLASS I` or blank `CLASS` | 842 | HIGH |
 | G祕 (Hiden) | `deco_hiden` | `CRE=1-` + `CLASS L` "Hiden?" | 56 | HIGH |
 | 真G祕 (True Hiden) | `deco_true_hiden` | `CRE=1-` + `CLASS L` "True?" | 56 | HIGH |
@@ -598,8 +598,8 @@ bucket, see docs/data-format-notes.md "Cuffs").
 | Heruto (Extreme Quest) | `deco_extreme_heruto` | `CRE=1e` + `CLASS I`, name starts "Heruto" | 1 | CONFIRMED — user-provided name |
 | Iroasu (Extreme Quest) | `deco_extreme_iroasu` | `CRE=1e` + `CLASS I`, name starts "Iroasu" | 1 | CONFIRMED — user-provided name |
 | Luchar (Extreme Quest) | `deco_extreme_luchar` | `CRE=1e` + `CLASS I`, name starts "Luchar" | 3 | CONFIRMED — user-provided name |
-| イ (Event) | `deco_event` | `CRE=1e`, no G/GF/GX name token | 0 | HIGH — **Correction (2026-10-24):** every real `CRE=1e` row turned out to carry a G/GF/GX name token (none genuinely tier-free), so this leaf is empty in the current dataset; see `deco_event_g`/`deco_event_gx` below |
-| イG | `deco_event_g` | `CRE=1e`, G/GF name token, not a Musou/Extreme Quest name — `CLASS I` or blank `CLASS` | 53 | HIGH |
+| イ (Event) | `deco_event` | `CRE=1e`, no G/GF/GX name token (a blank-`CLASS` row's trailing "G" word, e.g. "Blade Protect G", doesn't count -- see note below) | 8 | HIGH |
+| イG | `deco_event_g` | `CRE=1e`, G/GF name token, not a Musou/Extreme Quest name — `CLASS I`, or blank `CLASS` with a leading "G "/"GF " name prefix | 45 | HIGH |
 | イGX | `deco_event_gx` | `CRE=1e`, GX name token, not a Musou/Extreme Quest name — `CLASS I` or blank `CLASS` | 40 | HIGH — includes "Reiresu"/"Reuasu"/"Riaruo" (plain, numbered-tier event-GX names explicitly ruled out as Musou by the project owner) and "Jess" (G/GF/GX1-5) |
 | 祭G (Festival) | `deco_festival_g` | `CRE=2m` + `CLASS I` + G/GF | 106 | HIGH |
 | 祭GX (Festival GX) | `deco_festival_gx` | `CRE=2m` + `CLASS I` + GX | 315 | HIGH |
@@ -617,21 +617,32 @@ bucket, see docs/data-format-notes.md "Cuffs").
 | (unsurfaced) Tower Gem | `deco_tower` | `CRE=1t` + `CLASS N` | 173 | HIGH — not a selectable leaf in this tree; governed by the separate `isTower` flag |
 | (unsurfaced) everything else | `deco_other` | anything unmodeled (none found in the real dataset as of 2026-10-18) | 0 | n/a |
 
-**Blank-`CLASS` G/GX decorations (2026-10-24, beta feedback):** a decoration
-with no `CLASS` of its own (`deco_standard`'s and `deco_event`'s fallback
-branches) was previously classified purely by `CLASS`, never by name, same
-mistake `is_grank_or_later_equipment` (docs/skill-system-roadmap.md TODO #1)
-already found and fixed for armor. A beta tester reported several "Standard"
-decorations that were clearly G-rank combo skills (e.g. "G Rage・Attack",
-crafted from G-rank monster materials) -- checking the full real dataset found
-this was far broader than their example: 122 `deco_standard` rows and all 49
-`deco_event` rows carried a G/GF/GX name token despite a blank `CLASS`.
-`classify_decoration_category` now runs the same `_has_deco_g_or_gf_tier`/
-`_has_deco_gx_tier` name check in both blank-`CLASS` fallbacks that the
-`CLASS=I` branches already used, routing these into the existing `deco_g`/
-`deco_gx`/`deco_event_g`/`deco_event_gx` leaves instead of inventing a new one
--- no UI/category-tree change needed, since this was purely a bug in which
-existing leaf a row landed in, not a gap in the tree itself.
+**Blank-`CLASS` G/GX decorations (2026-10-24, beta feedback; corrected
+2026-10-25):** a decoration with no `CLASS` of its own (`deco_standard`'s and
+`deco_event`'s fallback branches) was previously classified purely by
+`CLASS`, never by name, same mistake `is_grank_or_later_equipment`
+(docs/skill-system-roadmap.md TODO #1) already found and fixed for armor. A
+beta tester reported several "Standard" decorations that were clearly G-rank
+combo skills (e.g. "G Rage・Attack", crafted from G-rank monster materials).
+
+The first fix (2026-10-24) reused `_has_deco_g_or_gf_tier`/`_has_deco_gx_tier`
+-- the same check the `CLASS=I` branches use, which looks for a bare
+"G"/"GF"/"GX" word *anywhere* in the name (correct there, since a `CLASS=I`
+row's tier is always a *trailing* token, e.g. "Shantien BM G2"). Applied to a
+blank-`CLASS` row instead, this was far too broad: it moved 122
+`deco_standard` rows and all 49 `deco_event` rows, but the project owner
+confirmed against the real data (2026-10-25) that only a name *prefixed*
+with "G "/"GF "/"GX " is a genuine blank-`CLASS` tier marker (e.g. "G
+Attack・Draw", "G Issen・Herb", "G Rage・Attack", "G Protect・Status/Exploit")
+-- a name that merely *ends* in an unrelated "G" word (e.g. "Attack G",
+"Defense G", "Blade Protect G", "Gathering G") is coincidental, not a tier
+marker, and stays in its original category. `classify_decoration_category`
+now uses a separate, position-aware `_blank_class_name_prefix` check in both
+blank-`CLASS` fallbacks instead of the `CLASS=I` branches' suffix-based one --
+of the 122/49 originally moved, 14/41 were genuinely G-rank and stayed, the
+other 108/8 reverted to `deco_standard`/`deco_event`. No UI/category-tree
+change needed either time, since this was purely a bug in which existing leaf
+a row landed in, not a gap in the tree itself.
 
 **SP Decorations (2026-10-18):** confirmed by the project owner to be usable
 only in SP armor, the identical restriction (and identical plumbing
