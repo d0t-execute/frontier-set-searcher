@@ -794,6 +794,27 @@ code {
   }
 }
 
+/* Forces the desktop three-column layout back on for an off-screen *clone*
+ * of a result card, regardless of the actual viewport (ResultsList.tsx's
+ * `captureDesktopLayout`, used by "Download as image"/"Copy image") -- a
+ * compound class selector beats a single-class one regardless of which is
+ * inside a media query, so this doesn't need `!important`.
+ *
+ * The column ratio alone isn't enough: on an actual narrow viewport, `1fr`'s
+ * default minimum (`auto`, i.e. its content's own min-content size) still
+ * squeezes each column into the same few hundred pixels the mobile layout
+ * had, wrapping the Stats column's button row and making the card just as
+ * tall as before despite the grid ratio being "right" -- confirmed directly
+ * against a real result card (the ratio applied, but the card's own box
+ * stayed 287px wide, not the ~1000px a real desktop window gives it). An
+ * explicit width large enough for a comfortable desktop rendering fixes
+ * that; nothing constrains `.result-card`'s own max-width, so this doesn't
+ * fight any other rule. */
+.result-card.result-card-capturing {
+  width: 1000px;
+  grid-template-columns: 1fr 1.6fr 0.9fr;
+}
+
 /* Each column is its own equal-height panel (2026-10-15, per the project
  * owner: the three columns "looked uneven" -- the Stats column in
  * particular has far less content than Skills/Picks, so without a visible

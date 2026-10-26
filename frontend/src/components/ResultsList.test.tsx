@@ -1,8 +1,15 @@
 import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import userEvent from '@testing-library/user-event'
+import { toPng } from 'html-to-image'
+import { describe, expect, it, vi } from 'vitest'
 import { ResultsList } from './ResultsList'
 import type { NamedBuildResult } from './types'
 import type { NamedCandidate, NamedSkill } from '../search-engine/load-bundle'
+
+vi.mock('html-to-image', () => ({
+  toPng: vi.fn().mockResolvedValue('data:image/png;base64,'),
+  toBlob: vi.fn().mockResolvedValue(new Blob()),
+}))
 
 const skillNames = new Map([
   [1, 'Attack'],
@@ -660,5 +667,35 @@ describe('ResultsList', () => {
 
     expect(screen.queryAllByRole('listitem')).toHaveLength(0)
     expect(container.querySelector('ul')).not.toBeInTheDocument()
+  })
+
+  it('rasterizes a detached, desktop-forced clone instead of the live card', async () => {
+    const user = userEvent.setup()
+    let capturedNode: HTMLElement | undefined
+    vi.mocked(toPng).mockImplementation((node) => {
+      capturedNode = node as HTMLElement
+      return Promise.resolve('data:image/png;base64,')
+    })
+
+    const { container } = render(
+      <ResultsList
+        results={[result()]}
+        skillNames={skillNames}
+        skills={skills}
+        zenithSkills={zenithSkills}
+      />,
+    )
+    const liveCard = container.querySelector('.result-card') as HTMLElement
+    await user.click(screen.getByRole('button', { name: /download as image/i }))
+
+    // A clone, not the live card itself -- so the forced-desktop-width
+    // override is never visibly applied to the live page the player is
+    // actually looking at, not even for an instant.
+    expect(capturedNode).not.toBe(liveCard)
+    expect(capturedNode?.classList.contains('result-card')).toBe(true)
+    expect(capturedNode?.classList.contains('result-card-capturing')).toBe(true)
+    expect(liveCard.classList.contains('result-card-capturing')).toBe(false)
+    // The detached clone is cleaned up afterward, not left in the document.
+    expect(capturedNode?.isConnected).toBe(false)
   })
 })

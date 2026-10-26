@@ -250,6 +250,42 @@ export function ResultCard({
       .finally(() => setIsGeneratingShareUrl(false))
   }
 
+  /** Rasterizes `card` in its desktop layout, regardless of the actual
+   * viewport -- `toPng`/`toBlob` capture whatever's already laid out, not
+   * something that re-flows for an arbitrary target width, so without this a
+   * save/copy made on a narrow screen bakes in that screen's own cramped,
+   * single-column layout (2026-10-26, per the project owner: "Download as
+   * image"/"Copy image" should look the way the build does on PC no matter
+   * which device made it).
+   *
+   * Captures a detached, off-screen *clone* instead of forcing the override
+   * directly onto the live, on-screen card, so the wider desktop layout is
+   * never visible on the actual page the player is looking at, not even for
+   * an instant. `cloneNode` doesn't carry over a controlled input's live
+   * `.value` property (only its original `value` attribute), so the one
+   * example here -- the shareable-link box, once generated -- is copied over
+   * by hand. */
+  async function captureDesktopLayout<T>(
+    card: HTMLDivElement,
+    capture: (clone: HTMLDivElement) => Promise<T>,
+  ): Promise<T> {
+    const clone = card.cloneNode(true) as HTMLDivElement
+    clone.classList.add('result-card-capturing')
+    const liveInputs = card.querySelectorAll('input')
+    clone.querySelectorAll('input').forEach((input, i) => {
+      input.value = liveInputs[i].value
+    })
+    const wrapper = document.createElement('div')
+    wrapper.style.cssText = 'position: fixed; top: 0; left: -10000px; pointer-events: none;'
+    wrapper.appendChild(clone)
+    document.body.appendChild(wrapper)
+    try {
+      return await capture(clone)
+    } finally {
+      wrapper.remove()
+    }
+  }
+
   function handleDownloadImage(): void {
     const card = cardRef.current
     if (!card) return
@@ -257,7 +293,9 @@ export function ResultCard({
     // Captured against the page's own current background color (rather than
     // a fixed white/transparent default) so a dark-mode screenshot doesn't
     // come out with light gaps between the card's columns.
-    void toPng(card, { backgroundColor: getComputedStyle(document.body).backgroundColor })
+    void captureDesktopLayout(card, (clone) =>
+      toPng(clone, { backgroundColor: getComputedStyle(document.body).backgroundColor }),
+    )
       .then((dataUrl) => {
         const link = document.createElement('a')
         link.href = dataUrl
@@ -273,7 +311,9 @@ export function ResultCard({
     setIsCopyingImage(true)
     // Same rendering as "Download as image" (`handleDownloadImage`), just
     // written to the clipboard instead of triggering a file download.
-    void toBlob(card, { backgroundColor: getComputedStyle(document.body).backgroundColor })
+    void captureDesktopLayout(card, (clone) =>
+      toBlob(clone, { backgroundColor: getComputedStyle(document.body).backgroundColor }),
+    )
       .then((blob) => {
         if (!blob) return
         return navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })])
