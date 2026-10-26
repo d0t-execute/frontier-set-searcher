@@ -1764,7 +1764,23 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
               </select>
             </div>
 
-            <div className="d-flex gap-2 ms-auto">
+            <div className="d-flex align-items-center gap-2 ms-auto">
+              <InfoTooltip label="How results are found">
+                Each result comes from actually solving the query as an optimization problem, not
+                an instant lookup -- most rounds take well under a minute, but a tightly
+                constrained query can take longer. A round that times out empty retries once
+                automatically with a bigger budget; if it's still empty, "Search longer" offers a
+                much bigger one-time budget (can take several minutes). <br />
+                With "Prefer exact matches" on, each result is confirmed before the next one starts
+                filling in: a guess that's already unbeatable shows up as final right away, but the
+                moment one might not be the best, it briefly shows as a guess and is then replaced
+                with the real, verified build before any later result even begins. If that
+                verification runs out of time, a result is marked unproven instead of disappearing --
+                it's still a valid build, just not proven optimal -- and you can stop verifying early
+                and keep what's shown. <br />
+                Raising "Results to show" costs more time too, since each one is its own extra
+                solver round-trip.
+              </InfoTooltip>
               <button
                 type="button"
                 className="btn btn-primary"
