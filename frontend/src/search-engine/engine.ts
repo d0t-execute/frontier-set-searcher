@@ -74,7 +74,7 @@
 import { filterRelevantCuffs, filterRelevantDecorations } from './expand'
 import { getHighs } from './highs-runtime'
 import { breakpointsFromThresholds, buildModel, decodeSolution, exclusionRow, isUsableResult } from './ilp-model'
-import type { ColumnMeta } from './ilp-model'
+import type { BuildResultLike, ColumnMeta } from './ilp-model'
 import type {
   BuildResult,
   Cuff,
@@ -119,8 +119,41 @@ const MAX_TIME_BOX_ATTEMPTS = 2
  * even makes sense (2026-10-25, see docs/feedback.md Round 3 #4's
  * investigation: a real query was confirmed to hit exactly this case -- the
  * full decoration pool found nothing at production's default time box, but a
- * feasible build did exist, confirmed by widening the box). */
+ * feasible build did exist, confirmed by widening the box).
+ *
+ * `'found'` always means the live `native` model's current solution is the
+ * one to decode and yield -- except when `fallback` (below) is set, in which
+ * case `fallback` itself *is* the result, decoded from a since-excluded
+ * incumbent the live model can no longer reproduce. */
 type TimeBoxOutcome = 'found' | 'infeasible' | 'timedOut'
+
+/**
+ * A usable-but-not-verified-clean incumbent `runTimeBoxed`'s strict mode
+ * found and excluded (via `exclusionRow`) while searching for a better one,
+ * kept around in case time runs out before a clean one (or any better one)
+ * is ever found (2026-10-26, the "20-query sweep" follow-up to #2/#4 --
+ * confirmed directly: several real queries that used to return a build with
+ * a bonus skill active in ~20-35s, pre-#2/#4, instead returned *nothing at
+ * all* post-#2/#4, timing out around 90-110s once that incumbent got
+ * excluded and no cleaner one was ever found in time). Falling back to it
+ * restores "always answer if any valid build exists," the same guarantee the
+ * non-strict path and the pre-#2/#4 code both already had, without giving up
+ * #2/#4's own preference for a clean result when one is reachable in time --
+ * `fallback` is only ever used as an absolute last resort, never instead of a
+ * clean result that was actually found.
+ *
+ * Carries the raw `colValue` snapshot alongside the decoded result (not just
+ * `BuildResultLike`) because `exclusionRow` needs the raw per-column values
+ * to build a cut, and the live model has already moved past this exact
+ * combination by the time it's used -- `search()`'s own next-round cut must
+ * be built from this snapshot, not from `native.getSolution()`. Copied
+ * (`Float64Array.from`) rather than referenced, since the same buffer is
+ * reused by the native binding on every subsequent `native.run()` call.
+ */
+interface StrictFallback {
+  readonly decoded: BuildResultLike
+  readonly colValue: Float64Array
+}
 
 /** HiGHS's own fraction of configured B&B effort spent on primal heuristics
  * (default 0.05) -- raised only when `preferExactMatches` needs tier
@@ -160,7 +193,7 @@ function runTimeBoxed(
   requirements: readonly SkillRequirement[],
   options: SearchOptions,
   onProgress?: (gap: number) => void,
-): TimeBoxOutcome {
+): { outcome: TimeBoxOutcome; fallback?: StrictFallback } {
   let seconds = options.timeBoxSeconds ?? TIME_BOX_SECONDS
   const maxAttempts = options.maxTimeBoxAttempts ?? MAX_TIME_BOX_ATTEMPTS
 
@@ -184,6 +217,8 @@ function runTimeBoxed(
         ...(options.optionalSkillRequirements ?? []).map((r) => r.skillId),
       ])
     : undefined
+
+  let fallback: StrictFallback | undefined
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     // Shared across every cut-and-retry sub-solve within this attempt in
@@ -214,14 +249,29 @@ function runTimeBoxed(
       const modelStatus: ModelStatusCode = result.modelStatus
       const primalSolutionStatus = native.info.get('primal_solution_status') as number
       if (!isUsableResult(highs, modelStatus, primalSolutionStatus)) {
-        if (modelStatus !== highs.constants.modelStatus.interrupted) return 'infeasible' // proven, not just out of time
+        if (modelStatus !== highs.constants.modelStatus.interrupted) {
+          // Proven infeasible, not just out of time -- but in strict mode this
+          // can happen purely because our *own* cut-and-retry loop excluded
+          // every remaining combination while searching for a cleaner one,
+          // not because the query itself has no valid build at all. If we'd
+          // already found at least one usable (if imperfect) incumbent before
+          // that happened, prefer returning it over incorrectly reporting the
+          // whole query as infeasible.
+          return fallback ? { outcome: 'found', fallback } : { outcome: 'infeasible' }
+        }
         break // out of attempts for this deadline, double the budget below
       }
-      if (!strict) return 'found'
+      if (!strict) return { outcome: 'found' }
 
       const solution = native.getSolution()
       const decoded = decodeSolution(columns, solution.colValue)
-      if (!hasActiveBonusSkill(decoded.skillTotals, options.skillTiers!, skillPreferenceIds!)) return 'found'
+      if (!hasActiveBonusSkill(decoded.skillTotals, options.skillTiers!, skillPreferenceIds!)) {
+        return { outcome: 'found' }
+      }
+      // Not clean, but still a real, fully valid build -- remember it as a
+      // last resort (see `StrictFallback`'s own docstring) before trying to
+      // cut past it in search of something better.
+      fallback = { decoded, colValue: Float64Array.from(solution.colValue) }
       if (performance.now() >= deadline) break
 
       const cut = exclusionRow(highs, columns, solution.colValue)
@@ -229,7 +279,7 @@ function runTimeBoxed(
     }
     seconds *= 2
   }
-  return 'timedOut'
+  return fallback ? { outcome: 'found', fallback } : { outcome: 'timedOut' }
 }
 
 /** Why a `search()` generator stopped producing results, returned as the
@@ -301,11 +351,15 @@ export async function* search(
 
   try {
     for (;;) {
-      const outcome = runTimeBoxed(native, highs, columns, requirements, options, onProgress)
+      const { outcome, fallback } = runTimeBoxed(native, highs, columns, requirements, options, onProgress)
       if (outcome !== 'found') return outcome === 'timedOut' ? 'timedOut' : 'exhausted'
 
-      const solution = native.getSolution()
-      const decoded = decodeSolution(columns, solution.colValue)
+      // `fallback`'s combination has already been excluded from the live
+      // model (strict mode cuts it before trying to improve on it) -- decode
+      // and cut from the saved snapshot instead of `native.getSolution()`,
+      // which no longer reflects it (see `StrictFallback`'s own docstring).
+      const colValue = fallback ? fallback.colValue : native.getSolution().colValue
+      const decoded = fallback ? fallback.decoded : decodeSolution(columns, colValue)
       if (pinnedCuffs.length === 0) {
         yield decoded
       } else {
@@ -318,7 +372,7 @@ export async function* search(
         yield { ...decoded, cuffs: [...pinnedCuffs, ...decoded.cuffs], skillTotals }
       }
 
-      const cut = exclusionRow(highs, columns, solution.colValue)
+      const cut = exclusionRow(highs, columns, colValue)
       native.addRow(cut.lower, cut.upper, { indices: cut.indices, values: cut.values })
     }
   } finally {
