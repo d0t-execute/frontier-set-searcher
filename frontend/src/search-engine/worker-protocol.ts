@@ -39,9 +39,10 @@ export interface ResultMessage {
   readonly result: BuildResult
   /** Found in `preferExactMatches`'s fast first pass over a heuristic pool
    * (`SearchOptions.provisionalPoolSize`), not yet proven to be the best
-   * possible. Unset for a verified result: the first verified result replaces
-   * provisional result 0, the second replaces 1, and so on (see
-   * `worker-handler.ts`). */
+   * possible. Unset for a verified result, which replaces whichever
+   * provisional result occupies that same position (see `worker-handler.ts`
+   * -- at most one result is ever provisional at a time, since the search
+   * verifies each one before moving on to the next). */
   readonly provisional?: true
   /** A final (non-provisional) result whose round hit its time box before
    * HiGHS could prove it the best of what was left -- a valid build, but a

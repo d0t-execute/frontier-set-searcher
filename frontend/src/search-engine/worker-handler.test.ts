@@ -339,12 +339,57 @@ describe('handleSearchRequest', () => {
           ),
         )
 
+      // An unproven ceiling can never certify anything, so the very first
+      // guess already falls short of it -- the search commits to verifying
+      // everything from there on, rather than also guessing B before
+      // checking (2026-10-26, per the project owner).
       const messages = await run()
-      expect(messages.slice(0, 3)).toEqual([
+      expect(messages.slice(0, 2)).toEqual([
         { type: 'result', requestId: 'req-1', result: resultA, provisional: true },
-        { type: 'result', requestId: 'req-1', result: resultB, provisional: true },
         { type: 'verifying', requestId: 'req-1' },
       ])
+    })
+
+    it('stops guessing as soon as one guess misses the ceiling, even with more slots left to fill', async () => {
+      const resultC: BuildResult = { ...resultA, picks: new Map([['head', candidate('C', {})]]) }
+      vi.mocked(engine.search)
+        .mockImplementationOnce(scored([[resultA, 100]], 'exhausted'))
+        .mockImplementationOnce(
+          scored(
+            [
+              [resultA, 100],
+              [resultB, 50],
+              [resultC, 50],
+            ],
+            'exhausted',
+          ),
+        )
+        .mockImplementationOnce(scored([[resultB, 60]], 'exhausted'))
+
+      const post = vi.fn<(message: WorkerResponse) => void>()
+      await handleSearchRequest(
+        {
+          type: 'search',
+          requestId: 'req-1',
+          slots: [],
+          requirements: [],
+          options: { ...exactOptions, maxResults: 3 },
+        },
+        post,
+        new Set(),
+      )
+
+      // B misses the ceiling at the second slot -- C is never even guessed,
+      // let alone shown, since every slot from there on comes only from the
+      // exact pass (see this module's own docstring).
+      expect(post.mock.calls.map(([m]) => m)).toEqual([
+        { type: 'result', requestId: 'req-1', result: resultA },
+        { type: 'result', requestId: 'req-1', result: resultB, provisional: true },
+        { type: 'verifying', requestId: 'req-1' },
+        { type: 'result', requestId: 'req-1', result: resultB },
+        { type: 'done', requestId: 'req-1' },
+      ])
+      expect(vi.mocked(engine.search)).toHaveBeenCalledTimes(3)
     })
 
     it('gives the verifying pass its own larger time box, and flags results it could not prove', async () => {
