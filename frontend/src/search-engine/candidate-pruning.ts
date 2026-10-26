@@ -44,6 +44,7 @@
  * docs/search-performance-research.md for what exact mode needs instead.
  */
 
+import { categoriesCoveredBy } from './gear-categories'
 import {
   candidateObjectiveCost,
   decorationObjectiveCost,
@@ -92,7 +93,9 @@ function pruneSlot(
   const optional = options.optionalSkillRequirements ?? []
   const floors = options.resistanceFloors ?? []
   const excluded = options.excludedActiveSkillIds ?? []
-  const categories = (options.preferredCategoryCounts ?? []).filter((p) => p.count > 0)
+  const categories = (options.preferredCategoryCounts ?? [])
+    .filter((p) => p.count > 0)
+    .map((p) => categoriesCoveredBy(p.category))
 
   const records = candidates.map((candidate): CandidateRecord => {
     const atLeast = [
@@ -102,8 +105,9 @@ function pruneSlot(
       candidate.openSlotCount ?? 0,
     ]
     let categoryMask = 0
-    categories.forEach((p, i) => {
-      if (candidate.category === p.category) categoryMask |= 1 << i
+    categories.forEach((covered, i) => {
+      if (candidate.category !== undefined && covered.has(candidate.category))
+        categoryMask |= 1 << i
     })
     return {
       candidate,

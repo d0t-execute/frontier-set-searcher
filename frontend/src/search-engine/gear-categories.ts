@@ -537,3 +537,45 @@ export const GEAR_LEVEL_PRE_GRANK_CATEGORIES: readonly string[] = allLeafKeys(
     !GEAR_LEVEL_ZENITH_CATEGORIES.includes(key) &&
     !GEAR_LEVEL_ZP_CATEGORIES.includes(key),
 )
+
+/** The four gear-level tiers, lowest first. Originally just the "Gear
+ * categories" disclosure's own top-level quick toggles in `App.tsx` -- one
+ * checkbox per tier, including/excluding every leaf under it in one click
+ * (docs/feedback.md Round 2 #6, 2026-10-19), separate from
+ * `GEAR_CATEGORY_GROUPS`'s own group headers since a tier spans several of
+ * them (e.g. "Zenith" covers the base Zenith group plus the Zenith leaves
+ * inside Hunter's Road and Event Armor). "ZP" became its own 4th tier on
+ * 2026-10-20, per the project owner. Since 2026-10-26 (also per the project
+ * owner) each tier is a preferred-category target too; `key` is what a
+ * preference stores, prefixed so it can never collide with a leaf key. */
+export interface GearLevelTier {
+  readonly key: string
+  readonly label: string
+  readonly keys: readonly string[]
+}
+
+export const GEAR_LEVEL_TIERS: readonly GearLevelTier[] = [
+  { key: 'level:pre_grank', label: 'Pre-G-Rank', keys: GEAR_LEVEL_PRE_GRANK_CATEGORIES },
+  { key: 'level:grank', label: 'G-Rank', keys: GEAR_LEVEL_GRANK_CATEGORIES },
+  { key: 'level:zenith', label: 'Zenith', keys: GEAR_LEVEL_ZENITH_CATEGORIES },
+  { key: 'level:zp', label: 'ZP', keys: GEAR_LEVEL_ZP_CATEGORIES },
+]
+
+/** Each tier as a preferred-category option, named so it can't be mistaken
+ * for (or collide in a save code with) an ordinary category's own label. */
+export const GEAR_LEVEL_PREFERENCE_OPTIONS: readonly {
+  readonly key: string
+  readonly label: string
+}[] = GEAR_LEVEL_TIERS.map((tier) => ({ key: tier.key, label: `All ${tier.label} gear` }))
+
+const LEAF_KEYS_BY_TIER_KEY = new Map(
+  GEAR_LEVEL_TIERS.map((tier) => [tier.key, new Set(tier.keys)]),
+)
+
+/** The leaf categories a preferred-category key covers: every leaf in its
+ * tier for a gear-level key, otherwise just that one category. The single
+ * definition `ilp-model.ts` and `candidate-pruning.ts` both match against,
+ * so the model and the pruning rule can never disagree about it. */
+export function categoriesCoveredBy(preferenceKey: string): ReadonlySet<string> {
+  return LEAF_KEYS_BY_TIER_KEY.get(preferenceKey) ?? new Set([preferenceKey])
+}

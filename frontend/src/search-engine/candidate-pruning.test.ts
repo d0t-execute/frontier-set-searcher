@@ -11,6 +11,7 @@ import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
 import { pruneDominatedCandidates, pruneDominatedDecorations } from './candidate-pruning'
 import { search } from './engine'
+import { GEAR_LEVEL_ZP_CATEGORIES } from './gear-categories'
 import { getHighs } from './highs-runtime'
 import {
   MAX_OPTIONAL_SKILL_PRIORITY_TIERS,
@@ -208,6 +209,21 @@ describe('pruneDominatedCandidates', () => {
     ]
     const kept = pruneDominatedCandidates(slots, [], { excludedActiveSkillIds: [2] }, 1)
     expect(kept[0].candidates.map((c) => c.id)).toEqual(['clean', 'better'])
+  })
+
+  it('never drops a piece in a preferred gear-level tier for one outside it', () => {
+    const slots: SlotQuery[] = [
+      {
+        slotId: 'head',
+        candidates: [
+          { id: 'zp', skills: [], openSlotCount: 0, category: GEAR_LEVEL_ZP_CATEGORIES[0] },
+          { id: 'roomy', skills: [], openSlotCount: 3, category: 'other' },
+        ],
+      },
+    ]
+    const options = { preferredCategoryCounts: [{ category: 'level:zp', count: 1 }] }
+    const kept = pruneDominatedCandidates(slots, [], options, 1)
+    expect(kept[0].candidates.map((c) => c.id)).toEqual(['zp', 'roomy'])
   })
 
   it('leaves preferExactMatches searches with tier data unpruned', () => {

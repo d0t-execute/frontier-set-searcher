@@ -371,6 +371,10 @@ export interface ExcludedGearSet {
 }
 
 export interface PreferredCategoryCount {
+  /** A leaf gear category key, or a whole gear-level tier's key
+   * (`gear-categories.ts`'s `GEAR_LEVEL_TIERS`, e.g. `'level:zenith'`), which
+   * counts a piece from any of that tier's categories -- see
+   * `categoriesCoveredBy`. */
   readonly category: string
   /** How many armor picks from `category` to reward reaching, 1-5 (the game's
    * own armor-slot count) -- see `SearchOptions.preferredCategoryCounts`. */

@@ -2509,3 +2509,16 @@ implementation pass".
     each proved optimal in 30-32s on a dev machine.
   - Any final result whose round still hit its time box is flagged `unproven`, and the page says so.
   - The bonus-free ceiling is only trusted when its own round was proven.
+
+## 43. Gear-level tiers as preferred categories
+
+**Status: COMPLETE (2026-10-26).** Owner request: the four gear rank groups (Pre-G-Rank, G-Rank,
+Zenith, ZP) should be choosable in the preferred-categories section.
+
+- `gear-categories.ts`: `GEAR_LEVEL_TIERS` (moved from `App.tsx`, now with stable keys like
+  `level:zenith`) and `categoriesCoveredBy`, the single "which leaf categories does this preference
+  cover" helper. Both `buildModel` and the pruning dominance rule use it, so they can't disagree.
+- `PreferredCategoryPicker.tsx` lists "All Pre-G-Rank gear" / "All G-Rank gear" / "All Zenith gear"
+  / "All ZP gear" above the individual categories. Save codes and share links round-trip them.
+- Verification: model, pruning, save-code, and picker tests (the model and pruning tests fail
+  without tier matching). Full suite green. Live-checked in the dev app.

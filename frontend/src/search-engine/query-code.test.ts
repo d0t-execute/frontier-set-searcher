@@ -75,6 +75,16 @@ describe('encodeQueryCode / decodeQueryCode', () => {
     expect(await decodeQueryCode(encoded, catalog)).toEqual(state)
   })
 
+  it('round-trips a whole gear-level tier as a preferred category (2026-10-26)', async () => {
+    const withTier: SearchFormState = {
+      ...state,
+      preferredCategoryCounts: [{ category: 'level:zp', count: 1 }],
+    }
+    const encoded = await encodeQueryCode(withTier, catalog)
+    expect(encoded).toContain('All ZP gear: 1')
+    expect(await decodeQueryCode(encoded, catalog)).toEqual(withTier)
+  })
+
   it('round-trips an optional skill requirement with its priority (docs/feedback.md Round 3 #2)', async () => {
     const withOptional: SearchFormState = {
       ...state,

@@ -25,6 +25,18 @@ describe('PreferredCategoryPicker', () => {
     expect(onChange).toHaveBeenCalledWith(new Map([['paid_package_f', 1]]))
   })
 
+  it('offers each whole gear-level tier as a category to prefer (2026-10-26)', () => {
+    const onChange = vi.fn()
+    renderPicker(new Map(), onChange)
+
+    fireEvent.change(screen.getByLabelText('Search gear categories to prefer'), {
+      target: { value: 'G-Rank' },
+    })
+    fireEvent.click(screen.getByRole('option', { name: 'All G-Rank gear' }))
+
+    expect(onChange).toHaveBeenCalledWith(new Map([['level:grank', 1]]))
+  })
+
   it('shows an already-preferred category as a row with its count and a remove button', () => {
     renderPicker(new Map([['paid_package_f', 3]]))
 

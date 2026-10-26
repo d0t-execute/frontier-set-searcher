@@ -62,6 +62,7 @@
  */
 
 import type { Highs, ModelData, ModelStatusCode, VariableType } from 'highs'
+import { categoriesCoveredBy } from './gear-categories'
 import { HIDEN_CUFF_CATEGORY } from './types'
 import type {
   Candidate,
@@ -761,6 +762,9 @@ export function buildModel(
   // entry (`count <= 0`) is dropped rather than given a column that could
   // never contribute anything.
   const preferredCategoryCounts = (options.preferredCategoryCounts ?? []).filter((p) => p.count > 0)
+  const preferredCategoryLeaves = preferredCategoryCounts.map((p) =>
+    categoriesCoveredBy(p.category),
+  )
   const preferredCategoryRowOf: number[] = preferredCategoryCounts.map(() => rowCursor++)
 
   // Optional skill requirements (see `SearchOptions.optionalSkillRequirements`
@@ -1032,8 +1036,10 @@ export function buildModel(
         const points = pointsTowards(candidate.skills, member.skillId)
         if (points !== 0) entries.set(optionalReachedRowOf[i], points)
       })
-      preferredCategoryCounts.forEach((p, i) => {
-        if (candidate.category === p.category) entries.set(preferredCategoryRowOf[i], -1)
+      preferredCategoryLeaves.forEach((covered, i) => {
+        if (candidate.category !== undefined && covered.has(candidate.category)) {
+          entries.set(preferredCategoryRowOf[i], -1)
+        }
       })
 
       columns.push({ kind: 'candidate', slotIndex: s, slotId: slot.slotId, candidate })

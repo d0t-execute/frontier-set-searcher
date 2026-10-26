@@ -26,13 +26,7 @@ import { categoryRouteHash } from './search-engine/category-route'
 import { CUFF_CATEGORY_GROUPS } from './search-engine/cuff-categories'
 import { DECORATION_CATEGORY_GROUPS } from './search-engine/decoration-categories'
 import { findUnreachableRequirements } from './search-engine/feasibility'
-import {
-  GEAR_CATEGORY_GROUPS,
-  GEAR_LEVEL_GRANK_CATEGORIES,
-  GEAR_LEVEL_PRE_GRANK_CATEGORIES,
-  GEAR_LEVEL_ZENITH_CATEGORIES,
-  GEAR_LEVEL_ZP_CATEGORIES,
-} from './search-engine/gear-categories'
+import { GEAR_CATEGORY_GROUPS, GEAR_LEVEL_TIERS } from './search-engine/gear-categories'
 import type { PinnedSlot } from './search-engine/pinned-armor'
 import { decodeQueryCode, encodeQueryCode } from './search-engine/query-code'
 import type { QueryCodeCatalog } from './search-engine/query-code'
@@ -240,23 +234,6 @@ function countLeaves(groups: readonly CategoryFilterGroup[]): number {
 const GEAR_LEVEL_LEAF_COUNT = countLeaves(GEAR_CATEGORY_GROUPS)
 const CUFF_LEAF_COUNT = countLeaves(CUFF_CATEGORY_GROUPS)
 const DECORATION_LEAF_COUNT = countLeaves(DECORATION_CATEGORY_GROUPS)
-
-/** The "Gear categories" disclosure's own top-level quick toggles -- one
- * checkbox per gear-strength tier, each including/excluding every leaf
- * category under it in one click (docs/feedback.md Round 2 #6, 2026-10-19).
- * Separate from `GEAR_CATEGORY_GROUPS`'s own group headers, since a tier
- * here spans several of those groups (e.g. "Zenith" covers the base Zenith
- * group plus the Zenith leaves inside Hunter's Road and Event Armor).
- *
- * **Update (2026-10-20):** added "ZP" as its own 4th tier (previously folded
- * into "Zenith"), per the project owner -- it sits last, after "Zenith" on
- * the rank ladder (see `GEAR_LEVEL_ZP_CATEGORIES`'s own doc comment). */
-const GEAR_LEVEL_TIERS: readonly { readonly label: string; readonly keys: readonly string[] }[] = [
-  { label: 'Pre-G-Rank', keys: GEAR_LEVEL_PRE_GRANK_CATEGORIES },
-  { label: 'G-Rank', keys: GEAR_LEVEL_GRANK_CATEGORIES },
-  { label: 'Zenith', keys: GEAR_LEVEL_ZENITH_CATEGORIES },
-  { label: 'ZP', keys: GEAR_LEVEL_ZP_CATEGORIES },
-]
 
 /** Which gear a result uses -- the identity results are distinct by (see
  * ilp-model.ts's module docstring), used to drop a provisional result once

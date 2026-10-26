@@ -17,7 +17,10 @@
  */
 
 import { useCallback, useMemo, useState } from 'react'
-import { GEAR_CATEGORY_GROUPS } from '../search-engine/gear-categories'
+import {
+  GEAR_CATEGORY_GROUPS,
+  GEAR_LEVEL_PREFERENCE_OPTIONS,
+} from '../search-engine/gear-categories'
 import { FilterableOptions } from './FilterableOptions'
 import { handleEnterToPickFirst } from './pick-first-match'
 
@@ -33,10 +36,15 @@ interface NamedCategory {
 
 // Flattened once at module load -- `GEAR_CATEGORY_GROUPS` is static data, not
 // per-query, so there's nothing to recompute per render (same reasoning the
-// module itself is a top-level constant, not a hook).
-const ALL_GEAR_CATEGORIES: readonly NamedCategory[] = GEAR_CATEGORY_GROUPS.flatMap((group) =>
-  group.categories.map((c) => ({ id: c.key, name: c.label })),
-)
+// module itself is a top-level constant, not a hook). The four whole gear-level
+// tiers come first (2026-10-26, per the project owner), each counting a piece
+// from any category in that tier.
+const ALL_GEAR_CATEGORIES: readonly NamedCategory[] = [
+  ...GEAR_LEVEL_PREFERENCE_OPTIONS.map((tier) => ({ id: tier.key, name: tier.label })),
+  ...GEAR_CATEGORY_GROUPS.flatMap((group) =>
+    group.categories.map((c) => ({ id: c.key, name: c.label })),
+  ),
+]
 
 export interface PreferredCategoryPickerProps {
   readonly counts: ReadonlyMap<string, number>

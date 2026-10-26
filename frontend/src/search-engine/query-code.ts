@@ -34,6 +34,7 @@
 
 import { WEAPON_NO_ZENITH_SKILL_KEY } from './build-query'
 import type { HunterTypeFilter, PinnedCuffSlot } from './build-query'
+import { GEAR_LEVEL_PREFERENCE_OPTIONS } from './gear-categories'
 import type { GearCategoryGroup } from './gear-categories'
 import type { PinnedSlot } from './pinned-armor'
 import { validateSearchFormState } from './search-form-state'
@@ -131,6 +132,16 @@ function flattenCategoryGroups(groups: readonly GearCategoryGroup[]): NameIndex 
   )
 }
 
+/** Like `flattenCategoryGroups` for gear categories, plus the four whole
+ * gear-level tiers a preference can also target (`GEAR_LEVEL_PREFERENCE_
+ * OPTIONS`) -- only the "Preferred categories" section accepts those. */
+function preferredCategoryIndex(groups: readonly GearCategoryGroup[]): NameIndex {
+  return buildNameIndex([
+    ...GEAR_LEVEL_PREFERENCE_OPTIONS.map((o) => ({ id: o.key, name: o.label })),
+    ...groups.flatMap((g) => g.categories.map((c) => ({ id: c.key, name: c.label }))),
+  ])
+}
+
 const RESISTANCE_ELEMENT_LABELS: ReadonlyMap<ResistanceElement, string> = new Map([
   ['fire', 'Fire'],
   ['water', 'Water'],
@@ -168,6 +179,7 @@ export async function encodeQueryCode(
   const cuffIdx = buildNameIndex(catalog.cuffs)
   const cuffSkillIdx = cuffSkillIndex(catalog)
   const gearCategoryIdx = flattenCategoryGroups(catalog.gearCategories)
+  const preferredCategoryIdx = preferredCategoryIndex(catalog.gearCategories)
   const cuffCategoryIdx = flattenCategoryGroups(catalog.cuffCategories)
   const decorationCategoryIdx = flattenCategoryGroups(catalog.decorationCategories)
 
@@ -259,7 +271,7 @@ export async function encodeQueryCode(
     renderList(
       'Preferred categories',
       state.preferredCategoryCounts.map(
-        (p) => `${gearCategoryIdx.nameFor(p.category)}: ${p.count}`,
+        (p) => `${preferredCategoryIdx.nameFor(p.category)}: ${p.count}`,
       ),
     ),
   ]
@@ -469,6 +481,7 @@ export async function decodeQueryCode(
   const cuffIdx = buildNameIndex(catalog.cuffs)
   const cuffSkillIdx = cuffSkillIndex(catalog)
   const gearCategoryIdx = flattenCategoryGroups(catalog.gearCategories)
+  const preferredCategoryIdx = preferredCategoryIndex(catalog.gearCategories)
   const cuffCategoryIdx = flattenCategoryGroups(catalog.cuffCategories)
   const decorationCategoryIdx = flattenCategoryGroups(catalog.decorationCategories)
 
@@ -545,7 +558,7 @@ export async function decodeQueryCode(
   const preferredArmorIds = decodeIdList(doc.sections.get('Preferred armor') ?? [], armorIdx)
   const preferredCategoryCounts = decodePreferredCategoryCounts(
     doc.sections.get('Preferred categories') ?? [],
-    gearCategoryIdx,
+    preferredCategoryIdx,
   )
 
   if (

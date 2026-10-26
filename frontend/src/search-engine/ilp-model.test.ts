@@ -10,6 +10,7 @@ import {
   OPEN_SLOT_WEIGHT,
   OPTIONAL_SKILL_BASE_WEIGHT,
 } from './ilp-model'
+import { GEAR_LEVEL_ZENITH_CATEGORIES } from './gear-categories'
 import { HIDEN_CUFF_CATEGORY } from './types'
 import type { Candidate, Cuff, Decoration, Resistances, SlotQuery } from './types'
 
@@ -560,6 +561,37 @@ describe('buildModel with options.preferredCandidateIds (docs/feedback.md Round 
 })
 
 describe('buildModel with options.preferredCategoryCounts (2026-10-20, per the project owner)', () => {
+  it('counts a piece from any category in a preferred gear-level tier (2026-10-26)', () => {
+    // Two different Zenith leaves, each beating a roomier non-Zenith piece
+    // in its slot only because a "2 from Zenith" preference covers both.
+    const [zenithA, zenithB] = GEAR_LEVEL_ZENITH_CATEGORIES
+    const slots: SlotQuery[] = [
+      {
+        slotId: 'head',
+        candidates: [
+          candidate('Roomy Helm', { 1: 5 }, 3, undefined, 'other'),
+          candidate('Zenith Helm', { 1: 5 }, 0, undefined, zenithA),
+        ],
+      },
+      {
+        slotId: 'chest',
+        candidates: [
+          candidate('Roomy Mail', {}, 3, undefined, 'other'),
+          candidate('Zenith Mail', {}, 0, undefined, zenithB),
+        ],
+      },
+    ]
+    const { model, columns } = buildModel(highs, slots, [], [{ skillId: 1, minPoints: 3 }], {
+      preferredCategoryCounts: [{ category: 'level:zenith', count: 2 }],
+    })
+
+    const { colValue, native } = solve(model)
+    const decoded = decodeSolution(columns, colValue)
+    expect(decoded.picks.get('head')?.id).toBe('Zenith Helm')
+    expect(decoded.picks.get('chest')?.id).toBe('Zenith Mail')
+    native.dispose()
+  })
+
   it('breaks a tie in favor of a candidate matching the preferred category', () => {
     const slots: SlotQuery[] = [
       {
