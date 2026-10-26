@@ -6,7 +6,9 @@ import {
   decodeSolution,
   exclusionRow,
   isUsableResult,
+  MAX_OPTIONAL_SKILL_PRIORITY_TIERS,
   OPEN_SLOT_WEIGHT,
+  OPTIONAL_SKILL_BASE_WEIGHT,
 } from './ilp-model'
 import { HIDEN_CUFF_CATEGORY } from './types'
 import type { Candidate, Cuff, Decoration, Resistances, SlotQuery } from './types'
@@ -74,15 +76,31 @@ function solve(model: ReturnType<typeof buildModel>['model']): {
 }
 
 describe('buildModel', () => {
-  it('sizes one row per slot cardinality, one per slot capacity, one per requirement', () => {
+  it('sizes one row per slot cardinality and one per requirement when no decoration can be placed', () => {
     const slots: SlotQuery[] = [
       { slotId: 'head', candidates: [candidate('Helm', { 1: 5 })] },
       { slotId: 'chest', candidates: [candidate('Mail', { 1: 5 })] },
     ]
     const { model } = buildModel(highs, slots, [], [{ skillId: 1, minPoints: 3 }])
 
-    // 2 slots -> 2 cardinality rows + 2 capacity rows, plus 1 requirement row.
-    expect(model.numRows).toBe(5)
+    // 2 slots -> 2 cardinality rows, plus 1 requirement row.
+    expect(model.numRows).toBe(3)
+  })
+
+  it('adds one pooled capacity row, plus one per larger decoration size in play', () => {
+    const slots: SlotQuery[] = [
+      { slotId: 'head', candidates: [candidate('Helm', {}, 3)] },
+      { slotId: 'chest', candidates: [candidate('Mail', {}, 3)] },
+    ]
+    const small = deco('Small', 1, { 1: 1 })
+    const medium = deco('Medium', 2, { 1: 2 })
+    const large = deco('Large', 3, { 1: 3 })
+    const requirements = [{ skillId: 1, minPoints: 1 }]
+
+    // 2 cardinality + capacity (+ size-2 row) (+ size-3 row) + 1 requirement.
+    expect(buildModel(highs, slots, [small], requirements).model.numRows).toBe(4)
+    expect(buildModel(highs, slots, [small, medium], requirements).model.numRows).toBe(5)
+    expect(buildModel(highs, slots, [small, medium, large], requirements).model.numRows).toBe(6)
   })
 
   it('creates one candidate column per (slot, candidate) pair and no decoration columns when nothing has open slots', () => {
@@ -181,13 +199,65 @@ describe('buildModel', () => {
     expect(columns.some((c) => c.kind === 'decoration')).toBe(false)
   })
 
-  it('one-hot encodes every physically-possible count for a decoration, including "place none"', () => {
-    const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Bare Helm', {}, 3)] }]
+  it('models each decoration as one count column shared by every slot', () => {
+    const slots: SlotQuery[] = [
+      { slotId: 'head', candidates: [candidate('Bare Helm', {}, 1)] },
+      { slotId: 'chest', candidates: [candidate('Bare Mail', {}, 1)] },
+    ]
     const jewel = deco('Jewel', 1, { 1: 1 })
-    const { columns } = buildModel(highs, slots, [jewel], [{ skillId: 1, minPoints: 1 }])
+    const { model, columns } = buildModel(highs, slots, [jewel], [{ skillId: 1, minPoints: 2 }])
 
-    const counts = columns.filter((c) => c.kind === 'decoration').map((c) => c.count)
-    expect(counts.sort((a, b) => a - b)).toEqual([0, 1, 2, 3])
+    expect(columns.filter((c) => c.kind === 'decoration')).toHaveLength(1)
+    const { modelStatus, colValue, native } = solve(model)
+    expect(modelStatus).toBe(highs.constants.modelStatus.optimal)
+    // Two copies are needed and each piece holds one, so they land in both.
+    const decoded = decodeSolution(columns, colValue)
+    expect(decoded.decorations.get('head')).toEqual([jewel])
+    expect(decoded.decorations.get('chest')).toEqual([jewel])
+    native.dispose()
+  })
+
+  it('places a size-2 decoration in a 2-slot piece so the 3-slot piece keeps room for three size-1s', () => {
+    const slots: SlotQuery[] = [
+      { slotId: 'head', candidates: [candidate('Big Helm', {}, 3)] },
+      { slotId: 'chest', candidates: [candidate('Small Mail', {}, 2)] },
+    ]
+    const medium = deco('Medium', 2, { 1: 1 })
+    const small = deco('Small', 1, { 2: 1 })
+    const requirements = [
+      { skillId: 1, minPoints: 1 },
+      { skillId: 2, minPoints: 3 },
+    ]
+    const { model, columns } = buildModel(highs, slots, [medium, small], requirements)
+
+    const { modelStatus, colValue, native } = solve(model)
+    expect(modelStatus).toBe(highs.constants.modelStatus.optimal)
+    const decoded = decodeSolution(columns, colValue)
+    expect(decoded.decorations.get('chest')).toEqual([medium])
+    expect(decoded.decorations.get('head')).toEqual([small, small, small])
+    native.dispose()
+  })
+
+  it('rejects two size-2 decorations that only fit by total size, not by piece', () => {
+    // 3 + 1 = 4 open slots, but no piece can hold a second size-2 decoration.
+    const slots: SlotQuery[] = [
+      { slotId: 'head', candidates: [candidate('Helm', {}, 3)] },
+      { slotId: 'chest', candidates: [candidate('Mail', {}, 1)] },
+    ]
+    const medium = deco('Medium', 2, { 1: 1 })
+    const { model } = buildModel(highs, slots, [medium], [{ skillId: 1, minPoints: 2 }])
+
+    const { modelStatus, native } = solve(model)
+    expect(modelStatus).toBe(highs.constants.modelStatus.infeasible)
+    native.dispose()
+  })
+
+  it('refuses pieces with more decoration slots than the pooled rows can place exactly', () => {
+    const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Odd Helm', {}, 4)] }]
+    const medium = deco('Medium', 2, { 1: 1 })
+    expect(() => buildModel(highs, slots, [medium], [])).toThrow(/more than 3 decoration slots/)
+    // Size-1 decorations alone are still placed exactly, whatever the size.
+    expect(() => buildModel(highs, slots, [deco('Small', 1, { 1: 1 })], [])).not.toThrow()
   })
 
   it('favors leaving decoration slots open over an unneeded decoration, among otherwise-tied options', () => {
@@ -640,6 +710,47 @@ describe('buildModel with options.optionalSkillRequirements (docs/feedback.md Ro
     expect(modelStatus).not.toBe(highs.constants.modelStatus.infeasible)
     const decoded = decodeSolution(columns, colValue)
     expect(decoded.picks.get('head')?.id).toBe('Helm')
+    native.dispose()
+  })
+
+  it('reports the true objective whether or not an optional tier is always met in this model', () => {
+    // Both helms meet the optional skill, so this model folds the tier's
+    // reward into the objective offset instead of a column. The solved value
+    // must still be the build's real score: 1 open slot plus the tier reward.
+    const slots: SlotQuery[] = [
+      { slotId: 'head', candidates: [candidate('A', { 2: 5 }, 1), candidate('B', { 2: 6 })] },
+    ]
+    const { model } = buildModel(highs, slots, [], [], {
+      optionalSkillRequirements: [{ skillId: 2, minPoints: 5, priority: 1 }],
+    })
+
+    const native = highs.createModel(model)
+    native.run()
+    expect(native.info.get('objective_function_value')).toBe(
+      OPEN_SLOT_WEIGHT + OPTIONAL_SKILL_BASE_WEIGHT * 2 ** (MAX_OPTIONAL_SKILL_PRIORITY_TIERS - 1),
+    )
+    native.dispose()
+  })
+
+  it('never rewards a priority tier twice when one of its members is always met', () => {
+    // Skill 2 is always met (both helms have it), which settles priority 1.
+    // Skill 3 shares that priority, so reaching it too must earn nothing more
+    // -- leaving the open slot to decide, in favor of "Roomy".
+    const slots: SlotQuery[] = [
+      {
+        slotId: 'head',
+        candidates: [candidate('Roomy', { 2: 5 }, 1), candidate('Both', { 2: 5, 3: 5 })],
+      },
+    ]
+    const { model, columns } = buildModel(highs, slots, [], [], {
+      optionalSkillRequirements: [
+        { skillId: 2, minPoints: 5, priority: 1 },
+        { skillId: 3, minPoints: 5, priority: 1 },
+      ],
+    })
+
+    const { colValue, native } = solve(model)
+    expect(decodeSolution(columns, colValue).picks.get('head')?.id).toBe('Roomy')
     native.dispose()
   })
 
@@ -1531,26 +1642,26 @@ describe('decodeSolution', () => {
     expect(decoded.decorations.size).toBe(0)
   })
 
-  it('expands a chosen count > 0 decoration column into that many Decoration entries', () => {
+  it('expands a decoration count into that many Decoration entries, rounding solver noise', () => {
     const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Bare Helm', {}, 2)] }]
     const jewel = deco('Jewel', 1, { 1: 1 })
     const { columns } = buildModel(highs, slots, [jewel], [{ skillId: 1, minPoints: 1 }])
-    const twoColumnIndex = columns.findIndex((c) => c.kind === 'decoration' && c.count === 2)
     const colValue = new Float64Array(columns.length)
-    colValue[twoColumnIndex] = 0.9999999998 // never exactly 1.0 from a real solver
+    colValue[columns.findIndex((c) => c.kind === 'candidate')] = 1
+    colValue[columns.findIndex((c) => c.kind === 'decoration')] = 1.9999999998
 
     const decoded = decodeSolution(columns, colValue)
 
     expect(decoded.decorations.get('head')).toEqual([jewel, jewel])
+    expect(decoded.skillTotals.get(1)).toBe(2)
   })
 
-  it('treats a chosen "place none" (count 0) column as no decorations placed', () => {
+  it('treats a zero decoration count as no decorations placed', () => {
     const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Bare Helm', {}, 2)] }]
     const jewel = deco('Jewel', 1, { 1: 1 })
     const { columns } = buildModel(highs, slots, [jewel], [{ skillId: 1, minPoints: 0 }])
-    const zeroColumnIndex = columns.findIndex((c) => c.kind === 'decoration' && c.count === 0)
     const colValue = new Float64Array(columns.length)
-    colValue[zeroColumnIndex] = 1
+    colValue[columns.findIndex((c) => c.kind === 'candidate')] = 1
 
     const decoded = decodeSolution(columns, colValue)
 
@@ -1594,23 +1705,20 @@ describe('exclusionRow', () => {
     expect(row.upper).toBe(0) // 1 chosen (real) column - 1
   })
 
-  it('forbids only the exact chosen set of columns', () => {
+  it('forbids only the chosen gear, never naming decoration counts', () => {
     const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Helm', { 1: 5 }, 2)] }]
     const jewel = deco('Jewel', 1, { 1: 1 })
     const { columns } = buildModel(highs, slots, [jewel], [{ skillId: 1, minPoints: 3 }])
     const candidateIndex = columns.findIndex((c) => c.kind === 'candidate')
-    const zeroColumnIndex = columns.findIndex((c) => c.kind === 'decoration' && c.count === 0)
     const colValue = new Float64Array(columns.length)
     colValue[candidateIndex] = 1
-    colValue[zeroColumnIndex] = 1
+    colValue[columns.findIndex((c) => c.kind === 'decoration')] = 2
 
     const row = exclusionRow(highs, columns, colValue)
 
-    expect([...row.indices].sort((a, b) => a - b)).toEqual(
-      [candidateIndex, zeroColumnIndex].sort((a, b) => a - b),
-    )
-    expect(row.values).toEqual([1, 1])
-    expect(row.upper).toBe(1) // 2 chosen columns - 1
+    expect(row.indices).toEqual([candidateIndex])
+    expect(row.values).toEqual([1])
+    expect(row.upper).toBe(0) // 1 chosen column - 1
   })
 
   it('actually excludes the previous candidate combination when applied', () => {
@@ -1645,12 +1753,10 @@ describe('exclusionRow', () => {
     native.dispose()
   })
 
-  it('excludes the previous decoration choice too, surfacing a tied alternative on the same candidate', () => {
-    // Attack Jewel and Defense Jewel tie exactly in objective value (both
-    // only touch requested skills, so neither earns bonus points, and both
-    // use the same slotSize) -- a candidates-only cut would get stuck
-    // re-finding whichever one solves first, since there's only one
-    // candidate option for the slot.
+  it('treats builds that differ only in decorations as the same result', () => {
+    // Attack Jewel and Defense Jewel tie exactly in objective value, so the
+    // old per-arrangement cut would have returned this one helm twice, once
+    // per jewel. Results are distinct by gear set, so it's returned once.
     const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Bare Helm', {}, 2)] }]
     const attackJewel = deco('Attack Jewel', 2, { 1: 5, 2: 1 })
     const defenseJewel = deco('Defense Jewel', 2, { 1: 1, 2: 1 })
@@ -1661,27 +1767,10 @@ describe('exclusionRow', () => {
     const { model, columns } = buildModel(highs, slots, [attackJewel, defenseJewel], requirements)
     const native = highs.createModel(model)
 
-    const first = native.run()
-    expect(first.modelStatus).toBe(highs.constants.modelStatus.optimal)
-    const firstDecoration = decodeSolution(columns, native.getSolution().colValue).decorations.get(
-      'head',
-    )?.[0].id
-
+    expect(native.run().modelStatus).toBe(highs.constants.modelStatus.optimal)
     const cut = exclusionRow(highs, columns, native.getSolution().colValue)
     native.addRow(cut.lower, cut.upper, { indices: cut.indices, values: cut.values })
-
-    const second = native.run()
-    expect(second.modelStatus).toBe(highs.constants.modelStatus.optimal)
-    const secondDecoration = decodeSolution(columns, native.getSolution().colValue).decorations.get(
-      'head',
-    )?.[0].id
-    expect(secondDecoration).not.toBe(firstDecoration)
-    expect([firstDecoration, secondDecoration].sort()).toEqual(['Attack Jewel', 'Defense Jewel'])
-
-    const cut2 = exclusionRow(highs, columns, native.getSolution().colValue)
-    native.addRow(cut2.lower, cut2.upper, { indices: cut2.indices, values: cut2.values })
-    const third = native.run()
-    expect(third.modelStatus).toBe(highs.constants.modelStatus.infeasible)
+    expect(native.run().modelStatus).toBe(highs.constants.modelStatus.infeasible)
 
     native.dispose()
   })

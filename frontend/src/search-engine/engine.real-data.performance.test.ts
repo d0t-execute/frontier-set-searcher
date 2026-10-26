@@ -220,26 +220,19 @@ describe('search against the real data bundle', () => {
     expectAllMeetRequirements(results, TIGHT_SWORD_BUILD_REQUIREMENTS)
   }, 480_000)
 
-  it('reports "timedOut" (not "exhausted") when this same query finds nothing at production\'s default time box', async () => {
-    // Confirms docs/feedback.md Round 3 #4's 2026-10-25 investigation of a
-    // real bug report ("excluding a decoration category broke a previously-
-    // successful search") stays true: at `engine.ts`'s actual *production*
-    // defaults (no `timeBoxSeconds`/`maxTimeBoxAttempts` override, unlike the
-    // test above), this exact query -- already proven feasible by the test
-    // above -- comes back with zero results. The distinction this test
-    // guards is `reason`, not `results.length`: a caller must be able to tell
-    // this apart from genuine infeasibility (`'exhausted'`) to know whether
-    // offering a "search longer" retry (`App.tsx`) could possibly help.
-    //
-    // Observed directly (dev machine, full decoration pool): 90.8s, zero
-    // results, `reason: 'timedOut'` -- consistent with the test above finding
-    // a real result only once given a bigger box. No upper bound asserted on
-    // `elapsedMs` beyond this test's own timeout: the whole point is this
-    // path is the *slow*, give-up-without-an-answer one.
-    const { results, reason } = await firstResults(TIGHT_SWORD_BUILD_REQUIREMENTS, 1)
+  it("now finds a result for this same query within production's default time box", async () => {
+    // This query used to come back empty at production's defaults (90.8s,
+    // zero results, `reason: 'timedOut'` -- docs/feedback.md Round 3 #4's
+    // 2026-10-25 investigation), which is what motivated the "search longer"
+    // retry. Pooling decorations across slots (2026-10-26,
+    // docs/search-performance-research.md approach 3) removed the slot
+    // symmetry that kept HiGHS from closing it: the first, proven-optimal
+    // result now arrives in ~25-30s on a dev machine. The timedOut path itself
+    // stays covered by worker-handler.test.ts.
+    const { results } = await firstResults(TIGHT_SWORD_BUILD_REQUIREMENTS, 1)
 
-    expect(results).toHaveLength(0)
-    expect(reason).toBe('timedOut')
+    expect(results).toHaveLength(1)
+    expectAllMeetRequirements(results, TIGHT_SWORD_BUILD_REQUIREMENTS)
   }, 180_000)
 
   it('finds a result for the exceptionally tight sword-build query with preferExactMatches, without activating any bonus skill tier', async () => {

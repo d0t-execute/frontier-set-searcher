@@ -20,10 +20,17 @@ import type { WorkerRequest, WorkerResponse } from './worker-protocol'
 export interface WorkerLike {
   postMessage(message: WorkerRequest): void
   onmessage: ((event: MessageEvent<WorkerResponse>) => void) | null
+  terminate?(): void
 }
 
 export interface SearchCallbacks {
-  readonly onResult: (result: BuildResult) => void
+  /** `provisional` is set for results from a `preferExactMatches` search's
+   * fast first pass (see worker-protocol.ts's `ResultMessage`); a later
+   * verified result replaces them index by index. */
+  readonly onResult: (result: BuildResult, provisional: boolean) => void
+  /** The provisional pass is over and verification has started (see
+   * worker-protocol.ts's `VerifyingMessage`). Optional. */
+  readonly onVerifying?: () => void
   readonly onDone: () => void
   readonly onError: (message: string) => void
   /** HiGHS's `mip_gap` for the round currently being solved, 0-1 (see
@@ -39,13 +46,29 @@ export interface SearchCallbacks {
   readonly onTimedOut?: () => void
 }
 
+interface PendingRequest {
+  readonly callbacks: SearchCallbacks
+  readonly message: WorkerRequest
+}
+
 export class SearchWorkerClient {
-  private readonly worker: WorkerLike
-  private readonly pending = new Map<string, SearchCallbacks>()
+  private worker: WorkerLike
+  private readonly createWorker?: () => WorkerLike
+  private readonly pending = new Map<string, PendingRequest>()
   private nextRequestId = 0
 
-  constructor(worker: WorkerLike) {
+  /** `createWorker`, when given, lets `cancel` stop a search mid-solve by
+   * replacing the worker outright -- a posted cancel message can't be read
+   * until the solve already running finishes, which for a long search (a
+   * `preferExactMatches` verification pass, say) left the next search queued
+   * behind it for up to a minute. */
+  constructor(worker: WorkerLike, createWorker?: () => WorkerLike) {
     this.worker = worker
+    this.createWorker = createWorker
+    this.listen()
+  }
+
+  private listen(): void {
     this.worker.onmessage = (event) => this.handleMessage(event.data)
   }
 
@@ -59,8 +82,7 @@ export class SearchWorkerClient {
     cuffs: readonly Cuff[] = [],
   ): string {
     const requestId = `req-${++this.nextRequestId}`
-    this.pending.set(requestId, callbacks)
-    this.worker.postMessage({
+    const message: WorkerRequest = {
       type: 'search',
       requestId,
       slots,
@@ -68,24 +90,44 @@ export class SearchWorkerClient {
       decorations,
       options,
       cuffs,
-    })
+    }
+    this.pending.set(requestId, { callbacks, message })
+    this.worker.postMessage(message)
     return requestId
   }
 
   /** Stops a search early and discards its callbacks -- any messages that
-   * arrive for it afterward are ignored. */
+   * arrive for it afterward are ignored. With a `createWorker` factory, a
+   * search still running is stopped immediately by replacing the worker;
+   * any other pending searches are re-sent to the new one. */
   cancel(requestId: string): void {
-    this.pending.delete(requestId)
+    const wasPending = this.pending.delete(requestId)
+    if (wasPending && this.createWorker && this.worker.terminate) {
+      this.worker.terminate()
+      this.worker = this.createWorker()
+      this.listen()
+      for (const { message } of this.pending.values()) this.worker.postMessage(message)
+      return
+    }
     this.worker.postMessage({ type: 'cancel', requestId })
   }
 
+  /** Shuts the current worker down for good (e.g. on unmount). */
+  dispose(): void {
+    this.pending.clear()
+    this.worker.terminate?.()
+  }
+
   private handleMessage(message: WorkerResponse): void {
-    const callbacks = this.pending.get(message.requestId)
+    const callbacks = this.pending.get(message.requestId)?.callbacks
     if (!callbacks) return
 
     switch (message.type) {
       case 'result':
-        callbacks.onResult(message.result)
+        callbacks.onResult(message.result, message.provisional === true)
+        break
+      case 'verifying':
+        callbacks.onVerifying?.()
         break
       case 'progress':
         callbacks.onProgress?.(message.gap)

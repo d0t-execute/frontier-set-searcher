@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { handleSearchRequest } from './worker-handler'
+import { handleSearchRequest, PROVISIONAL_POOL_SIZE } from './worker-handler'
 import * as engine from './engine'
 import type { WorkerResponse } from './worker-protocol'
 import type { BuildResult, Candidate, SlotQuery } from './types'
@@ -159,7 +159,12 @@ describe('handleSearchRequest', () => {
   })
 
   it('posts an ordinary done message when the generator ends "timedOut" after at least one result', async () => {
-    const result: BuildResult = { picks: new Map(), decorations: new Map(), cuffs: [], skillTotals: new Map() }
+    const result: BuildResult = {
+      picks: new Map(),
+      decorations: new Map(),
+      cuffs: [],
+      skillTotals: new Map(),
+    }
     vi.mocked(engine.search).mockImplementationOnce(() => fakeGenerator([result], 'timedOut'))
     const post = vi.fn<(message: WorkerResponse) => void>()
 
@@ -183,5 +188,150 @@ describe('handleSearchRequest', () => {
     )
 
     expect(post).toHaveBeenCalledWith({ type: 'done', requestId: 'req-1' })
+  })
+
+  describe('preferExactMatches provisional-then-verify search', () => {
+    const exactOptions = {
+      preferExactMatches: true,
+      skillTiers: [{ skillId: 9, tierThresholds: [10] }],
+      maxResults: 2,
+    }
+    const resultA: BuildResult = {
+      picks: new Map([['head', candidate('A', {})]]),
+      decorations: new Map(),
+      cuffs: [],
+      skillTotals: new Map(),
+    }
+    const resultB: BuildResult = { ...resultA, picks: new Map([['head', candidate('B', {})]]) }
+
+    /** Like `fakeGenerator`, but reports each result's objective value
+     * through `search()`'s own hooks argument, as the real engine does. */
+    function scored(results: readonly [BuildResult, number][], reason: engine.SearchEndReason) {
+      return (...args: Parameters<typeof engine.search>) =>
+        (async function* () {
+          for (const [result, objective] of results) {
+            args[5]?.onSolution?.(objective)
+            yield result
+          }
+          return reason
+        })()
+    }
+
+    async function run(): Promise<WorkerResponse[]> {
+      const post = vi.fn<(message: WorkerResponse) => void>()
+      await handleSearchRequest(
+        { type: 'search', requestId: 'req-1', slots: [], requirements: [], options: exactOptions },
+        post,
+        new Set(),
+      )
+      return post.mock.calls.map(([m]) => m)
+    }
+
+    it('posts results already at the bonus-free ceiling as proven, skipping the full pass', async () => {
+      vi.mocked(engine.search)
+        .mockImplementationOnce(scored([[resultA, 100]], 'exhausted'))
+        .mockImplementationOnce(
+          scored(
+            [
+              [resultA, 100],
+              [resultB, 100],
+            ],
+            'exhausted',
+          ),
+        )
+
+      expect(await run()).toEqual([
+        { type: 'result', requestId: 'req-1', result: resultA },
+        { type: 'result', requestId: 'req-1', result: resultB },
+        { type: 'done', requestId: 'req-1' },
+      ])
+      const calls = vi.mocked(engine.search).mock.calls.slice(-2)
+      expect(calls[0][3]).toMatchObject({ withoutTierPenalties: true, maxResults: 1 })
+      expect(calls[1][3]).toMatchObject({ provisionalPoolSize: PROVISIONAL_POOL_SIZE })
+    })
+
+    it('marks results below the ceiling provisional, then verifies with the full pass', async () => {
+      vi.mocked(engine.search)
+        .mockImplementationOnce(scored([[resultA, 100]], 'exhausted'))
+        .mockImplementationOnce(
+          scored(
+            [
+              [resultA, 100],
+              [resultB, 90],
+            ],
+            'exhausted',
+          ),
+        )
+        .mockImplementationOnce(
+          scored(
+            [
+              [resultA, 100],
+              [resultB, 95],
+            ],
+            'exhausted',
+          ),
+        )
+
+      expect(await run()).toEqual([
+        { type: 'result', requestId: 'req-1', result: resultA },
+        { type: 'result', requestId: 'req-1', result: resultB, provisional: true },
+        { type: 'verifying', requestId: 'req-1' },
+        { type: 'result', requestId: 'req-1', result: resultA },
+        { type: 'result', requestId: 'req-1', result: resultB },
+        { type: 'done', requestId: 'req-1' },
+      ])
+      const lastCall = vi.mocked(engine.search).mock.calls.at(-1)!
+      expect(lastCall[3]).not.toHaveProperty('provisionalPoolSize')
+      expect(lastCall[3]).not.toHaveProperty('withoutTierPenalties')
+    })
+
+    it('still verifies when the pool comes back short of maxResults, even if all at the ceiling', async () => {
+      vi.mocked(engine.search)
+        .mockImplementationOnce(scored([[resultA, 100]], 'exhausted'))
+        .mockImplementationOnce(scored([[resultA, 100]], 'exhausted'))
+        .mockImplementationOnce(
+          scored(
+            [
+              [resultA, 100],
+              [resultB, 80],
+            ],
+            'exhausted',
+          ),
+        )
+
+      const types = (await run()).map((m) => m.type)
+      expect(types).toEqual(['result', 'verifying', 'result', 'result', 'done'])
+    })
+
+    it('reports done, not timedOut, when only the verifying pass times out', async () => {
+      vi.mocked(engine.search)
+        .mockImplementationOnce(scored([], 'exhausted'))
+        .mockImplementationOnce(scored([[resultA, 50]], 'exhausted'))
+        .mockImplementationOnce(scored([], 'timedOut'))
+
+      expect((await run()).at(-1)).toEqual({ type: 'done', requestId: 'req-1' })
+    })
+
+    it('runs a single, unmarked pass without preferExactMatches', async () => {
+      vi.mocked(engine.search).mockImplementationOnce(() => fakeGenerator([resultA], 'exhausted'))
+      const post = vi.fn<(message: WorkerResponse) => void>()
+
+      await handleSearchRequest(
+        {
+          type: 'search',
+          requestId: 'req-1',
+          slots: [],
+          requirements: [],
+          options: { maxResults: 2 },
+        },
+        post,
+        new Set(),
+      )
+
+      expect(post.mock.calls.map(([m]) => m)).toEqual([
+        { type: 'result', requestId: 'req-1', result: resultA },
+        { type: 'done', requestId: 'req-1' },
+      ])
+    })
   })
 })

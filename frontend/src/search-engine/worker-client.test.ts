@@ -100,7 +100,7 @@ describe('SearchWorkerClient', () => {
     worker.emit({ type: 'result', requestId, result: buildResult })
     worker.emit({ type: 'done', requestId })
 
-    expect(onResult).toHaveBeenCalledWith(buildResult)
+    expect(onResult).toHaveBeenCalledWith(buildResult, false)
     expect(onDone).toHaveBeenCalledTimes(1)
   })
 
@@ -125,7 +125,11 @@ describe('SearchWorkerClient', () => {
     const worker = new FakeWorker()
     const client = new SearchWorkerClient(worker)
 
-    const requestId = client.search(slots, [], [], { onResult: vi.fn(), onDone: vi.fn(), onError: vi.fn() })
+    const requestId = client.search(slots, [], [], {
+      onResult: vi.fn(),
+      onDone: vi.fn(),
+      onError: vi.fn(),
+    })
 
     expect(() => worker.emit({ type: 'progress', requestId, gap: 0.1 })).not.toThrow()
   })
@@ -154,7 +158,7 @@ describe('SearchWorkerClient', () => {
 
     worker.emit({ type: 'result', requestId: secondId, result: buildResult })
 
-    expect(second.onResult).toHaveBeenCalledWith(buildResult)
+    expect(second.onResult).toHaveBeenCalledWith(buildResult, false)
     expect(first.onResult).not.toHaveBeenCalled()
   })
 
@@ -187,7 +191,12 @@ describe('SearchWorkerClient', () => {
     const onDone = vi.fn()
     const onTimedOut = vi.fn()
 
-    const requestId = client.search(slots, [], [], { onResult: vi.fn(), onDone, onError: vi.fn(), onTimedOut })
+    const requestId = client.search(slots, [], [], {
+      onResult: vi.fn(),
+      onDone,
+      onError: vi.fn(),
+      onTimedOut,
+    })
     worker.emit({ type: 'timedOut', requestId })
 
     expect(onTimedOut).toHaveBeenCalledTimes(1)
@@ -209,4 +218,72 @@ describe('SearchWorkerClient', () => {
 
     expect(onDone).toHaveBeenCalledTimes(1)
   })
+
+  it('marks provisional results and routes verifying to onVerifying', () => {
+    const worker = new FakeWorker()
+    const client = new SearchWorkerClient(worker)
+    const onResult = vi.fn()
+    const onVerifying = vi.fn()
+
+    const requestId = client.search(slots, [], [], {
+      onResult,
+      onVerifying,
+      onDone: vi.fn(),
+      onError: vi.fn(),
+    })
+    worker.emit({ type: 'result', requestId, result: buildResult, provisional: true })
+    worker.emit({ type: 'verifying', requestId })
+    worker.emit({ type: 'result', requestId, result: buildResult })
+
+    expect(onResult.mock.calls.map(([, provisional]) => provisional)).toEqual([true, false])
+    expect(onVerifying).toHaveBeenCalledTimes(1)
+  })
+
+  it('replaces the worker to stop a running search, re-sending other pending searches', () => {
+    const first = new TerminableFakeWorker()
+    const second = new TerminableFakeWorker()
+    const client = new SearchWorkerClient(first, () => second)
+    const keptOnResult = vi.fn()
+
+    const cancelledId = client.search(slots, [], [], {
+      onResult: vi.fn(),
+      onDone: vi.fn(),
+      onError: vi.fn(),
+    })
+    const keptId = client.search(slots, [], [], {
+      onResult: keptOnResult,
+      onDone: vi.fn(),
+      onError: vi.fn(),
+    })
+    client.cancel(cancelledId)
+
+    expect(first.terminated).toBe(true)
+    expect(second.posted).toEqual([expect.objectContaining({ type: 'search', requestId: keptId })])
+    second.emit({ type: 'result', requestId: keptId, result: buildResult })
+    expect(keptOnResult).toHaveBeenCalledTimes(1)
+  })
+
+  it('only posts a cancel message for a search that already finished', () => {
+    const first = new TerminableFakeWorker()
+    const client = new SearchWorkerClient(first, () => new TerminableFakeWorker())
+
+    const requestId = client.search(slots, [], [], {
+      onResult: vi.fn(),
+      onDone: vi.fn(),
+      onError: vi.fn(),
+    })
+    first.emit({ type: 'done', requestId })
+    client.cancel(requestId)
+
+    expect(first.terminated).toBe(false)
+    expect(first.posted).toContainEqual({ type: 'cancel', requestId })
+  })
 })
+
+class TerminableFakeWorker extends FakeWorker {
+  terminated = false
+
+  terminate(): void {
+    this.terminated = true
+  }
+}

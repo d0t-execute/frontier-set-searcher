@@ -37,6 +37,20 @@ export interface ResultMessage {
   readonly type: 'result'
   readonly requestId: string
   readonly result: BuildResult
+  /** Found in `preferExactMatches`'s fast first pass over a heuristic pool
+   * (`SearchOptions.provisionalPoolSize`), not yet proven to be the best
+   * possible. Unset for a verified result: the first verified result replaces
+   * provisional result 0, the second replaces 1, and so on (see
+   * `worker-handler.ts`). */
+  readonly provisional?: true
+}
+
+/** Sent between the two passes of a `preferExactMatches` search: every
+ * provisional result has been sent, and the full search that verifies or
+ * replaces them is starting. */
+export interface VerifyingMessage {
+  readonly type: 'verifying'
+  readonly requestId: string
 }
 
 /** HiGHS's own `mip_gap` for the round currently being solved (see
@@ -80,8 +94,4 @@ export interface ErrorMessage {
 
 /** Sent from the worker back to the main thread. */
 export type WorkerResponse =
-  | ResultMessage
-  | ProgressMessage
-  | DoneMessage
-  | TimedOutMessage
-  | ErrorMessage
+  ResultMessage | VerifyingMessage | ProgressMessage | DoneMessage | TimedOutMessage | ErrorMessage

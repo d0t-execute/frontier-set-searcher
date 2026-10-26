@@ -11,6 +11,7 @@ import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
 import { fillSlots } from './decorations'
 import { search } from './engine'
+import { OPEN_SLOT_WEIGHT } from './ilp-model'
 import { collect } from './test-helpers'
 import type { BuildResult, Candidate, Decoration, SkillRequirement, SlotQuery } from './types'
 
@@ -250,7 +251,31 @@ function bruteForceSearchWithDecorations(
   return results
 }
 
-const openSlotCountArb = fc.integer({ min: 0, max: 4 })
+/** Which candidate fills each slot -- the identity results are distinct by. */
+function gearKey(result: BuildResult): string {
+  return [...result.picks]
+    .map(([slotId, c]) => `${slotId}=${c.id}`)
+    .sort()
+    .join('|')
+}
+
+/** The objective `buildModel` maximizes (default ranking, no options): open
+ * slots left after decorations, then unrequested ("bonus") points. */
+function objectiveOf(result: BuildResult, requirements: readonly SkillRequirement[]): number {
+  const requested = new Set(requirements.map((r) => r.skillId))
+  let total = 0
+  for (const candidate of result.picks.values())
+    total += OPEN_SLOT_WEIGHT * (candidate.openSlotCount ?? 0)
+  for (const placed of result.decorations.values()) {
+    for (const d of placed) total -= OPEN_SLOT_WEIGHT * d.slotSize
+  }
+  for (const [skillId, points] of result.skillTotals) if (!requested.has(skillId)) total += points
+  return total
+}
+
+// No armor piece or weapon in the game has more than 3 decoration slots
+// (see ilp-model.ts's `MAX_DECORATION_SLOTS_PER_PIECE`).
+const openSlotCountArb = fc.integer({ min: 0, max: 3 })
 
 const candidateWithSlotsArb = fc.record({
   id: fc.uuid(),
@@ -294,10 +319,12 @@ describe('search with decorations (property-based)', () => {
   const TEST_TIMEOUT_MS = 300_000
 
   it(
-    'reaches exactly the same set of distinct outcomes as an unpruned brute-force search',
+    'returns every feasible gear set exactly once, each with its best decoration fill',
     async () => {
-      // Compares distinct (capped) vectors, not exact pick-and-decoration
-      // signatures -- see `vectorSignature`'s docstring.
+      // Results are distinct by gear set, each carrying the best-ranked
+      // decoration fill for it (see ilp-model.ts's module docstring) -- so
+      // the brute-force oracle is grouped the same way: every gear set with
+      // any valid fill, mapped to the best objective any of its fills reach.
       await fc.assert(
         fc.asyncProperty(
           slotsWithOpenSlotsArb,
@@ -305,15 +332,18 @@ describe('search with decorations (property-based)', () => {
           decorationsArb,
           async (slots, requirements, decorations) => {
             const actual = await collect(search(slots, requirements, decorations))
-            const expected = pruneDominated(
-              bruteForceSearchWithDecorations(slots, requirements, decorations),
-              requirements,
+            const expected = new Map<string, number>()
+            for (const r of bruteForceSearchWithDecorations(slots, requirements, decorations)) {
+              const key = gearKey(r)
+              const objective = objectiveOf(r, requirements)
+              expected.set(key, Math.max(expected.get(key) ?? -Infinity, objective))
+            }
+
+            const actualKeys = actual.map(gearKey)
+            expect(new Set(actualKeys).size).toBe(actualKeys.length)
+            expect(new Map(actual.map((r) => [gearKey(r), objectiveOf(r, requirements)]))).toEqual(
+              expected,
             )
-
-            const actualVectors = new Set(actual.map((r) => vectorSignature(r, requirements)))
-            const expectedVectors = new Set(expected.map((r) => vectorSignature(r, requirements)))
-
-            expect(actualVectors).toEqual(expectedVectors)
           },
         ),
         { numRuns: 50 }, // decoration enumeration is combinatorially heavier per case

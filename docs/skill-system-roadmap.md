@@ -2419,3 +2419,87 @@ an OR, not a sum: satisfying more than one in the same group earns no more than 
   Up (Absolute)" requirement with zero other hard requirements, ran a search, and confirmed the winning
   result's very first listed skill was `Attack Up (Small) (10/10)` -- the solver actively worked to
   satisfy the optional skill even though nothing required it to.
+
+## 41. Search speed: exact optimality gap + dominated-armor pruning
+
+**Status: COMPLETE for default ranking (2026-10-26); exact mode researched, not yet changed.** Owner
+request: searches took minutes (10+ on weaker machines); make them much faster while keeping a high
+guarantee of the optimal build. Full research, measurements, and remaining approaches:
+[search-performance-research.md](search-performance-research.md).
+
+- Root cause found: HiGHS was handed every armor piece in the game (~62k columns) on every search;
+  easier queries solved at the root node yet still took 14-27s per round, all of it presolve and
+  root cut rounds over that column set. Solver-knob tuning can't help that, which likely explains
+  why earlier tuning attempts were neutral or slower.
+- `engine.ts`: `mip_rel_gap = 0`, `mip_abs_gap = 0.99`. HiGHS's default 1e-4 relative gap let a
+  round stop short of the true optimum (observed: a few bonus points; theoretically up to ~10 open
+  slots once a preferred piece puts the objective near 10^9). The objective is integral, so this is
+  exact. Measured cost: negligible.
+- New `candidate-pruning.ts`: k-dominance pruning per slot, applied when the new
+  `SearchOptions.maxResults` is set (`App.tsx` passes its result count; the engine also stops after
+  that many results). A piece is dropped only if at least `maxResults` other pieces in its slot each
+  beat or match it on every requirement, optional skill, resistance floor, open slots, objective
+  coefficient, and preferred category, and match it exactly on excluded-active skills. Skipped under
+  `preferExactMatches` with tier data, where no sound rule found was strong enough to pay for itself.
+- Results (5 results, production time box): 4-skill 84s → 2.6s; 17-skill end-game ~2 min → 12.7s.
+  The hard 17-skill sword query still hits the time box in the per-slot model (3 time-boxed results
+  instead of none). Decoration pooling (research doc approach 3) is what fixes it.
+- Verification: `candidate-pruning.test.ts` (3 unit tests, a `maxResults` cap test, and a property
+  test: top-k objective values with pruning equal the unpruned engine's, over random instances with
+  preferred pieces/categories, excluded skills, resistance floors, and optional skills). Each
+  dominance dimension was mutation-checked: removing it makes the property fail. Two `App.test.tsx`
+  assertions updated for the new `maxResults` option. Full suite green, `tsc -b` and oxlint clean.
+- Open: decoration pooling (also removes the "same armor, decorations moved to another slot"
+  duplicate results, but needs the owner's OK on "results distinct by gear set"), and the exact-mode
+  plan in the research doc's section 7 (prototype: clean answers in 0.3-3.7s instead of 90-300s+).
+- Live-verified in the dev app (Attack Up (Absolute) + Vampirism+2, 5 results): 1.7s, vs 83.2s for the
+  same query unpruned in Node. **Caveat found while verifying:** `preferExactMatches` defaults to
+  *on* (`App.tsx`), so most searches still take the unpruned exact-mode path until section 7 of the
+  research doc is implemented -- that is the next priority. Also observed: cancelling a search can't
+  interrupt a solve already in progress, so a new search queues behind the old one (28.6s instead of
+  1.7s in one live run). Pre-existing, unrelated to this change.
+
+## 42. Search speed, part 2: pooled decorations and an exact-mode rework
+
+**Status: COMPLETE (2026-10-26).** Follow-up to #41, per the owner's go-ahead ("results distinct by
+gear set is fine"; exact mode is important for complex queries). Details and measurements:
+[search-performance-research.md](search-performance-research.md), "Status after the second
+implementation pass".
+
+- `ilp-model.ts`: decorations are one integer count column each, pooled across slots, with three
+  aggregate rows that keep placement exact for pieces of up to 3 slots (asserted). `decodeSolution`
+  places them per slot afterwards. The no-good cut covers armor and cuffs only, so results are
+  distinct by gear set. This removes the "same build, decoration moved" duplicates.
+- `candidate-pruning.ts`: `pruneDominatedDecorations`, exact for every rank now that decorations are
+  pooled.
+- Exact mode (`preferExactMatches`, the app default):
+  - Strict mode's "clean first" rule is now a hard constraint (tier indicators bounded to 0, then 1
+    once clean builds run out), replacing the cut-and-retry loop.
+  - `worker-handler.ts` first computes a bonus-free ceiling, then answers from a 20-per-slot pool.
+    Results reaching the ceiling are proven on the spot; the rest are shown as provisional and
+    replaced in place by a full verification pass.
+  - The UI shows "checking that no better build exists... Results may still improve" with a
+    "Stop verifying" button.
+- `ilp-model.ts`: always-met optional-skill tiers go into the objective `offset`, so objective values
+  compare across models. This also fixes a priority tier occasionally being rewarded twice.
+- `worker-client.ts` / `useSearchWorker.ts`: cancelling a running search terminates and replaces
+  the worker. This fixes a new search queueing behind an old solve.
+- `App.tsx`: no longer cancels at the result cap (the engine stops itself); the cap stays as a
+  guard.
+- Measured (5 results, dev machine):
+  - Default ranking: live 0.3s, 4-skill 0.3s, end-game 5.6s.
+  - Exact mode: 4-skill 0.9s all proven; sword 23.9s all proven (was a 300s timeout); end-game
+    provisional at 12.1s, verified by 160s.
+  - In the app (exact mode, Attack Up (Absolute) + Vampirism+2): provisional at 0.6s, verified at
+    38s.
+- Verification:
+  - New and updated tests across `ilp-model`, `engine`, `engine.property` (now checks every gear
+    set returned exactly once with its best decoration fill, against brute force),
+    `candidate-pruning` (decoration property test plus mutation checks), `worker-handler`,
+    `worker-client`, and `App`.
+  - Live-checked in the dev app.
+- Open:
+  - The verification pass (~30s per result on the full model) is now the slowest common path in
+    exact mode.
+  - Default ranking's bonus-point tail still time-boxes later rounds on the hardest query.
+  - Not yet measured on a low-end machine.

@@ -199,6 +199,7 @@ describe('App', () => {
         preferredCandidateIds: new Set(),
         preferredCategoryCounts: [],
         optionalSkillRequirements: [],
+        maxResults: 5,
       },
       // The "Unavailable"-leaf cuff is excluded unconditionally (see build-
       // query.ts's `UNOBTAINABLE_CUFF_CATEGORIES`) -- both real ones pass.
@@ -235,6 +236,7 @@ describe('App', () => {
         preferredCandidateIds: new Set(),
         preferredCategoryCounts: [],
         optionalSkillRequirements: [],
+        maxResults: 5,
       },
       [BUNDLE.cuffs[0], BUNDLE.cuffs[1]],
     )
@@ -723,7 +725,7 @@ describe('App', () => {
     expect(cards[1]).toHaveTextContent(/low defense helm/i)
   })
 
-  it('stops the search and reports a capped result set once enough results have streamed in', async () => {
+  it('ignores results past the cap and reports a capped result set', async () => {
     const worker = makeWorker()
     worker.search.mockImplementation((...args: unknown[]) => {
       const callbacks = args[3] as { onResult: (result: unknown) => void }
@@ -765,7 +767,62 @@ describe('App', () => {
     // see MAX_RESULTS in App.tsx.
     expect(await screen.findByText(/showing the top/i)).toBeInTheDocument()
     expect(screen.getAllByText(/helm \d+/i).length).toBeLessThan(25)
-    expect(worker.cancel).toHaveBeenCalledWith('req-1')
+    // The engine stops at `maxResults` on its own, so the page only ignores
+    // the excess -- it doesn't terminate the worker over it.
+    expect(worker.cancel).not.toHaveBeenCalled()
+  })
+
+  it('shows provisional results while verifying, then replaces them in place with verified ones', async () => {
+    const helm = (id: string) => ({
+      picks: new Map([
+        [
+          'head',
+          {
+            id,
+            name: `Helm ${id}`,
+            skills: [],
+            defenseMax: null,
+            resistances: { fire: 0, water: 0, thunder: 0, ice: 0, dragon: 0 },
+          },
+        ],
+      ]),
+      decorations: new Map(),
+      cuffs: [],
+      skillTotals: new Map([[1, 15]]),
+    })
+    let callbacks!: {
+      onResult: (result: unknown, provisional: boolean) => void
+      onVerifying: () => void
+      onDone: () => void
+    }
+    const worker = makeWorker()
+    worker.search.mockImplementation((...args: unknown[]) => {
+      callbacks = args[3] as typeof callbacks
+      return 'req-1'
+    })
+    mockUseSearchWorker.mockReturnValue(worker as unknown as ReturnType<typeof useSearchWorker>)
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.click(screen.getByRole('button', { name: 'Attack' }))
+    await user.click(screen.getByRole('button', { name: /search/i }))
+    act(() => {
+      callbacks.onResult(helm('A'), true)
+      callbacks.onResult(helm('B'), true)
+      callbacks.onVerifying()
+    })
+    expect(screen.getByText(/checking that no better build exists/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /stop verifying/i })).toBeInTheDocument()
+
+    // The first verified result takes position 0, and the later provisional
+    // copy of the same gear set ("B") is dropped rather than shown twice.
+    act(() => {
+      callbacks.onResult(helm('B'), false)
+      callbacks.onDone()
+    })
+    expect(screen.queryByText(/checking that no better build exists/i)).not.toBeInTheDocument()
+    expect(screen.getAllByText(/Helm B/)).toHaveLength(1)
+    expect(screen.queryByText(/Helm A/)).not.toBeInTheDocument()
   })
 
   describe('"Show all" category links (docs/feedback.md Round 3 #5)', () => {
@@ -1117,7 +1174,10 @@ describe('App', () => {
     /** `worker.search`'s own mock type is inferred narrowly from
      * `makeWorker`'s zero-arg stub, so indexing a call's 5th (options)
      * argument needs an explicit cast back to its real call shape. */
-    function searchOptionsAt(worker: ReturnType<typeof stepWorker>['worker'], callIndex: number): unknown {
+    function searchOptionsAt(
+      worker: ReturnType<typeof stepWorker>['worker'],
+      callIndex: number,
+    ): unknown {
       return (worker.search.mock.calls[callIndex] as unknown as unknown[])[4]
     }
 

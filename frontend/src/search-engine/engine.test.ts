@@ -180,6 +180,37 @@ describe('search', () => {
     expect(results[0].picks.get('head')?.id).toBe('Plain')
   })
 
+  it('under preferExactMatches, returns every clean build before any build with a bonus tier active, then the rest', async () => {
+    // "Roomy" has the most open slots but activates skill 2, so both clean
+    // helms come first despite fewer slots; "Roomy" still follows rather than
+    // being dropped, ranked ahead of the even worse "Noisy" by its slots.
+    const slots: SlotQuery[] = [
+      {
+        slotId: 'head',
+        candidates: [
+          candidate('Roomy', { 1: 5, 2: 20 }, 3),
+          candidate('Clean A', { 1: 5 }, 1),
+          candidate('Noisy', { 1: 5, 2: 20 }, 0),
+          candidate('Clean B', { 1: 5 }, 0),
+        ],
+      },
+    ]
+
+    const results = await collect(
+      search(slots, [{ skillId: 1, minPoints: 3 }], [], {
+        preferExactMatches: true,
+        skillTiers: [{ skillId: 2, tierThresholds: [10] }],
+      }),
+    )
+
+    expect(results.map((r) => r.picks.get('head')?.id)).toEqual([
+      'Clean A',
+      'Clean B',
+      'Roomy',
+      'Noisy',
+    ])
+  })
+
   it('can be consumed lazily, stopping before the full result set is computed', async () => {
     const slots: SlotQuery[] = [
       {
@@ -249,10 +280,11 @@ describe('search with decorations', () => {
     expect(decorated.map((r) => r.decorations.get('head')?.[0].id)).toEqual(['Big Jewel'])
   })
 
-  it('preserves ties between non-dominated decoration choices that both meet requirements', async () => {
-    // Attack Jewel overshoots skill 1 and just meets skill 2; Defense Jewel
-    // is the mirror image -- genuinely different choices, but both tie once
-    // capped at the requirements (see ilp-model.test.ts's equivalent case).
+  it('returns one result per gear set, even when tied decoration choices exist for it', async () => {
+    // Attack Jewel and Defense Jewel both meet the requirements on the same
+    // helm and tie in rank. Results are distinct by gear set (see
+    // ilp-model.ts's module docstring), so the helm comes back once, with
+    // either jewel, rather than once per jewel.
     const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Bare Helm', {}, 2)] }]
     const attackJewel = deco('Attack Jewel', 2, { 1: 5, 2: 1 })
     const defenseJewel = deco('Defense Jewel', 2, { 1: 1, 2: 1 })
@@ -263,11 +295,8 @@ describe('search with decorations', () => {
     ]
     const results = await collect(search(slots, requirements, [attackJewel, defenseJewel]))
 
-    const decorated = results.filter((r) => (r.decorations.get('head')?.length ?? 0) > 0)
-    expect(decorated.map((r) => r.decorations.get('head')?.[0].id).sort()).toEqual([
-      'Attack Jewel',
-      'Defense Jewel',
-    ])
+    expect(results).toHaveLength(1)
+    expect(['Attack Jewel', 'Defense Jewel']).toContain(results[0].decorations.get('head')?.[0].id)
   })
 })
 

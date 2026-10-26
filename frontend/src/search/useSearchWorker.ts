@@ -13,15 +13,15 @@ export function useSearchWorker(): SearchWorkerClient | null {
   const [client, setClient] = useState<SearchWorkerClient | null>(null)
 
   useEffect(() => {
-    const worker = new Worker(new URL('../search-engine/worker.ts', import.meta.url), {
-      type: 'module',
-    })
+    const createWorker = () =>
+      new Worker(new URL('../search-engine/worker.ts', import.meta.url), { type: 'module' })
+    const searchClient = new SearchWorkerClient(createWorker(), createWorker)
     // Exactly the "synchronize with an external system" case the lint rule's
     // own guidance carves out: the Worker is the external system, and this
     // is the only place its handle becomes available to expose via state.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setClient(new SearchWorkerClient(worker))
-    return () => worker.terminate()
+    setClient(searchClient)
+    return () => searchClient.dispose()
   }, [])
 
   return client

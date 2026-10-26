@@ -322,6 +322,36 @@ export interface SearchOptions {
    * `timeBoxSeconds`'s docstring for why this needs to be a per-call override
    * rather than a global constant, and for its own UI use since 2026-10-25. */
   readonly maxTimeBoxAttempts?: number
+
+  /** How many results the caller will take (docs/search-performance-research.md
+   * approach 1). When set, `search()` yields at most this many, and first drops
+   * every armor candidate that provably can't appear among them
+   * (`candidate-pruning.ts`) -- typically 90-99% of the real dataset, which is
+   * most of what a round costs. Left unset, nothing is pruned and the generator
+   * runs until the query is exhausted, so a caller that might pull more results
+   * later must not set it: a candidate pruned for the top N can still belong in
+   * result N+1. */
+  readonly maxResults?: number
+
+  /** Builds the model from a small heuristic pool instead of every armor
+   * piece: per slot, the pieces with fewer than this many others matching or
+   * beating them on everything *except* bonus skills (`candidate-pruning.ts`'s
+   * rule, run with bonus skills ignored). For `preferExactMatches` searches,
+   * where no sound pruning rule exists (see that module's docstring): solving
+   * this pool first gives an answer in seconds that matched the true optimum
+   * on every real query measured, but it isn't guaranteed to be optimal, so
+   * results from it are provisional. `worker-handler.ts` follows them with a
+   * full, unpruned search that either confirms or replaces them
+   * (docs/search-performance-research.md section 7). */
+  readonly provisionalPoolSize?: number
+
+  /** With `preferExactMatches`, ranks by open slots and preferences alone,
+   * building no bonus-tier penalty at all (`ilp-model.ts`'s
+   * `hasTierPenalties`). Every build's exact-mode score is at most its score
+   * under this option, and this search prunes soundly, so its best score is a
+   * fast, exact ceiling: `worker-handler.ts` treats any provisional result
+   * that already reaches it as proven optimal. */
+  readonly withoutTierPenalties?: boolean
 }
 
 export interface PreferredCategoryCount {

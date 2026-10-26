@@ -7,47 +7,45 @@
  * complete build directly instead of this engine combining partial frontiers
  * itself.
  *
- * Every "choice" column in the model is binary, including decoration
- * placement: a decoration that could be placed 0..maxCount times in a slot
- * gets one column *per count* ("place none" through "place maxCount"),
- * constrained so exactly one of them is chosen (see `decorationGroupRow`).
- * This costs more columns than a single bounded integer variable per
- * decoration would, but it's what makes `exclusionRow`'s no-good cut (the
- * thing that lets this engine return more than one ranked result -- see
- * `engine.ts`) a single, textbook-simple row: every feasible solution
- * selects exactly one column from every slot's cardinality group *and*
- * every slot/decoration's count group, so "forbid re-selecting this exact
- * combination of columns" is exactly as valid for a count-group as it
- * already is for a candidate (binary no-good cuts only work cleanly on
- * binary variables -- forbidding "z = 3" for a general bounded integer `z`
- * by writing `z <= 2` would also wrongly forbid `z = 0, 1, 2` the *next*
- * time those are wanted again for a different reason, and a general
- * not-equal cut needs auxiliary variables and big-M rows per excluded value
- * -- the one-hot encoding sidesteps both). Decoration counts are naturally
- * small (1-3 open slots is the common real case), so this is at most a
- * handful of extra columns per relevant decoration per slot, not a
- * combinatorial blow-up.
+ * Decorations are *pooled* across the whole build (2026-10-26,
+ * docs/search-performance-research.md approach 3): one integer column per
+ * relevant decoration counts how many copies the build uses in total, not
+ * where each one goes. A decoration contributes the same skill points and
+ * objective value in every slot, so the old per-slot encoding (one column
+ * per slot, decoration, and count) handed the solver every equivalent
+ * placement of the same build as a separate branch. On the hardest real
+ * benchmark query that symmetry kept it from proving anything within 300s;
+ * pooled, it proves optimality in ~26s. Placement stays exact through three
+ * aggregate rows (`capacityRow`/`size2Row`/`size3Row`, see `buildModel`), and
+ * `decodeSolution` recomputes a concrete per-slot placement afterwards.
+ *
+ * The pooled counts are general integers, not binary, so they're left out of
+ * `exclusionRow`'s no-good cut (forbidding "z = 3" for an integer `z` needs
+ * auxiliary variables and big-M rows per excluded value). The cut covers
+ * armor and cuff choices only, which makes ranked results distinct by *gear
+ * set* -- each with its own best decoration fill -- rather than by
+ * decoration arrangement. The old arrangement-level distinctness mostly
+ * produced duplicates (the same build with a decoration moved to another
+ * slot), confirmed by the project owner as not wanted.
  *
  * Columns, in order: one binary "is this candidate chosen for this slot"
- * column per (slot, candidate) pair, then one binary "place exactly this
- * many of this decoration in this slot" column -- for every count from 0 up
- * to however many could physically fit -- per (slot, relevant decoration)
- * pair whose size could ever fit there, then one binary "equip exactly this
- * many of this cuff" column per relevant cuff (same one-hot-by-count shape as
- * decorations, but global rather than per-slot -- see `buildModel`'s own
- * docstring), then (only when `options.preferExactMatches` actually needs one
- * -- see below) a handful of non-choice accounting/indicator columns per
- * bonus skill whose tier can be reached at all. `columns` (in `buildModel`'s
- * result) is a parallel array recording what each column means, so a
- * solution vector can be decoded back into a `BuildResult` without the model
- * itself carrying names; the accounting/indicator columns carry no meaning a
- * `BuildResult` needs, so they're tagged `kind: 'auxiliary'` and skipped by
- * both `decodeSolution` and `exclusionRow`.
+ * column per (slot, candidate) pair, then one integer "use this many copies"
+ * column per relevant decoration that fits anywhere, then one fixed-count
+ * column per pinned (slot, decoration) pair, then one binary "equip exactly
+ * this many of this cuff" column per relevant cuff and count (one-hot by
+ * count -- see `buildModel`'s own docstring), then (only when
+ * `options.preferExactMatches` actually needs one -- see below) a handful of
+ * non-choice accounting/indicator columns per bonus skill whose tier can be
+ * reached at all. `columns` (in `buildModel`'s result) is a parallel array
+ * recording what each column means, so a solution vector can be decoded back
+ * into a `BuildResult` without the model itself carrying names; the
+ * accounting/indicator columns carry no meaning a `BuildResult` needs, so
+ * they're tagged `kind: 'auxiliary'` and skipped by both `decodeSolution` and
+ * `exclusionRow`.
  *
  * Rows, in order: one cardinality row per slot (exactly one candidate
- * chosen), one capacity row per slot (decorations placed there can't exceed
- * the chosen candidate's open slots), one decoration-group row per (slot,
- * relevant decoration) pair (exactly one count column chosen for it), one
+ * chosen), then the three pooled decoration-capacity rows (only when any
+ * decoration could be placed at all), one
  * row per skill requirement (the summed contribution across every chosen
  * candidate and placed decoration must reach its minimum), one row per
  * requested resistance floor (`options.resistanceFloors`, docs/feedback.md
@@ -204,6 +202,12 @@ export const CUFF_SLOT_BUDGET = 2
  * category rather than every cuff. */
 export const MAX_EQUIPPED_HIDEN_CUFFS = 1
 
+/** The most decoration slots any one armor piece or weapon has (confirmed
+ * against the real dataset: every piece has 0-3, and weapons are capped at 3
+ * in `App.tsx`). The pooled decoration rows in `buildModel` are only exact up
+ * to this, so it rejects anything larger rather than silently mis-placing. */
+export const MAX_DECORATION_SLOTS_PER_PIECE = 3
+
 export interface CandidateColumn {
   readonly kind: 'candidate'
   readonly slotIndex: number
@@ -211,21 +215,22 @@ export interface CandidateColumn {
   readonly candidate: Candidate
 }
 
+/** A decoration's total copy count, as an integer column (see this module's
+ * own docstring). Pooled across every slot unless `pinnedSlotId` is set, in
+ * which case it's a pinned decoration (`SearchOptions.pinnedSlotDecorations`)
+ * whose count is fixed and whose size was already carved out of that slot's
+ * candidates. */
 export interface DecorationColumn {
   readonly kind: 'decoration'
-  readonly slotIndex: number
-  readonly slotId: string
   readonly decoration: Decoration
-  /** How many copies of `decoration` this column places when chosen -- 0
-   * means "none of this decoration," a valid, usually-necessary member of
-   * its one-hot group (see this module's own docstring). */
-  readonly count: number
+  readonly pinnedSlotId?: string
 }
 
-/** One-hot-encoded exactly like `DecorationColumn` (see this module's own
- * docstring), but global rather than per-slot -- cuffs aren't placed into any
- * particular armor slot, they're drawn from one shared pool of at most
- * `MAX_EQUIPPED_CUFFS`. */
+/** One binary column per (cuff, count) pair, exactly one chosen per cuff --
+ * a one-hot encoding rather than one integer column, so `exclusionRow`'s
+ * binary no-good cut can cover cuffs (see this module's own docstring). Cuffs
+ * aren't placed into any particular armor slot; they're drawn from one shared
+ * pool of at most `MAX_EQUIPPED_CUFFS`. */
 export interface CuffColumn {
   readonly kind: 'cuff'
   readonly cuff: Cuff
@@ -241,6 +246,11 @@ export interface CuffColumn {
  * regardless of its solved value. */
 export interface AuxiliaryColumn {
   readonly kind: 'auxiliary'
+  /** Set on `preferExactMatches`'s "this bonus skill's tier is active"
+   * indicators, so `engine.ts` can bound them all to 0 -- turning the
+   * penalty into a hard "no bonus tier active" rule -- and back again, on
+   * the same live model (see its strict mode). */
+  readonly tierIndicator?: true
 }
 
 /** What a single model column represents -- parallel to the model's own
@@ -425,6 +435,56 @@ export function computeAchievableRanges(
   return ranges
 }
 
+/** Whether `buildModel` builds `preferExactMatches`'s bonus-tier penalty
+ * machinery for these options -- the one ranking term no sound pruning rule
+ * exists for (see `candidate-pruning.ts`). */
+export function hasTierPenalties(options: SearchOptions): boolean {
+  return Boolean(options.preferExactMatches && options.skillTiers && !options.withoutTierPenalties)
+}
+
+/** Skills the player asked for in any form -- hard requirements plus
+ * optional ones. Neither kind is ever a "bonus" skill (see `buildModel`'s own
+ * comment where this is used). Exported so `candidate-pruning.ts` judges
+ * bonus skills by exactly the same set `buildModel` does. */
+export function skillPreferenceIdsOf(
+  requirements: readonly SkillRequirement[],
+  options: SearchOptions,
+): Set<SkillId> {
+  return new Set([
+    ...requirements.map((r) => r.skillId),
+    ...(options.optionalSkillRequirements ?? []).map((r) => r.skillId),
+  ])
+}
+
+/** A candidate column's objective coefficient (see `buildModel`'s docstring
+ * for what each term means) -- exported so `candidate-pruning.ts` compares
+ * candidates by exactly the value `buildModel` will hand the solver. */
+export function candidateObjectiveCost(
+  candidate: Candidate,
+  skillPreferenceIds: ReadonlySet<SkillId>,
+  options: SearchOptions,
+): number {
+  const bonus = options.preferExactMatches ? 0 : bonusPointsOf(candidate.skills, skillPreferenceIds)
+  const preferredBonus = options.preferredCandidateIds?.has(candidate.id)
+    ? PREFERRED_ITEM_WEIGHT
+    : 0
+  return OPEN_SLOT_WEIGHT * (candidate.openSlotCount ?? 0) + bonus + preferredBonus
+}
+
+/** One copy of a decoration's objective coefficient (the slot it uses, plus
+ * any bonus points) -- exported for `candidate-pruning.ts`, same reason as
+ * `candidateObjectiveCost`. */
+export function decorationObjectiveCost(
+  decoration: Decoration,
+  skillPreferenceIds: ReadonlySet<SkillId>,
+  options: SearchOptions,
+): number {
+  const bonus = options.preferExactMatches
+    ? 0
+    : bonusPointsOf(decoration.skills, skillPreferenceIds)
+  return -OPEN_SLOT_WEIGHT * decoration.slotSize + bonus
+}
+
 interface TierMachinery {
   readonly skillId: SkillId
   readonly posThreshold?: number
@@ -484,16 +544,15 @@ interface TierMachinery {
  * they're read.
  *
  * `options.pinnedSlotDecorations` (docs/skill-system-roadmap.md TODO #12),
- * unlike `pinnedCuffs`, *are* modeled as real columns: the matching
- * decoration-count column for each pinned slot/decoration/count is forced to
- * exactly 1 (its `colLower` raised to 1) instead of left free, while the
- * slot's own candidate and every other decoration stay fully solver-chosen.
- * This works because a decoration's placement already has no coupling to
- * which candidate fills the slot beyond the shared `capacityRow` -- forcing
- * one decoration-count column doesn't need the "narrow to one synthesized
- * candidate" trick pinned armor uses (TODO #7), and naturally still goes
- * infeasible via `capacityRow` if the pin can't fit any candidate the solver
- * could otherwise pick for that slot.
+ * unlike `pinnedCuffs`, *are* modeled as real columns: one fixed-count
+ * column per pinned (slot, decoration) pair, so its points reach every skill
+ * row exactly like a pooled copy's would, while the slot's own candidate and
+ * every other decoration stay fully solver-chosen. The pins' total size is
+ * subtracted from each of that slot's candidates' open slots before the
+ * pooled capacity rows see them, and a candidate too small to hold the pins
+ * at all is bounded to 0 -- so a pin that fits no candidate the solver could
+ * pick still makes the model infeasible, without needing the "narrow to one
+ * synthesized candidate" trick pinned armor uses (TODO #7).
  */
 export function buildModel(
   highs: Highs,
@@ -503,7 +562,6 @@ export function buildModel(
   options: SearchOptions = {},
   cuffs: readonly Cuff[] = [],
 ): BuiltModel {
-  const requestedSkillIds = new Set(requirements.map((r) => r.skillId))
   const optionalSkillRequirements: readonly OptionalSkillRequirement[] =
     options.optionalSkillRequirements ?? []
   // Optional skills are "asked for," just not as a hard constraint -- they're
@@ -512,12 +570,8 @@ export function buildModel(
   // so a skill the player explicitly marked as preferred is never also
   // double-counted as an unrequested "bonus." See `skillPreferenceIds`'s own
   // call sites below.
-  const skillPreferenceIds = new Set([
-    ...requestedSkillIds,
-    ...optionalSkillRequirements.map((r) => r.skillId),
-  ])
+  const skillPreferenceIds = skillPreferenceIdsOf(requirements, options)
   const preferExactMatches = options.preferExactMatches ?? false
-  const preferredCandidateIds = options.preferredCandidateIds ?? new Set<string>()
   const numSlots = slots.length
 
   // Pinned cuffs (see `SearchOptions.pinnedCuffs`) are never modeled as
@@ -580,11 +634,43 @@ export function buildModel(
   // each decoration's own `maxCapacity / slotSize`) is fine.
   const skillMaxCounts = slotMaxCapacity
 
-  const cardinalityRow = (slotIndex: number): number => slotIndex
-  const capacityRow = (slotIndex: number): number => numSlots + slotIndex
+  // Pooled decorations (see this module's own docstring). Each slot's pinned
+  // decorations are carved out of its candidates' capacity up front, leaving
+  // every chosen piece a "bin" of `remaining` open slots for the pool. A
+  // multiset of decorations (sizes 1-3) fits bins of at most 3 slots each
+  // exactly when all three of these hold:
+  //   (size-3 count)       <= (bins with 3 slots left)
+  //   (size-2 and -3 count) <= (bins with at least 2 slots left)
+  //   (total size)          <= (total slots left)
+  // Sufficiency: size-3s fill 3-slot bins; size-2s fill the 2-slot bins, then
+  // the remaining 3-slot bins (leaving 1 slot each); size-1s fill whatever is
+  // left. `placeDecorations` decodes a placement with exactly that rule. A
+  // bin of 4+ slots would break the second row (it could take two size-2s),
+  // so that combination is rejected outright -- no armor piece or weapon in
+  // the game has more than 3 slots. With only size-1 decorations in play, the
+  // total-size row alone is exact for bins of any size.
+  const pinnedSizeOfSlot = slots.map((slot) =>
+    (options.pinnedSlotDecorations?.get(slot.slotId) ?? []).reduce((sum, d) => sum + d.slotSize, 0),
+  )
+  const largestCapacity = slotMaxCapacity.reduce((max, c) => Math.max(max, c), 0)
+  const totalCapacity = slotMaxCapacity.reduce((sum, c) => sum + c, 0)
+  const pooledDecorations = decorations.filter(
+    (d) => d.slotSize > 0 && d.slotSize <= largestCapacity,
+  )
+  const needsSize2Row = pooledDecorations.some((d) => d.slotSize >= 2)
+  const needsSize3Row = pooledDecorations.some((d) => d.slotSize >= 3)
+  if (needsSize2Row && largestCapacity > MAX_DECORATION_SLOTS_PER_PIECE) {
+    throw new Error(
+      `A piece has more than ${MAX_DECORATION_SLOTS_PER_PIECE} decoration slots, which the pooled decoration model can't place size-2+ decorations into exactly`,
+    )
+  }
 
-  let rowCursor = 2 * numSlots
-  const groupRowOf: number[][] = slotDecorationGroups.map((group) => group.map(() => rowCursor++))
+  const cardinalityRow = (slotIndex: number): number => slotIndex
+
+  let rowCursor = numSlots
+  const capacityRow = pooledDecorations.length > 0 ? rowCursor++ : -1
+  const size2Row = needsSize2Row ? rowCursor++ : -1
+  const size3Row = needsSize3Row ? rowCursor++ : -1
   const skillRowBase = rowCursor
   const skillRow = (requirementIndex: number): number => skillRowBase + requirementIndex
 
@@ -631,8 +717,8 @@ export function buildModel(
   // row layout is finalized, since its row/column counts depend on which
   // bonus skills can actually reach one of their own tiers in this query.
   let tierMachinery: readonly TierMachinery[] = []
-  if (preferExactMatches && options.skillTiers) {
-    const breakpoints = resolveTierBreakpoints(options.skillTiers, skillPreferenceIds)
+  if (hasTierPenalties(options)) {
+    const breakpoints = resolveTierBreakpoints(options.skillTiers!, skillPreferenceIds)
     const ranges = computeAchievableRanges(
       slots,
       slotDecorationGroups,
@@ -686,10 +772,14 @@ export function buildModel(
   // of any choice this model makes (its own minimum, after subtracting any
   // pinned-cuff contribution, is already <= the achievable floor) or *never*
   // achievable at all -- both are a constant contribution to every candidate
-  // solution, so (same reasoning already used for a pinned cuff's own skill
-  // points) they're left out of the objective entirely rather than given a
-  // column that could never change which solution ranks best; or genuinely
-  // conditional, which needs real machinery below.
+  // solution, so they get no column. An always-met member's tier reward goes
+  // into the objective's constant `offset` instead (2026-10-26), so the
+  // solved objective value stays the build's true score no matter which
+  // pieces this particular model was given -- `worker-handler.ts` compares
+  // objective values across differently-pruned models. That also settles its
+  // whole priority tier: any other member of the same tier gets no column
+  // either, since an already-met tier can't be earned twice. The rest are
+  // genuinely conditional, which needs real machinery below.
   interface LiveOptionalMember {
     readonly skillId: SkillId
     readonly rangeMin: number
@@ -704,11 +794,23 @@ export function buildModel(
     cuffs,
     new Set(optionalSkillRequirements.map((r) => r.skillId)),
   )
+  const alwaysMetOptionalTiers = new Set<number>()
+  for (const req of optionalSkillRequirements) {
+    const range = optionalRanges.get(req.skillId)!
+    const effectiveMinPoints = req.minPoints - pinnedPointsTowards(req.skillId)
+    if (effectiveMinPoints <= range.min)
+      alwaysMetOptionalTiers.add(tierIndexForPriority(req.priority))
+  }
+  const objectiveOffset = [...alwaysMetOptionalTiers].reduce(
+    (sum, tierIndex) => sum + optionalSkillTierWeight(tierIndex),
+    0,
+  )
   const liveOptionalMembers: LiveOptionalMember[] = []
   for (const req of optionalSkillRequirements) {
     const range = optionalRanges.get(req.skillId)!
     const effectiveMinPoints = req.minPoints - pinnedPointsTowards(req.skillId)
     if (effectiveMinPoints <= range.min || effectiveMinPoints > range.max) continue
+    if (alwaysMetOptionalTiers.has(tierIndexForPriority(req.priority))) continue
     liveOptionalMembers.push({
       skillId: req.skillId,
       rangeMin: range.min,
@@ -770,12 +872,11 @@ export function buildModel(
   for (let s = 0; s < numSlots; s++) {
     rowLower[cardinalityRow(s)] = 1
     rowUpper[cardinalityRow(s)] = 1
-    rowLower[capacityRow(s)] = -highs.infinity
-    rowUpper[capacityRow(s)] = 0
-    for (const row of groupRowOf[s]) {
-      rowLower[row] = 1
-      rowUpper[row] = 1
-    }
+  }
+  for (const row of [capacityRow, size2Row, size3Row]) {
+    if (row < 0) continue
+    rowLower[row] = -highs.infinity
+    rowUpper[row] = 0
   }
   requirements.forEach((req, r) => {
     rowLower[skillRow(r)] = req.minPoints - pinnedPointsTowards(req.skillId)
@@ -870,18 +971,47 @@ export function buildModel(
     colLower.push(lower)
     colUpper.push(upper)
     integrality.push(highs.constants.variableType.integer)
-    for (const [row, value] of entries) {
+    for (const [row, value] of [...entries].sort((a, b) => a[0] - b[0])) {
       indices.push(row)
       values.push(value)
     }
     starts.push(indices.length)
   }
 
+  /** Every skill-related row a decoration's points feed, per copy. */
+  function decorationEntries(decoration: Decoration): Map<number, number> {
+    const entries = new Map<number, number>()
+    requirements.forEach((req, r) => {
+      const points = pointsTowards(decoration.skills, req.skillId)
+      if (points !== 0) entries.set(skillRow(r), points)
+    })
+    excludedActiveSkillIds.forEach((skillId, i) => {
+      const points = pointsTowards(decoration.skills, skillId)
+      if (points !== 0) entries.set(excludedSkillRow(i), points)
+    })
+    for (const m of tierMachinery) {
+      const points = pointsTowards(decoration.skills, m.skillId)
+      if (points !== 0) entries.set(totalRowOf.get(m.skillId)!, points)
+    }
+    liveOptionalMembers.forEach((member, i) => {
+      const points = pointsTowards(decoration.skills, member.skillId)
+      if (points !== 0) entries.set(optionalReachedRowOf[i], points)
+    })
+    return entries
+  }
+
   slots.forEach((slot, s) => {
     for (const candidate of slot.candidates) {
-      const capacity = candidate.openSlotCount ?? 0
+      // The open slots left for pooled decorations once this slot's pinned
+      // ones are placed -- negative means the pins can't fit this candidate
+      // at all, so it's kept as a column (decoding stays uniform) but can
+      // never be chosen. If no candidate here can hold the pins, the
+      // cardinality row makes the whole model infeasible, as it should.
+      const remaining = (candidate.openSlotCount ?? 0) - pinnedSizeOfSlot[s]
       const entries = new Map<number, number>([[cardinalityRow(s), 1]])
-      if (capacity !== 0) entries.set(capacityRow(s), -capacity)
+      if (capacityRow >= 0 && remaining > 0) entries.set(capacityRow, -remaining)
+      if (size2Row >= 0 && remaining >= 2) entries.set(size2Row, -1)
+      if (size3Row >= 0 && remaining >= 3) entries.set(size3Row, -1)
       requirements.forEach((req, r) => {
         const points = pointsTowards(candidate.skills, req.skillId)
         if (points !== 0) entries.set(skillRow(r), points)
@@ -907,65 +1037,46 @@ export function buildModel(
       })
 
       columns.push({ kind: 'candidate', slotIndex: s, slotId: slot.slotId, candidate })
-      const bonus = preferExactMatches ? 0 : bonusPointsOf(candidate.skills, skillPreferenceIds)
-      const preferredBonus = preferredCandidateIds.has(candidate.id) ? PREFERRED_ITEM_WEIGHT : 0
-      addColumn(OPEN_SLOT_WEIGHT * capacity + bonus + preferredBonus, entries)
+      addColumn(
+        candidateObjectiveCost(candidate, skillPreferenceIds, options),
+        entries,
+        0,
+        remaining < 0 ? 0 : 1,
+      )
     }
-
-    const pinnedCounts = pinnedSlotDecorationCounts.get(slot.slotId)
-
-    slotDecorationGroups[s].forEach((decoration, groupIndex) => {
-      const maxCapacity = slotMaxCapacity[s]
-      const pinnedCount = pinnedCounts?.get(decoration.id) ?? 0
-      const naturalMaxCount =
-        maxCapacity > 0 && decoration.slotSize > 0
-          ? Math.floor(maxCapacity / decoration.slotSize)
-          : 0
-      // At least as large as `pinnedCount` even when that exceeds what any
-      // candidate here could actually hold -- see this function's own
-      // comment above where `slotDecorationGroups` is built: the forced
-      // column still needs to exist so `capacityRow` can correctly reject
-      // it, rather than the pin having no column to enforce it at all.
-      const maxCount = Math.max(naturalMaxCount, pinnedCount)
-      const groupRow = groupRowOf[s][groupIndex]
-      const decorationBonus = preferExactMatches
-        ? 0
-        : bonusPointsOf(decoration.skills, skillPreferenceIds)
-
-      for (let count = 0; count <= maxCount; count++) {
-        const entries = new Map<number, number>([[groupRow, 1]])
-        if (count > 0) {
-          entries.set(capacityRow(s), count * decoration.slotSize)
-          requirements.forEach((req, r) => {
-            const points = pointsTowards(decoration.skills, req.skillId)
-            if (points !== 0) entries.set(skillRow(r), count * points)
-          })
-          excludedActiveSkillIds.forEach((skillId, i) => {
-            const points = pointsTowards(decoration.skills, skillId)
-            if (points !== 0) entries.set(excludedSkillRow(i), count * points)
-          })
-          for (const m of tierMachinery) {
-            const points = pointsTowards(decoration.skills, m.skillId)
-            if (points !== 0) entries.set(totalRowOf.get(m.skillId)!, count * points)
-          }
-          liveOptionalMembers.forEach((member, i) => {
-            const points = pointsTowards(decoration.skills, member.skillId)
-            if (points !== 0) entries.set(optionalReachedRowOf[i], count * points)
-          })
-        }
-
-        columns.push({ kind: 'decoration', slotIndex: s, slotId: slot.slotId, decoration, count })
-        const cost =
-          count === 0 ? 0 : count * (-OPEN_SLOT_WEIGHT * decoration.slotSize + decorationBonus)
-        // Forces this exact count to be selected (combined with the
-        // group row's "exactly one column chosen" constraint, every other
-        // column in this group -- including "place none" -- is thereby
-        // forced to 0, with no need to bound them individually).
-        const forced = pinnedCount > 0 && count === pinnedCount
-        addColumn(cost, entries, forced ? 1 : 0)
-      }
-    })
   })
+
+  for (const decoration of pooledDecorations) {
+    const entries = decorationEntries(decoration)
+    entries.set(capacityRow, decoration.slotSize)
+    if (decoration.slotSize >= 2) entries.set(size2Row, 1)
+    if (decoration.slotSize >= 3) entries.set(size3Row, 1)
+    columns.push({ kind: 'decoration', decoration })
+    addColumn(
+      decorationObjectiveCost(decoration, skillPreferenceIds, options),
+      entries,
+      0,
+      Math.floor(totalCapacity / decoration.slotSize),
+    )
+  }
+
+  // Pinned decorations: fixed counts, feeding every skill row like a pooled
+  // copy would, but no capacity row -- their size was already carved out of
+  // their own slot's candidates above.
+  for (const slot of slots) {
+    for (const [decorationId, count] of pinnedSlotDecorationCounts.get(slot.slotId) ?? []) {
+      const decoration = options
+        .pinnedSlotDecorations!.get(slot.slotId)!
+        .find((d) => d.id === decorationId)!
+      columns.push({ kind: 'decoration', decoration, pinnedSlotId: slot.slotId })
+      addColumn(
+        decorationObjectiveCost(decoration, skillPreferenceIds, options),
+        decorationEntries(decoration),
+        count,
+        count,
+      )
+    }
+  }
 
   cuffs.forEach((cuff, i) => {
     // Bounded by MAX_EQUIPPED_CUFFS directly (not CUFF_SLOT_BUDGET /
@@ -1023,12 +1134,12 @@ export function buildModel(
       // `activatedPos` is 1 (see this function's own docstring) -- `needsPos`
       // guarantees `range.max >= posThreshold`, so this is always >= 1.
       const bigM = m.range.max - (m.posThreshold! - 1)
-      columns.push({ kind: 'auxiliary' })
+      columns.push({ kind: 'auxiliary', tierIndicator: true })
       addColumn(-EXACT_MATCH_SKILL_PENALTY, new Map([[posIndicatorRowOf.get(m.skillId)!, -bigM]]))
     }
     if (m.needsNeg) {
       const bigM = m.negThreshold! + 1 - m.range.min
-      columns.push({ kind: 'auxiliary' })
+      columns.push({ kind: 'auxiliary', tierIndicator: true })
       addColumn(-EXACT_MATCH_SKILL_PENALTY, new Map([[negIndicatorRowOf.get(m.skillId)!, bigM]]))
     }
   }
@@ -1071,6 +1182,7 @@ export function buildModel(
     numCols: columns.length,
     numRows,
     sense: highs.constants.objectiveSense.maximize,
+    offset: objectiveOffset,
     colCost,
     colLower,
     colUpper,
@@ -1099,22 +1211,21 @@ export interface BuildResultLike {
 
 /** Decodes a solved model's primal column values back into a `BuildResult`
  * shape. Auxiliary columns (see this module's own docstring) are skipped
- * outright -- they're bookkeeping, not a choice `BuildResult` cares about,
- * and (unlike every choice column) aren't even binary, so checking their
- * value against 0.5 would be meaningless. Every remaining column is binary,
- * so "chosen" is read as the value rounding above 0.5 (floating-point solver
- * output is never exactly 0/1). A chosen decoration or cuff column with
- * `count > 0` is expanded back into that many individual entries (matching
- * the old engine's flat `decorationsUsed` list -- duplicates allowed, and a
- * cuff can equally appear twice, confirmed allowed by the project owner);
- * `count === 0` ("none of this decoration/cuff") is a normal,
- * silently-skipped outcome, not a special case. */
+ * outright -- they're bookkeeping, not a choice `BuildResult` cares about.
+ * Candidate and cuff columns are binary, so "chosen" is read as the value
+ * rounding above 0.5 (floating-point solver output is never exactly 0/1); a
+ * chosen cuff column with `count > 0` is expanded into that many entries (the
+ * same cuff can appear twice, confirmed allowed by the project owner).
+ * Decoration columns are integer counts, rounded, then given concrete slots
+ * by `placeDecorations` -- the model itself only knows how many copies the
+ * build uses, not where they go. */
 export function decodeSolution(
   columns: readonly ColumnMeta[],
   colValue: ArrayLike<number>,
 ): BuildResultLike {
   const picks = new Map<string, Candidate>()
-  const decorationsBySlot = new Map<string, Decoration[]>()
+  const pinnedBySlot = new Map<string, Decoration[]>()
+  const pooled: Decoration[] = []
   const cuffsChosen: Cuff[] = []
   const skillTotals = new Map<SkillId, number>()
 
@@ -1126,6 +1237,17 @@ export function decodeSolution(
 
   columns.forEach((column, j) => {
     if (column.kind === 'auxiliary') return
+
+    if (column.kind === 'decoration') {
+      const count = Math.round(colValue[j])
+      if (count <= 0) return
+      const target = column.pinnedSlotId ? (pinnedBySlot.get(column.pinnedSlotId) ?? []) : pooled
+      for (let i = 0; i < count; i++) target.push(column.decoration)
+      if (column.pinnedSlotId) pinnedBySlot.set(column.pinnedSlotId, target)
+      addSkills(column.decoration.skills, count)
+      return
+    }
+
     if (colValue[j] <= 0.5) return
 
     if (column.kind === 'candidate') {
@@ -1135,20 +1257,48 @@ export function decodeSolution(
     }
 
     if (column.count <= 0) return
-
-    if (column.kind === 'cuff') {
-      for (let i = 0; i < column.count; i++) cuffsChosen.push(column.cuff)
-      addSkills(column.cuff.skills, column.count)
-      return
-    }
-
-    const placed = decorationsBySlot.get(column.slotId) ?? []
-    for (let i = 0; i < column.count; i++) placed.push(column.decoration)
-    decorationsBySlot.set(column.slotId, placed)
-    addSkills(column.decoration.skills, column.count)
+    for (let i = 0; i < column.count; i++) cuffsChosen.push(column.cuff)
+    addSkills(column.cuff.skills, column.count)
   })
 
-  return { picks, decorations: decorationsBySlot, cuffs: cuffsChosen, skillTotals }
+  return {
+    picks,
+    decorations: placeDecorations(picks, pinnedBySlot, pooled),
+    cuffs: cuffsChosen,
+    skillTotals,
+  }
+}
+
+/** Assigns pooled decorations to concrete slots with exactly the rule
+ * `buildModel`'s pooled capacity rows prove always succeeds (see its
+ * comment there): size-3s into 3-slot bins, size-2s into 2-slot bins before
+ * 3-slot ones, size-1s into whatever is left, earliest slot first. Each
+ * slot's pinned decorations are placed first and shrink its bin. Throws if a
+ * decoration doesn't fit, which would mean the model and this rule disagree
+ * -- a bug, not a user-facing outcome. */
+function placeDecorations(
+  picks: ReadonlyMap<string, Candidate>,
+  pinnedBySlot: ReadonlyMap<string, readonly Decoration[]>,
+  pooled: readonly Decoration[],
+): Map<string, Decoration[]> {
+  const bins = [...picks].map(([slotId, candidate]) => {
+    const placed = [...(pinnedBySlot.get(slotId) ?? [])]
+    const used = placed.reduce((sum, d) => sum + d.slotSize, 0)
+    return { slotId, placed, remaining: (candidate.openSlotCount ?? 0) - used }
+  })
+  const bySizeDescending = [...pooled].sort((a, b) => b.slotSize - a.slotSize)
+  for (const decoration of bySizeDescending) {
+    const size = decoration.slotSize
+    const bin =
+      (size === 2 ? bins.find((b) => b.remaining === 2) : undefined) ??
+      bins.find((b) => b.remaining >= size)
+    if (!bin) {
+      throw new Error(`Decoration ${decoration.id} doesn't fit the solved build's open slots`)
+    }
+    bin.placed.push(decoration)
+    bin.remaining -= size
+  }
+  return new Map(bins.filter((b) => b.placed.length > 0).map((b) => [b.slotId, b.placed]))
 }
 
 export interface RowSpec {
@@ -1159,26 +1309,21 @@ export interface RowSpec {
 }
 
 /**
- * A "no-good cut" forbidding the exact combination of chosen columns in
- * `colValue` from being re-selected -- the standard technique for getting a
- * ranked list of distinct results out of a MIP solver, which (unlike
- * commercial solvers) has no built-in solution pool: solve, cut out the
- * answer just found, re-solve (see `engine.ts`).
+ * A "no-good cut" forbidding the gear set in `colValue` -- which candidate
+ * fills each slot and which cuffs are equipped -- from being chosen again,
+ * the standard technique for getting a ranked list of distinct results out
+ * of a MIP solver, which (unlike commercial solvers) has no built-in
+ * solution pool: solve, cut out the answer just found, re-solve (see
+ * `engine.ts`).
  *
  * This is the textbook binary no-good cut (`sum(previously chosen columns)
- * <= chosen count - 1`), valid here across every *choice* column --
- * candidate and decoration-count alike -- specifically because every choice
- * column is binary and every feasible solution picks exactly one column from
- * each cardinality, capacity-group, and decoration-group (see this module's
- * own docstring for why decoration counts are one-hot-encoded for exactly
- * this reason). A general bounded-integer column would need auxiliary
- * variables and big-M rows per excluded value to forbid just one count
- * without also forbidding every other value on one side of it -- the
- * one-hot encoding avoids that entirely, at the cost of a few extra columns
- * up front. Auxiliary columns (see this module's own docstring) are skipped
- * outright: they're a deterministic function of the choice columns, so
- * forbidding the choice combination that produced them already forbids them
- * from recurring too, without needing to name them in the cut.
+ * <= chosen count - 1`), valid across candidate and cuff columns because
+ * both are binary and every feasible solution picks exactly one column from
+ * each slot's cardinality row and each cuff's count group. Decoration
+ * columns are general integers and left out on purpose: results are
+ * distinct by gear set, each with its own best decoration fill (see this
+ * module's own docstring). Auxiliary columns are a deterministic function of
+ * the choice columns, so they never need naming either.
  */
 export function exclusionRow(
   highs: Highs,
@@ -1190,7 +1335,7 @@ export function exclusionRow(
   let chosenCount = 0
 
   columns.forEach((column, j) => {
-    if (column.kind === 'auxiliary') return
+    if (column.kind === 'auxiliary' || column.kind === 'decoration') return
     if (colValue[j] > 0.5) {
       indices.push(j)
       values.push(1)

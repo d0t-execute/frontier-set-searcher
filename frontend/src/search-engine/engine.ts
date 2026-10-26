@@ -25,8 +25,9 @@
  * There's no open-source MIP solver with a built-in "solution pool" (that's
  * a commercial-solver-only feature) -- getting more than one ranked result
  * uses the standard "no-good cut" technique instead (`ilp-model.ts`'s
- * `exclusionRow`): solve, forbid the exact combination just found (which
- * candidate per slot, and how many of which decoration), re-solve, repeat
+ * `exclusionRow`): solve, forbid the gear set just found (which candidate
+ * per slot, which cuffs -- results are distinct by gear set, each with its
+ * own best decoration fill), re-solve, repeat
  * until the model becomes infeasible (no combination left) or the caller
  * stops pulling results. Each round reuses the same persistent HiGHS model
  * (`addRow` rather than rebuilding from scratch), so repeated solves stay
@@ -71,10 +72,10 @@
  * large enough that an unfiltered one would bloat the model for no benefit).
  */
 
+import { pruneDominatedCandidates, pruneDominatedDecorations } from './candidate-pruning'
 import { filterRelevantCuffs, filterRelevantDecorations } from './expand'
 import { getHighs } from './highs-runtime'
-import { breakpointsFromThresholds, buildModel, decodeSolution, exclusionRow, isUsableResult } from './ilp-model'
-import type { BuildResultLike, ColumnMeta } from './ilp-model'
+import { buildModel, decodeSolution, exclusionRow, isUsableResult } from './ilp-model'
 import type {
   BuildResult,
   Cuff,
@@ -82,7 +83,6 @@ import type {
   SearchOptions,
   SkillId,
   SkillRequirement,
-  SkillTierThresholds,
   SlotQuery,
 } from './types'
 import type { Highs, Model, ModelStatusCode, SymbolDisposable } from 'highs'
@@ -121,165 +121,69 @@ const MAX_TIME_BOX_ATTEMPTS = 2
  * full decoration pool found nothing at production's default time box, but a
  * feasible build did exist, confirmed by widening the box).
  *
- * `'found'` always means the live `native` model's current solution is the
- * one to decode and yield -- except when `fallback` (below) is set, in which
- * case `fallback` itself *is* the result, decoded from a since-excluded
- * incumbent the live model can no longer reproduce. */
+ * `'found'` means the live `native` model's current solution is the one to
+ * decode and yield. */
 type TimeBoxOutcome = 'found' | 'infeasible' | 'timedOut'
 
-/**
- * A usable-but-not-verified-clean incumbent `runTimeBoxed`'s strict mode
- * found and excluded (via `exclusionRow`) while searching for a better one,
- * kept around in case time runs out before a clean one (or any better one)
- * is ever found (2026-10-26, the "20-query sweep" follow-up to #2/#4 --
- * confirmed directly: several real queries that used to return a build with
- * a bonus skill active in ~20-35s, pre-#2/#4, instead returned *nothing at
- * all* post-#2/#4, timing out around 90-110s once that incumbent got
- * excluded and no cleaner one was ever found in time). Falling back to it
- * restores "always answer if any valid build exists," the same guarantee the
- * non-strict path and the pre-#2/#4 code both already had, without giving up
- * #2/#4's own preference for a clean result when one is reachable in time --
- * `fallback` is only ever used as an absolute last resort, never instead of a
- * clean result that was actually found.
- *
- * Carries the raw `colValue` snapshot alongside the decoded result (not just
- * `BuildResultLike`) because `exclusionRow` needs the raw per-column values
- * to build a cut, and the live model has already moved past this exact
- * combination by the time it's used -- `search()`'s own next-round cut must
- * be built from this snapshot, not from `native.getSolution()`. Copied
- * (`Float64Array.from`) rather than referenced, since the same buffer is
- * reused by the native binding on every subsequent `native.run()` call.
- */
-interface StrictFallback {
-  readonly decoded: BuildResultLike
-  readonly colValue: Float64Array
-}
-
-/** HiGHS's own fraction of configured B&B effort spent on primal heuristics
- * (default 0.05) -- raised only when `preferExactMatches` needs tier
- * machinery (see `runTimeBoxed`'s `strict` flag), since that's the specific
- * case observed (2026-10-25/26, the "Three Worlds" investigation) to need
- * more heuristic search to find a *better* incumbent, not just any feasible
- * one, within the same time box. Left at HiGHS's own default everywhere else
- * to avoid slowing down the common (non-`preferExactMatches`, or
- * `preferExactMatches` without a hard case) path for no benefit. */
-const PREFER_EXACT_MATCHES_HEURISTIC_EFFORT = 0.3
-
-/** Whether `skillTotals` still has a bonus (non-requested, non-optional)
- * skill active -- the same pos/neg tier check `ilp-model.ts`'s own tier
- * machinery is built to penalize, used here to decide whether an
- * interrupted-but-feasible incumbent is actually good enough to accept under
- * `preferExactMatches`, rather than a plausible-looking but merely-not-yet-
- * improved one (see `runTimeBoxed`'s `strict` mode, 2026-10-26). */
-function hasActiveBonusSkill(
-  skillTotals: ReadonlyMap<SkillId, number>,
-  skillTiers: readonly SkillTierThresholds[],
-  skillPreferenceIds: ReadonlySet<SkillId>,
-): boolean {
-  for (const { skillId, tierThresholds } of skillTiers) {
-    if (skillPreferenceIds.has(skillId)) continue
-    const { posThreshold, negThreshold } = breakpointsFromThresholds(tierThresholds)
-    const total = skillTotals.get(skillId) ?? 0
-    if (posThreshold !== undefined && total >= posThreshold) return true
-    if (negThreshold !== undefined && total <= negThreshold) return true
-  }
-  return false
-}
+/** HiGHS's stopping tolerance on "how far the best-found build may be from the
+ * best possible one" (2026-10-26, docs/search-performance-research.md
+ * approach 4). HiGHS's own default is a *relative* gap of 1e-4, which is not
+ * "optimal" for this objective's scale: with objectives around 10^5 it lets a
+ * round stop a few bonus points short (observed directly: stopped at 100183
+ * against a proven bound of 100192), and once a preferred piece is in play
+ * (`PREFERRED_ITEM_WEIGHT`, ~10^9) it's ~10^5 -- ten open slots' worth. Every
+ * objective coefficient `ilp-model.ts` emits is an integer and every column
+ * is integer-typed, so the objective of any build is an integer: an absolute
+ * gap just under 1 is exactly "no better build exists," with no relative
+ * slack at all. Measured cost on the real benchmark queries: none to ~5%. */
+const MIP_REL_GAP = 0
+const MIP_ABS_GAP = 0.99
 
 function runTimeBoxed(
   native: SymbolDisposable<Model>,
   highs: Highs,
-  columns: readonly ColumnMeta[],
-  requirements: readonly SkillRequirement[],
   options: SearchOptions,
   onProgress?: (gap: number) => void,
-): { outcome: TimeBoxOutcome; fallback?: StrictFallback } {
+): TimeBoxOutcome {
   let seconds = options.timeBoxSeconds ?? TIME_BOX_SECONDS
   const maxAttempts = options.maxTimeBoxAttempts ?? MAX_TIME_BOX_ATTEMPTS
 
-  // "Strict" mode (2026-10-26, docs/feedback.md Round 3 #4's follow-up "Three
-  // Worlds" investigation): under `preferExactMatches`, an interrupted
-  // incumbent that still has a bonus skill active is not actually what the
-  // player asked for, even though `isUsableResult` alone would accept it (the
-  // model's hard constraints are satisfied either way). Rather than silently
-  // yield that plausible-looking-but-not-exact result, keep cutting it out
-  // and re-solving within the *same* shared deadline until either a clean
-  // incumbent is found or genuinely no time is left -- converting "wrong
-  // result" into the already-designed-for `'timedOut'` (offer "Search
-  // longer") rather than a confusing "I asked for exact matches and got extra
-  // skills anyway." Only engaged when there's tier data to check against --
-  // otherwise identical to the original single-solve-per-attempt behavior.
-  const strict = Boolean(options.preferExactMatches && options.skillTiers)
-  if (strict) native.options.set('mip_heuristic_effort', PREFER_EXACT_MATCHES_HEURISTIC_EFFORT)
-  const skillPreferenceIds = strict
-    ? new Set<SkillId>([
-        ...requirements.map((r) => r.skillId),
-        ...(options.optionalSkillRequirements ?? []).map((r) => r.skillId),
-      ])
-    : undefined
-
-  let fallback: StrictFallback | undefined
-
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    // Shared across every cut-and-retry sub-solve within this attempt in
-    // strict mode, so adding a cut never grants a fresh full budget -- only
-    // the original per-attempt allowance, same as the non-strict path's
-    // single `native.run()` call.
-    const deadline = performance.now() + seconds * 1000
-    for (;;) {
-      const result = native.run({
-        [highs.constants.callbackType.mipInterrupt](event) {
-          const outOfTime = strict
-            ? performance.now() >= deadline
-            : (event.data.running_time ?? 0) >= seconds
-          if (outOfTime) event.interrupt()
+    const result = native.run({
+      [highs.constants.callbackType.mipInterrupt](event) {
+        if ((event.data.running_time ?? 0) >= seconds) event.interrupt()
+      },
+      // `mip_gap` is HiGHS's own "how far is the best-found solution from the
+      // proven-optimal bound" fraction -- the only genuine mid-solve progress
+      // signal available (see docs/feedback.md Round 3 #3). It isn't
+      // monotonic early on (can swing before the first incumbent is found),
+      // so this is reported as-is rather than smoothed; the UI only shows it
+      // once it's usefully close to done.
+      ...(onProgress && {
+        [highs.constants.callbackType.mipLogging](event) {
+          if (typeof event.data.mip_gap === 'number') onProgress(event.data.mip_gap)
         },
-        // `mip_gap` is HiGHS's own "how far is the best-found solution from the
-        // proven-optimal bound" fraction -- the only genuine mid-solve progress
-        // signal available (see docs/feedback.md Round 3 #3). It isn't
-        // monotonic early on (can swing before the first incumbent is found),
-        // so this is reported as-is rather than smoothed; the UI only shows it
-        // once it's usefully close to done.
-        ...(onProgress && {
-          [highs.constants.callbackType.mipLogging](event) {
-            if (typeof event.data.mip_gap === 'number') onProgress(event.data.mip_gap)
-          },
-        }),
-      })
-      const modelStatus: ModelStatusCode = result.modelStatus
-      const primalSolutionStatus = native.info.get('primal_solution_status') as number
-      if (!isUsableResult(highs, modelStatus, primalSolutionStatus)) {
-        if (modelStatus !== highs.constants.modelStatus.interrupted) {
-          // Proven infeasible, not just out of time -- but in strict mode this
-          // can happen purely because our *own* cut-and-retry loop excluded
-          // every remaining combination while searching for a cleaner one,
-          // not because the query itself has no valid build at all. If we'd
-          // already found at least one usable (if imperfect) incumbent before
-          // that happened, prefer returning it over incorrectly reporting the
-          // whole query as infeasible.
-          return fallback ? { outcome: 'found', fallback } : { outcome: 'infeasible' }
-        }
-        break // out of attempts for this deadline, double the budget below
-      }
-      if (!strict) return { outcome: 'found' }
-
-      const solution = native.getSolution()
-      const decoded = decodeSolution(columns, solution.colValue)
-      if (!hasActiveBonusSkill(decoded.skillTotals, options.skillTiers!, skillPreferenceIds!)) {
-        return { outcome: 'found' }
-      }
-      // Not clean, but still a real, fully valid build -- remember it as a
-      // last resort (see `StrictFallback`'s own docstring) before trying to
-      // cut past it in search of something better.
-      fallback = { decoded, colValue: Float64Array.from(solution.colValue) }
-      if (performance.now() >= deadline) break
-
-      const cut = exclusionRow(highs, columns, solution.colValue)
-      native.addRow(cut.lower, cut.upper, { indices: cut.indices, values: cut.values })
-    }
+      }),
+    })
+    const modelStatus: ModelStatusCode = result.modelStatus
+    const primalSolutionStatus = native.info.get('primal_solution_status') as number
+    if (isUsableResult(highs, modelStatus, primalSolutionStatus)) return 'found'
+    if (modelStatus !== highs.constants.modelStatus.interrupted) return 'infeasible'
     seconds *= 2
   }
-  return fallback ? { outcome: 'found', fallback } : { outcome: 'timedOut' }
+  return 'timedOut'
+}
+
+/** Bounds every `preferExactMatches` tier indicator (`AuxiliaryColumn.
+ * tierIndicator`) to `[0, upper]` on the live model: `0` turns "a bonus
+ * skill's tier is active" from a penalty into a hard "never" (strict mode's
+ * clean phase), `1` turns it back into a penalty. */
+function boundTierIndicators(
+  native: SymbolDisposable<Model>,
+  indicatorIndices: readonly number[],
+  upper: 0 | 1,
+): void {
+  for (const j of indicatorIndices) native.changeColBounds(j, 0, upper)
 }
 
 /** Why a `search()` generator stopped producing results, returned as the
@@ -293,17 +197,27 @@ function runTimeBoxed(
  * for `'exhausted'`. */
 export type SearchEndReason = 'exhausted' | 'timedOut'
 
+/** In-process observers for `search()` -- not part of `SearchOptions`, since
+ * that type crosses the worker's `postMessage` boundary (structured clone, so
+ * no functions survive it); only ever supplied locally by `worker-handler.ts`. */
+export interface SearchHooks {
+  /** HiGHS's `mip_gap` for the round in progress (docs/feedback.md Round 3 #3). */
+  readonly onProgress?: (gap: number) => void
+  /** The objective value of the result about to be yielded -- its true score,
+   * comparable across differently-pruned searches of the same query (see
+   * `ilp-model.ts`'s objective `offset`). */
+  readonly onSolution?: (objective: number) => void
+}
+
 export async function* search(
   slots: readonly SlotQuery[],
   requirements: readonly SkillRequirement[],
   decorations: readonly Decoration[] = [],
   options: SearchOptions = {},
   cuffs: readonly Cuff[] = [],
-  // Not part of `SearchOptions`: that type crosses the worker's `postMessage`
-  // boundary (structured-clone, so no functions survive it) -- this is only
-  // ever supplied locally, in-process, by `worker-handler.ts`.
-  onProgress?: (gap: number) => void,
+  hooks: SearchHooks = {},
 ): AsyncGenerator<BuildResult, SearchEndReason> {
+  const { onProgress, onSolution } = hooks
   if (slots.length === 0) {
     // Nothing to choose, so nothing to solve for -- but an empty build still
     // only counts as a result if every requirement is trivially already met
@@ -335,31 +249,71 @@ export async function* search(
   for (const list of options.pinnedSlotDecorations?.values() ?? []) {
     for (const d of list) relevantDecorationsById.set(d.id, d)
   }
-  const relevantDecorations = [...relevantDecorationsById.values()]
+  const relevantDecorations = pruneDominatedDecorations(
+    [...relevantDecorationsById.values()],
+    requirements,
+    options,
+  )
   const relevantCuffs = filterRelevantCuffs(cuffs, requirements, options.pinnedCuffSkillIds ?? [])
+  const maxResults = options.maxResults ?? Infinity
+  const modelSlots =
+    options.provisionalPoolSize !== undefined
+      ? // Prunes as if bonus skills didn't matter at all -- heuristic under
+        // `preferExactMatches`, which is exactly why results from this pool
+        // are only ever provisional (see `SearchOptions.provisionalPoolSize`).
+        pruneDominatedCandidates(
+          slots,
+          requirements,
+          { ...options, skillTiers: undefined },
+          options.provisionalPoolSize,
+        )
+      : options.maxResults !== undefined
+        ? pruneDominatedCandidates(slots, requirements, options, options.maxResults)
+        : slots
   const highs = await getHighs()
   const { model, columns } = buildModel(
     highs,
-    slots,
+    modelSlots,
     relevantDecorations,
     requirements,
     options,
     relevantCuffs,
   )
   const native = highs.createModel(model)
+  native.options.set('mip_rel_gap', MIP_REL_GAP)
+  native.options.set('mip_abs_gap', MIP_ABS_GAP)
   const pinnedCuffs = options.pinnedCuffs ?? []
 
+  // Strict mode (`preferExactMatches` with tier data): clean builds -- no
+  // bonus skill tier active -- always rank ahead of any build with one, and
+  // only once no clean build is left (or none can be found in time) do the
+  // rest follow, ranked by the usual penalty. Modeled directly as two phases
+  // on one live model: the clean phase bounds every tier indicator to 0,
+  // making "clean" a hard constraint the solver can reason about (2026-10-26,
+  // docs/search-performance-research.md section 7: one solve instead of the
+  // old find-it, cut-it-if-unclean, re-solve loop, which could run hundreds
+  // of rounds and gave up at 300s on a real query); the penalty phase lifts
+  // the bounds back to 1. Cuts added during the clean phase stay in place, so
+  // the penalty phase never repeats a build.
+  const tierIndicatorIndices = columns.flatMap((c, j) =>
+    c.kind === 'auxiliary' && c.tierIndicator ? [j] : [],
+  )
+  let cleanPhase = tierIndicatorIndices.length > 0
+  if (cleanPhase) boundTierIndicators(native, tierIndicatorIndices, 0)
+
   try {
-    for (;;) {
-      const { outcome, fallback } = runTimeBoxed(native, highs, columns, requirements, options, onProgress)
+    for (let yielded = 0; yielded < maxResults; yielded++) {
+      let outcome = runTimeBoxed(native, highs, options, onProgress)
+      if (outcome !== 'found' && cleanPhase) {
+        cleanPhase = false
+        boundTierIndicators(native, tierIndicatorIndices, 1)
+        outcome = runTimeBoxed(native, highs, options, onProgress)
+      }
       if (outcome !== 'found') return outcome === 'timedOut' ? 'timedOut' : 'exhausted'
 
-      // `fallback`'s combination has already been excluded from the live
-      // model (strict mode cuts it before trying to improve on it) -- decode
-      // and cut from the saved snapshot instead of `native.getSolution()`,
-      // which no longer reflects it (see `StrictFallback`'s own docstring).
-      const colValue = fallback ? fallback.colValue : native.getSolution().colValue
-      const decoded = fallback ? fallback.decoded : decodeSolution(columns, colValue)
+      const colValue = native.getSolution().colValue
+      const decoded = decodeSolution(columns, colValue)
+      onSolution?.(native.info.get('objective_function_value') as number)
       if (pinnedCuffs.length === 0) {
         yield decoded
       } else {
@@ -375,6 +329,7 @@ export async function* search(
       const cut = exclusionRow(highs, columns, colValue)
       native.addRow(cut.lower, cut.upper, { indices: cut.indices, values: cut.values })
     }
+    return 'exhausted'
   } finally {
     native.dispose()
   }

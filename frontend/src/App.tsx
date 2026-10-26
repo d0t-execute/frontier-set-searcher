@@ -127,7 +127,10 @@ function HunterTypeToggle({
   )
 }
 
-type SearchStatus = 'idle' | 'searching' | 'done' | 'error'
+/** `'verifying'`: a `preferExactMatches` search has shown its fast
+ * provisional results and is now proving them (see worker-protocol.ts's
+ * `VerifyingMessage`) -- results are on screen and a new search may start. */
+type SearchStatus = 'idle' | 'searching' | 'verifying' | 'done' | 'error'
 
 /** The three time-box budgets a search round can run at (docs/feedback.md
  * Round 3 #4's two-stage "search longer" retry) -- see `searchStage` state's
@@ -159,7 +162,10 @@ type SearchStage = 'initial' | 'autoRetry' | 'manualRetry'
  * as the automatic default "would indiscriminately slow down the far more
  * common case of a query that's genuinely infeasible but slow... on every
  * search, not just the rare one needing more time"). */
-const STAGE_TIME_BOX: Record<SearchStage, Pick<SearchOptions, 'timeBoxSeconds' | 'maxTimeBoxAttempts'>> = {
+const STAGE_TIME_BOX: Record<
+  SearchStage,
+  Pick<SearchOptions, 'timeBoxSeconds' | 'maxTimeBoxAttempts'>
+> = {
   initial: {},
   autoRetry: { maxTimeBoxAttempts: 3 },
   manualRetry: { timeBoxSeconds: 60, maxTimeBoxAttempts: 3 },
@@ -251,6 +257,15 @@ const GEAR_LEVEL_TIERS: readonly { readonly label: string; readonly keys: readon
   { label: 'Zenith', keys: GEAR_LEVEL_ZENITH_CATEGORIES },
   { label: 'ZP', keys: GEAR_LEVEL_ZP_CATEGORIES },
 ]
+
+/** Which gear a result uses -- the identity results are distinct by (see
+ * ilp-model.ts's module docstring), used to drop a provisional result once
+ * the same gear set arrives verified at an earlier position. */
+function gearSetKey(result: NamedBuildResult): string {
+  const picks = [...result.picks].map(([slotId, c]) => `${slotId}=${c.id}`).sort()
+  const cuffs = result.cuffs.map((c) => c.id).sort()
+  return [...picks, ...cuffs].join('|')
+}
 
 function pluralize(count: number, noun: string, plural: string = `${noun}s`): string {
   return `${count} ${count === 1 ? noun : plural}`
@@ -469,6 +484,9 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
   // meaningful together with `results.length === 0`; a later successful
   // search clears it via `handleSearch`'s own reset, same as `reachedCap`.
   const [timedOutEmpty, setTimedOutEmpty] = useState(false)
+  // Set when the player stops a `preferExactMatches` search during its
+  // verification pass, leaving provisional results on screen unproven.
+  const [verificationStopped, setVerificationStopped] = useState(false)
   // HiGHS's own `mip_gap` for the round currently solving (docs/feedback.md
   // Round 3 #3) -- `null` until the first callback fires each round, so the
   // UI shows plain "Searching…" rather than a stale number from a prior one.
@@ -930,9 +948,16 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
     // `timedOutEmpty` here would erase the very state this function is about
     // to recompute one line down).
     if (stage === 'initial') {
+      // A search still verifying (or running) when the player starts a new
+      // one is abandoned -- `cancel` replaces the worker, so the new search
+      // doesn't queue behind a solve that's still running.
+      if (activeRequestId && (status === 'searching' || status === 'verifying')) {
+        worker.cancel(activeRequestId)
+      }
       setResults([])
       setErrorMessage(null)
       setReachedCap(false)
+      setVerificationStopped(false)
     }
     setSearchStage(stage)
     setTimedOutEmpty(false)
@@ -989,31 +1014,52 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
     setStatus('searching')
     setSearchProgress(null)
 
-    let count = 0
-    let capped = false
+    // This request's own copy of the result list, so a verified result can
+    // replace its provisional counterpart in place: the n-th verified result
+    // takes position n, and any later provisional copy of the same gear set
+    // is dropped. The engine itself stops at `maxResults` (see
+    // `SearchOptions.maxResults`); the cap below is only a guard, so a
+    // misbehaving worker can never flood the page.
+    const list: NamedBuildResult[] = []
+    let verifiedCount = 0
+    let finished = false
     const requestId = worker.search(
       slots,
       hardRequirements,
       decorations,
       {
-        onResult: (result) => {
-          // `worker.cancel` below races a message round-trip to the worker,
-          // so a result or two can still arrive after the cap is hit --
-          // ignoring them here keeps "top N" an actual guarantee, not just a
-          // request.
-          if (capped) return
-          count++
-          setResults((prev) => [...prev, result as unknown as NamedBuildResult])
+        onResult: (result, provisional) => {
+          if (finished) return
+          const named = result as unknown as NamedBuildResult
+          if (provisional) {
+            if (list.length >= maxResults) return
+            list.push(named)
+          } else {
+            const index = verifiedCount++
+            const key = gearSetKey(named)
+            for (let i = list.length - 1; i > index; i--) {
+              if (gearSetKey(list[i]) === key) list.splice(i, 1)
+            }
+            list[index] = named
+          }
+          setResults([...list])
           setSearchProgress(null) // next round starts fresh
-          if (count >= maxResults) {
-            capped = true
-            worker.cancel(requestId)
+          if (verifiedCount >= maxResults) {
+            finished = true
             setReachedCap(true)
             setStatus('done')
           }
         },
+        onVerifying: () => {
+          setStatus('verifying')
+          setSearchProgress(null)
+        },
         onProgress: (gap) => setSearchProgress(gap),
-        onDone: () => setStatus('done'),
+        onDone: () => {
+          if (finished) return
+          setReachedCap(list.length >= maxResults)
+          setStatus('done')
+        },
         onTimedOut: () => {
           if (stage === 'initial') {
             // The modest, fully-automatic bump -- no player confirmation, so
@@ -1049,6 +1095,9 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
           count,
         })),
         optionalSkillRequirements,
+        // Lets the engine drop every armor piece that can't reach the top
+        // `maxResults` before solving -- see `SearchOptions.maxResults`.
+        maxResults,
       },
       cuffs,
     )
@@ -1153,6 +1202,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
 
   function handleCancel(): void {
     if (worker && activeRequestId) worker.cancel(activeRequestId)
+    if (status === 'verifying') setVerificationStopped(true)
     setStatus('done')
   }
 
@@ -1438,7 +1488,10 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                   itemsByCategory={decorationItemsByCategory}
                   tableLinkHash={(key) => categoryRouteHash('decorations', key)}
                 />
-                <a href={categoryRouteHash('decorations')} className="category-filter-show-all-link">
+                <a
+                  href={categoryRouteHash('decorations')}
+                  className="category-filter-show-all-link"
+                >
                   Show all decorations
                 </a>
               </Disclosure>
@@ -1737,6 +1790,11 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                   Cancel
                 </button>
               )}
+              {status === 'verifying' && (
+                <button type="button" className="btn btn-outline-secondary" onClick={handleCancel}>
+                  Stop verifying
+                </button>
+              )}
             </div>
           </div>
 
@@ -1757,6 +1815,9 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                   (can take several minutes).
                 </p>
               )}
+              {status === 'done' && verificationStopped && results.length > 0 && (
+                <p>Verification was stopped, so a better build than these may exist.</p>
+              )}
               {status === 'done' && reachedCap && (
                 <p>
                   Showing the top {maxResults} {maxResults === 1 ? 'result' : 'results'}. Narrow
@@ -1776,6 +1837,12 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
             />
             {status === 'searching' && searchStage !== 'autoRetry' && (
               <p>Searching{formatSearchProgress(searchProgress)}</p>
+            )}
+            {status === 'verifying' && (
+              <p>
+                Found these quickly -- now checking that no better build exists
+                {formatSearchProgress(searchProgress)} Results may still improve.
+              </p>
             )}
             {status === 'searching' && searchStage === 'autoRetry' && (
               <p>
