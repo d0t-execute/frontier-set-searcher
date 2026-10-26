@@ -76,9 +76,11 @@ import { pruneDominatedCandidates, pruneDominatedDecorations } from './candidate
 import { filterRelevantCuffs, filterRelevantDecorations } from './expand'
 import { getHighs } from './highs-runtime'
 import { buildModel, decodeSolution, exclusionRow, isUsableResult } from './ilp-model'
+import type { ColumnMeta } from './ilp-model'
 import type {
   BuildResult,
   Cuff,
+  ExcludedGearSet,
   Decoration,
   SearchOptions,
   SkillId,
@@ -172,6 +174,48 @@ function runTimeBoxed(
     seconds *= 2
   }
   return 'timedOut'
+}
+
+/** The choice-column values a solution picking `gearSet` would have, for
+ * building its no-good cut with `exclusionRow` -- or `undefined` when this
+ * model can't produce that gear set at all (one of its pieces or cuffs isn't
+ * a column here, e.g. filtered out), in which case there's nothing to
+ * exclude. A partial cut would be wrong, not just weaker: it would forbid
+ * every build sharing the pieces that *are* here. Pinned cuffs aren't
+ * columns (see `ilp-model.ts`), so they're subtracted before matching. */
+function gearSetColumnValues(
+  columns: readonly ColumnMeta[],
+  gearSet: ExcludedGearSet,
+  pinnedCuffs: readonly Cuff[],
+): Float64Array | undefined {
+  const freeCuffCounts = new Map<string, number>()
+  for (const id of gearSet.cuffIds) freeCuffCounts.set(id, (freeCuffCounts.get(id) ?? 0) + 1)
+  for (const { id } of pinnedCuffs) {
+    const count = freeCuffCounts.get(id) ?? 0
+    if (count <= 1) freeCuffCounts.delete(id)
+    else freeCuffCounts.set(id, count - 1)
+  }
+
+  const values = new Float64Array(columns.length)
+  const slotsMatched = new Set<string>()
+  const cuffsMatched = new Set<string>()
+  columns.forEach((column, j) => {
+    if (column.kind === 'candidate') {
+      if (gearSet.candidateIdBySlot.get(column.slotId) === column.candidate.id) {
+        values[j] = 1
+        slotsMatched.add(column.slotId)
+      }
+    } else if (column.kind === 'cuff') {
+      if ((freeCuffCounts.get(column.cuff.id) ?? 0) === column.count) {
+        values[j] = 1
+        if (column.count > 0) cuffsMatched.add(column.cuff.id)
+      }
+    }
+  })
+  const complete =
+    slotsMatched.size === gearSet.candidateIdBySlot.size &&
+    cuffsMatched.size === freeCuffCounts.size
+  return complete ? values : undefined
 }
 
 /** Bounds every `preferExactMatches` tier indicator (`AuxiliaryColumn.
@@ -302,6 +346,13 @@ export async function* search(
   )
   let cleanPhase = tierIndicatorIndices.length > 0
   if (cleanPhase) boundTierIndicators(native, tierIndicatorIndices, 0)
+
+  for (const gearSet of options.excludedGearSets ?? []) {
+    const colValue = gearSetColumnValues(columns, gearSet, options.pinnedCuffs ?? [])
+    if (!colValue) continue
+    const cut = exclusionRow(highs, columns, colValue)
+    native.addRow(cut.lower, cut.upper, { indices: cut.indices, values: cut.values })
+  }
 
   try {
     for (let yielded = 0; yielded < maxResults; yielded++) {

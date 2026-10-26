@@ -27,7 +27,7 @@
 import { search } from './engine'
 import type { SearchEndReason } from './engine'
 import { hasTierPenalties } from './ilp-model'
-import type { BuildResult, SearchOptions } from './types'
+import type { BuildResult, ExcludedGearSet, SearchOptions } from './types'
 import type { SearchRequestMessage, WorkerResponse } from './worker-protocol'
 
 /** Per-slot pool size for `preferExactMatches`'s fast provisional pass (see
@@ -58,6 +58,13 @@ function yieldToEventLoop(): Promise<void> {
  * capped the same way. */
 function wantsProvisionalPass(options: SearchOptions): boolean {
   return hasTierPenalties(options) && options.maxResults !== undefined
+}
+
+function gearSetOf(result: BuildResult): ExcludedGearSet {
+  return {
+    candidateIdBySlot: new Map([...result.picks].map(([slotId, c]) => [slotId, c.id])),
+    cuffIds: result.cuffs.map((c) => c.id),
+  }
 }
 
 export async function handleSearchRequest(
@@ -119,6 +126,9 @@ export async function handleSearchRequest(
 
   try {
     let producedAny = false
+    // Results the fast pass proved optimal (an unbroken prefix, see below):
+    // the verifying pass excludes them and ranks only what comes after.
+    const proven: BuildResult[] = []
 
     if (wantsProvisionalPass(options)) {
       // The best score any build could reach if bonus tiers didn't matter
@@ -148,9 +158,10 @@ export async function handleSearchRequest(
         { ...options, provisionalPoolSize: PROVISIONAL_POOL_SIZE },
         (result, objective) => {
           count++
-          const proven = unproven === 0 && ceiling !== undefined && objective >= ceiling - 0.5
-          if (!proven) unproven++
-          postResult(result, proven ? undefined : 'provisional')
+          const isProven = unproven === 0 && ceiling !== undefined && objective >= ceiling - 0.5
+          if (isProven) proven.push(result)
+          else unproven++
+          postResult(result, isProven ? undefined : 'provisional')
         },
       )
       if (poolEnd === 'cancelled') return
@@ -167,10 +178,20 @@ export async function handleSearchRequest(
 
     // After a provisional pass the player already has an answer on screen, so
     // the verifying pass trades speed for certainty with a bigger time box.
+    // It also skips the proven prefix outright: each of those builds scores
+    // the bonus-free ceiling, which no build can exceed, and is clean, so
+    // they're tied for the very top of the ranking. A ranked list may start
+    // with any builds tied at the top, and every later rank is "the best
+    // build not already listed" -- exactly what the verifying pass computes
+    // once they're excluded. Re-solving them would only rediscover builds
+    // already proven (and the UI, which numbers verified results after the
+    // proven ones, would have listed them twice).
     const finalOptions = wantsProvisionalPass(options)
       ? {
           ...options,
           timeBoxSeconds: Math.max(options.timeBoxSeconds ?? 0, VERIFICATION_TIME_BOX_SECONDS),
+          maxResults: options.maxResults! - proven.length,
+          excludedGearSets: [...(options.excludedGearSets ?? []), ...proven.map(gearSetOf)],
         }
       : options
     let count = 0

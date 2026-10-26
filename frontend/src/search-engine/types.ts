@@ -352,6 +352,22 @@ export interface SearchOptions {
    * fast, exact ceiling: `worker-handler.ts` treats any provisional result
    * that already reaches it as proven optimal. */
   readonly withoutTierPenalties?: boolean
+
+  /** Gear sets this search must never return, as if each had already been
+   * found and cut out by an earlier round (`ilp-model.ts`'s `exclusionRow`).
+   * `worker-handler.ts` passes the results its fast pass already proved
+   * optimal, so the verification pass ranks only what comes after them
+   * instead of re-solving them first. */
+  readonly excludedGearSets?: readonly ExcludedGearSet[]
+}
+
+/** A result's gear identity, the thing results are distinct by: which
+ * candidate fills each slot, and every equipped cuff (pinned ones included,
+ * duplicates for a cuff equipped twice), exactly as a `BuildResult` lists
+ * them. */
+export interface ExcludedGearSet {
+  readonly candidateIdBySlot: ReadonlyMap<string, string>
+  readonly cuffIds: readonly string[]
 }
 
 export interface PreferredCategoryCount {

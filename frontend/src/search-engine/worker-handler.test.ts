@@ -291,6 +291,12 @@ describe('handleSearchRequest', () => {
       const lastCall = vi.mocked(engine.search).mock.calls.at(-1)!
       expect(lastCall[3]).not.toHaveProperty('provisionalPoolSize')
       expect(lastCall[3]).not.toHaveProperty('withoutTierPenalties')
+      // Only the unproven tail is verified: A (proven) is excluded up front
+      // and the pass asks for one fewer result.
+      expect(lastCall[3]).toMatchObject({
+        maxResults: 1,
+        excludedGearSets: [{ candidateIdBySlot: new Map([['head', 'A']]), cuffIds: [] }],
+      })
     })
 
     it('still verifies when the pool comes back short of maxResults, even if all at the ceiling', async () => {

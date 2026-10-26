@@ -211,6 +211,75 @@ describe('search', () => {
     ])
   })
 
+  it('never returns a gear set listed in excludedGearSets', async () => {
+    const slots: SlotQuery[] = [
+      {
+        slotId: 'head',
+        candidates: [
+          candidate('A', { 1: 5 }, 3),
+          candidate('B', { 1: 5 }, 2),
+          candidate('C', { 1: 5 }),
+        ],
+      },
+    ]
+    const results = await collect(
+      search(slots, [{ skillId: 1, minPoints: 3 }], [], {
+        excludedGearSets: [{ candidateIdBySlot: new Map([['head', 'A']]), cuffIds: [] }],
+      }),
+    )
+
+    expect(results.map((r) => r.picks.get('head')?.id)).toEqual(['B', 'C'])
+  })
+
+  it("matches an excluded gear set's cuffs after setting pinned cuffs aside", async () => {
+    // Results list the pinned cuff alongside free ones, but it isn't a model
+    // column -- excluding "Helm + pinned" must remove only the build with no
+    // free cuff, leaving "Helm + pinned + Spare".
+    const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Helm', { 1: 5 })] }]
+    const pinned = cuff('Pinned', 1, { 2: 1 })
+    const spare = cuff('Spare', 1, { 1: 1 })
+    const results = await collect(
+      search(
+        slots,
+        [{ skillId: 1, minPoints: 3 }],
+        [],
+        {
+          pinnedCuffs: [pinned],
+          excludedGearSets: [
+            { candidateIdBySlot: new Map([['head', 'Helm']]), cuffIds: ['Pinned'] },
+          ],
+        },
+        [spare],
+      ),
+    )
+
+    expect(results.map((r) => r.cuffs.map((c) => c.id))).toEqual([['Pinned', 'Spare']])
+  })
+
+  it('ignores an excluded gear set this model could never produce, rather than over-excluding', async () => {
+    // "Gone" isn't a candidate here, so no cut is added -- a partial cut on
+    // the chest alone would wrongly forbid every build using "Mail".
+    const slots: SlotQuery[] = [
+      { slotId: 'head', candidates: [candidate('Helm', { 1: 5 })] },
+      { slotId: 'chest', candidates: [candidate('Mail', {})] },
+    ]
+    const results = await collect(
+      search(slots, [{ skillId: 1, minPoints: 3 }], [], {
+        excludedGearSets: [
+          {
+            candidateIdBySlot: new Map([
+              ['head', 'Gone'],
+              ['chest', 'Mail'],
+            ]),
+            cuffIds: [],
+          },
+        ],
+      }),
+    )
+
+    expect(results).toHaveLength(1)
+  })
+
   it('can be consumed lazily, stopping before the full result set is computed', async () => {
     const slots: SlotQuery[] = [
       {
