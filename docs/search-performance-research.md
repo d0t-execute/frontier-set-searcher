@@ -78,6 +78,7 @@ The same arithmetic on the reformulated model is roughly 5-30s total.
 | end-game                              | gave up at 300s, returned 3 active bonus skills | provisional at **12.1s**; verification pass done at 160s (several rounds time-boxed at 30s) |
 
 **Follow-up:**
+
 - The verification pass now runs with a 300s-per-round box instead of 30s. Measured: end-game
   verification rounds prove optimal in 30-32s each once not cut off.
 - Final results that still hit a box are flagged as unproven in the UI.
