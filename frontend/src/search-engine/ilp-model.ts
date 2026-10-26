@@ -1278,10 +1278,18 @@ export function decodeSolution(
 /** Assigns pooled decorations to concrete slots with exactly the rule
  * `buildModel`'s pooled capacity rows prove always succeeds (see its
  * comment there): size-3s into 3-slot bins, size-2s into 2-slot bins before
- * 3-slot ones, size-1s into whatever is left, earliest slot first. Each
- * slot's pinned decorations are placed first and shrink its bin. Throws if a
- * decoration doesn't fit, which would mean the model and this rule disagree
- * -- a bug, not a user-facing outcome. */
+ * 3-slot ones, size-1s into whatever is left. Each slot's pinned decorations
+ * are placed first and shrink its bin. Throws if a decoration doesn't fit,
+ * which would mean the model and this rule disagree -- a bug, not a
+ * user-facing outcome.
+ *
+ * Size-1 decorations fit any leftover slot, so any assignment of them is
+ * valid -- they're placed to keep copies of the same decoration in the same
+ * piece (2026-10-26, per the project owner: a build's three copies of one
+ * decoration had been split 2 + 1 across head and chest). The decoration with
+ * the most copies goes first, into the piece whose remaining room fits all of
+ * them most snugly; only if none fits them all does it fill the roomiest piece
+ * and carry on with the rest. */
 function placeDecorations(
   picks: ReadonlyMap<string, Candidate>,
   pinnedBySlot: ReadonlyMap<string, readonly Decoration[]>,
@@ -1292,18 +1300,49 @@ function placeDecorations(
     const used = placed.reduce((sum, d) => sum + d.slotSize, 0)
     return { slotId, placed, remaining: (candidate.openSlotCount ?? 0) - used }
   })
-  const bySizeDescending = [...pooled].sort((a, b) => b.slotSize - a.slotSize)
-  for (const decoration of bySizeDescending) {
-    const size = decoration.slotSize
-    const bin =
-      (size === 2 ? bins.find((b) => b.remaining === 2) : undefined) ??
-      bins.find((b) => b.remaining >= size)
-    if (!bin) {
+  type Bin = (typeof bins)[number]
+  function place(decoration: Decoration, bin: Bin | undefined): void {
+    if (!bin || bin.remaining < decoration.slotSize) {
       throw new Error(`Decoration ${decoration.id} doesn't fit the solved build's open slots`)
     }
     bin.placed.push(decoration)
-    bin.remaining -= size
+    bin.remaining -= decoration.slotSize
   }
+
+  const larger = [...pooled].filter((d) => d.slotSize >= 2).sort((a, b) => b.slotSize - a.slotSize)
+  for (const decoration of larger) {
+    const size = decoration.slotSize
+    place(
+      decoration,
+      (size === 2 ? bins.find((b) => b.remaining === 2) : undefined) ??
+        bins.find((b) => b.remaining >= size),
+    )
+  }
+
+  // Size-1 copies grouped by decoration, most copies first (ties keep the
+  // order they arrived in, so placement stays deterministic).
+  const copiesById = new Map<string, Decoration[]>()
+  for (const decoration of pooled) {
+    if (decoration.slotSize !== 1) continue
+    const copies = copiesById.get(decoration.id) ?? []
+    copies.push(decoration)
+    copiesById.set(decoration.id, copies)
+  }
+  const groups = [...copiesById.values()].sort((a, b) => b.length - a.length)
+  for (const copies of groups) {
+    let left = copies.length
+    while (left > 0) {
+      const open = bins.filter((b) => b.remaining > 0)
+      const snug = open
+        .filter((b) => b.remaining >= left)
+        .sort((a, b) => a.remaining - b.remaining)[0]
+      const target = snug ?? open.sort((a, b) => b.remaining - a.remaining)[0]
+      const take = Math.min(left, target?.remaining ?? 1)
+      for (let i = 0; i < take; i++) place(copies[0], target)
+      left -= take
+    }
+  }
+
   return new Map(bins.filter((b) => b.placed.length > 0).map((b) => [b.slotId, b.placed]))
 }
 

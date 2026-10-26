@@ -1688,6 +1688,62 @@ describe('decodeSolution', () => {
     expect(decoded.skillTotals.get(1)).toBe(2)
   })
 
+  describe('keeps copies of the same size-1 decoration in the same piece (2026-10-26)', () => {
+    const reiresu = deco('Reiresu', 1, { 1: 1 })
+    const trueBlack = deco('True Black', 1, { 1: 1 })
+    const demonclad = deco('Demonclad', 1, { 1: 1 })
+    const fatalis = deco('Fatalis', 1, { 1: 1 })
+
+    function decode(capacities: readonly number[], counts: ReadonlyMap<Decoration, number>) {
+      const slots: SlotQuery[] = capacities.map((capacity, i) => ({
+        slotId: `slot-${i}`,
+        candidates: [candidate(`Piece ${i}`, {}, capacity)],
+      }))
+      const { columns } = buildModel(
+        highs,
+        slots,
+        [...counts.keys()],
+        [{ skillId: 1, minPoints: 1 }],
+      )
+      const colValue = new Float64Array(columns.length)
+      columns.forEach((column, j) => {
+        if (column.kind === 'candidate') colValue[j] = 1
+        if (column.kind === 'decoration') colValue[j] = counts.get(column.decoration) ?? 0
+      })
+      const placed = decodeSolution(columns, colValue).decorations
+      return capacities.map((_, i) => (placed.get(`slot-${i}`) ?? []).map((d) => d.id))
+    }
+
+    it('puts all three copies in one piece rather than splitting them by column order', () => {
+      // The owner's real case: these arrive in the order Reiresu, True Black
+      // x3, ..., which used to fill the head with Reiresu + 2 True Black.
+      const counts = new Map([
+        [reiresu, 1],
+        [trueBlack, 3],
+        [demonclad, 1],
+        [fatalis, 1],
+      ])
+      expect(decode([3, 3], counts)).toEqual([
+        ['True Black', 'True Black', 'True Black'],
+        ['Reiresu', 'Demonclad', 'Fatalis'],
+      ])
+    })
+
+    it('uses the piece that fits every copy, even when it is not the first', () => {
+      expect(decode([2, 3], new Map([[trueBlack, 3]]))).toEqual([
+        [],
+        ['True Black', 'True Black', 'True Black'],
+      ])
+    })
+
+    it('fills the roomiest piece first when no single piece fits every copy', () => {
+      expect(decode([3, 3], new Map([[trueBlack, 4]]))).toEqual([
+        ['True Black', 'True Black', 'True Black'],
+        ['True Black'],
+      ])
+    })
+  })
+
   it('treats a zero decoration count as no decorations placed', () => {
     const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Bare Helm', {}, 2)] }]
     const jewel = deco('Jewel', 1, { 1: 1 })
