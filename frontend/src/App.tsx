@@ -1282,9 +1282,13 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                 defaultOpen
                 info={
                   <InfoTooltip label="About skills">
-                    Define the skills that the Set Searcher should look for. These are hard
-                    requirements: each returned result has to contain every single one of these
-                    skills at the specified level. <br />
+                    Define the skills that the Set Searcher should look for. Each skill's own
+                    dropdown is either "Required" (a hard requirement: every returned result has
+                    to contain it at the specified level) or "Option N" (a soft preference: the
+                    solver tries to include it, but only after every required skill and every
+                    lower-numbered option is satisfied). Option 1 is the most important; skills
+                    sharing the same option number are interchangeable, so satisfying any one of
+                    them counts the same as satisfying all of them. <br />
                     <b>You can search by skill name and skill level/threshold names.</b>
                   </InfoTooltip>
                 }
@@ -1301,9 +1305,13 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                 summary={zenithSkillsSummary}
                 info={
                   <InfoTooltip label="About Zenith skills">
-                    Define the Zenith skills that the Set Searcher should look for. These are hard
-                    requirements: each returned result has to contain every single one of these
-                    skills at the specified level. <br />
+                    Define the Zenith skills that the Set Searcher should look for. Each skill's
+                    own dropdown is either "Required" (a hard requirement: every returned result
+                    has to contain it at the specified level) or "Option N" (a soft preference:
+                    the solver tries to include it, but only after every required skill and every
+                    lower-numbered option is satisfied). Option 1 is the most important; skills
+                    sharing the same option number are interchangeable, so satisfying any one of
+                    them counts the same as satisfying all of them. <br />
                     <b>You can search by skill name and skill level/threshold names.</b>
                   </InfoTooltip>
                 }

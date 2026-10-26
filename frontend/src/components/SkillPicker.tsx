@@ -10,17 +10,40 @@
  * did through the old dropdown's `<optgroup>`s, with typing narrowing it
  * further on top.
  *
- * Each requirement also has an "Optional" checkbox (docs/feedback.md Round 3
- * #2) -- flips `SkillRequirement.optional` on the same object instead of
- * moving it to a separate list, since the picked skill and its level don't
- * change, only whether it's a hard constraint or a soft preference. A
- * priority `<select>` (1 = most important) appears only once a requirement is
- * optional -- see `OptionalSkillRequirement.priority`'s own docstring for
- * what happens when two share a priority. `App.tsx` splits the combined list
- * on this flag right before calling `search()`. */
+ * Each requirement also has a "Required / Option N" `<select>` (docs/
+ * feedback.md Round 3 #2, redesigned 2026-10-26 per the project owner: the
+ * original checkbox-plus-conditional-priority-select took up too much visual
+ * space and reads "big" per row -- a single compact dropdown folds both
+ * "is this optional" and "which priority" into one control, at the cost of
+ * being a little less self-explanatory than two separate controls (that
+ * trade-off is why `App.tsx`'s "About skills" info tooltip spells out what
+ * "Required" vs. "Option N" actually mean -- "Option" is this UI's own label
+ * for what `OptionalSkillRequirement.priority`/`MAX_OPTIONAL_SKILL_PRIORITY_TIERS`
+ * call "priority" everywhere else, kept as-is at the data layer). Picking
+ * "Required" flips `SkillRequirement.optional` to `false` (clearing
+ * `priority`); picking an "Option N" choice flips it to `true` and sets
+ * `priority` directly -- the picked skill and its level don't change either
+ * way, only whether it's a hard constraint or a soft preference. A required
+ * requirement's select also gets a brighter accent outline (see index.css's
+ * `.skill-requirement-select-required`) so required and optional rows are
+ * visually distinct at a glance, not just by reading the text. See
+ * `OptionalSkillRequirement.priority`'s own docstring for what happens when
+ * two requirements share a priority (here, the same "Option N"). `App.tsx`
+ * splits the combined list on this flag right before calling `search()`.
+ *
+ * Hiden/Tech skills (e.g. GS Tech) are pinned to the top of the requirement
+ * list, ahead of insertion order, and left out of the "1. 2. 3. ..." count
+ * the rest of the list numbers through (2026-10-26, per the project owner --
+ * they're a different kind of pick from the rest, so they shouldn't compete
+ * for position in a ranked list or make later numbers look like they moved
+ * for no reason). `active-skill-cap.ts`'s own exemption is cuff-sourced-only,
+ * not a blanket exemption for the category, so the note shown above the
+ * pinned group says exactly that rather than the simpler-but-wrong "Hiden
+ * skills don't count toward the cap". */
 
 import { useRef, useState } from 'react'
 import type { KeyboardEvent } from 'react'
+import { HIDEN_SKILL_CATEGORY } from '../search-engine/active-skill-cap'
 import { MAX_OPTIONAL_SKILL_PRIORITY_TIERS } from '../search-engine/ilp-model'
 import type { SkillRequirement } from '../search-engine/types'
 
@@ -131,6 +154,13 @@ export function SkillPicker({
   const [activeIndex, setActiveIndex] = useState(0)
   const skillOf = (skillId: number) => skills.find((s) => s.id === skillId)
   const nameOf = (skillId: number) => skillOf(skillId)?.name ?? `Skill ${skillId}`
+  const isHiden = (skillId: number) => skillOf(skillId)?.category === HIDEN_SKILL_CATEGORY
+  // Pinned (Hiden/Tech) requirements first, then the rest -- each group keeps
+  // its own original relative order (`Array.prototype.sort` is a stable sort)
+  // so pinning one to the top never reshuffles the others among themselves.
+  const sortedRequirements = [...requirements].sort(
+    (a, b) => Number(isHiden(b.skillId)) - Number(isHiden(a.skillId)),
+  )
   const pickedIds = new Set(requirements.map((r) => r.skillId))
   const available = skills.filter((s) => !pickedIds.has(s.id))
   const query = search.trim().toLowerCase()
@@ -181,41 +211,51 @@ export function SkillPicker({
     onChange(requirements.filter((r) => r.skillId !== skillId))
   }
 
-  // Defaults a newly-marked-optional requirement's priority to "added last,
-  // so least important so far" (docs/feedback.md Round 3 #2's own suggested
-  // default: "by order of adding them"), capped at
-  // `MAX_OPTIONAL_SKILL_PRIORITY_TIERS` -- still editable afterward via the
-  // priority `<select>`, including down to a value another optional
-  // requirement already has (the interchangeable-group case,
-  // `OptionalSkillRequirement.priority`'s own docstring).
-  function nextDefaultPriority(): number {
-    const optionalCount = requirements.filter((r) => r.optional).length
-    return Math.min(optionalCount + 1, MAX_OPTIONAL_SKILL_PRIORITY_TIERS)
-  }
-
-  function setOptional(skillId: number, optional: boolean): void {
+  // Single control for "is this optional, and if so which priority" (see this
+  // module's own docstring) -- `value` is the literal string `'required'` or
+  // a priority number's string form, straight from the `<select>`'s own
+  // `value`/`<option value>`, so the user's explicit pick always fully
+  // determines both fields at once; no separate "mark optional" step with an
+  // implicit default priority to compute.
+  function setRequirementKind(skillId: number, value: string): void {
+    const optional = value !== 'required'
+    const priority = optional ? Number(value) : undefined
     onChange(
-      requirements.map((r) =>
-        r.skillId === skillId
-          ? { ...r, optional, priority: optional ? nextDefaultPriority() : undefined }
-          : r,
-      ),
+      requirements.map((r) => (r.skillId === skillId ? { ...r, optional, priority } : r)),
     )
   }
 
-  function setPriority(skillId: number, priority: number): void {
-    onChange(requirements.map((r) => (r.skillId === skillId ? { ...r, priority } : r)))
-  }
-
+  const hasHiden = requirements.some((r) => isHiden(r.skillId))
+  let nextNumber = 1
   return (
     <div>
+      {hasHiden && (
+        <div className="skill-requirement-hiden-info">
+          Hiden/Tech skills only count toward the active skill cap exemption when granted by a
+          cuff -- from armor or a weapon, they're capped like any other skill.
+        </div>
+      )}
       <ul className="list-unstyled d-flex flex-column gap-2">
-        {requirements.map((requirement, index) => {
+        {sortedRequirements.map((requirement) => {
           const tiers = skillOf(requirement.skillId)?.tiers ?? []
+          const hiden = isHiden(requirement.skillId)
+          const number = hiden ? null : nextNumber++
           return (
-            <li key={requirement.skillId} className="d-flex align-items-center gap-2">
+            <li
+              key={requirement.skillId}
+              className={
+                hiden
+                  ? 'd-flex align-items-center gap-2 skill-requirement-hiden'
+                  : 'd-flex align-items-center gap-2'
+              }
+            >
               <span className="flex-grow-1">
-                {index + 1}. <span>{nameOf(requirement.skillId)}</span>
+                {hiden ? (
+                  <span className="skill-requirement-hiden-badge">Hiden/Tech</span>
+                ) : (
+                  `${number}. `
+                )}{' '}
+                <span>{nameOf(requirement.skillId)}</span>
               </span>
               {tiers.length > 0 ? (
                 <select
@@ -241,48 +281,33 @@ export function SkillPicker({
                   onChange={(e) => setMinPoints(requirement.skillId, Number(e.target.value))}
                 />
               )}
-              <div className="form-check form-check-inline m-0">
-                <input
-                  type="checkbox"
-                  className="form-check-input"
-                  id={`optional-${requirement.skillId}`}
-                  aria-label={`Optional: ${nameOf(requirement.skillId)}`}
-                  checked={requirement.optional ?? false}
-                  onChange={(e) => setOptional(requirement.skillId, e.target.checked)}
-                />
-                <label
-                  className="form-check-label"
-                  htmlFor={`optional-${requirement.skillId}`}
-                  aria-hidden="true"
-                >
-                  Optional
-                </label>
-              </div>
-              {requirement.optional && (
-                <select
-                  className="form-select form-select-sm"
-                  style={{ width: 'auto' }}
-                  aria-label={`${nameOf(requirement.skillId)} priority`}
-                  value={requirement.priority ?? 1}
-                  onChange={(e) => setPriority(requirement.skillId, Number(e.target.value))}
-                >
-                  {Array.from({ length: MAX_OPTIONAL_SKILL_PRIORITY_TIERS }, (_, i) => i + 1).map(
-                    (p) => (
-                      <option key={p} value={p}>
-                        Priority {p}
-                      </option>
-                    ),
-                  )}
-                </select>
-              )}
+              <select
+                className={
+                  requirement.optional
+                    ? 'form-select form-select-sm'
+                    : 'form-select form-select-sm skill-requirement-select-required'
+                }
+                style={{ width: 'auto' }}
+                aria-label={`${nameOf(requirement.skillId)} requirement type`}
+                value={requirement.optional ? String(requirement.priority ?? 1) : 'required'}
+                onChange={(e) => setRequirementKind(requirement.skillId, e.target.value)}
+              >
+                <option value="required">Required</option>
+                {Array.from({ length: MAX_OPTIONAL_SKILL_PRIORITY_TIERS }, (_, i) => i + 1).map(
+                  (p) => (
+                    <option key={p} value={p}>
+                      Option {p}
+                    </option>
+                  ),
+                )}
+              </select>
               <button
                 type="button"
-                className="btn btn-outline-danger btn-sm"
                 aria-label={`Remove ${nameOf(requirement.skillId)}`}
+                className="btn-close btn-close-white"
+                style={{ fontSize: '0.65rem' }}
                 onClick={() => remove(requirement.skillId)}
-              >
-                Remove
-              </button>
+              />
             </li>
           )
         })}

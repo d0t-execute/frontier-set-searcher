@@ -36,7 +36,11 @@ import { MAX_EQUIPPED_CUFFS } from './ilp-model'
 import type { NamedCandidate, NamedCuff, NamedSkill, NamedSlotQuery } from './load-bundle'
 import type { SkillId, SkillRequirement } from './types'
 
-const HIDEN_SKILL_CATEGORY = 'Hiden/Tech Skills'
+/** Exported for `SkillPicker.tsx`, which pins skills in this category to the
+ * top of the requirement list and labels them with this same cuff-only
+ * exemption rule (see `isCapExempt` below) -- kept as a single shared
+ * constant rather than a duplicated string literal so the two stay in sync. */
+export const HIDEN_SKILL_CATEGORY = 'Hiden/Tech Skills'
 
 /** Origin armor's category key (gear-categories.ts) -- excluded from the
  * G-Rank-or-later piece-count bonus; see this module's docstring. */

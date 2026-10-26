@@ -647,6 +647,41 @@ code {
   box-shadow: 0 0 0 3px var(--accent-bg);
 }
 
+/* Marks a skill requirement's "Required / Option N" select when "Required"
+ * is selected (2026-10-26, per the project owner: the compact single-select
+ * redesign needs required skills to visually stand out from optional ones at
+ * a glance, not just by reading the text) -- a brighter, persistent version
+ * of `.form-select:focus`'s own accent treatment above, not conditional on
+ * focus. */
+.skill-requirement-select-required {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-bg);
+}
+
+/* Pinned Hiden/Tech skill rows (2026-10-26, per the project owner: separate
+ * them from the rest of the requirement list, but lightly -- "not so strongly
+ * that it feels like it's not part of the skill query like any other skill").
+ * A thin border plus a faint fill distinguishes the row without the stronger
+ * accent-colored treatment `.skill-requirement-select-required` already uses
+ * elsewhere, so the two don't read as the same kind of signal. */
+.skill-requirement-hiden {
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  padding: 0.25rem 0.5rem;
+  background-color: var(--accent-bg);
+}
+
+.skill-requirement-hiden-badge {
+  font-size: 0.75em;
+  color: var(--text-muted);
+}
+
+.skill-requirement-hiden-info {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
 .form-check-input {
   accent-color: var(--accent);
 }
@@ -654,6 +689,25 @@ code {
 .form-check-input:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+/* Bootstrap's own `.btn-close` (the small "x" remove button shared by every
+ * picker in this app -- SkillPicker/ArmorPicker/CuffPicker/
+ * EquipmentExclusionPicker/PreferredArmorPicker/PreferredCategoryPicker) has
+ * a ~1em icon plus only 0.25em of padding around it, too small a hit area to
+ * reliably hover/click (2026-10-26, per the project owner). `box-sizing:
+ * content-box` (Bootstrap's own default here) means padding only grows the
+ * surrounding hit area, not the icon itself, so this doesn't change how big
+ * the "x" looks. Its focus ring (the circle already visible on keyboard
+ * focus, and on right-click in browsers that focus a button before opening
+ * the context menu) is now also shown on hover, so the bigger hit area is
+ * visually previewed before a click, not a silent surprise after one. */
+.btn-close {
+  padding: 0.5em;
+}
+
+.btn-close:hover {
+  box-shadow: var(--bs-btn-close-focus-shadow);
 }
 
 /* Bootstrap's own `.btn-primary` is a fixed blue, clashing with this page's

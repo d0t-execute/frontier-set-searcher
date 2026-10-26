@@ -381,7 +381,7 @@ describe('SkillPicker', () => {
   })
 
   describe('optional requirements (docs/feedback.md Round 3 #2)', () => {
-    it('does not show a priority selector until the requirement is marked optional', () => {
+    it('shows a single requirement-type selector defaulted to "Required"', () => {
       render(
         <SkillPicker
           skills={SKILLS}
@@ -390,10 +390,32 @@ describe('SkillPicker', () => {
         />,
       )
 
-      expect(screen.queryByRole('combobox', { name: /attack priority/i })).not.toBeInTheDocument()
+      expect(screen.getByRole('combobox', { name: /attack requirement type/i })).toHaveValue(
+        'required',
+      )
     })
 
-    it('marks a requirement optional and defaults its priority to the next available slot', async () => {
+    it('highlights a required requirement but not an optional one', () => {
+      render(
+        <SkillPicker
+          skills={SKILLS}
+          requirements={[
+            { skillId: 1, minPoints: 5 },
+            { skillId: 2, minPoints: 3, optional: true, priority: 1 },
+          ]}
+          onChange={vi.fn()}
+        />,
+      )
+
+      expect(screen.getByRole('combobox', { name: /attack requirement type/i })).toHaveClass(
+        'skill-requirement-select-required',
+      )
+      expect(
+        screen.getByRole('combobox', { name: /defense requirement type/i }),
+      ).not.toHaveClass('skill-requirement-select-required')
+    })
+
+    it('marks a requirement optional at the explicitly picked priority', async () => {
       const onChange = vi.fn()
       const user = userEvent.setup()
       render(
@@ -407,15 +429,18 @@ describe('SkillPicker', () => {
         />,
       )
 
-      await user.click(screen.getByRole('checkbox', { name: /optional: attack/i }))
+      await user.selectOptions(
+        screen.getByRole('combobox', { name: /attack requirement type/i }),
+        '3',
+      )
 
       expect(onChange).toHaveBeenCalledWith([
-        { skillId: 1, minPoints: 5, optional: true, priority: 2 },
+        { skillId: 1, minPoints: 5, optional: true, priority: 3 },
         { skillId: 2, minPoints: 3, optional: true, priority: 1 },
       ])
     })
 
-    it('shows a priority selector once optional, and reports changes to it', async () => {
+    it('reports a priority change for an already-optional requirement', async () => {
       const onChange = vi.fn()
       const user = userEvent.setup()
       render(
@@ -426,14 +451,17 @@ describe('SkillPicker', () => {
         />,
       )
 
-      await user.selectOptions(screen.getByRole('combobox', { name: /attack priority/i }), '4')
+      await user.selectOptions(
+        screen.getByRole('combobox', { name: /attack requirement type/i }),
+        '4',
+      )
 
       expect(onChange).toHaveBeenCalledWith([
         { skillId: 1, minPoints: 5, optional: true, priority: 4 },
       ])
     })
 
-    it('clears the priority when unmarking a requirement as optional', async () => {
+    it('clears the priority when switching a requirement back to "Required"', async () => {
       const onChange = vi.fn()
       const user = userEvent.setup()
       render(
@@ -444,7 +472,10 @@ describe('SkillPicker', () => {
         />,
       )
 
-      await user.click(screen.getByRole('checkbox', { name: /optional: attack/i }))
+      await user.selectOptions(
+        screen.getByRole('combobox', { name: /attack requirement type/i }),
+        'required',
+      )
 
       expect(onChange).toHaveBeenCalledWith([
         { skillId: 1, minPoints: 5, optional: false, priority: undefined },
