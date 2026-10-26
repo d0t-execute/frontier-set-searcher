@@ -43,6 +43,10 @@ export interface ResultMessage {
    * provisional result 0, the second replaces 1, and so on (see
    * `worker-handler.ts`). */
   readonly provisional?: true
+  /** A final (non-provisional) result whose round hit its time box before
+   * HiGHS could prove it the best of what was left -- a valid build, but a
+   * better one may exist. */
+  readonly unproven?: true
 }
 
 /** Sent between the two passes of a `preferExactMatches` search: every

@@ -825,6 +825,39 @@ describe('App', () => {
     expect(screen.queryByText(/Helm A/)).not.toBeInTheDocument()
   })
 
+  it('says when a result hit the time limit before being proven the best possible', async () => {
+    let callbacks!: {
+      onResult: (result: unknown, provisional: boolean, unproven: boolean) => void
+      onDone: () => void
+    }
+    const worker = makeWorker()
+    worker.search.mockImplementation((...args: unknown[]) => {
+      callbacks = args[3] as typeof callbacks
+      return 'req-1'
+    })
+    mockUseSearchWorker.mockReturnValue(worker as unknown as ReturnType<typeof useSearchWorker>)
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.click(screen.getByRole('button', { name: 'Attack' }))
+    await user.click(screen.getByRole('button', { name: /search/i }))
+    act(() => {
+      callbacks.onResult(
+        {
+          picks: new Map(),
+          decorations: new Map(),
+          cuffs: [],
+          skillTotals: new Map([[1, 15]]),
+        },
+        false,
+        true,
+      )
+      callbacks.onDone()
+    })
+
+    expect(screen.getByText(/hit the time limit before being proven/i)).toBeInTheDocument()
+  })
+
   describe('"Show all" category links (docs/feedback.md Round 3 #5)', () => {
     it('links to the "all items" route for armor, cuffs, and decorations', () => {
       render(<App />)

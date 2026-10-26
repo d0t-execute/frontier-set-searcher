@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
-import { handleSearchRequest, PROVISIONAL_POOL_SIZE } from './worker-handler'
+import {
+  handleSearchRequest,
+  PROVISIONAL_POOL_SIZE,
+  VERIFICATION_TIME_BOX_SECONDS,
+} from './worker-handler'
 import * as engine from './engine'
 import type { WorkerResponse } from './worker-protocol'
 import type { BuildResult, Candidate, SlotQuery } from './types'
@@ -204,13 +208,17 @@ describe('handleSearchRequest', () => {
     }
     const resultB: BuildResult = { ...resultA, picks: new Map([['head', candidate('B', {})]]) }
 
-    /** Like `fakeGenerator`, but reports each result's objective value
-     * through `search()`'s own hooks argument, as the real engine does. */
-    function scored(results: readonly [BuildResult, number][], reason: engine.SearchEndReason) {
+    /** Like `fakeGenerator`, but reports each result's objective value (and
+     * whether its round was proven, `true` unless given) through `search()`'s
+     * own hooks argument, as the real engine does. */
+    function scored(
+      results: readonly (readonly [BuildResult, number, boolean?])[],
+      reason: engine.SearchEndReason,
+    ) {
       return (...args: Parameters<typeof engine.search>) =>
         (async function* () {
-          for (const [result, objective] of results) {
-            args[5]?.onSolution?.(objective)
+          for (const [result, objective, proven = true] of results) {
+            args[5]?.onSolution?.(objective, proven)
             yield result
           }
           return reason
@@ -303,6 +311,61 @@ describe('handleSearchRequest', () => {
       expect(types).toEqual(['result', 'verifying', 'result', 'result', 'done'])
     })
 
+    it('never certifies against a ceiling that was itself stopped by its time box', async () => {
+      vi.mocked(engine.search)
+        .mockImplementationOnce(scored([[resultA, 100, false]], 'exhausted'))
+        .mockImplementationOnce(
+          scored(
+            [
+              [resultA, 100],
+              [resultB, 100],
+            ],
+            'exhausted',
+          ),
+        )
+        .mockImplementationOnce(
+          scored(
+            [
+              [resultA, 100],
+              [resultB, 100],
+            ],
+            'exhausted',
+          ),
+        )
+
+      const messages = await run()
+      expect(messages.slice(0, 3)).toEqual([
+        { type: 'result', requestId: 'req-1', result: resultA, provisional: true },
+        { type: 'result', requestId: 'req-1', result: resultB, provisional: true },
+        { type: 'verifying', requestId: 'req-1' },
+      ])
+    })
+
+    it('gives the verifying pass its own larger time box, and flags results it could not prove', async () => {
+      vi.mocked(engine.search)
+        .mockImplementationOnce(scored([[resultA, 100]], 'exhausted'))
+        .mockImplementationOnce(scored([[resultA, 90]], 'exhausted'))
+        .mockImplementationOnce(
+          scored(
+            [
+              [resultA, 95],
+              [resultB, 90, false],
+            ],
+            'exhausted',
+          ),
+        )
+
+      const messages = await run()
+      expect(messages.slice(-3)).toEqual([
+        { type: 'result', requestId: 'req-1', result: resultA },
+        { type: 'result', requestId: 'req-1', result: resultB, unproven: true },
+        { type: 'done', requestId: 'req-1' },
+      ])
+      expect(vi.mocked(engine.search).mock.calls.at(-1)![3]).toMatchObject({
+        timeBoxSeconds: VERIFICATION_TIME_BOX_SECONDS,
+      })
+    })
+
     it('reports done, not timedOut, when only the verifying pass times out', async () => {
       vi.mocked(engine.search)
         .mockImplementationOnce(scored([], 'exhausted'))
@@ -313,7 +376,7 @@ describe('handleSearchRequest', () => {
     })
 
     it('runs a single, unmarked pass without preferExactMatches', async () => {
-      vi.mocked(engine.search).mockImplementationOnce(() => fakeGenerator([resultA], 'exhausted'))
+      vi.mocked(engine.search).mockImplementationOnce(scored([[resultA, 100]], 'exhausted'))
       const post = vi.fn<(message: WorkerResponse) => void>()
 
       await handleSearchRequest(

@@ -77,6 +77,12 @@ The same arithmetic on the reformulated model is roughly 5-30s total.
 | sword                                 | 300s box hit                                    | **23.9s, all proven**                                                                       |
 | end-game                              | gave up at 300s, returned 3 active bonus skills | provisional at **12.1s**; verification pass done at 160s (several rounds time-boxed at 30s) |
 
+**Follow-up:**
+- The verification pass now runs with a 300s-per-round box instead of 30s. Measured: end-game
+  verification rounds prove optimal in 30-32s each once not cut off.
+- Final results that still hit a box are flagged as unproven in the UI.
+- The bonus-free ceiling only certifies when its own round was proven.
+
 When the verification pass is needed: whenever the best clean build has fewer open slots than the
 best build overall, the ceiling can't certify it. That's common in the app, where the builds with
 the most open slots usually activate bonus skills. The full model then costs ~30s per result on the

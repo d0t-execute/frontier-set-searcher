@@ -27,7 +27,7 @@ export interface SearchCallbacks {
   /** `provisional` is set for results from a `preferExactMatches` search's
    * fast first pass (see worker-protocol.ts's `ResultMessage`); a later
    * verified result replaces them index by index. */
-  readonly onResult: (result: BuildResult, provisional: boolean) => void
+  readonly onResult: (result: BuildResult, provisional: boolean, unproven: boolean) => void
   /** The provisional pass is over and verification has started (see
    * worker-protocol.ts's `VerifyingMessage`). Optional. */
   readonly onVerifying?: () => void
@@ -124,7 +124,7 @@ export class SearchWorkerClient {
 
     switch (message.type) {
       case 'result':
-        callbacks.onResult(message.result, message.provisional === true)
+        callbacks.onResult(message.result, message.provisional === true, message.unproven === true)
         break
       case 'verifying':
         callbacks.onVerifying?.()

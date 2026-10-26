@@ -205,8 +205,10 @@ export interface SearchHooks {
   readonly onProgress?: (gap: number) => void
   /** The objective value of the result about to be yielded -- its true score,
    * comparable across differently-pruned searches of the same query (see
-   * `ilp-model.ts`'s objective `offset`). */
-  readonly onSolution?: (objective: number) => void
+   * `ilp-model.ts`'s objective `offset`) -- and whether HiGHS proved it the
+   * best of what's left, rather than stopping at the time box with the best
+   * build found so far (valid, but possibly not the best). */
+  readonly onSolution?: (objective: number, proven: boolean) => void
 }
 
 export async function* search(
@@ -313,7 +315,10 @@ export async function* search(
 
       const colValue = native.getSolution().colValue
       const decoded = decodeSolution(columns, colValue)
-      onSolution?.(native.info.get('objective_function_value') as number)
+      onSolution?.(
+        native.info.get('objective_function_value') as number,
+        native.getModelStatus() === highs.constants.modelStatus.optimal,
+      )
       if (pinnedCuffs.length === 0) {
         yield decoded
       } else {

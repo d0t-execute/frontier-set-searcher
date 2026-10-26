@@ -100,7 +100,7 @@ describe('SearchWorkerClient', () => {
     worker.emit({ type: 'result', requestId, result: buildResult })
     worker.emit({ type: 'done', requestId })
 
-    expect(onResult).toHaveBeenCalledWith(buildResult, false)
+    expect(onResult).toHaveBeenCalledWith(buildResult, false, false)
     expect(onDone).toHaveBeenCalledTimes(1)
   })
 
@@ -158,7 +158,7 @@ describe('SearchWorkerClient', () => {
 
     worker.emit({ type: 'result', requestId: secondId, result: buildResult })
 
-    expect(second.onResult).toHaveBeenCalledWith(buildResult, false)
+    expect(second.onResult).toHaveBeenCalledWith(buildResult, false, false)
     expect(first.onResult).not.toHaveBeenCalled()
   })
 

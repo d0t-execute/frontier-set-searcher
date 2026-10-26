@@ -36,6 +36,16 @@ import type { SearchRequestMessage, WorkerResponse } from './worker-protocol'
  * every time, in 0.3-3.7s against 20-46s for the full search. */
 export const PROVISIONAL_POOL_SIZE = 20
 
+/** Seconds each round of the verification pass may run before settling for
+ * its best build so far (overriding `engine.ts`'s `TIME_BOX_SECONDS` unless
+ * the request already asked for more). Much larger than the normal box: the
+ * player already has provisional results on screen and asked for precise ones
+ * (2026-10-26, per the project owner), and the old 30s box was cutting real
+ * end-game rounds off right before they finished -- given room, each one
+ * proved optimal in 30-32s on a dev machine. 300s leaves ~2x headroom for a
+ * client 5x slower than that. "Stop verifying" ends it early at any time. */
+export const VERIFICATION_TIME_BOX_SECONDS = 300
+
 function yieldToEventLoop(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 0))
 }
@@ -68,21 +78,28 @@ export async function handleSearchRequest(
    * further. */
   async function runPass(
     passOptions: SearchOptions,
-    onResult: (result: BuildResult, objective: number) => void,
+    onResult: (result: BuildResult, objective: number, proven: boolean) => void,
   ): Promise<SearchEndReason | 'cancelled'> {
     let objective = Number.NaN
+    let proven = false
     const generator = search(
       request.slots,
       request.requirements,
       request.decorations ?? [],
       passOptions,
       request.cuffs ?? [],
-      { onProgress, onSolution: (value) => (objective = value) },
+      {
+        onProgress,
+        onSolution: (value, isProven) => {
+          objective = value
+          proven = isProven
+        },
+      },
     )
     for (;;) {
       const next: IteratorResult<BuildResult, SearchEndReason> = await generator.next()
       if (next.done) return next.value
-      onResult(next.value, objective)
+      onResult(next.value, objective, proven)
       await yieldToEventLoop()
       if (cancelled.has(requestId)) {
         await generator.return('exhausted')
@@ -91,8 +108,14 @@ export async function handleSearchRequest(
     }
   }
 
-  const postResult = (result: BuildResult, provisional: boolean) =>
-    post({ type: 'result', requestId, result, ...(provisional && { provisional: true as const }) })
+  const postResult = (result: BuildResult, flag?: 'provisional' | 'unproven') =>
+    post({
+      type: 'result',
+      requestId,
+      result,
+      ...(flag === 'provisional' && { provisional: true as const }),
+      ...(flag === 'unproven' && { unproven: true as const }),
+    })
 
   try {
     let producedAny = false
@@ -108,7 +131,11 @@ export async function handleSearchRequest(
       let ceiling: number | undefined
       const ceilingEnd = await runPass(
         { ...options, withoutTierPenalties: true, maxResults: 1 },
-        (_result, objective) => (ceiling = objective),
+        // Only a proven ceiling is one: a round stopped at its time box only
+        // knows the best build it found so far, not the best possible.
+        (_result, objective, proven) => {
+          if (proven) ceiling = objective
+        },
       )
       if (ceilingEnd === 'cancelled') return
 
@@ -123,7 +150,7 @@ export async function handleSearchRequest(
           count++
           const proven = unproven === 0 && ceiling !== undefined && objective >= ceiling - 0.5
           if (!proven) unproven++
-          postResult(result, !proven)
+          postResult(result, proven ? undefined : 'provisional')
         },
       )
       if (poolEnd === 'cancelled') return
@@ -138,10 +165,18 @@ export async function handleSearchRequest(
       post({ type: 'verifying', requestId })
     }
 
+    // After a provisional pass the player already has an answer on screen, so
+    // the verifying pass trades speed for certainty with a bigger time box.
+    const finalOptions = wantsProvisionalPass(options)
+      ? {
+          ...options,
+          timeBoxSeconds: Math.max(options.timeBoxSeconds ?? 0, VERIFICATION_TIME_BOX_SECONDS),
+        }
+      : options
     let count = 0
-    const finalEnd = await runPass(options, (result) => {
+    const finalEnd = await runPass(finalOptions, (result, _objective, proven) => {
       count++
-      postResult(result, false)
+      postResult(result, proven ? undefined : 'unproven')
     })
     if (finalEnd === 'cancelled') return
     producedAny ||= count > 0

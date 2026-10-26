@@ -2503,3 +2503,9 @@ implementation pass".
     exact mode.
   - Default ranking's bonus-point tail still time-boxes later rounds on the hardest query.
   - Not yet measured on a low-end machine.
+- Follow-up (2026-10-26, per the owner: precise results matter):
+  - The verification pass now gets its own 300s-per-round time box (`VERIFICATION_TIME_BOX_SECONDS`).
+    The old 30s box was cutting real end-game rounds off just before they finished; given room,
+    each proved optimal in 30-32s on a dev machine.
+  - Any final result whose round still hit its time box is flagged `unproven`, and the page says so.
+  - The bonus-free ceiling is only trusted when its own round was proven.

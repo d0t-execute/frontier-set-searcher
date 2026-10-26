@@ -487,6 +487,9 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
   // Set when the player stops a `preferExactMatches` search during its
   // verification pass, leaving provisional results on screen unproven.
   const [verificationStopped, setVerificationStopped] = useState(false)
+  // How many of the shown results hit their round's time box before being
+  // proven the best possible (see worker-protocol.ts's `ResultMessage.unproven`).
+  const [unprovenCount, setUnprovenCount] = useState(0)
   // HiGHS's own `mip_gap` for the round currently solving (docs/feedback.md
   // Round 3 #3) -- `null` until the first callback fires each round, so the
   // UI shows plain "Searching…" rather than a stale number from a prior one.
@@ -958,6 +961,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
       setErrorMessage(null)
       setReachedCap(false)
       setVerificationStopped(false)
+      setUnprovenCount(0)
     }
     setSearchStage(stage)
     setTimedOutEmpty(false)
@@ -1021,6 +1025,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
     // `SearchOptions.maxResults`); the cap below is only a guard, so a
     // misbehaving worker can never flood the page.
     const list: NamedBuildResult[] = []
+    const unproven = new Set<NamedBuildResult>()
     let verifiedCount = 0
     let finished = false
     const requestId = worker.search(
@@ -1028,9 +1033,10 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
       hardRequirements,
       decorations,
       {
-        onResult: (result, provisional) => {
+        onResult: (result, provisional, isUnproven) => {
           if (finished) return
           const named = result as unknown as NamedBuildResult
+          if (isUnproven) unproven.add(named)
           if (provisional) {
             if (list.length >= maxResults) return
             list.push(named)
@@ -1043,6 +1049,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
             list[index] = named
           }
           setResults([...list])
+          setUnprovenCount(list.filter((r) => unproven.has(r)).length)
           setSearchProgress(null) // next round starts fresh
           if (verifiedCount >= maxResults) {
             finished = true
@@ -1813,6 +1820,15 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                     Search longer
                   </button>{' '}
                   (can take several minutes).
+                </p>
+              )}
+              {status === 'done' && unprovenCount > 0 && (
+                <p>
+                  {unprovenCount === results.length
+                    ? 'These results'
+                    : `${unprovenCount} of these results`}{' '}
+                  hit the time limit before being proven the best possible, so a better build may
+                  exist.
                 </p>
               )}
               {status === 'done' && verificationStopped && results.length > 0 && (
