@@ -410,9 +410,9 @@ describe('SkillPicker', () => {
       expect(screen.getByRole('combobox', { name: /attack requirement type/i })).toHaveClass(
         'skill-requirement-select-required',
       )
-      expect(
-        screen.getByRole('combobox', { name: /defense requirement type/i }),
-      ).not.toHaveClass('skill-requirement-select-required')
+      expect(screen.getByRole('combobox', { name: /defense requirement type/i })).not.toHaveClass(
+        'skill-requirement-select-required',
+      )
     })
 
     it('marks a requirement optional at the explicitly picked priority', async () => {

@@ -327,8 +327,7 @@ export function cuffsAfterCategoryFilter(
   excludedCuffCategories: ReadonlySet<string>,
 ): NamedCuff[] {
   return cuffs.filter(
-    (c) =>
-      !UNOBTAINABLE_CUFF_CATEGORIES.has(c.category) && !excludedCuffCategories.has(c.category),
+    (c) => !UNOBTAINABLE_CUFF_CATEGORIES.has(c.category) && !excludedCuffCategories.has(c.category),
   )
 }
 

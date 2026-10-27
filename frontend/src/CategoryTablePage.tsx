@@ -418,7 +418,8 @@ export function CategoryTablePage({ kind, categoryKey, onBackToSearch }: Categor
     }
   }, [isVirtualized])
 
-  const visibleRowCapacity = Math.ceil(viewportHeight / VIRTUALIZED_ROW_HEIGHT_PX) + OVERSCAN_ROWS * 2
+  const visibleRowCapacity =
+    Math.ceil(viewportHeight / VIRTUALIZED_ROW_HEIGHT_PX) + OVERSCAN_ROWS * 2
   const scrollPastTableTop = Math.max(0, scrollY - tableTop)
   const windowStart = isVirtualized
     ? Math.max(0, Math.floor(scrollPastTableTop / VIRTUALIZED_ROW_HEIGHT_PX) - OVERSCAN_ROWS)

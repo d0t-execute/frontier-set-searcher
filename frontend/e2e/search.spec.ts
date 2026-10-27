@@ -25,9 +25,12 @@ test('picks skills and streams ranked, decorated results from the real dataset',
 
   // The result actually came from the real exported dataset and a real
   // search, not a stub -- it names a genuine piece of equipment and reports
-  // the skill the query asked for.
+  // the skill the query asked for. Only "Small" is requested (>=10 points),
+  // but the optimal build's actual Attack total can legitimately cross into
+  // a higher tier (e.g. "Large"), so this doesn't assert a specific tier --
+  // just that a real, tiered Attack Up result is shown.
   await expect(page.getByText(/^head:/i).first()).toBeVisible()
-  await expect(page.getByText(/attack up \(small\) \(\d+\/10\)/i).first()).toBeVisible()
+  await expect(page.getByText(/attack up \([^)]+\) \(\d+\/\d+\)/i).first()).toBeVisible()
 })
 
 test('shows an empty-results message for a requirement nothing can meet', async ({ page }) => {

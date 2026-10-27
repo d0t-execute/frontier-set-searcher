@@ -220,9 +220,7 @@ export function SkillPicker({
   function setRequirementKind(skillId: number, value: string): void {
     const optional = value !== 'required'
     const priority = optional ? Number(value) : undefined
-    onChange(
-      requirements.map((r) => (r.skillId === skillId ? { ...r, optional, priority } : r)),
-    )
+    onChange(requirements.map((r) => (r.skillId === skillId ? { ...r, optional, priority } : r)))
   }
 
   const hasHiden = requirements.some((r) => isHiden(r.skillId))
@@ -231,8 +229,8 @@ export function SkillPicker({
     <div>
       {hasHiden && (
         <div className="skill-requirement-hiden-info">
-          Hiden/Tech skills only count toward the active skill cap exemption when granted by a
-          cuff -- from armor or a weapon, they're capped like any other skill.
+          Hiden/Tech skills only count toward the active skill cap exemption when granted by a cuff
+          -- from armor or a weapon, they're capped like any other skill.
         </div>
       )}
       <ul className="list-unstyled d-flex flex-column gap-2">

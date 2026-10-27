@@ -310,7 +310,9 @@ describe('CategoryTablePage', () => {
     })
 
     it('renders far fewer row elements than the full 1000-item list', () => {
-      render(<CategoryTablePage kind="cuffs" categoryKey="standard_plain" onBackToSearch={vi.fn()} />)
+      render(
+        <CategoryTablePage kind="cuffs" categoryKey="standard_plain" onBackToSearch={vi.fn()} />,
+      )
       // Header row + a bounded viewport window, nowhere near all 1000 items.
       expect(screen.getAllByRole('row').length).toBeLessThan(100)
       expect(screen.getByText('Cuff 0000')).toBeInTheDocument()
@@ -318,7 +320,9 @@ describe('CategoryTablePage', () => {
     })
 
     it('scrolling the page reveals rows further down the list (window-based, not a boxed-off scroll area)', () => {
-      render(<CategoryTablePage kind="cuffs" categoryKey="standard_plain" onBackToSearch={vi.fn()} />)
+      render(
+        <CategoryTablePage kind="cuffs" categoryKey="standard_plain" onBackToSearch={vi.fn()} />,
+      )
 
       // jsdom's `getBoundingClientRect()` always reports 0, so the table's
       // own measured top offset is 0 regardless -- scrolling the window past
@@ -339,7 +343,7 @@ describe('CategoryTablePage', () => {
       expect(screen.getByText('Other Category Helm')).toBeInTheDocument()
     })
 
-    it('adds a Category column naming each item\'s own category', () => {
+    it("adds a Category column naming each item's own category", () => {
       render(<CategoryTablePage kind="gear" categoryKey={null} onBackToSearch={vi.fn()} />)
       expect(screen.getByRole('columnheader', { name: 'Category' })).toBeInTheDocument()
       const row = screen.getByText('Other Category Helm').closest('tr')
@@ -348,7 +352,9 @@ describe('CategoryTablePage', () => {
     })
 
     it('does not show a Category column for a single-category table', () => {
-      render(<CategoryTablePage kind="gear" categoryKey="standard_plain" onBackToSearch={vi.fn()} />)
+      render(
+        <CategoryTablePage kind="gear" categoryKey="standard_plain" onBackToSearch={vi.fn()} />,
+      )
       expect(screen.queryByRole('columnheader', { name: 'Category' })).not.toBeInTheDocument()
     })
 
@@ -375,7 +381,9 @@ describe('CategoryTablePage', () => {
     })
 
     it('does not show the "Show unavailable items" checkbox on a single-category table', () => {
-      render(<CategoryTablePage kind="gear" categoryKey="standard_plain" onBackToSearch={vi.fn()} />)
+      render(
+        <CategoryTablePage kind="gear" categoryKey="standard_plain" onBackToSearch={vi.fn()} />,
+      )
       expect(
         screen.queryByRole('checkbox', { name: 'Show unavailable items' }),
       ).not.toBeInTheDocument()
