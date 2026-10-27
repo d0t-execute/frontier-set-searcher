@@ -330,6 +330,12 @@ describe('SkillPicker', () => {
           .map((o) => o.textContent),
       ).toEqual(['Vampirism+2', 'Vampirism+1'])
       expect(levelSelect).toHaveValue('10')
+      // The requirement-type select next to it is the fixed-width column
+      // (2026-10-27, per the project owner) -- the level select sizes to its
+      // picked tier's own label.
+      expect(screen.getByRole('combobox', { name: /vampirism requirement type/i })).toHaveClass(
+        'skill-requirement-type-select',
+      )
     })
 
     it("sets the requirement's minPoints to the chosen tier's threshold", async () => {

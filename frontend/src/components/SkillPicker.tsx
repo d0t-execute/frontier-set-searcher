@@ -257,11 +257,11 @@ export function SkillPicker({
               key={requirement.skillId}
               className={
                 hiden
-                  ? 'd-flex align-items-center gap-2 skill-requirement-hiden'
-                  : 'd-flex align-items-center gap-2'
+                  ? 'd-flex align-items-center skill-requirement-row skill-requirement-hiden'
+                  : 'd-flex align-items-center skill-requirement-row'
               }
             >
-              <span className="flex-grow-1">
+              <span className="flex-grow-1 skill-requirement-name">
                 {hiden ? (
                   <span className="skill-requirement-hiden-badge">Hiden/Tech</span>
                 ) : (
@@ -270,19 +270,27 @@ export function SkillPicker({
                 <span>{nameOf(requirement.skillId)}</span>
               </span>
               {tiers.length > 0 ? (
-                <select
-                  className="form-select"
-                  style={{ width: 'auto' }}
-                  aria-label={`${nameOf(requirement.skillId)} level`}
-                  value={requirement.minPoints}
-                  onChange={(e) => setMinPoints(requirement.skillId, Number(e.target.value))}
-                >
-                  {tiers.map((tier) => (
-                    <option key={tier.label} value={tier.minPoints}>
-                      {tier.label}
-                    </option>
-                  ))}
-                </select>
+                // A native `<select>` is always as wide as its widest option,
+                // not the one picked -- the hidden sizer sharing its grid cell
+                // sizes it to the picked tier's own label instead (see
+                // index.css's `.skill-requirement-level`).
+                <span className="skill-requirement-level">
+                  <span className="form-select skill-requirement-level-sizer" aria-hidden="true">
+                    {tiers.find((t) => t.minPoints === requirement.minPoints)?.label}
+                  </span>
+                  <select
+                    className="form-select"
+                    aria-label={`${nameOf(requirement.skillId)} level`}
+                    value={requirement.minPoints}
+                    onChange={(e) => setMinPoints(requirement.skillId, Number(e.target.value))}
+                  >
+                    {tiers.map((tier) => (
+                      <option key={tier.label} value={tier.minPoints}>
+                        {tier.label}
+                      </option>
+                    ))}
+                  </select>
+                </span>
               ) : (
                 <input
                   type="number"
@@ -296,10 +304,9 @@ export function SkillPicker({
               <select
                 className={
                   requirement.optional
-                    ? 'form-select form-select-sm'
-                    : 'form-select form-select-sm skill-requirement-select-required'
+                    ? 'form-select skill-requirement-type-select'
+                    : 'form-select skill-requirement-type-select skill-requirement-select-required'
                 }
-                style={{ width: 'auto' }}
                 aria-label={`${nameOf(requirement.skillId)} requirement type`}
                 value={
                   requirement.preferHigher
@@ -329,7 +336,7 @@ export function SkillPicker({
               <button
                 type="button"
                 aria-label={`Remove ${nameOf(requirement.skillId)}`}
-                className="btn-close btn-close-white"
+                className="btn-close btn-close-white skill-requirement-remove"
                 style={{ fontSize: '0.65rem' }}
                 onClick={() => remove(requirement.skillId)}
               />

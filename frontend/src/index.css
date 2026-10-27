@@ -447,8 +447,12 @@ code {
   /* Skills widened from 1fr (2026-10-15, per the project owner: a skill row's
    * name, level select, and Remove button were cramped in the narrowest of
    * the three columns) -- Weapon shrinks to match now that Hunter Type has
-   * moved out into its own standalone toggle above the columns. */
-  grid-template-columns: 1.4fr 1.3fr 0.9fr;
+   * moved out into its own standalone toggle above the columns. Nudged
+   * again from 1.4fr/1.3fr (2026-10-27, per the project owner: a requirement
+   * row like "Movement Speed" / "Movement Speed Up+2" only just fit) --
+   * taken from the middle column, whose headings and badges don't need it,
+   * rather than widening the whole page. */
+  grid-template-columns: 1.45fr 1.25fr 0.9fr;
   align-items: start;
   gap: 20px;
 }
@@ -633,7 +637,6 @@ code {
   opacity: 1;
 }
 
-.form-select:focus,
 .form-control:focus {
   /* Bootstrap's own `.form-control:focus` sets `background-color:
    * var(--bs-body-bg)`, which defaults to white (this app never sets
@@ -647,15 +650,52 @@ code {
   box-shadow: 0 0 0 3px var(--accent-bg);
 }
 
-/* Marks a skill requirement's "Required / Option N" select when "Required"
- * is selected (2026-10-26, per the project owner: the compact single-select
- * redesign needs required skills to visually stand out from optional ones at
- * a glance, not just by reading the text) -- a brighter, persistent version
- * of `.form-select:focus`'s own accent treatment above, not conditional on
- * focus. */
-.skill-requirement-select-required {
+/* Dropdowns get no focused/"active" look at all, whether focused by click
+ * or by Tab (2026-10-27, per the project owner: it added nothing, and on a
+ * requirement-type select it was easy to mistake for the persistent
+ * "Required" outline below). Bootstrap's own `.form-select:focus` (blue
+ * border plus a blue glow) has to be overridden explicitly -- the comment at
+ * the top of this section predates the Bootstrap build that ships it. */
+.form-select:focus,
+.form-select:focus-visible {
+  border-color: var(--border);
+  outline: none;
+  box-shadow: none;
+}
+
+/* A skill requirement row's "Required / Prefer higher / Option N" select
+ * has one fixed width just wide enough for "Prefer higher", its longest
+ * option (2026-10-27, per the project owner) -- with `width: auto` a native
+ * select sizes itself to its own widest option, and "Prefer higher" is only
+ * offered on some rows, so the column no longer lined up. The level select
+ * to its left stays `width: auto` (its right edge lines up regardless, since
+ * the type select's fixed width pins where it ends). Padding is trimmed from
+ * `.form-select`'s own to keep the column as narrow as it can be. */
+.skill-requirement-type-select {
+  flex-shrink: 0;
+  width: 8rem;
+  padding-left: 10px;
+  padding-right: 1.5rem;
+  background-position: right 0.5rem center;
+}
+
+/* Marks a skill requirement's "Required / Prefer higher / Option N" select
+ * when "Required" or "Prefer higher" is selected (2026-10-26, per the
+ * project owner: the compact single-select redesign needs a hard
+ * requirement to visually stand out from an optional one at a glance, not
+ * just by reading the text). */
+.skill-requirement-select-required,
+.skill-requirement-select-required:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 2px var(--accent-bg);
+}
+
+/* A slightly tighter gap than Bootstrap's `gap-2` between a requirement
+ * row's name, selects, and remove button (2026-10-27, per the project
+ * owner: rows like "Movement Speed" / "Movement Speed Up+2" should fit
+ * without truncating in the Skills panel's usual width). */
+.skill-requirement-row {
+  gap: 0.3125rem;
 }
 
 /* Pinned Hiden/Tech skill rows (2026-10-26, per the project owner: separate
@@ -669,6 +709,69 @@ code {
   border-radius: 0.375rem;
   padding: 0.25rem 0.5rem;
   background-color: var(--accent-bg);
+  /* Pulls the highlight out past the list's own edges by exactly its
+   * padding + border, so the row's contents (level/type selects, remove
+   * button) still line up with the unhighlighted rows below it (2026-10-27,
+   * per the project owner). */
+  margin-inline: calc(-0.5rem - 1px);
+}
+
+/* A skill name wraps onto a second line only when its row is genuinely too
+ * tight for it, rather than being cut off (2026-10-27, per the project
+ * owner). Its `line-height` is tight enough that two lines still fit within
+ * a select's own height, so a wrapped row is no taller than any other. The
+ * name's large `flex-shrink` (against the level select's default 1) makes
+ * it wrap first, so the level select -- whose label mostly repeats the
+ * skill name anyway -- only gives up width once the name is down to its
+ * longest word. (The other way round, a near-zero `flex-shrink` on the
+ * select, left rows overflowing: flex only distributes a fraction of the
+ * overflow when the remaining shrink factors sum to less than 1.) The remove
+ * button never shrinks, so it stays lined up. */
+.skill-requirement-name {
+  line-height: 1.2;
+  flex-shrink: 1000;
+  /* A few pixels of extra space between the name and its level select, on
+   * top of the row's own gap (2026-10-27, per the project owner). */
+  margin-inline-end: 0.25rem;
+}
+
+/* The level select is sized to its currently picked tier's label, not its
+ * widest option (2026-10-27, per the project owner: "Gun Sage" sat in a
+ * select sized for "HBG Tech (Kaiden)"). An invisible `.form-select`-styled
+ * copy of the picked label sets the wrapper's width -- the label plus the
+ * select's own padding and arrow -- and the select is laid absolutely over
+ * it, so its own widest option never feeds into the row's layout. The
+ * wrapper can still shrink to `min-width` when the row is tight. */
+.skill-requirement-level {
+  position: relative;
+  min-width: 5rem;
+}
+
+/* Same trimmed padding as `.skill-requirement-type-select` below, on both
+ * the sizer and the select so their widths agree. */
+.skill-requirement-level > * {
+  padding-left: 10px;
+  padding-right: 1.5rem;
+  background-position: right 0.5rem center;
+}
+
+.skill-requirement-level > select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  text-overflow: ellipsis;
+}
+
+.skill-requirement-level-sizer {
+  display: block;
+  visibility: hidden;
+  white-space: nowrap;
+  overflow: hidden;
+  background-image: none;
+}
+
+.skill-requirement-remove {
+  flex-shrink: 0;
 }
 
 .skill-requirement-hiden-badge {
