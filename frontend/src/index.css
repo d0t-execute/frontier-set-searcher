@@ -910,12 +910,41 @@ code {
  * tall as before despite the grid ratio being "right" -- confirmed directly
  * against a real result card (the ratio applied, but the card's own box
  * stayed 287px wide, not the ~1000px a real desktop window gives it). An
- * explicit width large enough for a comfortable desktop rendering fixes
- * that; nothing constrains `.result-card`'s own max-width, so this doesn't
- * fight any other rule. */
+ * explicit width fixes that -- see the next comment for why it's
+ * `max-content` rather than a fixed pixel width. Nothing constrains
+ * `.result-card`'s own max-width, so this doesn't fight any other rule. */
 .result-card.result-card-capturing {
-  width: 1000px;
-  grid-template-columns: 1fr 1.6fr 0.9fr;
+  width: max-content;
+  grid-template-columns: repeat(3, max-content);
+}
+
+/* Revised 2026-10-27 (per the project owner): the fixed 1000px width above
+ * squeezed the Skills column to ~275px, wrapping longer skill names, while
+ * leaving the Stats column far more room than it needs. Each column is now
+ * exactly as wide as its own content instead (so the image is no wider than
+ * necessary), and `nowrap` keeps the rasterized text from wrapping on a
+ * sub-pixel width difference between the live layout and html-to-image's
+ * own rendering of it. The action buttons do nothing in an image, so
+ * they're left out of it entirely. */
+.result-card-capturing .result-column {
+  white-space: nowrap;
+  /* Wider side padding than on screen, since each column is otherwise
+   * exactly as wide as its own text (2026-10-27, per the project owner: it
+   * felt squished). Beats `.result-column`'s own padding below on
+   * specificity, not source order. */
+  padding-inline: 24px;
+}
+
+/* The Picks column's Bootstrap `.row` is a wrapping flex row, whose
+ * max-content width is every slot laid end to end -- stacked as a column
+ * instead, it's as wide as the widest slot, same as it looks on screen. */
+.result-card-capturing .row {
+  flex-direction: column;
+  flex-wrap: nowrap;
+}
+
+.result-card-capturing .result-card-actions {
+  display: none !important;
 }
 
 /* Each column is its own equal-height panel (2026-10-15, per the project

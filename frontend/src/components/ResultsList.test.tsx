@@ -631,9 +631,10 @@ describe('ResultsList', () => {
     )
 
     expect(screen.getByText(/total defense: 30/i)).toBeInTheDocument()
-    expect(
-      screen.getByText(/fire: 2, water: 4, thunder: 1, ice: 3, dragon: 3/i),
-    ).toBeInTheDocument()
+    // One resistance per line (2026-10-27).
+    for (const line of ['Fire: 2', 'Water: 4', 'Thunder: 1', 'Ice: 3', 'Dragon: 3']) {
+      expect(screen.getByText(line)).toBeInTheDocument()
+    }
   })
 
   it('treats a missing defenseMax as zero when summing total defense', () => {

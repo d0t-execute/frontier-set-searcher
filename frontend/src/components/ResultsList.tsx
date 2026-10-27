@@ -538,12 +538,18 @@ export function ResultCard({
               )}
             </div>
             <div className="small mt-2">Total defense: {totalDefense}</div>
+            {/* One resistance per line (2026-10-27, per the project owner) --
+             * reads more easily than one long comma-separated line, and lets
+             * the Stats column stay narrow in a captured image. */}
             <div className="small">
-              Fire: {resistances.fire}, Water: {resistances.water}, Thunder: {resistances.thunder},
-              Ice: {resistances.ice}, Dragon: {resistances.dragon}
+              <div>Fire: {resistances.fire}</div>
+              <div>Water: {resistances.water}</div>
+              <div>Thunder: {resistances.thunder}</div>
+              <div>Ice: {resistances.ice}</div>
+              <div>Dragon: {resistances.dragon}</div>
             </div>
 
-            <div className="mt-auto pt-2 d-flex justify-content-end align-items-center gap-2">
+            <div className="mt-auto pt-2 d-flex flex-wrap justify-content-end align-items-center gap-2 result-card-actions">
               {getShareUrl &&
                 (shareUrl ? (
                   <div className="d-flex gap-2 align-items-center">
