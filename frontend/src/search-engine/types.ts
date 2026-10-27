@@ -27,6 +27,20 @@ export interface SkillRequirement {
   /** Only meaningful when `optional` is set -- see
    * `OptionalSkillRequirement.priority`'s own docstring. */
   readonly priority?: number
+  /** A hard requirement's own "Prefer higher" flag (2026-10-27,
+   * `SkillPicker.tsx`'s own requirement-type option, replacing an earlier
+   * "stretch to one specific tier" design): the requirement still has to be
+   * met at `minPoints`, same as any other hard requirement, but every tier
+   * *beyond* it that the build reaches is independently rewarded too --
+   * "+2 is good, +3 is even better" -- instead of `preferExactMatches`'s
+   * usual overshoot penalty applying to it (see `ilp-model.ts`'s
+   * `resolveTierBreakpoints` and `PREFER_HIGHER_TIER_WEIGHT`). Unlike
+   * `optional`/`priority`, this one *does* reach the engine -- `buildModel`
+   * reads it directly off a hard `SkillRequirement`, rather than `App.tsx`
+   * translating it into something else first. Never set at the same time as
+   * `optional` (the UI's requirement-type select is one mutually exclusive
+   * choice between "Required", "Prefer higher", and "Option N"). */
+  readonly preferHigher?: boolean
 }
 
 /**

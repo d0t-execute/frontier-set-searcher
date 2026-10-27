@@ -340,11 +340,18 @@ function decodeIdList(lines: readonly string[], index: NameIndex): readonly stri
 
 /** Renders one "Skill requirements"/"Zenith skill requirements" line -- adds
  * a "(optional, priority N)" suffix when `SkillRequirement.optional` is set
- * (docs/feedback.md Round 3 #2), parsed back by `decodeSkillRequirements`'s
- * own regex. A hard requirement's line is unchanged from before this
- * feature, so an old save code with no optional skills decodes identically. */
+ * (docs/feedback.md Round 3 #2), or a "(prefer higher)" suffix when
+ * `SkillRequirement.preferHigher` is set instead (2026-10-27, `SkillPicker
+ * .tsx`'s own "Prefer higher" requirement-type option -- mutually exclusive
+ * with `optional`, see that field's own docstring), both parsed back by
+ * `decodeSkillRequirements`. A plain hard requirement is unchanged from
+ * before either feature, so an old save code decodes identically. */
 function renderSkillRequirementLine(name: string, r: SkillRequirement): string {
-  const suffix = r.optional ? ` (optional, priority ${r.priority ?? 1})` : ''
+  const suffix = r.optional
+    ? ` (optional, priority ${r.priority ?? 1})`
+    : r.preferHigher
+      ? ' (prefer higher)'
+      : ''
   return `${name}: ${r.minPoints}${suffix}`
 }
 
@@ -354,21 +361,25 @@ function decodeSkillRequirements(
 ): readonly SkillRequirement[] | null {
   const result: SkillRequirement[] = []
   for (const line of lines) {
-    const match = /^(.*): (-?\d+)(?: \(optional, priority (\d+)\))?$/.exec(line)
+    const optionalMatch = /^(.*): (-?\d+) \(optional, priority (\d+)\)$/.exec(line)
+    const preferHigherMatch = !optionalMatch && /^(.*): (-?\d+) \(prefer higher\)$/.exec(line)
+    const plainMatch = !optionalMatch && !preferHigherMatch && /^(.*): (-?\d+)$/.exec(line)
+    const match = optionalMatch ?? preferHigherMatch ?? plainMatch
     if (!match) return null
     const id = index.idFor(match[1])
     if (id === null) return null
-    const priority = match[3]
-    result.push(
-      priority !== undefined
-        ? {
-            skillId: Number(id),
-            minPoints: Number(match[2]),
-            optional: true,
-            priority: Number(priority),
-          }
-        : { skillId: Number(id), minPoints: Number(match[2]) },
-    )
+    if (optionalMatch) {
+      result.push({
+        skillId: Number(id),
+        minPoints: Number(match[2]),
+        optional: true,
+        priority: Number(match[3]),
+      })
+    } else if (preferHigherMatch) {
+      result.push({ skillId: Number(id), minPoints: Number(match[2]), preferHigher: true })
+    } else {
+      result.push({ skillId: Number(id), minPoints: Number(match[2]) })
+    }
   }
   return result
 }

@@ -242,6 +242,59 @@ describe('App', () => {
     )
   })
 
+  it('passes a requirement\'s "preferHigher" flag straight through to the hard requirement (2026-10-27)', async () => {
+    // Bypasses the UI's own requirement-type select (this fixture's "Attack"
+    // has no tiers to prefer a higher one between) -- seeds the persisted
+    // form state directly (a full, validly-shaped `SearchFormState` --
+    // `loadSearchFormState` rejects a partial one outright), the same
+    // storage key the "Reset button" tests below also use, to exercise
+    // `App.tsx`'s own requirement-splitting logic in isolation.
+    localStorage.setItem(
+      'frontier-set-searcher:search-form-state:v1',
+      JSON.stringify({
+        requirements: [{ skillId: 1, minPoints: 1, preferHigher: true }],
+        zenithRequirements: [],
+        excludedCategories: [],
+        excludedCuffCategories: [],
+        excludedDecorationCategories: [],
+        excludedWeaponZenithSkillIds: null,
+        weaponSlotCount: 0,
+        hunterTypeFilter: 'blademaster',
+        pinnedArmor: [],
+        pinnedCuffSlots: [],
+        pinnedSlotDecorationIds: [],
+        excludedArmorIds: [],
+        excludedDecorationIds: [],
+        excludedCuffIds: [],
+        excludedSkillIds: [],
+        preferredArmorIds: [],
+        preferredCategoryCounts: [],
+        nonNegativeResistances: [],
+        preferExactMatches: true,
+        maxResults: 5,
+      }),
+    )
+    try {
+      const worker = makeWorker()
+      mockUseSearchWorker.mockReturnValue(worker as unknown as ReturnType<typeof useSearchWorker>)
+      const user = userEvent.setup()
+      render(<App />)
+
+      await user.click(screen.getByRole('button', { name: /^search$/i }))
+
+      expect(worker.search).toHaveBeenCalledWith(
+        expect.anything(),
+        [{ skillId: 1, minPoints: 1, preferHigher: true }],
+        expect.anything(),
+        expect.anything(),
+        expect.objectContaining({ optionalSkillRequirements: [] }),
+        expect.anything(),
+      )
+    } finally {
+      localStorage.clear()
+    }
+  })
+
   it('passes a resistanceFloors entry once an element checkbox is checked', async () => {
     const worker = makeWorker()
     mockUseSearchWorker.mockReturnValue(worker as unknown as ReturnType<typeof useSearchWorker>)

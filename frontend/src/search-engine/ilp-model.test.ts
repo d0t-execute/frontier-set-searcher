@@ -429,6 +429,223 @@ describe('buildModel', () => {
 
     expect(columns.some((c) => c.kind === 'auxiliary')).toBe(true)
   })
+
+  it('penalizes a requested skill overshooting past the tier actually asked for it', () => {
+    const slots: SlotQuery[] = [
+      {
+        slotId: 'head',
+        candidates: [candidate('Exact', { 1: 10 }), candidate('Overshoots', { 1: 25 })],
+      },
+    ]
+    // Requirement asks for skill 1's "Small" tier (10); "Overshoots" reaches
+    // 25, crossing into "Large" too -- 2026-10-27, per the project owner,
+    // preferExactMatches should penalize that the same way it penalizes an
+    // unrequested bonus skill's tier.
+    const { model, columns } = buildModel(highs, slots, [], [{ skillId: 1, minPoints: 10 }], {
+      preferExactMatches: true,
+      skillTiers: [{ skillId: 1, tierThresholds: [10, 25] }],
+    })
+
+    const { colValue, native } = solve(model)
+    const decoded = decodeSolution(columns, colValue)
+    expect(decoded.picks.get('head')?.id).toBe('Exact')
+    native.dispose()
+  })
+
+  it('does not penalize a requested skill for reaching exactly the tier asked for it', () => {
+    const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Exact', { 1: 10 })] }]
+    const { columns } = buildModel(highs, slots, [], [{ skillId: 1, minPoints: 10 }], {
+      preferExactMatches: true,
+      skillTiers: [{ skillId: 1, tierThresholds: [10, 25] }],
+    })
+
+    // Nothing in this query can ever reach 25, so there's no overshoot tier
+    // to even build machinery for.
+    expect(columns.some((c) => c.kind === 'auxiliary')).toBe(false)
+  })
+
+  it('lets an "also prefer higher" optional requirement raise a requested skill\'s unpenalized anchor', () => {
+    const slots: SlotQuery[] = [
+      {
+        slotId: 'head',
+        candidates: [candidate('Exact', { 1: 10 }), candidate('Upgraded', { 1: 25 })],
+      },
+    ]
+    // Same skill, same shape as the overshoot test above, but this time the
+    // player explicitly asked for the higher tier too (as an optional
+    // preference) -- so reaching it should no longer be penalized.
+    const { model, columns } = buildModel(highs, slots, [], [{ skillId: 1, minPoints: 10 }], {
+      preferExactMatches: true,
+      skillTiers: [{ skillId: 1, tierThresholds: [10, 25] }],
+      optionalSkillRequirements: [{ skillId: 1, minPoints: 25, priority: 1 }],
+    })
+
+    const { colValue, native } = solve(model)
+    const decoded = decodeSolution(columns, colValue)
+    // Upgraded wins now: its optional-skill reward outranks the plain
+    // open-slot/bonus tiers below it, and there's no overshoot tier left to
+    // penalize it for.
+    expect(decoded.picks.get('head')?.id).toBe('Upgraded')
+    native.dispose()
+  })
+})
+
+describe('buildModel with a "Prefer higher" skill requirement (2026-10-27)', () => {
+  it('outweighs a realistic open-slot advantage (2026-10-27, regression: PREFER_HIGHER_TIER_WEIGHT used to tie/lose to just 1-3 more open slots)', () => {
+    const slots: SlotQuery[] = [
+      {
+        slotId: 'head',
+        candidates: [
+          // Exactly the required tier, but with 3 more open decoration
+          // slots than the alternative -- the most one single armor piece
+          // could realistically differ by (`MAX_DECORATION_SLOTS_PER_PIECE`).
+          candidate('ManySlots', { 1: 10 }, 3),
+          candidate('HigherTier', { 1: 25 }, 0),
+        ],
+      },
+    ]
+    const { model, columns } = buildModel(
+      highs,
+      slots,
+      [],
+      [{ skillId: 1, minPoints: 10, preferHigher: true }],
+      {
+        preferExactMatches: true,
+        skillTiers: [{ skillId: 1, tierThresholds: [10, 25] }],
+      },
+    )
+
+    const { colValue, native } = solve(model)
+    const decoded = decodeSolution(columns, colValue)
+    expect(decoded.picks.get('head')?.id).toBe('HigherTier')
+    native.dispose()
+  })
+
+  it('does not penalize a "preferHigher" skill for overshooting the tier actually asked for it', () => {
+    const slots: SlotQuery[] = [
+      {
+        slotId: 'head',
+        candidates: [candidate('Exact', { 1: 10 }), candidate('Overshoots', { 1: 25 })],
+      },
+    ]
+    // Same shape as the plain overshoot-penalty test above, but this
+    // requirement is flagged `preferHigher` -- reaching "Large" (25) is
+    // rewarded, not penalized, so with nothing else to break the tie,
+    // Overshoots should win instead of losing to Exact.
+    const { model, columns } = buildModel(
+      highs,
+      slots,
+      [],
+      [{ skillId: 1, minPoints: 10, preferHigher: true }],
+      {
+        preferExactMatches: true,
+        skillTiers: [{ skillId: 1, tierThresholds: [10, 25] }],
+      },
+    )
+
+    const { colValue, native } = solve(model)
+    const decoded = decodeSolution(columns, colValue)
+    expect(decoded.picks.get('head')?.id).toBe('Overshoots')
+    native.dispose()
+  })
+
+  it('rewards reaching more extra tiers over fewer, even when every candidate overshoots', () => {
+    const slots: SlotQuery[] = [
+      {
+        slotId: 'head',
+        candidates: [candidate('Medium', { 1: 15 }), candidate('Large', { 1: 25 })],
+      },
+    ]
+    const { model, columns } = buildModel(
+      highs,
+      slots,
+      [],
+      [{ skillId: 1, minPoints: 10, preferHigher: true }],
+      {
+        preferExactMatches: true,
+        skillTiers: [{ skillId: 1, tierThresholds: [10, 15, 25] }],
+      },
+    )
+
+    const { colValue, native } = solve(model)
+    const decoded = decodeSolution(columns, colValue)
+    // Large crosses both the 15 and the 25 tier (two extra tiers beyond the
+    // required 10), Medium only the 15 tier (one extra) -- Large's reward is
+    // strictly larger, so it wins even though it has no other advantage.
+    expect(decoded.picks.get('head')?.id).toBe('Large')
+    native.dispose()
+  })
+
+  it('still works when preferExactMatches is off -- it only needs skillTiers data', () => {
+    const slots: SlotQuery[] = [
+      {
+        slotId: 'head',
+        candidates: [candidate('Exact', { 1: 10 }), candidate('Higher', { 1: 25 })],
+      },
+    ]
+    const { model, columns } = buildModel(
+      highs,
+      slots,
+      [],
+      [{ skillId: 1, minPoints: 10, preferHigher: true }],
+      {
+        preferExactMatches: false,
+        skillTiers: [{ skillId: 1, tierThresholds: [10, 25] }],
+      },
+    )
+
+    const { colValue, native } = solve(model)
+    const decoded = decodeSolution(columns, colValue)
+    expect(decoded.picks.get('head')?.id).toBe('Higher')
+    native.dispose()
+  })
+
+  it('always loses to an explicit "Option N" requirement being satisfied', () => {
+    const slots: SlotQuery[] = [
+      {
+        slotId: 'head',
+        // "HigherTier" reaches every tier of skill 1's own ladder (the
+        // biggest possible "Prefer higher" reward in this query) but misses
+        // skill 2 (an Option 1 preference) entirely; "OptionMet" reaches
+        // only skill 1's required tier but satisfies skill 2 -- an explicit
+        // priority must still win regardless of how large the other
+        // reward is (see `PREFER_HIGHER_TIER_WEIGHT`'s own docstring).
+        candidates: [candidate('HigherTier', { 1: 80 }), candidate('OptionMet', { 1: 10, 2: 5 })],
+      },
+    ]
+    const { model, columns } = buildModel(
+      highs,
+      slots,
+      [],
+      [{ skillId: 1, minPoints: 10, preferHigher: true }],
+      {
+        preferExactMatches: true,
+        skillTiers: [{ skillId: 1, tierThresholds: [10, 15, 25, 50, 80] }],
+        optionalSkillRequirements: [{ skillId: 2, minPoints: 5, priority: 1 }],
+      },
+    )
+
+    const { colValue, native } = solve(model)
+    const decoded = decodeSolution(columns, colValue)
+    expect(decoded.picks.get('head')?.id).toBe('OptionMet')
+    native.dispose()
+  })
+
+  it('skips the ladder entirely once the required level is already the top tier', () => {
+    const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Exact', { 1: 25 })] }]
+    const { columns } = buildModel(
+      highs,
+      slots,
+      [],
+      [{ skillId: 1, minPoints: 25, preferHigher: true }],
+      {
+        preferExactMatches: true,
+        skillTiers: [{ skillId: 1, tierThresholds: [10, 25] }],
+      },
+    )
+
+    expect(columns.some((c) => c.kind === 'auxiliary')).toBe(false)
+  })
 })
 
 describe('buildModel with options.preferredCandidateIds (docs/feedback.md Round 2 #2)', () => {

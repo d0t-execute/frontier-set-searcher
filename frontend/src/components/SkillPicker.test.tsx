@@ -482,4 +482,151 @@ describe('SkillPicker', () => {
       ])
     })
   })
+
+  describe('"Prefer higher" requirement type (2026-10-27)', () => {
+    const VAMPIRISM_TIERS = [
+      { label: 'Vampirism+2', minPoints: 20, description: null },
+      { label: 'Vampirism+1', minPoints: 10, description: null },
+    ]
+    const LEVELED_SKILLS = [skill(1, 'Vampirism', { tiers: VAMPIRISM_TIERS })]
+
+    it('offers "Prefer higher" between "Required" and "Option 1" for a skill with more than one tier', () => {
+      render(
+        <SkillPicker
+          skills={LEVELED_SKILLS}
+          requirements={[{ skillId: 1, minPoints: 10 }]}
+          onChange={vi.fn()}
+        />,
+      )
+
+      const typeSelect = screen.getByRole('combobox', { name: /vampirism requirement type/i })
+      expect(
+        within(typeSelect)
+          .getAllByRole('option')
+          .map((o) => o.textContent),
+      ).toEqual([
+        'Required',
+        'Prefer higher',
+        'Option 1',
+        'Option 2',
+        'Option 3',
+        'Option 4',
+        'Option 5',
+        'Option 6',
+        'Option 7',
+      ])
+    })
+
+    it('does not offer "Prefer higher" for an untiered skill', () => {
+      render(
+        <SkillPicker
+          skills={SKILLS}
+          requirements={[{ skillId: 1, minPoints: 5 }]}
+          onChange={vi.fn()}
+        />,
+      )
+
+      const typeSelect = screen.getByRole('combobox', { name: /attack requirement type/i })
+      expect(within(typeSelect).queryByText('Prefer higher')).not.toBeInTheDocument()
+    })
+
+    it('does not offer "Prefer higher" once the picked level is already the skill\'s own top tier', () => {
+      // A multi-tier skill (`tiers.length > 1`) isn't enough on its own --
+      // there has to be a tier *above the one currently picked*, which
+      // Vampirism+2 (the strongest tier) has none of.
+      render(
+        <SkillPicker
+          skills={LEVELED_SKILLS}
+          requirements={[{ skillId: 1, minPoints: 20 }]}
+          onChange={vi.fn()}
+        />,
+      )
+
+      const typeSelect = screen.getByRole('combobox', { name: /vampirism requirement type/i })
+      expect(within(typeSelect).queryByText('Prefer higher')).not.toBeInTheDocument()
+    })
+
+    it('sets preferHigher (clearing optional/priority) when "Prefer higher" is picked', async () => {
+      const onChange = vi.fn()
+      const user = userEvent.setup()
+      render(
+        <SkillPicker
+          skills={LEVELED_SKILLS}
+          requirements={[{ skillId: 1, minPoints: 10, optional: true, priority: 3 }]}
+          onChange={onChange}
+        />,
+      )
+
+      await user.selectOptions(
+        screen.getByRole('combobox', { name: /vampirism requirement type/i }),
+        'Prefer higher',
+      )
+
+      expect(onChange).toHaveBeenCalledWith([
+        { skillId: 1, minPoints: 10, optional: false, priority: undefined, preferHigher: true },
+      ])
+    })
+
+    it('shows the "Prefer higher" select as highlighted, the same as "Required"', () => {
+      render(
+        <SkillPicker
+          skills={LEVELED_SKILLS}
+          requirements={[{ skillId: 1, minPoints: 10, preferHigher: true }]}
+          onChange={vi.fn()}
+        />,
+      )
+
+      expect(screen.getByRole('combobox', { name: /vampirism requirement type/i })).toHaveClass(
+        'skill-requirement-select-required',
+      )
+    })
+
+    it('clears preferHigher when switching back to "Required"', async () => {
+      const onChange = vi.fn()
+      const user = userEvent.setup()
+      render(
+        <SkillPicker
+          skills={LEVELED_SKILLS}
+          requirements={[{ skillId: 1, minPoints: 10, preferHigher: true }]}
+          onChange={onChange}
+        />,
+      )
+
+      await user.selectOptions(
+        screen.getByRole('combobox', { name: /vampirism requirement type/i }),
+        'required',
+      )
+
+      expect(onChange).toHaveBeenCalledWith([
+        {
+          skillId: 1,
+          minPoints: 10,
+          optional: false,
+          priority: undefined,
+          preferHigher: undefined,
+        },
+      ])
+    })
+
+    it('clears preferHigher when switching to "Option N"', async () => {
+      const onChange = vi.fn()
+      const user = userEvent.setup()
+      render(
+        <SkillPicker
+          skills={LEVELED_SKILLS}
+          requirements={[{ skillId: 1, minPoints: 10, preferHigher: true }]}
+          onChange={onChange}
+        />,
+      )
+
+      await user.selectOptions(
+        screen.getByRole('combobox', { name: /vampirism requirement type/i }),
+        '2',
+      )
+
+      expect(onChange).toHaveBeenCalledWith([
+        { skillId: 1, minPoints: 10, optional: true, priority: 2, preferHigher: undefined },
+      ])
+    })
+  })
 })

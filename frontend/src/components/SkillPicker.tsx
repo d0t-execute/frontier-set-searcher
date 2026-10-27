@@ -10,26 +10,32 @@
  * did through the old dropdown's `<optgroup>`s, with typing narrowing it
  * further on top.
  *
- * Each requirement also has a "Required / Option N" `<select>` (docs/
- * feedback.md Round 3 #2, redesigned 2026-10-26 per the project owner: the
- * original checkbox-plus-conditional-priority-select took up too much visual
- * space and reads "big" per row -- a single compact dropdown folds both
- * "is this optional" and "which priority" into one control, at the cost of
- * being a little less self-explanatory than two separate controls (that
- * trade-off is why `App.tsx`'s "About skills" info tooltip spells out what
- * "Required" vs. "Option N" actually mean -- "Option" is this UI's own label
- * for what `OptionalSkillRequirement.priority`/`MAX_OPTIONAL_SKILL_PRIORITY_TIERS`
+ * Each requirement also has a "Required / Prefer higher / Option N"
+ * `<select>` (docs/feedback.md Round 3 #2, redesigned 2026-10-26 per the
+ * project owner: the original checkbox-plus-conditional-priority-select
+ * took up too much visual space and reads "big" per row -- a single compact
+ * dropdown folds "is this optional," "which priority," and (2026-10-27)
+ * "prefer a higher tier" into one control, at the cost of being a little
+ * less self-explanatory than separate controls (that trade-off is why
+ * `App.tsx`'s "About skills" info tooltip spells out what each choice
+ * means -- "Option" is this UI's own label for what
+ * `OptionalSkillRequirement.priority`/`MAX_OPTIONAL_SKILL_PRIORITY_TIERS`
  * call "priority" everywhere else, kept as-is at the data layer). Picking
- * "Required" flips `SkillRequirement.optional` to `false` (clearing
- * `priority`); picking an "Option N" choice flips it to `true` and sets
- * `priority` directly -- the picked skill and its level don't change either
- * way, only whether it's a hard constraint or a soft preference. A required
- * requirement's select also gets a brighter accent outline (see index.css's
- * `.skill-requirement-select-required`) so required and optional rows are
- * visually distinct at a glance, not just by reading the text. See
- * `OptionalSkillRequirement.priority`'s own docstring for what happens when
- * two requirements share a priority (here, the same "Option N"). `App.tsx`
- * splits the combined list on this flag right before calling `search()`.
+ * "Required" flips `SkillRequirement.optional` to `false` and clears both
+ * `priority` and `preferHigher`; picking "Prefer higher" keeps `optional`
+ * false but sets `preferHigher` (still a hard requirement at the level
+ * picked, plus a reward for every tier reached beyond it -- see
+ * `ilp-model.ts`'s own docstring on `PREFER_HIGHER_TIER_WEIGHT` for exactly
+ * how much, and where that ranks against an explicit "Option N"); picking an
+ * "Option N" choice sets `optional`/`priority` and clears `preferHigher` --
+ * the picked skill and its level don't change in any of the three cases.
+ * Both "Required" and "Prefer higher" rows get a brighter accent outline
+ * (see index.css's `.skill-requirement-select-required`) distinguishing
+ * every hard requirement from a soft "Option N" preference at a glance, not
+ * just by reading the text. See `OptionalSkillRequirement.priority`'s own
+ * docstring for what happens when two requirements share a priority (here,
+ * the same "Option N"). `App.tsx` splits the combined list on `optional`
+ * right before calling `search()`.
  *
  * Hiden/Tech skills (e.g. GS Tech) are pinned to the top of the requirement
  * list, ahead of insertion order, and left out of the "1. 2. 3. ..." count
@@ -211,16 +217,24 @@ export function SkillPicker({
     onChange(requirements.filter((r) => r.skillId !== skillId))
   }
 
-  // Single control for "is this optional, and if so which priority" (see this
-  // module's own docstring) -- `value` is the literal string `'required'` or
-  // a priority number's string form, straight from the `<select>`'s own
-  // `value`/`<option value>`, so the user's explicit pick always fully
-  // determines both fields at once; no separate "mark optional" step with an
+  // Single control for "is this optional (and if so, which priority), or
+  // 'prefer higher'" (see this module's own docstring) -- `value` is the
+  // literal string `'required'`, `'preferHigher'`, or a priority number's
+  // string form, straight from the `<select>`'s own `value`/`<option
+  // value>`, so the user's explicit pick always fully determines every
+  // affected field at once; no separate "mark optional" step with an
   // implicit default priority to compute.
   function setRequirementKind(skillId: number, value: string): void {
-    const optional = value !== 'required'
+    const preferHigher = value === 'preferHigher'
+    const optional = value !== 'required' && !preferHigher
     const priority = optional ? Number(value) : undefined
-    onChange(requirements.map((r) => (r.skillId === skillId ? { ...r, optional, priority } : r)))
+    onChange(
+      requirements.map((r) =>
+        r.skillId === skillId
+          ? { ...r, optional, priority, preferHigher: preferHigher || undefined }
+          : r,
+      ),
+    )
   }
 
   const hasHiden = requirements.some((r) => isHiden(r.skillId))
@@ -287,10 +301,23 @@ export function SkillPicker({
                 }
                 style={{ width: 'auto' }}
                 aria-label={`${nameOf(requirement.skillId)} requirement type`}
-                value={requirement.optional ? String(requirement.priority ?? 1) : 'required'}
+                value={
+                  requirement.preferHigher
+                    ? 'preferHigher'
+                    : requirement.optional
+                      ? String(requirement.priority ?? 1)
+                      : 'required'
+                }
                 onChange={(e) => setRequirementKind(requirement.skillId, e.target.value)}
               >
                 <option value="required">Required</option>
+                {/* Only offered when a tier above the one currently picked
+                    actually exists (see this module's own docstring) --
+                    already being at the skill's own top tier leaves nothing
+                    for "prefer higher" to reward. */}
+                {tiers.some((t) => t.minPoints > requirement.minPoints) && (
+                  <option value="preferHigher">Prefer higher</option>
+                )}
                 {Array.from({ length: MAX_OPTIONAL_SKILL_PRIORITY_TIERS }, (_, i) => i + 1).map(
                   (p) => (
                     <option key={p} value={p}>

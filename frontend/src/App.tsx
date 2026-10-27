@@ -959,8 +959,17 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
     // reach `search()`'s own `requirements` parameter or the up-front
     // unreachability check below; an optional one that can't be reached is
     // never a reason to block the search, that's the entire point of marking
-    // it optional instead of leaving it a hard requirement.
-    const hardRequirements = allRequirements.filter((r) => !r.optional)
+    // it optional instead of leaving it a hard requirement. Mapped down to a
+    // clean `{skillId, minPoints, preferHigher}` shape rather than just
+    // filtered -- `priority` only ever means something on an *optional*
+    // requirement, so it has no business reaching the engine's hard-
+    // requirement list or `findUnreachableRequirements`, neither of which
+    // read it. `preferHigher`, unlike `priority`, *is* read by the engine
+    // directly off a hard requirement (see `SkillRequirement.preferHigher`'s
+    // own docstring), so it's kept rather than stripped.
+    const hardRequirements = allRequirements
+      .filter((r) => !r.optional)
+      .map((r) => ({ skillId: r.skillId, minPoints: r.minPoints, preferHigher: r.preferHigher }))
     const optionalSkillRequirements = allRequirements
       .filter((r) => r.optional)
       .map((r) => ({ skillId: r.skillId, minPoints: r.minPoints, priority: r.priority ?? 1 }))
@@ -1283,12 +1292,16 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                 info={
                   <InfoTooltip label="About skills">
                     Define the skills that the Set Searcher should look for. Each skill's own
-                    dropdown is either "Required" (a hard requirement: every returned result has to
-                    contain it at the specified level) or "Option N" (a soft preference: the solver
-                    tries to include it, but only after every required skill and every
-                    lower-numbered option is satisfied). Option 1 is the most important; skills
-                    sharing the same option number are interchangeable, so satisfying any one of
-                    them counts the same as satisfying all of them. <br />
+                    dropdown is "Required" (a hard requirement: every returned result has to contain
+                    it at the specified level), "Prefer higher" (the same hard requirement, but
+                    every tier the result reaches beyond it is rewarded too -- +2 is good, +3 is
+                    even better, and so on), or "Option N" (a soft preference: the solver tries to
+                    include it, but only after every required skill and every lower-numbered option
+                    is satisfied). Option 1 is the most important; skills sharing the same option
+                    number are interchangeable, so satisfying any one of them counts the same as
+                    satisfying all of them. An explicit "Option N" always outranks "Prefer higher",
+                    since the player picked that priority on purpose and "Prefer higher" didn't get
+                    one. <br />
                     <b>You can search by skill name and skill level/threshold names.</b>
                   </InfoTooltip>
                 }
@@ -1306,12 +1319,16 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                 info={
                   <InfoTooltip label="About Zenith skills">
                     Define the Zenith skills that the Set Searcher should look for. Each skill's own
-                    dropdown is either "Required" (a hard requirement: every returned result has to
-                    contain it at the specified level) or "Option N" (a soft preference: the solver
-                    tries to include it, but only after every required skill and every
-                    lower-numbered option is satisfied). Option 1 is the most important; skills
-                    sharing the same option number are interchangeable, so satisfying any one of
-                    them counts the same as satisfying all of them. <br />
+                    dropdown is "Required" (a hard requirement: every returned result has to contain
+                    it at the specified level), "Prefer higher" (the same hard requirement, but
+                    every tier the result reaches beyond it is rewarded too -- +2 is good, +3 is
+                    even better, and so on), or "Option N" (a soft preference: the solver tries to
+                    include it, but only after every required skill and every lower-numbered option
+                    is satisfied). Option 1 is the most important; skills sharing the same option
+                    number are interchangeable, so satisfying any one of them counts the same as
+                    satisfying all of them. An explicit "Option N" always outranks "Prefer higher",
+                    since the player picked that priority on purpose and "Prefer higher" didn't get
+                    one. <br />
                     <b>You can search by skill name and skill level/threshold names.</b>
                   </InfoTooltip>
                 }

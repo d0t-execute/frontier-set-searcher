@@ -35,8 +35,10 @@
  * this many of this cuff" column per relevant cuff and count (one-hot by
  * count -- see `buildModel`'s own docstring), then (only when
  * `options.preferExactMatches` actually needs one -- see below) a handful of
- * non-choice accounting/indicator columns per bonus skill whose tier can be
- * reached at all. `columns` (in `buildModel`'s result) is a parallel array
+ * non-choice accounting/indicator columns per penalized skill (an
+ * unrequested bonus skill, or a requested one overshooting the tier asked
+ * for it) whose own penalized tier can be reached at all. `columns` (in
+ * `buildModel`'s result) is a parallel array
  * recording what each column means, so a solution vector can be decoded back
  * into a `BuildResult` without the model itself carrying names; the
  * accounting/indicator columns carry no meaning a `BuildResult` needs, so
@@ -52,8 +54,10 @@
  * Round 1 #4 -- the summed contribution across every chosen *candidate only*
  * must reach its own minimum, since decorations/cuffs carry no resistance
  * data at all), then (same condition as the auxiliary columns above) a
- * handful of rows per bonus skill wiring its accounting column to the real
- * choice columns and to its tier-crossing indicator column(s), then one row
+ * handful of rows per penalized skill (an unrequested bonus skill, or a
+ * requested one overshooting the tier asked for it) wiring its accounting
+ * column to the real choice columns and to its tier-crossing indicator
+ * column(s), then one row
  * per `options.preferredCategoryCounts` entry wiring its own capped
  * accounting column to the real candidate columns matching its category (see
  * `buildModel`'s own docstring), then one cuff-group row per relevant cuff
@@ -88,14 +92,39 @@ import type {
  * in (dominance.ts) are dead code once this engine replaces them. */
 export const OPEN_SLOT_WEIGHT = 10_000
 
-/** How much one activated bonus-skill tier costs in the objective under
- * `options.preferExactMatches` (see `buildModel`) -- deliberately much
- * smaller than `OPEN_SLOT_WEIGHT` (an open slot always wins), but large
+/** How much one activated unwanted tier costs in the objective under
+ * `options.preferExactMatches` (see `buildModel`) -- charged per bonus skill
+ * that activates any tier at all, and per requested skill that overshoots
+ * past the highest tier actually asked for it (2026-10-27) -- deliberately
+ * much smaller than `OPEN_SLOT_WEIGHT` (an open slot always wins), but large
  * enough to dominate the raw per-point reward it replaces. A build can only
  * ever activate as many distinct bonus skills as the game has skills (on the
  * order of a couple hundred), so even a pathological build that somehow
  * activated every single one of them couldn't approach `OPEN_SLOT_WEIGHT`. */
 export const EXACT_MATCH_SKILL_PENALTY = 1
+
+/** How much each extra tier reached beyond a "Prefer higher" skill's own
+ * required level is worth in the objective (2026-10-27, `SkillPicker.tsx`'s
+ * "Prefer higher" requirement-type option, see `SkillRequirement
+ * .preferHigher`) -- applied once per extra tier actually reached, not just
+ * the topmost one, so reaching tier 4 of 5 is worth three times reaching
+ * only tier 3 ("+2 is good, +3 is even better," per the project owner).
+ * Sized from two constraints the project owner gave directly: it has to
+ * rank below `OPTIONAL_SKILL_BASE_WEIGHT` (an explicit "Option N" always
+ * outranks an unprioritized "Prefer higher" flag) but only *slightly* below
+ * it, not buried down near `OPEN_SLOT_WEIGHT`'s own scale -- unlike the
+ * first version of this constant (10,000, i.e. `OPEN_SLOT_WEIGHT` itself),
+ * which turned out to lose to a build with merely one or two more open
+ * decoration slots in practice, defeating the whole feature. The real
+ * dataset's longest tier ladder (Defense, 8 tiers) is at most 7 extra
+ * levels reachable at once, so 7 * 130,000 = 910,000 is the worst-case
+ * total for one skill -- comfortably under `OPTIONAL_SKILL_BASE_WEIGHT`
+ * (1,000,000, a 9% margin) while a *single* extra tier (130,000, 13x
+ * `OPEN_SLOT_WEIGHT`) easily outweighs the realistic 0-9 open-slot swing a
+ * single gear choice can produce (at most 3 decoration slots per armor
+ * piece, `MAX_DECORATION_SLOTS_PER_PIECE`). Revisit this margin if the ETL
+ * data ever adds a skill with more tiers than Defense's current 8. */
+export const PREFER_HIGHER_TIER_WEIGHT = 130_000
 
 /** How much using one preferred piece (`SearchOptions.preferredCandidateIds`,
  * docs/feedback.md Round 2 #2) is worth in the objective -- deliberately far
@@ -292,13 +321,6 @@ export interface TierBreakpoints {
   readonly negThreshold?: number
 }
 
-/** Resolves each non-requested skill's two nearest tier breakpoints (see
- * `TierBreakpoints`) -- the only two thresholds that matter for "has this
- * skill's tier been activated at all," since tiers on the same side are
- * nested (crossing a stronger tier always means the weaker one on that side
- * was crossed too). A requested skill is skipped entirely: its own
- * requirement row already governs it, and it's never treated as a "bonus"
- * skill regardless of what `options.skillTiers` says about it. */
 /** The two nearest tier breakpoints (see `TierBreakpoints`) for one skill's
  * raw thresholds -- shared by `resolveTierBreakpoints` below and
  * `buildModel`'s excluded-active-skill rows (docs/skill-system-roadmap.md
@@ -317,15 +339,66 @@ export function breakpointsFromThresholds(tierThresholds: readonly number[]): Ti
   }
 }
 
+/** Like `breakpointsFromThresholds`, but restricted to tiers strictly beyond
+ * an `anchor` point count -- used for a skill the player explicitly asked
+ * for (hard requirement or optional), so reaching the tier(s) already asked
+ * for is never penalized, but a build that overshoots *beyond* every one of
+ * them still is (2026-10-27, per the project owner: "prefer exact matches"
+ * should mean exact, not "at least"). Which side matters follows `anchor`'s
+ * own sign, matching how a requirement is always "reach at least this many
+ * points": a non-negative anchor only looks at higher positive thresholds
+ * (the achievable total can never actually fall to a negative tier once the
+ * requirement already forces it non-negative), and a negative anchor only
+ * looks at more-extreme negative ones. */
+function breakpointsBeyondAnchor(
+  tierThresholds: readonly number[],
+  anchor: number,
+): TierBreakpoints {
+  if (anchor >= 0) {
+    const higher = tierThresholds.filter((t) => t > anchor)
+    return { posThreshold: higher.length > 0 ? Math.min(...higher) : undefined }
+  }
+  const lower = tierThresholds.filter((t) => t < anchor)
+  return { negThreshold: lower.length > 0 ? Math.max(...lower) : undefined }
+}
+
+/** Resolves every skill's two nearest tier breakpoints (see
+ * `TierBreakpoints`) that `preferExactMatches` should penalize reaching --
+ * the only two thresholds that matter for "has this skill's tier been
+ * activated at all," since tiers on the same side are nested (crossing a
+ * stronger tier always means the weaker one on that side was crossed too).
+ * A skill nobody asked for uses its own lowest tier on each side
+ * (`breakpointsFromThresholds`) -- any activation at all is unwanted. A
+ * skill the player did ask for (a hard requirement or an optional one, see
+ * `OptionalSkillRequirement`) instead uses whichever of those asks requested
+ * the most points for it as its anchor, and only tiers beyond that anchor
+ * count against the build (`breakpointsBeyondAnchor`) -- so asking for
+ * "Vampirism +1" no longer makes "+2" a free, unpenalized upgrade. A skill
+ * marked "Prefer higher" (`preferHigherSkillIds`, `SkillRequirement
+ * .preferHigher`) skips this penalty machinery entirely instead -- every one
+ * of its tiers is independently *rewarded* by `buildModel`'s own
+ * "prefer higher" ladder, so there's nothing left for an overshoot penalty
+ * to do. */
 function resolveTierBreakpoints(
   skillTiers: readonly SkillTierThresholds[],
-  requestedSkillIds: ReadonlySet<SkillId>,
+  requirements: readonly SkillRequirement[],
+  optionalSkillRequirements: readonly OptionalSkillRequirement[],
+  preferHigherSkillIds: ReadonlySet<SkillId>,
 ): Map<SkillId, TierBreakpoints> {
+  const anchorOf = new Map<SkillId, number>()
+  for (const { skillId, minPoints } of [...requirements, ...optionalSkillRequirements]) {
+    if (preferHigherSkillIds.has(skillId)) continue
+    anchorOf.set(skillId, Math.max(anchorOf.get(skillId) ?? -Infinity, minPoints))
+  }
+
   const breakpoints = new Map<SkillId, TierBreakpoints>()
   for (const { skillId, tierThresholds } of skillTiers) {
-    if (requestedSkillIds.has(skillId)) continue
-
-    const bp = breakpointsFromThresholds(tierThresholds)
+    if (preferHigherSkillIds.has(skillId)) continue
+    const anchor = anchorOf.get(skillId)
+    const bp =
+      anchor === undefined
+        ? breakpointsFromThresholds(tierThresholds)
+        : breakpointsBeyondAnchor(tierThresholds, anchor)
     if (bp.posThreshold !== undefined || bp.negThreshold !== undefined) {
       breakpoints.set(skillId, bp)
     }
@@ -512,20 +585,25 @@ interface TierMachinery {
  * `options.preferExactMatches` replaces the objective's bonus-skill term
  * entirely: instead of rewarding a build for the raw total points it picks
  * up in skills nobody asked for (the default), it's never rewarded at all,
- * and a flat `EXACT_MATCH_SKILL_PENALTY` is subtracted once per bonus skill
- * whose own tier actually gets activated (using `options.skillTiers`, since
- * only the game's own tier thresholds -- not the raw point count -- decide
- * whether a skill does anything). This needs, per bonus skill that can
- * possibly reach one of its own tiers: one continuous accounting column
- * tracking that skill's total across every chosen candidate/decoration
- * (`totalRow`, an equality row wiring it to the real choice columns), and
- * one binary indicator column per reachable side (`posIndicatorRow`/
- * `negIndicatorRow`) forced to 1 by a big-M constraint whenever the
- * accounting column reaches that side's threshold -- the textbook MIP
- * indicator-constraint pattern. None of this touches feasibility: a
- * requirement is still a hard constraint, never an objective term, so this
- * can never make an otherwise-valid build infeasible, only re-rank which
- * valid build comes back first.
+ * and a flat `EXACT_MATCH_SKILL_PENALTY` is subtracted once per unwanted
+ * tier that actually gets activated (using `options.skillTiers`, since only
+ * the game's own tier thresholds -- not the raw point count -- decide
+ * whether a skill does anything). "Unwanted" covers two cases, both
+ * resolved by `resolveTierBreakpoints`: a skill nobody asked for reaching
+ * any tier at all, and a skill the player did ask for reaching a tier
+ * *beyond* the highest one actually requested for it (2026-10-27) -- so
+ * asking for "Vampirism +1" no longer makes a build that happens to land on
+ * "+2" a free, unpenalized upgrade. This needs, per such skill that can
+ * possibly reach one of its penalized tiers: one continuous accounting
+ * column tracking that skill's total across every chosen
+ * candidate/decoration (`totalRow`, an equality row wiring it to the real
+ * choice columns), and one binary indicator column per reachable side
+ * (`posIndicatorRow`/`negIndicatorRow`) forced to 1 by a big-M constraint
+ * whenever the accounting column reaches that side's threshold -- the
+ * textbook MIP indicator-constraint pattern. None of this touches
+ * feasibility: a requirement is still a hard constraint, never an objective
+ * term, so this can never make an otherwise-valid build infeasible, only
+ * re-rank which valid build comes back first.
  *
  * `cuffs` is a wholly separate pool from `decorations`, one-hot-encoded the
  * same way (see this module's own docstring) but global instead of per-slot:
@@ -572,6 +650,14 @@ export function buildModel(
   // double-counted as an unrequested "bonus." See `skillPreferenceIds`'s own
   // call sites below.
   const skillPreferenceIds = skillPreferenceIdsOf(requirements, options)
+  // Which hard requirements are "Prefer higher" (`SkillRequirement
+  // .preferHigher`) -- read in two places below: `resolveTierBreakpoints`
+  // exempts them from the overshoot penalty entirely, and the "prefer
+  // higher" ladder (see this function's own docstring) builds their reward
+  // machinery instead.
+  const preferHigherSkillIds = new Set(
+    requirements.filter((r) => r.preferHigher).map((r) => r.skillId),
+  )
   const preferExactMatches = options.preferExactMatches ?? false
   const numSlots = slots.length
 
@@ -716,10 +802,16 @@ export function buildModel(
 
   // Tier machinery (see this function's own docstring) -- resolved before
   // row layout is finalized, since its row/column counts depend on which
-  // bonus skills can actually reach one of their own tiers in this query.
+  // skills (bonus, or requested-but-overshootable) can actually reach a
+  // penalized tier in this query.
   let tierMachinery: readonly TierMachinery[] = []
   if (hasTierPenalties(options)) {
-    const breakpoints = resolveTierBreakpoints(options.skillTiers!, skillPreferenceIds)
+    const breakpoints = resolveTierBreakpoints(
+      options.skillTiers!,
+      requirements,
+      optionalSkillRequirements,
+      preferHigherSkillIds,
+    )
     const ranges = computeAchievableRanges(
       slots,
       slotDecorationGroups,
@@ -805,7 +897,7 @@ export function buildModel(
     if (effectiveMinPoints <= range.min)
       alwaysMetOptionalTiers.add(tierIndexForPriority(req.priority))
   }
-  const objectiveOffset = [...alwaysMetOptionalTiers].reduce(
+  const optionalTiersOffset = [...alwaysMetOptionalTiers].reduce(
     (sum, tierIndex) => sum + optionalSkillTierWeight(tierIndex),
     0,
   )
@@ -838,6 +930,70 @@ export function buildModel(
   for (const tierIndex of optionalGroupMembersByTier.keys()) {
     optionalGroupMetRowOf.set(tierIndex, rowCursor++)
   }
+
+  // "Prefer higher" skills (`SkillRequirement.preferHigher`, `SkillPicker
+  // .tsx`'s own requirement-type option) reward every extra tier reached
+  // beyond the skill's own required level, not just whether one particular
+  // higher tier is reached -- unlike `OptionalSkillRequirement`'s
+  // interchangeable-group reward above (any one group member earns it,
+  // extra members earn nothing more), each extra tier here earns its own
+  // flat `PREFER_HIGHER_TIER_WEIGHT` reward independently, so reaching tier
+  // 4 of 5 (three extra tiers crossed) is worth three times reaching only
+  // tier 3 (2026-10-27, per the project owner: "+2 is good, +3 is even
+  // better, +4 is even better still"). Works whether or not
+  // `preferExactMatches` is on -- it only needs `options.skillTiers` data
+  // for the skill, the same way `OptionalSkillRequirement` never depends on
+  // that toggle either. Reuses the exact one-sided big-M row shape
+  // `liveOptionalMembers` above does (reward only when actually earned, see
+  // its own row-bounds comment below), just one row per *threshold* instead
+  // of per skill, and with no interchangeable-group column -- every extra
+  // tier's reward is independent, never an OR.
+  interface LivePreferHigherTier {
+    readonly skillId: SkillId
+    readonly rangeMin: number
+    readonly bigM: number
+  }
+  const preferHigherTierThresholds = new Map(
+    (options.skillTiers ?? []).map((t) => [t.skillId, t.tierThresholds]),
+  )
+  const preferHigherRanges = computeAchievableRanges(
+    slots,
+    slotDecorationGroups,
+    skillMaxCounts,
+    cuffs,
+    preferHigherSkillIds,
+  )
+  let preferHigherOffset = 0
+  const livePreferHigherTiers: LivePreferHigherTier[] = []
+  for (const req of requirements) {
+    if (!req.preferHigher) continue
+    const thresholds = preferHigherTierThresholds.get(req.skillId)
+    if (!thresholds) continue
+    const range = preferHigherRanges.get(req.skillId)!
+    for (const threshold of thresholds) {
+      if (threshold <= req.minPoints) continue
+      const effectiveThreshold = threshold - pinnedPointsTowards(req.skillId)
+      if (effectiveThreshold <= range.min) {
+        // Always reached regardless of any choice this model makes, same
+        // "goes into the constant offset, not a column" treatment
+        // `alwaysMetOptionalTiers` gets above (and for the same reason --
+        // `worker-handler.ts` compares objective values across differently-
+        // pruned models, so the solved objective must stay the build's true
+        // score regardless of which pieces this particular model saw).
+        preferHigherOffset += PREFER_HIGHER_TIER_WEIGHT
+      } else if (effectiveThreshold <= range.max) {
+        livePreferHigherTiers.push({
+          skillId: req.skillId,
+          rangeMin: range.min,
+          bigM: effectiveThreshold - range.min,
+        })
+      }
+      // else: never achievable in this query, so no column either -- same
+      // "never achievable" bucket `liveOptionalMembers` filters out above.
+    }
+  }
+  const preferHigherReachedRowOf: number[] = livePreferHigherTiers.map(() => rowCursor++)
+  const objectiveOffset = optionalTiersOffset + preferHigherOffset
 
   // Cuffs (see this function's own docstring): one one-hot group row per
   // cuff, plus two rows global to every cuff (not per-slot, since cuffs
@@ -937,6 +1093,13 @@ export function buildModel(
     rowLower[row] = -highs.infinity
     rowUpper[row] = 0
   }
+  livePreferHigherTiers.forEach((tier, i) => {
+    // Same `total - bigM*reached >= rangeMin` shape `optionalReachedRowOf`
+    // above uses, and for the same reason (reward only when actually
+    // earned, never falsely claimed).
+    rowLower[preferHigherReachedRowOf[i]] = tier.rangeMin
+    rowUpper[preferHigherReachedRowOf[i]] = highs.infinity
+  })
   for (const row of cuffGroupRowOf) {
     rowLower[row] = 1
     rowUpper[row] = 1
@@ -1001,6 +1164,10 @@ export function buildModel(
       const points = pointsTowards(decoration.skills, member.skillId)
       if (points !== 0) entries.set(optionalReachedRowOf[i], points)
     })
+    livePreferHigherTiers.forEach((tier, i) => {
+      const points = pointsTowards(decoration.skills, tier.skillId)
+      if (points !== 0) entries.set(preferHigherReachedRowOf[i], points)
+    })
     return entries
   }
 
@@ -1035,6 +1202,10 @@ export function buildModel(
       liveOptionalMembers.forEach((member, i) => {
         const points = pointsTowards(candidate.skills, member.skillId)
         if (points !== 0) entries.set(optionalReachedRowOf[i], points)
+      })
+      livePreferHigherTiers.forEach((tier, i) => {
+        const points = pointsTowards(candidate.skills, tier.skillId)
+        if (points !== 0) entries.set(preferHigherReachedRowOf[i], points)
       })
       preferredCategoryLeaves.forEach((covered, i) => {
         if (candidate.category !== undefined && covered.has(candidate.category)) {
@@ -1120,6 +1291,10 @@ export function buildModel(
           const points = pointsTowards(cuff.skills, member.skillId)
           if (points !== 0) entries.set(optionalReachedRowOf[i], count * points)
         })
+        livePreferHigherTiers.forEach((tier, i) => {
+          const points = pointsTowards(cuff.skills, tier.skillId)
+          if (points !== 0) entries.set(preferHigherReachedRowOf[i], count * points)
+        })
       }
 
       columns.push({ kind: 'cuff', cuff, count })
@@ -1173,6 +1348,16 @@ export function buildModel(
     columns.push({ kind: 'auxiliary' })
     addColumn(optionalSkillTierWeight(tierIndex), new Map([[row, 1]]))
   }
+
+  // One `reached` indicator column per live "prefer higher" tier -- same
+  // big-M row shape as an optional-skill member's own `reached` column, but
+  // rewarded directly at `PREFER_HIGHER_TIER_WEIGHT` right here (no
+  // `groupMet` column) since every extra tier's reward is independent, not
+  // an interchangeable-group OR.
+  livePreferHigherTiers.forEach((tier, i) => {
+    columns.push({ kind: 'auxiliary' })
+    addColumn(PREFER_HIGHER_TIER_WEIGHT, new Map([[preferHigherReachedRowOf[i], -tier.bigM]]))
+  })
 
   // The capped accounting column for each preferred-category-count entry
   // (see this function's own docstring and `preferredCategoryRowOf` above) --

@@ -98,6 +98,19 @@ describe('encodeQueryCode / decodeQueryCode', () => {
     expect(await decodeQueryCode(encoded, catalog)).toEqual(withOptional)
   })
 
+  it('round-trips a "prefer higher" hard skill requirement (2026-10-27)', async () => {
+    const withPreferHigher: SearchFormState = {
+      ...state,
+      requirements: [
+        { skillId: 1, minPoints: 10 },
+        { skillId: 2, minPoints: 15, preferHigher: true },
+      ],
+    }
+    const encoded = await encodeQueryCode(withPreferHigher, catalog)
+    expect(encoded).toContain('Sharpness: 15 (prefer higher)')
+    expect(await decodeQueryCode(encoded, catalog)).toEqual(withPreferHigher)
+  })
+
   it('round-trips a non-null excludedWeaponZenithSkillIds, including the "no Zenith skill" sentinel', async () => {
     const withWeaponExclusions: SearchFormState = {
       ...state,
