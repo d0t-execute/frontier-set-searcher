@@ -43,6 +43,13 @@ import type { SearchRequestMessage, WorkerResponse } from './worker-protocol'
  * every time, in 0.3-3.7s against 20-46s for the full search. */
 export const PROVISIONAL_POOL_SIZE = 20
 
+/** Seconds each fast-pass round may run, in one attempt (2026-10-30). Its
+ * only job is to put a build on screen quickly -- the verification pass
+ * proves or replaces it -- and on two real 15-17-skill exact-mode queries the
+ * fast pass had its build within ~3-8s, then spent the rest of the default
+ * 30s box failing to *prove* it, holding the first result back to ~32s. */
+export const PROVISIONAL_TIME_BOX_SECONDS = 5
+
 /** Seconds each round of the verification pass may run before settling for
  * its best build so far (overriding `engine.ts`'s `TIME_BOX_SECONDS` unless
  * the request already asked for more). Much larger than the normal box: the
@@ -181,7 +188,13 @@ export async function handleSearchRequest(
       request.slots,
       request.requirements,
       request.decorations ?? [],
-      { ...options, provisionalPoolSize: PROVISIONAL_POOL_SIZE },
+      {
+        ...options,
+        provisionalPoolSize: PROVISIONAL_POOL_SIZE,
+        primaryObjectiveBound: ceiling,
+        timeBoxSeconds: PROVISIONAL_TIME_BOX_SECONDS,
+        maxTimeBoxAttempts: 1,
+      },
       request.cuffs ?? [],
       { onProgress, onSolution: (value) => (guessObjective = value) },
     )
@@ -234,6 +247,9 @@ export async function handleSearchRequest(
       timeBoxSeconds: Math.max(options.timeBoxSeconds ?? 0, VERIFICATION_TIME_BOX_SECONDS),
       maxResults: maxResults - proven.length,
       excludedGearSets: [...(options.excludedGearSets ?? []), ...proven.map(gearSetOf)],
+      // The proven ceiling bounds every build, so the lexicographic solve can
+      // pin to it straight away instead of recomputing it on the full model.
+      primaryObjectiveBound: ceiling,
     }
     let count = 0
     const finalEnd = await runPass(finalOptions, (result, _objective, proven) => {

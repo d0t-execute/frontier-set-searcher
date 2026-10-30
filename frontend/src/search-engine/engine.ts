@@ -72,6 +72,7 @@
  * large enough that an unfiltered one would bloat the model for no benefit).
  */
 
+import { disabledRequirementSkillIds } from './active-skill-cap'
 import { pruneDominatedCandidates, pruneDominatedDecorations } from './candidate-pruning'
 import { filterRelevantCuffs, filterRelevantDecorations } from './expand'
 import { getHighs } from './highs-runtime'
@@ -140,6 +141,11 @@ type TimeBoxOutcome = 'found' | 'infeasible' | 'timedOut'
  * slack at all. Measured cost on the real benchmark queries: none to ~5%. */
 const MIP_REL_GAP = 0
 const MIP_ABS_GAP = 0.99
+
+function gcd(a: number, b: number): number {
+  while (b !== 0) [a, b] = [b, a % b]
+  return a
+}
 
 function runTimeBoxed(
   native: SymbolDisposable<Model>,
@@ -255,6 +261,46 @@ export interface SearchHooks {
   readonly onSolution?: (objective: number, proven: boolean) => void
 }
 
+/** The best score any build of this query reaches without its bonus-point /
+ * bonus-tier part, proven -- or `undefined` if the solve couldn't prove it in
+ * its time box. Solved as the bonus-free ceiling `worker-handler.ts` uses
+ * (`withoutTierPenalties`, and `preferExactMatches` so no bonus points are
+ * scored either), whose model is single-stage and prunes soundly down to one
+ * result. Upper-bounds every build regardless of cuts, so it's only ever
+ * used for a first round (see `search`'s lexicographic solve). */
+async function provenPrimaryBound(
+  slots: readonly SlotQuery[],
+  requirements: readonly SkillRequirement[],
+  decorations: readonly Decoration[],
+  options: SearchOptions,
+  cuffs: readonly Cuff[],
+): Promise<number | undefined> {
+  let objective: number | undefined
+  let proven = false
+  const generator = search(
+    slots,
+    requirements,
+    decorations,
+    {
+      ...options,
+      preferExactMatches: true,
+      withoutTierPenalties: true,
+      maxResults: 1,
+      provisionalPoolSize: undefined,
+    },
+    cuffs,
+    {
+      onSolution: (value, isProven) => {
+        objective = value
+        proven = isProven
+      },
+    },
+  )
+  const first = await generator.next()
+  await generator.return('exhausted')
+  return !first.done && proven ? objective : undefined
+}
+
 export async function* search(
   slots: readonly SlotQuery[],
   requirements: readonly SkillRequirement[],
@@ -300,7 +346,14 @@ export async function* search(
     requirements,
     options,
   )
-  const relevantCuffs = filterRelevantCuffs(cuffs, requirements, options.pinnedCuffSkillIds ?? [])
+  // Skill Slots Up raises the active-skill cap, so its cuffs stay relevant
+  // even when nobody asked for it -- they may be what makes room for the
+  // requirements (see `SearchOptions.activeSkillCap`).
+  const capSkillSlotsUpId = options.activeSkillCap?.skillSlotsUpId
+  const relevantCuffs = filterRelevantCuffs(cuffs, requirements, [
+    ...(options.pinnedCuffSkillIds ?? []),
+    ...(capSkillSlotsUpId !== undefined ? [capSkillSlotsUpId] : []),
+  ])
   const maxResults = options.maxResults ?? Infinity
   const modelSlots =
     options.provisionalPoolSize !== undefined
@@ -317,7 +370,7 @@ export async function* search(
         ? pruneDominatedCandidates(slots, requirements, options, options.maxResults)
         : slots
   const highs = await getHighs()
-  const { model, columns } = buildModel(
+  const { model, columns, primaryCost } = buildModel(
     highs,
     modelSlots,
     relevantDecorations,
@@ -325,10 +378,95 @@ export async function* search(
     options,
     relevantCuffs,
   )
+  const fullCost = Float64Array.from(model.colCost)
+  // Not for `provisionalPoolSize`'s small heuristic pool: there it measured
+  // slower than one stage (a real 17-skill query's first build: 66s against
+  // 8s), and that pass never needs a proof anyway.
+  const twoStage =
+    options.provisionalPoolSize === undefined && primaryCost.some((cost, j) => cost !== fullCost[j])
+  const primaryBound =
+    options.primaryObjectiveBound ??
+    (twoStage
+      ? await provenPrimaryBound(slots, requirements, decorations, options, cuffs)
+      : undefined)
+
   const native = highs.createModel(model)
   native.options.set('mip_rel_gap', MIP_REL_GAP)
   native.options.set('mip_abs_gap', MIP_ABS_GAP)
   const pinnedCuffs = options.pinnedCuffs ?? []
+
+  // Lexicographic solve (2026-10-30, docs/search-performance-research.md
+  // approach 5). The objective is lexicographic by construction: its primary
+  // part (open slots, preferences -- `BuiltModel.primaryCost`) always
+  // outweighs its bonus-point / bonus-tier part. Solved as one objective, the
+  // solver can prove the primary part's best value quickly on its own, yet
+  // can't stop crediting a build with most of an extra open slot once the
+  // small terms are mixed in -- a real 15-skill query stayed unproven at a
+  // bound of ~0.8 open slots for 60s+, while proving "0 open slots is the
+  // maximum" took ~1.5s when asked alone. So each round pins the primary
+  // part to its best value (`primaryRow`, both bounds) and solves the full
+  // objective under that pin, which proved the same query in ~2s.
+  //
+  // The best value only needs computing (stage 1, primary costs only) when it
+  // isn't already known: results come out in non-increasing order, so the
+  // previous result's primary value is still a valid upper bound for the
+  // next round. For the first, `primaryBound` is the proven bonus-free
+  // ceiling: `options.primaryObjectiveBound` when `worker-handler.ts` already
+  // computed it, otherwise `provenPrimaryBound` solves it on a pruned model
+  // -- much cheaper than stage 1 on this one, which may be unpruned (exact
+  // mode, or no `maxResults`): the real 17-skill sword query's exact-mode
+  // test took 57.9s with stage 1 here, 35.5s with this. A pin above what's still reachable -- every build
+  // at that value already returned -- makes the round infeasible, which only
+  // then triggers stage 1. A model with no bonus/penalty terms at all has
+  // nothing to separate and is solved in one stage as before.
+  const allColumns = { kind: 'range' as const, from: 0, to: columns.length - 1 }
+  const primaryIndices = primaryCost.flatMap((cost, j) => (cost !== 0 ? [j] : []))
+  const primaryRow = model.numRows
+  if (twoStage) {
+    native.addRow(-highs.infinity, highs.infinity, {
+      indices: primaryIndices,
+      values: primaryIndices.map((j) => primaryCost[j]),
+    })
+  }
+  // Every primary cost is an integer multiple of this, so stage 1 can stop as
+  // soon as its gap is below one unit -- no better primary value exists.
+  const primaryUnit = primaryIndices.reduce((g, j) => gcd(g, Math.abs(primaryCost[j])), 0)
+  const primaryAbsGap = primaryUnit > 1 ? primaryUnit * MIP_ABS_GAP : MIP_ABS_GAP
+  const ceilingCap = primaryBound !== undefined ? primaryBound - (model.offset ?? 0) : undefined
+  let primaryCap = ceilingCap
+
+  function solvePinned(cap: number): TimeBoxOutcome {
+    native.changeRowBounds(primaryRow, cap - 0.5, cap + 0.5)
+    return runTimeBoxed(native, highs, options, onProgress)
+  }
+
+  function solveRound(): TimeBoxOutcome {
+    if (!twoStage) return runTimeBoxed(native, highs, options, onProgress)
+    if (primaryCap !== undefined) {
+      const pinned = solvePinned(primaryCap)
+      if (pinned !== 'infeasible') return pinned
+    }
+
+    native.changeRowBounds(primaryRow, -highs.infinity, highs.infinity)
+    native.changeColsCost(allColumns, Float64Array.from(primaryCost))
+    native.options.set('mip_abs_gap', primaryAbsGap)
+    const stage1 = runTimeBoxed(native, highs, options, onProgress)
+    const stage1Proven = native.getModelStatus() === highs.constants.modelStatus.optimal
+    const stage1Values = stage1 === 'found' ? native.getSolution().colValue : undefined
+    native.changeColsCost(allColumns, fullCost)
+    native.options.set('mip_abs_gap', MIP_ABS_GAP)
+    if (stage1 === 'infeasible') return 'infeasible'
+
+    if (stage1Values === undefined || !stage1Proven) {
+      // No proven best value to pin -- solve the full objective in one stage.
+      primaryCap = undefined
+      return runTimeBoxed(native, highs, options, onProgress)
+    }
+    let best = 0
+    for (const j of primaryIndices) best += primaryCost[j] * stage1Values[j]
+    primaryCap = primaryUnit > 1 ? Math.round(best / primaryUnit) * primaryUnit : Math.round(best)
+    return solvePinned(primaryCap)
+  }
 
   // Strict mode (`preferExactMatches` with tier data): clean builds -- no
   // bonus skill tier active -- always rank ahead of any build with one, and
@@ -355,34 +493,56 @@ export async function* search(
   }
 
   try {
-    for (let yielded = 0; yielded < maxResults; yielded++) {
-      let outcome = runTimeBoxed(native, highs, options, onProgress)
+    for (let yielded = 0; yielded < maxResults;) {
+      let outcome = solveRound()
       if (outcome !== 'found' && cleanPhase) {
         cleanPhase = false
         boundTierIndicators(native, tierIndicatorIndices, 1)
-        outcome = runTimeBoxed(native, highs, options, onProgress)
+        // The clean phase's primary values don't bound the penalty phase's
+        // larger pool of builds; only the ceiling (over every build) does.
+        primaryCap = ceilingCap
+        outcome = solveRound()
       }
       if (outcome !== 'found') return outcome === 'timedOut' ? 'timedOut' : 'exhausted'
 
       const colValue = native.getSolution().colValue
       const decoded = decodeSolution(columns, colValue)
-      onSolution?.(
-        native.info.get('objective_function_value') as number,
-        native.getModelStatus() === highs.constants.modelStatus.optimal,
-      )
-      if (pinnedCuffs.length === 0) {
-        yield decoded
-      } else {
+      let result: BuildResult = decoded
+      if (pinnedCuffs.length > 0) {
         const skillTotals = new Map(decoded.skillTotals)
         for (const c of pinnedCuffs) {
           for (const { skillId, points } of c.skills) {
             skillTotals.set(skillId, (skillTotals.get(skillId) ?? 0) + points)
           }
         }
-        yield { ...decoded, cuffs: [...pinnedCuffs, ...decoded.cuffs], skillTotals }
+        result = { ...decoded, cuffs: [...pinnedCuffs, ...decoded.cuffs], skillTotals }
+      }
+      const cut = exclusionRow(highs, columns, colValue)
+
+      // A build whose active-skill cap force-disables one of the requested
+      // skills isn't a valid result (`SearchOptions.activeSkillCap`). The
+      // model's own cap row already rules these out; this exact check is a
+      // safety net for anything the row approximates (e.g. tied unranked
+      // skills). A failing build is cut like any other, not yielded.
+      const capRules = options.activeSkillCap
+      const capDisablesRequirement =
+        capRules !== undefined &&
+        disabledRequirementSkillIds(
+          result.picks,
+          result.skillTotals,
+          result.cuffs,
+          requirements,
+          capRules,
+        ).length > 0
+      if (!capDisablesRequirement) {
+        onSolution?.(
+          native.info.get('objective_function_value') as number,
+          native.getModelStatus() === highs.constants.modelStatus.optimal,
+        )
+        yield result
+        yielded++
       }
 
-      const cut = exclusionRow(highs, columns, colValue)
       native.addRow(cut.lower, cut.upper, { indices: cut.indices, values: cut.values })
     }
     return 'exhausted'

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { search } from './engine'
 import { collect } from './test-helpers'
-import type { Candidate, Cuff, Decoration, SlotQuery } from './types'
+import type { ActiveSkillCapRules, Candidate, Cuff, Decoration, SlotQuery } from './types'
 
 function candidate(id: string, skills: Record<number, number>, openSlotCount = 0): Candidate {
   return {
@@ -559,4 +559,227 @@ describe("search's own generator return value (SearchEndReason)", () => {
   // synthetic model (HiGHS solves these far too fast to ever hit the time
   // box) -- that direction is instead demonstrated against a real, known-hard
   // query in engine.real-data.performance.test.ts.
+})
+
+describe('search with the active-skill cap', () => {
+  const SKILL_SLOTS_UP = 100
+  const range = (from: number, to: number) =>
+    Array.from({ length: to - from + 1 }, (_, i) => from + i)
+
+  /** Every id in `ids` is a normal skill activating at 10 points, ranked in
+   * id order (1 = most protected); `hiden` ids are Hiden/Tech skills. */
+  function capRules(ids: readonly number[], hiden: readonly number[] = []): ActiveSkillCapRules {
+    return {
+      skills: ids.map((skillId) => ({
+        skillId,
+        priorityRank: skillId,
+        tierThresholds: [10],
+        hiden: hiden.includes(skillId),
+      })),
+      skillSlotsUpId: SKILL_SLOTS_UP,
+    }
+  }
+
+  function tens(
+    ids: readonly number[],
+    extra: Record<number, number> = {},
+  ): Record<number, number> {
+    return { ...Object.fromEntries(ids.map((id) => [id, 10])), ...extra }
+  }
+
+  const required = (ids: readonly number[]) => ids.map((skillId) => ({ skillId, minPoints: 10 }))
+
+  it('rejects a better-ranked build that lacks the Skill Slots Up its requirements need', async () => {
+    // The reported case: 13 requirements need a cap of 13, i.e. 3 Skill Slots
+    // Up. The open slot would otherwise rank the helm without it first.
+    const skills = range(1, 13)
+    const slots: SlotQuery[] = [
+      {
+        slotId: 'head',
+        candidates: [
+          candidate('Slotted Helm', tens(skills), 1),
+          candidate('Zenith Helm', tens(skills, { [SKILL_SLOTS_UP]: 3 })),
+        ],
+      },
+    ]
+
+    const uncapped = await collect(search(slots, required(skills)))
+    expect(uncapped.map((r) => r.picks.get('head')?.id)).toEqual(['Slotted Helm', 'Zenith Helm'])
+
+    const capped = await collect(
+      search(slots, required(skills), [], { activeSkillCap: capRules(skills) }),
+    )
+    expect(capped.map((r) => r.picks.get('head')?.id)).toEqual(['Zenith Helm'])
+  })
+
+  it('finds Skill Slots Up on a cuff nobody asked for', async () => {
+    const skills = range(1, 11)
+    const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Helm', tens(skills))] }]
+    const cuffs = [cuff('Slots Cuff', 1, { [SKILL_SLOTS_UP]: 1 }), cuff('Other Cuff', 1, { 50: 1 })]
+
+    const results = await collect(
+      search(slots, required(skills), [], { activeSkillCap: capRules(skills) }, cuffs),
+    )
+
+    expect(results.length).toBeGreaterThan(0)
+    for (const result of results) {
+      expect(result.cuffs.map((c) => c.id)).toContain('Slots Cuff')
+    }
+  })
+
+  it('counts G-Rank-or-later pieces toward the cap', async () => {
+    const skills = range(1, 11)
+    const gRank = (id: string, skillPoints: Record<number, number>): Candidate => ({
+      ...candidate(id, skillPoints),
+      grankOrLater: true,
+    })
+    const slots: SlotQuery[] = [
+      {
+        slotId: 'head',
+        candidates: [candidate('Low Helm', tens(skills), 1), gRank('G Helm', tens(skills))],
+      },
+      { slotId: 'chest', candidates: [candidate('Low Mail', {}, 1), gRank('G Mail', {})] },
+      { slotId: 'arms', candidates: [candidate('Low Arms', {}, 1), gRank('G Arms', {})] },
+    ]
+
+    const results = await collect(
+      search(slots, required(skills), [], { activeSkillCap: capRules(skills) }),
+    )
+
+    expect(results).toHaveLength(1)
+    expect([...results[0].picks.values()].map((c) => c.id)).toEqual(['G Helm', 'G Mail', 'G Arms'])
+  })
+
+  it('rejects a build where a higher-priority bonus skill crowds out a requirement', async () => {
+    // 10 requirements fit the base cap on their own, but an unrequested skill
+    // ranked above all of them takes a slot, disabling requirement 10.
+    const skills = range(2, 11)
+    const slots: SlotQuery[] = [
+      {
+        slotId: 'head',
+        candidates: [
+          candidate('Crowded Helm', tens(skills, { 1: 10 })),
+          candidate('Plain Helm', tens(skills)),
+        ],
+      },
+    ]
+
+    const results = await collect(
+      search(slots, required(skills), [], { activeSkillCap: capRules(range(1, 11)) }),
+    )
+
+    expect(results.map((r) => r.picks.get('head')?.id)).toEqual(['Plain Helm'])
+  })
+
+  it('lets a cuff-sourced Hiden requirement past the cap', async () => {
+    const skills = range(1, 11)
+    const slots: SlotQuery[] = [
+      { slotId: 'head', candidates: [candidate('Helm', tens(range(1, 10)))] },
+    ]
+    const cuffs = [cuff('Tech Cuff', 0, { 11: 10 })]
+
+    const hiden = await collect(
+      search(slots, required(skills), [], { activeSkillCap: capRules(skills, [11]) }, cuffs),
+    )
+    expect(hiden.length).toBeGreaterThan(0)
+
+    const notHiden = await collect(
+      search(slots, required(skills), [], { activeSkillCap: capRules(skills) }, cuffs),
+    )
+    expect(notHiden).toEqual([])
+  })
+
+  it("lets an Exotic piece's granted requirement past the cap", async () => {
+    const skills = range(1, 11)
+    const slots: SlotQuery[] = [
+      {
+        slotId: 'head',
+        candidates: [
+          candidate('Plain Helm', tens(skills), 1),
+          { ...candidate('Exotic Helm', tens(skills)), exoticSkillId: 11 },
+        ],
+      },
+    ]
+
+    const results = await collect(
+      search(slots, required(skills), [], { activeSkillCap: capRules(skills) }),
+    )
+
+    expect(results.map((r) => r.picks.get('head')?.id)).toEqual(['Exotic Helm'])
+  })
+})
+
+describe('candidate pruning with the active-skill cap', () => {
+  it('keeps the pieces that raise the cap when pruning to the top result', async () => {
+    const skills = Array.from({ length: 11 }, (_, i) => i + 1)
+    const tens = Object.fromEntries(skills.map((id) => [id, 10]))
+    const rules: ActiveSkillCapRules = {
+      skills: skills.map((skillId) => ({
+        skillId,
+        priorityRank: skillId,
+        tierThresholds: [10],
+        hiden: false,
+      })),
+      skillSlotsUpId: 100,
+    }
+    const slots: SlotQuery[] = [
+      {
+        slotId: 'head',
+        candidates: [
+          candidate('Slotted Helm', tens, 1),
+          candidate('Zenith Helm', { ...tens, 100: 1 }),
+        ],
+      },
+      {
+        slotId: 'chest',
+        candidates: [
+          candidate('Low Mail', {}, 1),
+          { ...candidate('G Mail', {}), grankOrLater: true },
+        ],
+      },
+    ]
+
+    const results = await collect(
+      search(
+        slots,
+        skills.map((skillId) => ({ skillId, minPoints: 10 })),
+        [],
+        { activeSkillCap: rules, maxResults: 1 },
+      ),
+    )
+
+    expect(results).toHaveLength(1)
+    expect(results[0].picks.get('head')?.id).toBe('Zenith Helm')
+    expect(results[0].picks.get('chest')?.id).toBe('Low Mail')
+  })
+})
+
+describe('lexicographic solve', () => {
+  // Open slots outrank bonus points, so the slotted helm comes first even
+  // though the plain one carries far more bonus points; the ranking has to
+  // come out the same whichever way the round finds its best primary value.
+  const slots: SlotQuery[] = [
+    {
+      slotId: 'head',
+      candidates: [
+        candidate('Bonus Helm', { 1: 5, 2: 40 }),
+        candidate('Slotted Helm', { 1: 5 }, 1),
+        candidate('Middle Helm', { 1: 5, 2: 10 }),
+      ],
+    },
+  ]
+  const requirements = [{ skillId: 1, minPoints: 5 }]
+  const expected = ['Slotted Helm', 'Bonus Helm', 'Middle Helm']
+
+  it('ranks primary value first, then bonus points', async () => {
+    const results = await collect(search(slots, requirements))
+    expect(results.map((r) => r.picks.get('head')?.id)).toEqual(expected)
+  })
+
+  it('recomputes the best value when the given bound is out of reach', async () => {
+    const results = await collect(
+      search(slots, requirements, [], { primaryObjectiveBound: 1_000_000 }),
+    )
+    expect(results.map((r) => r.picks.get('head')?.id)).toEqual(expected)
+  })
 })

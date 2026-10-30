@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 import { useDataBundle } from './data/useDataBundle'
 import { useSearchWorker } from './search/useSearchWorker'
+import { activeSkillCapRulesOf } from './search-engine/active-skill-cap'
 
 vi.mock('./data/useDataBundle')
 vi.mock('./search/useSearchWorker')
@@ -200,6 +201,7 @@ describe('App', () => {
         preferredCategoryCounts: [],
         optionalSkillRequirements: [],
         maxResults: 5,
+        activeSkillCap: activeSkillCapRulesOf(BUNDLE.skills, BUNDLE.zenithSkills),
       },
       // The "Unavailable"-leaf cuff is excluded unconditionally (see build-
       // query.ts's `UNOBTAINABLE_CUFF_CATEGORIES`) -- both real ones pass.
@@ -237,6 +239,7 @@ describe('App', () => {
         preferredCategoryCounts: [],
         optionalSkillRequirements: [],
         maxResults: 5,
+        activeSkillCap: activeSkillCapRulesOf(BUNDLE.skills, BUNDLE.zenithSkills),
       },
       [BUNDLE.cuffs[0], BUNDLE.cuffs[1]],
     )

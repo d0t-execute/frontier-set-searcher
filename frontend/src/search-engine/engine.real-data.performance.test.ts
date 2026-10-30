@@ -150,7 +150,11 @@ describe('search against the real data bundle', () => {
     // the old 40s budget (~48s observed) solving the exact same query --
     // see `engine.ts`'s `TIME_BOX_SECONDS` docstring for why CI is simply
     // slower here, not a regression in this codebase.
-    const { results, elapsedMs } = await firstResults(requirements, 2)
+    // `maxResults` matches how the app searches (it always passes one): without
+    // it the engine skips candidate pruning, and this measured an unpruned
+    // path no real search takes -- ~47-52s locally, 150s+ on CI's runner
+    // (2026-10-30), against ~0.1-2s pruned.
+    const { results, elapsedMs } = await firstResults(requirements, 2, { maxResults: 2 })
 
     expect(results.length).toBeGreaterThan(0)
     expect(elapsedMs).toBeLessThan(60_000)
@@ -188,7 +192,11 @@ describe('search against the real data bundle', () => {
     // Budget widened 2026-10-20 -- see the 4-skill test above and
     // `engine.ts`'s `TIME_BOX_SECONDS` docstring: CI measurably exceeded the
     // old 90s budget (~99s observed).
-    const { results, elapsedMs } = await firstResults(requirements, 2)
+    // `maxResults` matches how the app searches (it always passes one): without
+    // it the engine skips candidate pruning, and this measured an unpruned
+    // path no real search takes -- ~47-52s locally, 150s+ on CI's runner
+    // (2026-10-30), against ~0.1-2s pruned.
+    const { results, elapsedMs } = await firstResults(requirements, 2, { maxResults: 2 })
 
     expect(results.length).toBeGreaterThan(0)
     expect(elapsedMs).toBeLessThan(130_000)

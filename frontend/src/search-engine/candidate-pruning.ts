@@ -31,7 +31,14 @@
  *   activate the skill, fewer could activate a penalty tier);
  * - open slots: at least as many (decorations placed for `x` still fit);
  * - objective coefficient: at least as large (`candidateObjectiveCost`);
- * - preferred categories: `y` counts toward every category `x` does.
+ * - preferred categories: `y` counts toward every category `x` does;
+ * - the active-skill cap (`SearchOptions.activeSkillCap`): `y` raises the
+ *   cap at least as much (G-Rank-or-later bonus, Skill Slots Up points), and
+ *   grants the same Exotic skill when `x`'s exempts a requirement.
+ *   Unrequested skills are still ignored, so a swap can, rarely, push a
+ *   requirement past the cap via a higher-priority bonus skill; `engine.ts`
+ *   rejects such a build rather than returning it, but the pruned pool may
+ *   then miss a valid build that only `x` could make.
  *
  * `preferExactMatches` with tier data is deliberately left unpruned: its
  * penalty depends on each bonus skill's *total* across the build, which
@@ -52,6 +59,7 @@ import {
   pointsTowards,
   skillPreferenceIdsOf,
 } from './ilp-model'
+import { countsTowardGrankBonus } from './skill-cap-rules'
 import type {
   Candidate,
   Decoration,
@@ -97,13 +105,29 @@ function pruneSlot(
     .filter((p) => p.count > 0)
     .map((p) => categoriesCoveredBy(p.category))
 
+  const capRules = options.activeSkillCap
+  const capSkillSlotsUpId = capRules?.skillSlotsUpId
+  const requiredSkillIds = new Set(requirements.map((r) => r.skillId))
+
   const records = candidates.map((candidate): CandidateRecord => {
     const atLeast = [
       ...requirements.map((r) => pointsTowards(candidate.skills, r.skillId)),
       ...optional.map((r) => pointsTowards(candidate.skills, r.skillId)),
       ...floors.map((f) => candidate.resistances?.[f.element] ?? 0),
       candidate.openSlotCount ?? 0,
+      ...(capRules !== undefined ? [countsTowardGrankBonus(candidate) ? 1 : 0] : []),
+      ...(capSkillSlotsUpId !== undefined
+        ? [pointsTowards(candidate.skills, capSkillSlotsUpId)]
+        : []),
     ]
+    // An Exotic piece's granted skill can exempt a requirement from the cap,
+    // so it only swaps for a piece granting the same one.
+    const capExemptKey =
+      capRules !== undefined &&
+      candidate.exoticSkillId != null &&
+      requiredSkillIds.has(candidate.exoticSkillId)
+        ? `|${candidate.exoticSkillId}`
+        : ''
     let categoryMask = 0
     categories.forEach((covered, i) => {
       if (candidate.category !== undefined && covered.has(candidate.category))
@@ -114,7 +138,7 @@ function pruneSlot(
       objective: candidateObjectiveCost(candidate, skillPreferenceIds, options),
       atLeast,
       atLeastSum: atLeast.reduce((sum, v) => sum + v, 0),
-      exactKey: excluded.map((id) => pointsTowards(candidate.skills, id)).join(','),
+      exactKey: excluded.map((id) => pointsTowards(candidate.skills, id)).join(',') + capExemptKey,
       categoryMask,
     }
   })

@@ -34,7 +34,22 @@
 
 import { MAX_EQUIPPED_CUFFS } from './ilp-model'
 import type { NamedCandidate, NamedCuff, NamedSkill, NamedSlotQuery } from './load-bundle'
-import type { SkillId, SkillRequirement } from './types'
+import {
+  BASE_ACTIVE_SKILL_CAP,
+  MAX_SKILL_SLOTS_UP_BONUS,
+  ORIGIN_CATEGORY,
+  countsTowardGrankBonus,
+  grankSetBonus,
+  isActiveAt,
+} from './skill-cap-rules'
+import type {
+  ActiveSkillCapRules,
+  Candidate,
+  CappedSkill,
+  Cuff,
+  SkillId,
+  SkillRequirement,
+} from './types'
 
 /** Exported for `SkillPicker.tsx`, which pins skills in this category to the
  * top of the requirement list and labels them with this same cuff-only
@@ -42,18 +57,27 @@ import type { SkillId, SkillRequirement } from './types'
  * constant rather than a duplicated string literal so the two stay in sync. */
 export const HIDEN_SKILL_CATEGORY = 'Hiden/Tech Skills'
 
-/** Origin armor's category key (gear-categories.ts) -- excluded from the
- * G-Rank-or-later piece-count bonus; see this module's docstring. */
-const ORIGIN_CATEGORY = 'grank_origin'
-
-const BASE_ACTIVE_SKILL_CAP = 10
 const SKILL_SLOTS_UP_ZENITH_SKILL_NAME = 'Skill Slots Up'
-const MAX_SKILL_SLOTS_UP_BONUS = 7
 
-function grankSetBonus(grankPieceCount: number): number {
-  if (grankPieceCount >= 5) return 2
-  if (grankPieceCount >= 3) return 1
-  return 0
+function skillSlotsUpIdOf(zenithSkills: readonly NamedSkill[]): SkillId | undefined {
+  return zenithSkills.find((s) => s.name === SKILL_SLOTS_UP_ZENITH_SKILL_NAME)?.id
+}
+
+/** The engine-side form of the cap (`SearchOptions.activeSkillCap`), built
+ * from the loaded normal- and Zenith-skill catalogs. */
+export function activeSkillCapRulesOf(
+  skills: readonly NamedSkill[],
+  zenithSkills: readonly NamedSkill[],
+): ActiveSkillCapRules {
+  return {
+    skills: skills.map((skill) => ({
+      skillId: skill.id,
+      priorityRank: skill.priorityRank,
+      tierThresholds: skill.tiers.map((tier) => tier.minPoints),
+      hiden: skill.category === HIDEN_SKILL_CATEGORY,
+    })),
+    skillSlotsUpId: skillSlotsUpIdOf(zenithSkills),
+  }
 }
 
 /** Counts how many of a build's picks are "G Rank or later" for the in-game
@@ -65,12 +89,24 @@ function grankSetBonus(grankPieceCount: number): number {
  * G-Rank-or-later (a weapon has no such concept here), so they fall out of
  * this count naturally. Origin pieces are excluded even though they're
  * `grankOrLater: true` -- see this module's own docstring. */
-export function countGrankOrLaterPieces(picks: ReadonlyMap<string, NamedCandidate>): number {
+export function countGrankOrLaterPieces(picks: ReadonlyMap<string, Candidate>): number {
   let count = 0
   for (const candidate of picks.values()) {
-    if (candidate.grankOrLater && candidate.category !== ORIGIN_CATEGORY) count++
+    if (countsTowardGrankBonus(candidate)) count++
   }
   return count
+}
+
+function capOf(
+  picks: ReadonlyMap<string, Candidate>,
+  skillTotals: ReadonlyMap<SkillId, number>,
+  skillSlotsUpId: SkillId | undefined,
+): number {
+  const grankBonus = grankSetBonus(countGrankOrLaterPieces(picks))
+  const skillSlotsUpLevel =
+    skillSlotsUpId !== undefined ? (skillTotals.get(skillSlotsUpId) ?? 0) : 0
+  const skillSlotsUpBonus = Math.min(skillSlotsUpLevel, MAX_SKILL_SLOTS_UP_BONUS)
+  return BASE_ACTIVE_SKILL_CAP + grankBonus + skillSlotsUpBonus
 }
 
 /** The active-skill cap for one build: 10, plus the G-Rank-or-later armor
@@ -84,12 +120,7 @@ export function computeActiveSkillCap(
   skillTotals: ReadonlyMap<SkillId, number>,
   zenithSkills: readonly NamedSkill[],
 ): number {
-  const grankBonus = grankSetBonus(countGrankOrLaterPieces(picks))
-  const skillSlotsUpId = zenithSkills.find((s) => s.name === SKILL_SLOTS_UP_ZENITH_SKILL_NAME)?.id
-  const skillSlotsUpLevel =
-    skillSlotsUpId !== undefined ? (skillTotals.get(skillSlotsUpId) ?? 0) : 0
-  const skillSlotsUpBonus = Math.min(skillSlotsUpLevel, MAX_SKILL_SLOTS_UP_BONUS)
-  return BASE_ACTIVE_SKILL_CAP + grankBonus + skillSlotsUpBonus
+  return capOf(picks, skillTotals, skillSlotsUpIdOf(zenithSkills))
 }
 
 /** Whether a skill's accumulated points would turn on one of its named
@@ -100,16 +131,9 @@ export function computeActiveSkillCap(
  * points," since a flat point value with no named tier still represents an
  * in-game effect once it's non-zero. */
 export function isSkillActive(points: number, skill: NamedSkill | undefined): boolean {
-  if (points === 0) return false
-  const tiers = skill?.tiers ?? []
-  const positives = tiers.filter((t) => t.minPoints > 0).map((t) => t.minPoints)
-  const negatives = tiers.filter((t) => t.minPoints < 0).map((t) => t.minPoints)
-  if (positives.length === 0 && negatives.length === 0) return points > 0
-  const posThreshold = positives.length > 0 ? Math.min(...positives) : undefined
-  const negThreshold = negatives.length > 0 ? Math.max(...negatives) : undefined
-  return (
-    (posThreshold !== undefined && points >= posThreshold) ||
-    (negThreshold !== undefined && points <= negThreshold)
+  return isActiveAt(
+    points,
+    (skill?.tiers ?? []).map((t) => t.minPoints),
   )
 }
 
@@ -138,7 +162,7 @@ const UNRANKED_SORT_RANK = Number.POSITIVE_INFINITY
  * points towards -- used only to find this module's own Hiden-skill cap
  * exemption (see its docstring); a skill a cuff contributes to is still
  * capped normally unless it's also in the Hiden/Tech category. */
-function cuffContributedSkillIds(cuffs: readonly NamedCuff[]): ReadonlySet<SkillId> {
+function cuffContributedSkillIds(cuffs: readonly Cuff[]): ReadonlySet<SkillId> {
   const ids = new Set<SkillId>()
   for (const cuff of cuffs) {
     for (const { skillId, points } of cuff.skills) {
@@ -151,10 +175,10 @@ function cuffContributedSkillIds(cuffs: readonly NamedCuff[]): ReadonlySet<Skill
 /** Every normal skill id at least one of a build's picks grants via its
  * Exotic-armor bonus (`NamedCandidate.exoticSkillId`) -- used only to find
  * this module's own Exotic-skill cap exemption (see its docstring). */
-function exoticGrantedSkillIds(picks: ReadonlyMap<string, NamedCandidate>): ReadonlySet<SkillId> {
+function exoticGrantedSkillIds(picks: ReadonlyMap<string, Candidate>): ReadonlySet<SkillId> {
   const ids = new Set<SkillId>()
   for (const candidate of picks.values()) {
-    if (candidate.exoticSkillId !== null) ids.add(candidate.exoticSkillId)
+    if (candidate.exoticSkillId != null) ids.add(candidate.exoticSkillId)
   }
   return ids
 }
@@ -437,17 +461,29 @@ export function determineActiveSkills(
   zenithSkills: readonly NamedSkill[],
   cuffs: readonly NamedCuff[] = [],
 ): SkillActivationResult {
-  const skillsById = new Map(skills.map((s) => [s.id, s]))
-  const cap = computeActiveSkillCap(picks, skillTotals, zenithSkills)
+  return resolveActiveSkills(picks, skillTotals, activeSkillCapRulesOf(skills, zenithSkills), cuffs)
+}
+
+/** `determineActiveSkills` over the engine's own types and an
+ * `ActiveSkillCapRules` -- what `engine.ts` checks each solved build with. */
+export function resolveActiveSkills(
+  picks: ReadonlyMap<string, Candidate>,
+  skillTotals: ReadonlyMap<SkillId, number>,
+  rules: ActiveSkillCapRules,
+  cuffs: readonly Cuff[] = [],
+): SkillActivationResult {
+  const skillsById = new Map<SkillId, CappedSkill>(rules.skills.map((s) => [s.skillId, s]))
+  const cap = capOf(picks, skillTotals, rules.skillSlotsUpId)
   const cuffSkillIds = cuffContributedSkillIds(cuffs)
   const exoticSkillIds = exoticGrantedSkillIds(picks)
 
-  const active = [...skillTotals.entries()]
-    .filter(([skillId]) => skillsById.has(skillId))
-    .filter(([skillId, points]) => isSkillActive(points, skillsById.get(skillId)))
+  const active = [...skillTotals.entries()].filter(([skillId, points]) => {
+    const skill = skillsById.get(skillId)
+    return skill !== undefined && isActiveAt(points, skill.tierThresholds)
+  })
 
   const isCapExempt = (skillId: SkillId): boolean =>
-    (skillsById.get(skillId)?.category === HIDEN_SKILL_CATEGORY && cuffSkillIds.has(skillId)) ||
+    (skillsById.get(skillId)?.hiden === true && cuffSkillIds.has(skillId)) ||
     exoticSkillIds.has(skillId)
 
   const exempt = active.map(([skillId]) => skillId).filter(isCapExempt)
@@ -465,4 +501,19 @@ export function determineActiveSkills(
     rankedActive: [...exempt, ...rankedCapped],
     disabled: rankedCapped.slice(cap),
   }
+}
+
+/** The hard requirements a build's cap force-disables -- any at all makes the
+ * build an invalid result (see `SearchOptions.activeSkillCap`). */
+export function disabledRequirementSkillIds(
+  picks: ReadonlyMap<string, Candidate>,
+  skillTotals: ReadonlyMap<SkillId, number>,
+  cuffs: readonly Cuff[],
+  requirements: readonly SkillRequirement[],
+  rules: ActiveSkillCapRules,
+): SkillId[] {
+  const required = new Set(requirements.map((r) => r.skillId))
+  return resolveActiveSkills(picks, skillTotals, rules, cuffs).disabled.filter((id) =>
+    required.has(id),
+  )
 }

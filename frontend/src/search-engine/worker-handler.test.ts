@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   handleSearchRequest,
   PROVISIONAL_POOL_SIZE,
+  PROVISIONAL_TIME_BOX_SECONDS,
   VERIFICATION_TIME_BOX_SECONDS,
 } from './worker-handler'
 import * as engine from './engine'
@@ -256,6 +257,24 @@ describe('handleSearchRequest', () => {
       const calls = vi.mocked(engine.search).mock.calls.slice(-2)
       expect(calls[0][3]).toMatchObject({ withoutTierPenalties: true, maxResults: 1 })
       expect(calls[1][3]).toMatchObject({ provisionalPoolSize: PROVISIONAL_POOL_SIZE })
+    })
+
+    it('hands the proven ceiling on as a bound, and keeps the fast pass short', async () => {
+      vi.mocked(engine.search)
+        .mockImplementationOnce(scored([[resultA, 100]], 'exhausted'))
+        .mockImplementationOnce(scored([[resultB, 90]], 'exhausted'))
+        .mockImplementationOnce(scored([[resultA, 100]], 'exhausted'))
+
+      await run()
+
+      const [ceilingCall, guessCall, verifyCall] = vi.mocked(engine.search).mock.calls.slice(-3)
+      expect(ceilingCall[3]).not.toHaveProperty('primaryObjectiveBound')
+      expect(guessCall[3]).toMatchObject({
+        primaryObjectiveBound: 100,
+        timeBoxSeconds: PROVISIONAL_TIME_BOX_SECONDS,
+        maxTimeBoxAttempts: 1,
+      })
+      expect(verifyCall[3]).toMatchObject({ primaryObjectiveBound: 100 })
     })
 
     it('marks results below the ceiling provisional, then verifies with the full pass', async () => {

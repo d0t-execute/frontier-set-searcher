@@ -34,6 +34,75 @@ On a weak client (single-threaded WASM, plausibly 3-5x slower than the dev machi
 26s/round x 5 default results is roughly 7-11 minutes, which matches the reported "10+ minutes."
 The same arithmetic on the reformulated model is roughly 5-30s total.
 
+## Status after the third implementation pass (2026-10-30)
+
+**Shipped: a fully exact two-stage lexicographic solve** (approach 5, a manual version of option
+c). Triggered by a real user query (15 normal + 3 Zenith requirements, exact mode, Zenith-tier
+armor only) where the first result took 32s and every verification round ran out its 300s box
+without a proof.
+
+**What was actually slow (measured, first round, 60s box):** not the bonus-tier penalties. The
+strict "no bonus tier" phase was proven infeasible at the root (0 nodes). The bound that wouldn't
+close was the _open-slot_ part. The penalty phase stalled at best −1 against a bound of 8401, i.e.
+the relaxation kept crediting ~0.84 of an extra open slot. Default mode on the same query stalled
+the same way (best 24, bound 7509). Asked alone, "maximize open slots" proved 0 in ~1.5s. The
+small bonus/penalty terms in the same objective are what kept the solver from closing it. A
+bisect showed no regression: every engine commit back to `76b241b` was just as slow on this
+query. The 300s verification box (`3ad722f`) only made it visible, where the old 30s box gave up
+sooner.
+
+**The fix** (`engine.ts`, `BuiltModel.primaryCost`): each round pins the primary part of the
+objective (open slots, preferred pieces/categories, optional skills, "Prefer higher" tiers; every
+coefficient a multiple of 10,000) to its best value with one row (both bounds), then solves the
+full objective under that pin. The best value comes from, in order: the previous round's result
+(results are non-increasing), the proven ceiling `worker-handler.ts` already computes
+(`SearchOptions.primaryObjectiveBound`), or a stage-1 solve on primary costs alone (abs gap just
+under one unit). A pin that's no longer reachable is infeasible, which triggers stage 1. It's
+exact under the engine's existing assumption that bonus/penalty totals never outweigh one open
+slot.
+
+| Query, first round to proof (60s box) | Before          | After            |
+| ------------------------------------- | --------------- | ---------------- |
+| user query, exact mode                | 60s, not proven | **2.2s**, proven |
+| user query, default mode              | 60s, not proven | **9.4s**, proven |
+| 17-skill sword, default               | 34.6s           | 26.1s            |
+| 17-skill sword, exact (no ceiling)    | 17.3s           | 30.7s            |
+| 17-skill end-game, default            | 1.3s            | 1.7s             |
+| 4-skill, default                      | 0.1s            | 0.1s             |
+
+Same proven best score on every query. The sword-exact slowdown was a second presolve and root LP
+on the large unpruned exact-mode model. So when no bound is passed in, `search()` now gets the
+first round's best value from its own pruned bonus-free ceiling solve (`provenPrimaryBound`), not
+from stage 1 on the unpruned model. In the app flow `worker-handler.ts`'s ceiling supplies it
+instead. `engine.real-data.performance.test.ts` (unpruned direct calls), before → after:
+4-skill 47.2s → 0.4s and end-game 51.7s → 2.8s (both tests now also pass `maxResults`, like the
+app), sword per-round box 57.9s → 22.9s, sword default box 30.3s → 22.8s, sword exact 26.8s →
+35.5s. Whole file 215s → 85s. App flow (`handleSearchRequest`, 5 results, all proven): user query
+exact mode 1.8s to the first result and 5.5s to all five (previously 382s, one round unproven);
+sword exact 15.3s; end-game 7.5s; user query default mode 67.9s; sword default 97.6s.
+
+**Fast pass stays single-stage, with a 5s box** (`PROVISIONAL_TIME_BOX_SECONDS`). A second real
+user query (17 normal + 4 Zenith requirements incl. Skill Slots Up 4, all Zenith-tier armor and
+all cuffs: 380-774 pieces per slot, 3212 cuffs) showed the two-stage solve is _slower_ on the
+fast pass's 20-per-slot pool: first build 66s, against 8s single-stage. In both queries the
+single-stage fast pass had its build within 3-8s, then spent the rest of its 30s box failing to
+prove it, a proof the verification pass does anyway. App flow (`handleSearchRequest`, 5 results,
+cap on), last commit `5aa7be0` → now:
+
+| Query                    | Before                                                     | After                                                            |
+| ------------------------ | ---------------------------------------------------------- | ---------------------------------------------------------------- |
+| user query 1 (15 skills) | first 32s; one round unproven at 300s (382s total, cap on) | first proven **7.1s**, all 5 proven **10.6s**                    |
+| user query 2 (17 skills) | 5 results in 106s, **4 of them invalid** (Focus disabled)  | its only valid build proven at **17.8s**, exhaustion proven 99s  |
+| 17-skill sword, exact    | 15.3s, **every result invalid** (5 requirements disabled)  | 5 valid builds (Skill Slots Up +5), first proven 27.9s, all 267s |
+
+The "before" speed on queries 2 and 3 came from returning builds the cap disables. A valid
+sword build needs Skill Slots Up +5 on every slot, which is genuinely harder to search.
+
+Also measured and ruled out: collapsing duplicate pieces/decorations (the user query's 266 pieces
+are all distinct, and only 15 of 1,407 relevant decorations are duplicates), and forcing-row
+strengthening of the bonus-tier big-M rows (aimed at the wrong bound). HiGHS option variants
+(presolve, heuristic effort, symmetry detection, seeds) were set up but not run.
+
 ## Status after the second implementation pass (2026-10-26)
 
 **Shipped:**

@@ -67,6 +67,13 @@
 
 import type { Highs, ModelData, ModelStatusCode, VariableType } from 'highs'
 import { categoriesCoveredBy } from './gear-categories'
+import {
+  BASE_ACTIVE_SKILL_CAP,
+  GRANK_BONUS_PIECE_THRESHOLDS,
+  MAX_SKILL_SLOTS_UP_BONUS,
+  countsTowardGrankBonus,
+  isActiveAt,
+} from './skill-cap-rules'
 import { HIDEN_CUFF_CATEGORY } from './types'
 import type {
   Candidate,
@@ -291,6 +298,9 @@ export type ColumnMeta = CandidateColumn | DecorationColumn | CuffColumn | Auxil
 export interface BuiltModel {
   readonly model: ModelData
   readonly columns: readonly ColumnMeta[]
+  /** Each column's objective cost without its bonus-point or bonus-tier
+   * penalty term -- the lexicographically dominant part of the objective. */
+  readonly primaryCost: readonly number[]
 }
 
 export function pointsTowards(skills: readonly SkillContribution[], skillId: SkillId): number {
@@ -1025,6 +1035,149 @@ export function buildModel(
   const pinnedCuffSkillRowOf = new Map(pinnedCuffSkillIds.map((id, i) => [id, rowCursor + i]))
   rowCursor += pinnedCuffSkillIds.length
 
+  // Active-skill cap (`SearchOptions.activeSkillCap`): every hard requirement
+  // that forces its skill active needs a cap slot, so their count must fit
+  // under the build's own cap -- `BASE_ACTIVE_SKILL_CAP`, plus one
+  // `grankBonus` indicator per `GRANK_BONUS_PIECE_THRESHOLDS` entry (forced
+  // to 0 until enough G-Rank-or-later pieces are chosen), plus a Skill Slots
+  // Up column bounded by both the build's real Skill Slots Up total and
+  // `MAX_SKILL_SLOTS_UP_BONUS`. A forced skill the build can exempt (a Hiden
+  // skill a cuff contributes to, or an Exotic piece's granted skill) gets an
+  // `exempt` indicator that's only allowed to be 1 once one of those sources
+  // is actually chosen, and frees its cap slot when it is. A Hiden skill a
+  // pinned cuff already contributes to is exempt in every build, so it isn't
+  // counted at all.
+  //
+  // Unrequested skills take cap slots too: the cap disables lowest-priority
+  // skills first, so every other capped skill ranked above the lowest-ranked
+  // forced requirement that the build turns on also counts against it.
+  // Each such skill gets an `active` indicator forced to 1 by big-M rows
+  // whenever its total crosses a tier (the same indicator pattern as
+  // `tierMachinery`, one row per side it can reach), unless one of its own
+  // exemption sources is chosen. Without this, the solver -- which the
+  // default ranking pays for bonus points -- kept proposing builds whose
+  // bonus skills pushed a requirement out, and `engine.ts` had to cut them
+  // one gear set at a time (observed: ~1 rejection per second, never
+  // finishing, on a real 17-skill query). `engine.ts` still checks every
+  // build exactly as a safety net. Skipped entirely while the forced
+  // requirements plus every bonus skill that could turn on still fit the base
+  // cap.
+  const capRules = options.activeSkillCap
+  const cappedSkillById = new Map((capRules?.skills ?? []).map((s) => [s.skillId, s]))
+  const forcedActiveSkillIds = [
+    ...new Set(
+      requirements
+        .filter((r) => {
+          const skill = cappedSkillById.get(r.skillId)
+          return (
+            skill !== undefined && r.minPoints > 0 && isActiveAt(r.minPoints, skill.tierThresholds)
+          )
+        })
+        .map((r) => r.skillId),
+    ),
+  ].filter(
+    (id) =>
+      !(
+        cappedSkillById.get(id)!.hiden && pinnedCuffs.some((c) => pointsTowards(c.skills, id) !== 0)
+      ),
+  )
+  const isHidenExemptCuff = (cuff: Cuff, skillId: SkillId): boolean =>
+    cappedSkillById.get(skillId)!.hiden && pointsTowards(cuff.skills, skillId) !== 0
+  const forcedSkillIdSet = new Set(forcedActiveSkillIds)
+  const rankOf = (id: SkillId): number => cappedSkillById.get(id)?.priorityRank ?? Infinity
+  const lowestForcedRank = Math.max(-Infinity, ...forcedActiveSkillIds.map(rankOf))
+  // Unranked skills tie with each other (both `Infinity`), and the cap's own
+  // sort leaves their order to chance -- counted as ranked above, the safe side.
+  const capBonusSkillIds = (capRules?.skills ?? [])
+    .filter(
+      (s) =>
+        forcedActiveSkillIds.length > 0 &&
+        !forcedSkillIdSet.has(s.skillId) &&
+        (rankOf(s.skillId) < lowestForcedRank || rankOf(s.skillId) === Infinity) &&
+        !(s.hiden && pinnedCuffs.some((c) => pointsTowards(c.skills, s.skillId) !== 0)),
+    )
+    .map((s) => s.skillId)
+  const capBonusRanges = computeAchievableRanges(
+    slots,
+    slotDecorationGroups,
+    skillMaxCounts,
+    cuffs,
+    new Set(capBonusSkillIds),
+  )
+  /** A bonus skill's indicator rows, over the *free* (non-pinned) total --
+   * `posLimit`/`negLimit` are the free total's last inactive value on each
+   * side, already offset by any pinned cuffs' points. */
+  interface CapBonusSkill {
+    readonly skillId: SkillId
+    readonly posLimit?: number
+    readonly posBigM: number
+    readonly negLimit?: number
+    readonly negBigM: number
+  }
+  const capBonusSkills: CapBonusSkill[] = capBonusSkillIds.flatMap((skillId) => {
+    const { posThreshold, negThreshold } = breakpointsFromThresholds(
+      cappedSkillById.get(skillId)!.tierThresholds,
+    )
+    const untiered = posThreshold === undefined && negThreshold === undefined
+    const pos = untiered ? 1 : posThreshold
+    const pinned = pinnedPointsTowards(skillId)
+    const range = capBonusRanges.get(skillId)!
+    const posLimit = pos !== undefined && range.max >= pos - pinned ? pos - 1 - pinned : undefined
+    const negLimit =
+      negThreshold !== undefined && range.min <= negThreshold - pinned
+        ? negThreshold + 1 - pinned
+        : undefined
+    if (posLimit === undefined && negLimit === undefined) return []
+    return [
+      {
+        skillId,
+        posLimit,
+        posBigM: posLimit !== undefined ? range.max - posLimit : 0,
+        negLimit,
+        negBigM: negLimit !== undefined ? negLimit - range.min : 0,
+      },
+    ]
+  })
+  const needsCapRow = forcedActiveSkillIds.length + capBonusSkills.length > BASE_ACTIVE_SKILL_CAP
+  const capSkillSlotsUpId = needsCapRow ? capRules!.skillSlotsUpId : undefined
+  const exemptibleSkillIds = needsCapRow
+    ? forcedActiveSkillIds.filter(
+        (id) =>
+          cuffs.some((c) => isHidenExemptCuff(c, id)) ||
+          slots.some((slot) => slot.candidates.some((c) => c.exoticSkillId === id)),
+      )
+    : []
+  const capRow = needsCapRow ? rowCursor++ : -1
+  const grankBonusRows = needsCapRow ? GRANK_BONUS_PIECE_THRESHOLDS.map(() => rowCursor++) : []
+  const skillSlotsUpRow = capSkillSlotsUpId !== undefined ? rowCursor++ : -1
+  const capExemptRowOf = new Map(exemptibleSkillIds.map((id) => [id, rowCursor++]))
+  const liveCapBonusSkills = needsCapRow ? capBonusSkills : []
+  const capBonusPosRowOf = new Map<SkillId, number>()
+  const capBonusNegRowOf = new Map<SkillId, number>()
+  for (const b of liveCapBonusSkills) {
+    if (b.posLimit !== undefined) capBonusPosRowOf.set(b.skillId, rowCursor++)
+    if (b.negLimit !== undefined) capBonusNegRowOf.set(b.skillId, rowCursor++)
+  }
+  /** Every cap-bonus row a column's skill points feed (`times` copies), plus
+   * the exemption relief when the column is one of that skill's exemption
+   * sources -- shared by candidate, decoration, and cuff columns. */
+  function addCapBonusEntries(
+    entries: Map<number, number>,
+    skills: readonly SkillContribution[],
+    times: number,
+    exemptSkillIds: readonly SkillId[] = [],
+  ): void {
+    for (const b of liveCapBonusSkills) {
+      const points = pointsTowards(skills, b.skillId) * times
+      const exempt = exemptSkillIds.includes(b.skillId)
+      if (points === 0 && !exempt) continue
+      const posRow = capBonusPosRowOf.get(b.skillId)
+      const negRow = capBonusNegRowOf.get(b.skillId)
+      if (posRow !== undefined) entries.set(posRow, points - (exempt ? b.posBigM : 0))
+      if (negRow !== undefined) entries.set(negRow, points + (exempt ? b.negBigM : 0))
+    }
+  }
+
   const numRows = rowCursor
 
   const rowLower = new Array<number>(numRows)
@@ -1118,9 +1271,46 @@ export function buildModel(
     rowLower[pinnedCuffSkillRowOf.get(skillId)!] = required - alreadyPinned
     rowUpper[pinnedCuffSkillRowOf.get(skillId)!] = highs.infinity
   }
+  if (needsCapRow) {
+    // `forced - sum(exempt) <= BASE + sum(grankBonus) + skillSlotsUp`
+    rowLower[capRow] = -highs.infinity
+    rowUpper[capRow] = BASE_ACTIVE_SKILL_CAP - forcedActiveSkillIds.length
+    // `threshold * grankBonus - (G-Rank-or-later pieces chosen) <= 0`
+    for (const row of grankBonusRows) {
+      rowLower[row] = -highs.infinity
+      rowUpper[row] = 0
+    }
+    // `exempt - (sources chosen) <= 0`
+    for (const row of capExemptRowOf.values()) {
+      rowLower[row] = -highs.infinity
+      rowUpper[row] = 0
+    }
+  }
+  for (const b of liveCapBonusSkills) {
+    // `total - bigM * (active + sources chosen) <= posLimit`: crossing the
+    // positive tier forces `active` unless an exemption source is chosen.
+    if (b.posLimit !== undefined) {
+      rowLower[capBonusPosRowOf.get(b.skillId)!] = -highs.infinity
+      rowUpper[capBonusPosRowOf.get(b.skillId)!] = b.posLimit
+    }
+    // `total + bigM * (active + sources chosen) >= negLimit`, the mirror image.
+    if (b.negLimit !== undefined) {
+      rowLower[capBonusNegRowOf.get(b.skillId)!] = b.negLimit
+      rowUpper[capBonusNegRowOf.get(b.skillId)!] = highs.infinity
+    }
+  }
+  if (skillSlotsUpRow >= 0) {
+    // `skillSlotsUp - (Skill Slots Up points chosen) <= pinned cuffs' points`
+    rowLower[skillSlotsUpRow] = -highs.infinity
+    rowUpper[skillSlotsUpRow] = pinnedPointsTowards(capSkillSlotsUpId!)
+  }
 
   const columns: ColumnMeta[] = []
   const colCost: number[] = []
+  const primaryCost: number[] = []
+  // `preferExactMatches: true` drops the bonus-point term from a column's
+  // cost, which is exactly what its primary cost leaves out.
+  const primaryOptions: SearchOptions = { ...options, preferExactMatches: true }
   const colLower: number[] = []
   const colUpper: number[] = []
   const integrality: VariableType[] = []
@@ -1133,8 +1323,10 @@ export function buildModel(
     entries: ReadonlyMap<number, number>,
     lower = 0,
     upper = 1,
+    primary = cost,
   ): void {
     colCost.push(cost)
+    primaryCost.push(primary)
     colLower.push(lower)
     colUpper.push(upper)
     integrality.push(highs.constants.variableType.integer)
@@ -1168,6 +1360,11 @@ export function buildModel(
       const points = pointsTowards(decoration.skills, tier.skillId)
       if (points !== 0) entries.set(preferHigherReachedRowOf[i], points)
     })
+    if (skillSlotsUpRow >= 0) {
+      const points = pointsTowards(decoration.skills, capSkillSlotsUpId!)
+      if (points !== 0) entries.set(skillSlotsUpRow, -points)
+    }
+    addCapBonusEntries(entries, decoration.skills, 1)
     return entries
   }
 
@@ -1212,6 +1409,22 @@ export function buildModel(
           entries.set(preferredCategoryRowOf[i], -1)
         }
       })
+      if (needsCapRow && countsTowardGrankBonus(candidate)) {
+        for (const row of grankBonusRows) entries.set(row, -1)
+      }
+      if (skillSlotsUpRow >= 0) {
+        const points = pointsTowards(candidate.skills, capSkillSlotsUpId!)
+        if (points !== 0) entries.set(skillSlotsUpRow, -points)
+      }
+      if (candidate.exoticSkillId != null && capExemptRowOf.has(candidate.exoticSkillId)) {
+        entries.set(capExemptRowOf.get(candidate.exoticSkillId)!, -1)
+      }
+      addCapBonusEntries(
+        entries,
+        candidate.skills,
+        1,
+        candidate.exoticSkillId != null ? [candidate.exoticSkillId] : [],
+      )
 
       columns.push({ kind: 'candidate', slotIndex: s, slotId: slot.slotId, candidate })
       addColumn(
@@ -1219,6 +1432,7 @@ export function buildModel(
         entries,
         0,
         remaining < 0 ? 0 : 1,
+        candidateObjectiveCost(candidate, skillPreferenceIds, primaryOptions),
       )
     }
   })
@@ -1234,6 +1448,7 @@ export function buildModel(
       entries,
       0,
       Math.floor(totalCapacity / decoration.slotSize),
+      decorationObjectiveCost(decoration, skillPreferenceIds, primaryOptions),
     )
   }
 
@@ -1251,6 +1466,7 @@ export function buildModel(
         decorationEntries(decoration),
         count,
         count,
+        decorationObjectiveCost(decoration, skillPreferenceIds, primaryOptions),
       )
     }
   }
@@ -1295,11 +1511,24 @@ export function buildModel(
           const points = pointsTowards(cuff.skills, tier.skillId)
           if (points !== 0) entries.set(preferHigherReachedRowOf[i], count * points)
         })
+        if (skillSlotsUpRow >= 0) {
+          const points = pointsTowards(cuff.skills, capSkillSlotsUpId!)
+          if (points !== 0) entries.set(skillSlotsUpRow, -count * points)
+        }
+        for (const [skillId, row] of capExemptRowOf) {
+          if (isHidenExemptCuff(cuff, skillId)) entries.set(row, -1)
+        }
+        addCapBonusEntries(
+          entries,
+          cuff.skills,
+          count,
+          liveCapBonusSkills.map((b) => b.skillId).filter((id) => isHidenExemptCuff(cuff, id)),
+        )
       }
 
       columns.push({ kind: 'cuff', cuff, count })
       const cost = count === 0 ? 0 : count * (-OPEN_SLOT_WEIGHT * cuff.slotSize + cuffBonus)
-      addColumn(cost, entries)
+      addColumn(cost, entries, 0, 1, count * -OPEN_SLOT_WEIGHT * cuff.slotSize)
     }
   })
 
@@ -1316,12 +1545,24 @@ export function buildModel(
       // guarantees `range.max >= posThreshold`, so this is always >= 1.
       const bigM = m.range.max - (m.posThreshold! - 1)
       columns.push({ kind: 'auxiliary', tierIndicator: true })
-      addColumn(-EXACT_MATCH_SKILL_PENALTY, new Map([[posIndicatorRowOf.get(m.skillId)!, -bigM]]))
+      addColumn(
+        -EXACT_MATCH_SKILL_PENALTY,
+        new Map([[posIndicatorRowOf.get(m.skillId)!, -bigM]]),
+        0,
+        1,
+        0,
+      )
     }
     if (m.needsNeg) {
       const bigM = m.negThreshold! + 1 - m.range.min
       columns.push({ kind: 'auxiliary', tierIndicator: true })
-      addColumn(-EXACT_MATCH_SKILL_PENALTY, new Map([[negIndicatorRowOf.get(m.skillId)!, bigM]]))
+      addColumn(
+        -EXACT_MATCH_SKILL_PENALTY,
+        new Map([[negIndicatorRowOf.get(m.skillId)!, bigM]]),
+        0,
+        1,
+        0,
+      )
     }
   }
 
@@ -1369,6 +1610,50 @@ export function buildModel(
     addColumn(PREFERRED_ITEM_WEIGHT, new Map([[preferredCategoryRowOf[i], 1]]), 0, p.count)
   })
 
+  // The active-skill cap's own columns (see `capRow` above), all cost 0 --
+  // they only ever make room under the cap, never change a build's rank.
+  grankBonusRows.forEach((row, k) => {
+    columns.push({ kind: 'auxiliary' })
+    addColumn(
+      0,
+      new Map([
+        [capRow, -1],
+        [row, GRANK_BONUS_PIECE_THRESHOLDS[k]],
+      ]),
+    )
+  })
+  if (skillSlotsUpRow >= 0) {
+    columns.push({ kind: 'auxiliary' })
+    addColumn(
+      0,
+      new Map([
+        [capRow, -1],
+        [skillSlotsUpRow, 1],
+      ]),
+      0,
+      MAX_SKILL_SLOTS_UP_BONUS,
+    )
+  }
+  for (const row of capExemptRowOf.values()) {
+    columns.push({ kind: 'auxiliary' })
+    addColumn(
+      0,
+      new Map([
+        [capRow, -1],
+        [row, 1],
+      ]),
+    )
+  }
+  // One `active` indicator per bonus skill that can take a cap slot (see
+  // `capBonusSkills` above) -- it occupies one slot in `capRow` when forced on.
+  for (const b of liveCapBonusSkills) {
+    const entries = new Map<number, number>([[capRow, 1]])
+    if (b.posLimit !== undefined) entries.set(capBonusPosRowOf.get(b.skillId)!, -b.posBigM)
+    if (b.negLimit !== undefined) entries.set(capBonusNegRowOf.get(b.skillId)!, b.negBigM)
+    columns.push({ kind: 'auxiliary' })
+    addColumn(0, entries)
+  }
+
   const model: ModelData = {
     numCols: columns.length,
     numRows,
@@ -1390,7 +1675,7 @@ export function buildModel(
     },
   }
 
-  return { model, columns }
+  return { model, columns, primaryCost }
 }
 
 export interface BuildResultLike {

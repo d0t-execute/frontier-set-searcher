@@ -13,7 +13,7 @@ import { SkillPicker } from './components/SkillPicker'
 import type { NamedBuildResult } from './components/types'
 import { useDataBundle } from './data/useDataBundle'
 import { useSearchWorker } from './search/useSearchWorker'
-import { previewActiveSkillCap } from './search-engine/active-skill-cap'
+import { activeSkillCapRulesOf, previewActiveSkillCap } from './search-engine/active-skill-cap'
 import {
   buildSearchQuery,
   decorationsAfterCategoryFilter,
@@ -669,6 +669,13 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
     [bundle],
   )
 
+  // Lets the engine reject builds whose active-skill cap would disable a
+  // requested skill -- see SearchOptions.activeSkillCap.
+  const activeSkillCap = useMemo(
+    () => activeSkillCapRulesOf(bundle?.skills ?? [], bundle?.zenithSkills ?? []),
+    [bundle],
+  )
+
   // Starts with every real Zenith skill excluded (only the "no Zenith skill"
   // leaf included) -- today's app has no weapon slot at all, so this exact
   // starting point is the one that changes nothing about an existing search
@@ -1077,6 +1084,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
         ...STAGE_TIME_BOX[stage],
         preferExactMatches,
         skillTiers,
+        activeSkillCap,
         pinnedCuffs,
         pinnedSlotDecorations,
         resistanceFloors: [...nonNegativeResistances].map((element) => ({ element, minTotal: 0 })),

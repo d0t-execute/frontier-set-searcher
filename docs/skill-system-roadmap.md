@@ -102,8 +102,8 @@ not the ~26-family Zenith catalog).
 - Related existing behavior this builds on: the search engine already treats "more points past a
   requirement's threshold" as a tie, never a win -- the production model's requirement rows
   ([ilp-model.ts](../frontend/src/search-engine/ilp-model.ts)) are hard constraints with no reward
-  for overshoot. This feature is purely a post-hoc, display-only computation over a completed
-  `BuildResult`; it does not change the search engine's objective or constraints.
+  for overshoot. This feature was originally a post-hoc, display-only computation over a completed
+  `BuildResult` -- superseded 2026-10-30, see "Search respects the cap" below.
 - Verification: 251/251 ETL tests pass (6 new `load_skill_priority` tests, 2 new
   `_export_skills`/priority-rank export tests), ruff clean, DB rebuilt from scratch
   (`.bak-pre-skill-priority` preserves the prior DB) with 0 unmatched priority entries/skills, data
@@ -137,6 +137,36 @@ mechanic wasn't documented or implemented anywhere before this fix.
   clean. Live-browser verified: pinned a real cuff ("SnS・G", 12 points towards "SnS Tech") alongside
   11 skill requirements sized to fill the cap, and confirmed "SnS Tech: 12" rendered with no
   `(disabled)` tag in the result while a separate, lower-priority skill past the cap did show one.
+
+**Search respects the cap (2026-10-30).** Reported by the project owner: a 15-normal-skill exact-mode
+query first found a valid build (Skill Slots Up +3, cap 15), then replaced it with a "better" one
+(one more open slot) that only had Skill Slots Up +1 -- cap 13, so two requirements were
+force-disabled. The search had never looked at the cap. Now a build that force-disables any hard
+requirement is not a valid result (`SearchOptions.activeSkillCap`, built by
+`active-skill-cap.ts`'s `activeSkillCapRulesOf` and passed by `App.tsx` on every search):
+
+- `ilp-model.ts`'s `buildModel` adds a cap row: requirements that force their skill active (minus
+  ones a cuff/Exotic piece can exempt), plus every other capped skill ranked above the
+  lowest-priority forced requirement that the build turns on, must fit under `10 + G-Rank bonus +
+  min(Skill Slots Up, 7)`. G-Rank bonus uses binary indicators, Skill Slots Up a bounded column, and
+  each bonus skill an `active` indicator forced on by big-M rows (same pattern as the exact-match
+  tier machinery), relaxed when one of its exemption sources is chosen. Skipped while everything
+  that could turn on fits the base cap of 10.
+- A first version modeled only the requirements (a necessary condition) and relied on the exact
+  check below to catch bonus-skill crowding. On a real 17-skill query that rejected ~1 build per
+  second and never finished, because the default ranking pays for bonus points; with bonus skills in
+  the row it proves "no valid build" in ~1s. On the reported 15-skill exact-mode query it returned 5
+  valid builds (cap 15, Skill Slots Up +3) in 382s with zero rejections, while the uncapped search
+  reproduced the bug (cap 13, Crit Conversion and Ceaseless disabled) at 65s.
+- `engine.ts` still checks every solved build exactly (`disabledRequirementSkillIds`) as a safety
+  net and cuts a failing build without yielding it.
+- Skill Slots Up cuffs stay in the relevant-cuff pool even when not requested, and
+  `candidate-pruning.ts`'s dominance rule requires a dominator to raise the cap at least as much
+  (G-Rank bonus eligibility, Skill Slots Up points, same Exotic exemption). Known gap: pruning still
+  ignores unrequested skills, so in rare cases the pruned pool can miss a valid build that only a
+  pruned piece makes.
+- The shared cap numbers/rules moved to `skill-cap-rules.ts` so `ilp-model.ts` and
+  `active-skill-cap.ts` don't import each other.
 
 ## 2. Zenith skills as a separate filter
 

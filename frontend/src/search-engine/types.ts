@@ -111,6 +111,15 @@ export interface Candidate {
    * care about categories can omit it, same convention as `openSlotCount`/
    * `resistances`). Used by `SearchOptions.preferredCategoryCounts`. */
   readonly category?: string
+  /** Whether this piece is "G Rank or later" for the active-skill cap's
+   * piece-count bonus (see `NamedCandidate.grankOrLater`, which always sets
+   * this). Only read when `SearchOptions.activeSkillCap` is set; omitted
+   * means "not G Rank or later." */
+  readonly grankOrLater?: boolean
+  /** The skill this piece grants via its Exotic-armor bonus, exempt from the
+   * active-skill cap (see `NamedCandidate.exoticSkillId`). Only read when
+   * `SearchOptions.activeSkillCap` is set; omitted means none. */
+  readonly exoticSkillId?: SkillId | null
 }
 
 export interface Decoration {
@@ -373,6 +382,47 @@ export interface SearchOptions {
    * optimal, so the verification pass ranks only what comes after them
    * instead of re-solving them first. */
   readonly excludedGearSets?: readonly ExcludedGearSet[]
+
+  /** A proven upper bound on every build's score without its bonus-point /
+   * bonus-tier part (objective offset included) -- `worker-handler.ts`
+   * passes its proven bonus-free ceiling. Lets `engine.ts`'s lexicographic
+   * solve skip computing that best value itself on the first round. Must be
+   * a true upper bound for this query; absent means unknown. */
+  readonly primaryObjectiveBound?: number
+
+  /** The game's active-skill cap (`active-skill-cap.ts`): when set, a build
+   * that would force-disable any hard requirement's skill is not a valid
+   * result. `buildModel` models the cap directly -- the forced requirements
+   * plus every higher-priority skill the build turns on must fit under
+   * `10 + G-Rank bonus + Skill Slots Up` -- so the solver goes looking for
+   * Skill Slots Up / G-Rank pieces when they're needed and avoids bonus
+   * skills that would crowd a requirement out. `engine.ts` also checks every
+   * solved build exactly as a safety net, cutting one that fails instead of
+   * yielding it. Absent means the cap is ignored entirely, as it was before
+   * this existed. */
+  readonly activeSkillCap?: ActiveSkillCapRules
+}
+
+/** What the engine needs to know about the normal-skill catalog to apply the
+ * active-skill cap -- see `SearchOptions.activeSkillCap`. Plain data (it
+ * crosses the worker's `postMessage` boundary); `active-skill-cap.ts`'s
+ * `activeSkillCapRulesOf` builds it from the loaded bundle. */
+export interface ActiveSkillCapRules {
+  /** Every normal skill, i.e. every skill the cap applies to. Zenith skills
+   * are never listed: they're a separate pool the cap doesn't touch. */
+  readonly skills: readonly CappedSkill[]
+  /** The Zenith skill "Skill Slots Up," whose level raises the cap. */
+  readonly skillSlotsUpId?: SkillId
+}
+
+export interface CappedSkill {
+  readonly skillId: SkillId
+  /** Activation priority, 1 = most protected; `null` sorts last. */
+  readonly priorityRank: number | null
+  /** Same as `SkillTierThresholds.tierThresholds`. */
+  readonly tierThresholds: readonly number[]
+  /** A Hiden/Tech skill, exempt from the cap when a cuff contributes to it. */
+  readonly hiden: boolean
 }
 
 /** A result's gear identity, the thing results are distinct by: which
