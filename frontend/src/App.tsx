@@ -1310,7 +1310,11 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                     satisfying all of them. An explicit "Option N" always outranks "Prefer higher",
                     since the player picked that priority on purpose and "Prefer higher" didn't get
                     one. <br />
-                    <b>You can search by skill name and skill level/threshold names.</b>
+                    <b>You can search by skill name and skill level/threshold names.</b> <br />
+                    Results always respect the game's active skill cap: none of your required skills
+                    will be disabled. If more skills are required than the available gear and Skill
+                    Slots Up can fit under the cap, there are no results, because no such build
+                    exists.
                   </InfoTooltip>
                 }
               >
