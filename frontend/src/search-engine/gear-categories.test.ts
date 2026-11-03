@@ -48,6 +48,17 @@ describe('Exotic leaves (2026-10-20: only the plain leaf is Pre-G-Rank / moved u
     expect(GEAR_LEVEL_PRE_GRANK_CATEGORIES).toContain('paid_gachapon_exotic')
   })
 
+  it("Gachapon's own Exotic G/GF/GX tiers are G-Rank (2026-11-01)", () => {
+    for (const key of [
+      'paid_gachapon_exotic_g',
+      'paid_gachapon_exotic_gf',
+      'paid_gachapon_exotic_gx',
+    ]) {
+      expect(GEAR_LEVEL_GRANK_CATEGORIES).toContain(key)
+      expect(GEAR_LEVEL_PRE_GRANK_CATEGORIES).not.toContain(key)
+    }
+  })
+
   it('the plain leaf lives under Standard Armor; its G/GF/GX tiers stay under G Rank Armor', () => {
     const standardArmor = GEAR_CATEGORY_GROUPS.find((g) => g.label === 'Standard Armor')
     const gRankArmor = GEAR_CATEGORY_GROUPS.find((g) => g.label === 'G Rank Armor')

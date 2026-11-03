@@ -86,6 +86,22 @@ question and is confirmed genuinely empty -- 0 rows carry a "ZP" marker anywhere
 only one of these 5 routes without a Zenith-Shugo tier; same no-leaf-for-confirmed-empty convention as
 Subscription Period/Taiwanese Premium below.
 
+**Update (2026-11-03, Package ZP added as a curated leaf):** `CRE=5p` itself still has no `CLASS Q`
+rows, but the project owner asked for a "Package ZP" leaf holding a curated list of ZP sets: the 13
+10th-anniversary weapon sets (Sword Hero, Twin Star, Heaven Blade, Spring Sword, Riot Hammer, Song
+Horn, Crush Lance, Scream Lance, Piercing Light, Colour Axe, Blast Gun, Crush Gun, Bow Saint) plus
+Evol, Lien, Red/Blue/White Ice Emperor, Granu, Duque, Dinato, Tiuru, Hevria, Shatemu, Tinku, Juari,
+Bright, Gilbert, Weber, Gauss, Aonoko, Mandora, Poogie, Espi, Blaze, Rampage, Rage and Chiyo. All are
+Premium Kit (`CRE=4k`) sets; their `CLASS Q` rows are matched by name prefix
+(`_PACKAGE_ZP_NAME_PREFIXES` in gear_category.py) and pulled out of Premium Kit ZP -- confirmed
+against the real dataset: 368 rows, every prefix matching, no other `CLASS Q` row caught. Only the
+ZP tier moves; each set's lower tiers stay in Premium Kit. (A first draft of the list on 2026-11-01
+also pulled sets from Gachapon and Promotional; the project owner replaced it before it shipped.)
+
+**Update (2026-11-01, Gachapon Exotic G/GF/GX are G-Rank):** per the project owner, only plain
+"Gachapon Exotic" is Pre-G-Rank for the "Gear levels" UI tier; its G/GF/GX leaves are G-Rank,
+matching the split 縁 already has (see "G Rank Armor" below).
+
 **Update (2026-10-20):** each route's `CLASS ""` base tier further splits into F/FZ sub-tiers (see the
 taxonomy-wide F/FZ/G/GF note above); Gachapon's Hiden/G-Hiden/Exotic sub-leaves also split by their
 own internal tier the same way (G-Hiden: no plain variant, 100% G/GF/GX; Exotic: plain + G/GF/GX).
@@ -99,7 +115,7 @@ own internal tier the same way (G-Hiden: no plain variant, 100% G/GF/GX; Exotic:
 | Package GS | `CRE=5p` + `CLASS J` + "GS" | 440 | HIGH |
 | Package GP | `CRE=5p` + `CLASS J` + "GP" | 360 | HIGH |
 | Package HC | `CRE=5p` + `CLASS E` | 80 | HIGH |
-| Package ZP | *(no leaf — confirmed empty)* | 0 | CONFIRMED |
+| Package ZP | `CRE=4k` + `CLASS Q` + curated name prefix (see above) | 368 | HIGH |
 | Premium Kit | `CRE=4k`, `CLASS ""`, no suffix | 3,443 | HIGH |
 | Premium Kit F | `CRE=4k` + `CLASS ""` + "F" | 3,177 | HIGH |
 | Premium Kit FZ | `CRE=4k` + `CLASS ""` + "FZ"/"FY" | 3,262 | HIGH |
@@ -107,7 +123,7 @@ own internal tier the same way (G-Hiden: no plain variant, 100% G/GF/GX; Exotic:
 | Premium Kit GS | `CRE=4k` + `CLASS J` + "GS" | 3,262 | HIGH |
 | Premium Kit GP | `CRE=4k` + `CLASS J` + "GP" | 3,262 | HIGH |
 | Premium Kit HC | `CRE=4k` + `CLASS E` | 1,201 | HIGH |
-| Premium Kit ZP | `CRE=4k` + `CLASS Q` | 864 | HIGH |
+| Premium Kit ZP | `CRE=4k` + `CLASS Q`, not Package ZP | 496 | HIGH |
 | Gachapon | `CRE=4g`, `CLASS ""`, no suffix | 2,449 | HIGH |
 | Gachapon F | `CRE=4g` + `CLASS ""` + "F" | 2,168 | HIGH |
 | Gachapon FZ | `CRE=4g` + `CLASS ""` + "FZ"/"FY" | 1,606 | HIGH |
@@ -279,7 +295,8 @@ being `CLASS O` alongside the genuinely G-Rank G祕/始/etc. leaves above. Its G
 into a new "Exotic" section under "Standard Armor" (see that section below); `grank_exotic_g`/`_gf`/
 `_gx` stayed in "G Rank Armor", in their own "Exotic" section there. Gachapon's own "Gachapon Exotic"
 leaves (a separate group, under "Paid and Premium" below) are unrelated and untouched -- still all
-Pre-G-Rank as before. This is purely a "Gear levels" UI-tier correction -- `is_grank_or_later_equipment`
+Pre-G-Rank as before. (Superseded 2026-11-01: Gachapon Exotic G/GF/GX are G-Rank too -- see
+"Paid and Premium".) This is purely a "Gear levels" UI-tier correction -- `is_grank_or_later_equipment`
 in gear_category.py (the real in-game active-skill-cap G-Rank piece-count bonus) still treats
 `CLASS O` as G-Rank-or-later, which is a separate, unrelated mechanic and was intentionally left
 untouched.

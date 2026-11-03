@@ -161,6 +161,7 @@ from etl.parse.gear_category import (
     CATEGORY_PAID_PACKAGE_GS,
     CATEGORY_PAID_PACKAGE_HC,
     CATEGORY_PAID_PACKAGE_HS,
+    CATEGORY_PAID_PACKAGE_ZP,
     CATEGORY_PAID_PREMIUM_KIT,
     CATEGORY_PAID_PREMIUM_KIT_FZ,
     CATEGORY_PAID_PREMIUM_KIT_GP,
@@ -314,7 +315,7 @@ def test_paid_premium_subcategories() -> None:
         == CATEGORY_PAID_PREMIUM_KIT_HC
     )
     assert (
-        classify_equipment_category(_row("Evol ZP Head", cre="4k", clazz="Q"))
+        classify_equipment_category(_row("Asteli ZP Haar・White", cre="4k", clazz="Q"))
         == CATEGORY_PAID_PREMIUM_KIT_ZP
     )
 
@@ -403,6 +404,29 @@ def test_paid_premium_base_tier_f_and_fz() -> None:
     assert (
         classify_equipment_category(_row("Secuti FY Helm", cre="4k"))
         == CATEGORY_PAID_PREMIUM_KIT_FZ
+    )
+
+
+def test_package_zp_pulls_curated_sets_out_of_premium_kit() -> None:
+    # Curated by name (2026-11-03, per the project owner), not by CRE: these
+    # sets' ZP rows really live under Premium Kit.
+    assert (
+        classify_equipment_category(_row("Sword Hero ZP Helm", cre="4k", clazz="Q"))
+        == CATEGORY_PAID_PACKAGE_ZP
+    )
+    assert (
+        classify_equipment_category(_row("Espi ZP Mask・Tea", cre="4k#", clazz="Q"))
+        == CATEGORY_PAID_PACKAGE_ZP
+    )
+    # A set not on the list stays in Premium Kit ZP.
+    assert (
+        classify_equipment_category(_row("Knight King Hair BM ZP Red", cre="4k", clazz="Q"))
+        == CATEGORY_PAID_PREMIUM_KIT_ZP
+    )
+    # Only the ZP tier moves -- the same set's lower tiers stay in their route.
+    assert (
+        classify_equipment_category(_row("Sword Hero GP Helm", cre="4k", clazz="J"))
+        == CATEGORY_PAID_PREMIUM_KIT_GP
     )
 
 

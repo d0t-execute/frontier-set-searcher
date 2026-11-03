@@ -77,6 +77,12 @@ CATEGORY_PAID_PACKAGE_HS = "paid_package_hs"
 CATEGORY_PAID_PACKAGE_GS = "paid_package_gs"
 CATEGORY_PAID_PACKAGE_GP = "paid_package_gp"
 CATEGORY_PAID_PACKAGE_HC = "paid_package_hc"
+# Update (2026-11-01): "Package ZP" is *not* a CRE=5p tier (that route has
+# no CLASS=Q rows at all -- see the taxonomy doc), but a curated leaf the
+# project owner asked for: a set of cheap ZP sets pulled out of Premium Kit's
+# own ZP leaf. Matched by name prefix, CRE=4k + CLASS=Q only -- see
+# `_PACKAGE_ZP_NAME_PREFIXES`.
+CATEGORY_PAID_PACKAGE_ZP = "paid_package_zp"
 
 CATEGORY_PAID_PREMIUM_KIT = "paid_premium_kit"  # CRE=4k, CLASS "" (base tier)
 CATEGORY_PAID_PREMIUM_KIT_F = "paid_premium_kit_f"
@@ -608,6 +614,53 @@ _EVENT_EXTREME_NAME_PREFIXES: tuple[str, ...] = (
 _FESTIVAL_OTHER_NAME_PREFIX = "祭のあとに"
 
 
+# CATEGORY_PAID_PACKAGE_ZP's sets, as raw-name prefixes (2026-11-03, list
+# from the project owner, replacing a first draft from 2026-11-01). Every
+# set's own ZP rows were confirmed against the real dataset to start with
+# exactly one of these, all of them Premium Kit (4k), and no other CLASS=Q
+# row there does. The first 13 are the 10th-anniversary weapon sets.
+_PACKAGE_ZP_NAME_PREFIXES = (
+    "Sword Hero ",
+    "Twin Star ",
+    "Heaven Blade ",
+    "Spring Sword ",
+    "Riot Hammer ",
+    "Song Horn ",
+    "Crush Lance ",
+    "Scream Lance ",
+    "Piercing Light ",
+    "Colour Axe ",
+    "Blast Gun ",
+    "Crush Gun ",
+    "Bow Saint ",
+    "Evol ",
+    "Lien ",
+    "Red Ice Emperor ",
+    "Blue Ice Emperor ",
+    "White Ice Emperor ",
+    "Granu ",
+    "Duque ",
+    "Dinato ",
+    "Tiuru ",
+    "Hevria ",
+    "Shatemu ",
+    "Tinku ",
+    "Juari ",
+    "Bright ",
+    "Gilbert ",
+    "Weber ",
+    "Gauss ",
+    "Aonoko ",
+    "Mandora ",
+    "Poogie ",
+    "Espi ",
+    "Blaze ",
+    "Rampage ",
+    "Rage ",
+    "Chiyo ",
+)
+
+
 def _paid_premium_subcategory(
     clazz: str,
     name: str,
@@ -717,6 +770,9 @@ def classify_equipment_category(fields: list[str]) -> str:
         return CATEGORY_UNAVAILABLE_NOT_IMPLEMENTED
     if cre == "7-":
         return CATEGORY_UNAVAILABLE_TRAINING_ONLY
+
+    if cre == "4k" and clazz == _CLASS_ZENITH_SHUGO and name.startswith(_PACKAGE_ZP_NAME_PREFIXES):
+        return CATEGORY_PAID_PACKAGE_ZP
 
     if cre == "5p":
         return _paid_premium_subcategory(

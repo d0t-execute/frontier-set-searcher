@@ -97,6 +97,7 @@ export const GEAR_CATEGORY_GROUPS: readonly GearCategoryGroup[] = [
       { key: 'paid_package_hs', label: 'Package HS' },
       { key: 'paid_package_gs', label: 'Package GS' },
       { key: 'paid_package_gp', label: 'Package GP' },
+      { key: 'paid_package_zp', label: 'Package ZP' },
     ],
   },
   {
@@ -422,6 +423,11 @@ function allLeafKeys(groups: readonly GearCategoryGroup[]): readonly string[] {
  * tiers (`grank_exotic_g`/`_gf`/`_gx`) are still G-Rank and stayed in "G Rank
  * Armor", in their own "Exotic" section there.
  *
+ * **Update (2026-11-01, Gachapon Exotic G/GF/GX corrected to G-Rank):** the
+ * update above left all 4 of Gachapon's own Exotic leaves Pre-G-Rank, but per
+ * the project owner only the plain `paid_gachapon_exotic` leaf is -- its
+ * G/GF/GX tiers are G-Rank, the same split `grank_exotic` already has.
+ *
  * Kept as an explicit list, not derived from a group label match, so a
  * future taxonomy reshuffle has to touch this deliberately rather than
  * silently. */
@@ -447,6 +453,9 @@ export const GEAR_LEVEL_GRANK_CATEGORIES: readonly string[] = [
   'paid_gachapon_g_hiden_g',
   'paid_gachapon_g_hiden_gf',
   'paid_gachapon_g_hiden_gx',
+  'paid_gachapon_exotic_g',
+  'paid_gachapon_exotic_gf',
+  'paid_gachapon_exotic_gx',
   'paid_net_cafe_gs',
   'paid_net_cafe_gp',
   'paid_promotional_gs',
@@ -517,8 +526,11 @@ export const GEAR_LEVEL_ZENITH_CATEGORIES: readonly string[] = [
  * -- its own top-level "Gear levels" tier (2026-10-20, per the project
  * owner), split out from the "Zenith" tier it was briefly folded into
  * earlier the same day. Every ZP leaf in the whole tree lives among the
- * Paid-and-Premium routes and Hunting Tournament; no other group has one. */
+ * Paid-and-Premium routes and Hunting Tournament; no other group has one.
+ * `paid_package_zp` is a curated, name-matched leaf rather than a CRE route
+ * of its own (see gear_category.py's `_PACKAGE_ZP_NAME_PREFIXES`). */
 export const GEAR_LEVEL_ZP_CATEGORIES: readonly string[] = [
+  'paid_package_zp',
   'paid_premium_kit_zp',
   'paid_gachapon_zp',
   'paid_net_cafe_zp',
