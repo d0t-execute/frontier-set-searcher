@@ -699,4 +699,31 @@ describe('ResultsList', () => {
     // The detached clone is cleaned up afterward, not left in the document.
     expect(capturedNode?.isConnected).toBe(false)
   })
+
+  it('explains instead of exporting a blank image when canvas readback is blocked (LibreWolf)', async () => {
+    const user = userEvent.setup()
+    vi.mocked(toPng).mockClear()
+    // resistFingerprinting's placeholder: every pixel reads back white.
+    const getContext = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+      fillRect: vi.fn(),
+      getImageData: () => ({ data: new Uint8ClampedArray([255, 255, 255, 255]) }),
+    } as unknown as CanvasRenderingContext2D)
+
+    try {
+      render(
+        <ResultsList
+          results={[result()]}
+          skillNames={skillNames}
+          skills={skills}
+          zenithSkills={zenithSkills}
+        />,
+      )
+      await user.click(screen.getByRole('button', { name: /download as image/i }))
+
+      expect(toPng).not.toHaveBeenCalled()
+      expect(screen.getByRole('alert')).toHaveTextContent(/fingerprinting protection/i)
+    } finally {
+      getContext.mockRestore()
+    }
+  })
 })

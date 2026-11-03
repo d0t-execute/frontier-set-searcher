@@ -176,6 +176,28 @@ function compareSkillEntries(a: SkillDisplayEntry, b: SkillDisplayEntry): number
   return rankDiff !== 0 ? rankDiff : b.points - a.points
 }
 
+/** Whether the browser is withholding canvas pixel data from this page --
+ * Firefox's `privacy.resistFingerprinting` (on by default in LibreWolf and
+ * Tor Browser) hands back a blank white placeholder instead of the real
+ * pixels unless the player allows "canvas data extraction" for the site,
+ * which would make "Download as image"/"Copy image" silently produce an
+ * empty picture (2026-11-03, user report from LibreWolf). Probed with a
+ * single red pixel, *synchronously* inside the click handler: a probe made
+ * while the click still counts as user input is also what makes Firefox
+ * show its "allow canvas" prompt in the address bar, whereas the real
+ * capture happens several awaits later and would be auto-declined with no
+ * prompt at all. A loose color check, not an exact one, so Brave's own
+ * small per-pixel noise doesn't read as "blocked". No 2D context at all
+ * (e.g. jsdom) is treated as not blocked -- there's nothing to detect. */
+function isCanvasReadbackBlocked(): boolean {
+  const context = document.createElement('canvas').getContext('2d')
+  if (!context) return false
+  context.fillStyle = '#ff0000'
+  context.fillRect(0, 0, 1, 1)
+  const [r, g, b] = context.getImageData(0, 0, 1, 1).data
+  return !(r > 200 && g < 60 && b < 60)
+}
+
 /** Plain-text rendering of a result card, for the "Copy as text" button
  * (2026-10-16, per user feedback: "the ability to copy a set to clipboard
  * either as image or as text") -- mirrors the card's own column layout
@@ -239,6 +261,7 @@ export function ResultCard({
   const [isDownloadingImage, setIsDownloadingImage] = useState(false)
   const [isCopyingImage, setIsCopyingImage] = useState(false)
   const [copiedText, setCopiedText] = useState(false)
+  const [imageExportBlocked, setImageExportBlocked] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
   const cardRef = useRef<HTMLDivElement>(null)
 
@@ -289,6 +312,9 @@ export function ResultCard({
   function handleDownloadImage(): void {
     const card = cardRef.current
     if (!card) return
+    const blocked = isCanvasReadbackBlocked()
+    setImageExportBlocked(blocked)
+    if (blocked) return
     setIsDownloadingImage(true)
     // Captured against the page's own current background color (rather than
     // a fixed white/transparent default) so a dark-mode screenshot doesn't
@@ -308,6 +334,9 @@ export function ResultCard({
   function handleCopyImage(): void {
     const card = cardRef.current
     if (!card || !navigator.clipboard?.write) return
+    const blocked = isCanvasReadbackBlocked()
+    setImageExportBlocked(blocked)
+    if (blocked) return
     setIsCopyingImage(true)
     // Same rendering as "Download as image" (`handleDownloadImage`), just
     // written to the clipboard instead of triggering a file download.
@@ -602,6 +631,13 @@ export function ResultCard({
               >
                 {copiedText ? 'Copied!' : 'Copy as text'}
               </button>
+              {imageExportBlocked && (
+                <div className="w-100 small text-warning text-end" role="alert">
+                  Your browser&apos;s fingerprinting protection blocked creating the image. Allow
+                  canvas access for this site (the canvas icon in the address bar), then try again,
+                  or use &quot;Copy as text&quot;.
+                </div>
+              )}
             </div>
           </div>
         </div>
