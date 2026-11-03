@@ -367,6 +367,28 @@ describe('SkillPicker', () => {
       expect(onChange).toHaveBeenCalledWith([{ skillId: 1, minPoints: 20 }])
     })
 
+    it('defaults to the weakest non-penalty tier with defaultToWeakestTier (Zenith skills)', async () => {
+      const onChange = vi.fn()
+      const user = userEvent.setup()
+      const withPenalty = [
+        skill(1, 'Vampirism', {
+          tiers: [...VAMPIRISM_TIERS, { label: 'Vampirism-1', minPoints: -10, description: null }],
+        }),
+      ]
+      render(
+        <SkillPicker
+          skills={withPenalty}
+          requirements={[]}
+          onChange={onChange}
+          defaultToWeakestTier
+        />,
+      )
+
+      await user.click(screen.getByRole('button', { name: 'Vampirism' }))
+
+      expect(onChange).toHaveBeenCalledWith([{ skillId: 1, minPoints: 10 }])
+    })
+
     it('defaults to the first tier when every tier is a penalty (negative threshold)', async () => {
       const onChange = vi.fn()
       const user = userEvent.setup()

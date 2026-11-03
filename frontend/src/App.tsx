@@ -1350,6 +1350,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                   requirements={zenithRequirements}
                   onChange={setZenithRequirements}
                   addLabel="Add a Zenith skill"
+                  defaultToWeakestTier
                 />
               </Disclosure>
             </div>

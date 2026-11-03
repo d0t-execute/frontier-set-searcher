@@ -75,6 +75,10 @@ export interface SkillPickerProps {
    * normal vs. Zenith skills in App.tsx), since otherwise both would render
    * an identically-labeled "Add a skill…" control. */
   readonly addLabel?: string
+  /** Default a newly-added skill to its weakest non-penalty tier instead of
+   * its strongest (2026-11-03, per the project owner, for Zenith skills --
+   * their lower levels are often the relevant ones). */
+  readonly defaultToWeakestTier?: boolean
 }
 
 const DEFAULT_MIN_POINTS = 1
@@ -88,11 +92,14 @@ const UNCATEGORIZED = 'Other'
  * tier is a penalty. `tiers` comes pre-sorted highest-threshold-first
  * (confirmed against the real `skills.json`, e.g. Attack's `[80, 50, 25, 15,
  * 10]`), so the strongest positive tier is simply the first non-negative
- * entry encountered. */
-function defaultMinPoints(tiers: readonly SkillTierOption[]): number {
+ * entry encountered. With `weakest`, it's the last non-negative entry
+ * instead (see `SkillPickerProps.defaultToWeakestTier`). */
+function defaultMinPoints(tiers: readonly SkillTierOption[], weakest = false): number {
   if (tiers.length === 0) return DEFAULT_MIN_POINTS
-  const strongestPositive = tiers.find((t) => t.minPoints >= 0)
-  return (strongestPositive ?? tiers[0]).minPoints
+  const positive = weakest
+    ? tiers.findLast((t) => t.minPoints >= 0)
+    : tiers.find((t) => t.minPoints >= 0)
+  return (positive ?? tiers[0]).minPoints
 }
 
 /** The category display order, fixed once from the *full* skill catalog
@@ -142,6 +149,7 @@ export function SkillPicker({
   requirements,
   onChange,
   addLabel = 'Add a skill',
+  defaultToWeakestTier = false,
 }: SkillPickerProps) {
   const [search, setSearch] = useState('')
   // Refocused after every `addSkill` (docs/skill-system-roadmap.md TODO #23)
@@ -189,7 +197,10 @@ export function SkillPicker({
 
   function addSkill(skillId: number): void {
     const tiers = skillOf(skillId)?.tiers ?? []
-    onChange([...requirements, { skillId, minPoints: defaultMinPoints(tiers) }])
+    onChange([
+      ...requirements,
+      { skillId, minPoints: defaultMinPoints(tiers, defaultToWeakestTier) },
+    ])
     setSearch('')
     setActiveIndex(0)
     searchInputRef.current?.focus()
