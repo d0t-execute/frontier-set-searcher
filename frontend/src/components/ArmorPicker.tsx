@@ -82,16 +82,45 @@ export function ArmorPicker({
   )
   const skillTotals = computePinnedSkillTotals(pinned, slots, decorations, pinnedSlotDecorationIds)
 
+  // Removing a piece keeps the decorations pinned to it: they move over to a
+  // slot-only decoration pin (TODO #12) so the player only has to re-pick the
+  // piece, not every decoration again (2026-11-08, per the project owner).
+  // Picking a piece does the reverse -- slot-only decorations move into it,
+  // as many as its open slots hold, so the two kinds of pin never coexist.
   function setPin(slotId: string, pin: PinnedSlot | null): void {
+    const previous = pinned.get(slotId)
+    const slotOnly = pinnedSlotDecorationIds.get(slotId) ?? []
+    let nextPin = pin
+    if (pin && !previous && slotOnly.length > 0) {
+      const candidate = slots
+        .find((s) => s.slotId === slotId)
+        ?.candidates.find((c) => c.id === pin.candidateId)
+      nextPin = {
+        candidateId: pin.candidateId,
+        decorationIds: [
+          ...pin.decorationIds,
+          ...fitDecorations(
+            slotOnly,
+            decorations,
+            candidate?.openSlotCount ?? 0,
+            pin.decorationIds,
+          ),
+        ],
+      }
+    }
+
     const next = new Map(pinned)
-    if (pin) next.set(slotId, pin)
+    if (nextPin) next.set(slotId, nextPin)
     else next.delete(slotId)
     onChange(next)
-    // A piece pin already bakes its own decorations in -- clear any
-    // decoration-only pin for the same slot so the two can never coexist.
-    if (pin && pinnedSlotDecorationIds.has(slotId)) {
+
+    if (nextPin && slotOnly.length > 0) {
       const nextSlotDecorations = new Map(pinnedSlotDecorationIds)
       nextSlotDecorations.delete(slotId)
+      onChangeSlotDecorations(nextSlotDecorations)
+    } else if (!nextPin && previous && previous.decorationIds.length > 0) {
+      const nextSlotDecorations = new Map(pinnedSlotDecorationIds)
+      nextSlotDecorations.set(slotId, [...slotOnly, ...previous.decorationIds])
       onChangeSlotDecorations(nextSlotDecorations)
     }
   }
@@ -103,8 +132,27 @@ export function ArmorPicker({
     onChangeSlotDecorations(next)
   }
 
+  const anyDecorationsPinned =
+    pinnedSlotDecorationIds.size > 0 || [...pinned.values()].some((p) => p.decorationIds.length > 0)
+
+  function clearAllDecorations(): void {
+    if ([...pinned.values()].some((p) => p.decorationIds.length > 0)) {
+      onChange(new Map([...pinned].map(([slotId, p]) => [slotId, { ...p, decorationIds: [] }])))
+    }
+    if (pinnedSlotDecorationIds.size > 0) onChangeSlotDecorations(new Map())
+  }
+
   return (
     <div className="d-flex flex-column gap-3">
+      {anyDecorationsPinned && (
+        <button
+          type="button"
+          className="btn btn-sm btn-outline-secondary align-self-start"
+          onClick={clearAllDecorations}
+        >
+          Clear all decorations
+        </button>
+      )}
       {slots.map((slot) => (
         <ArmorSlotPicker
           key={slot.slotId}
@@ -218,7 +266,7 @@ function ArmorSlotPicker({
             className="btn btn-sm btn-outline-secondary"
             onClick={() => onChange(null)}
           >
-            Clear
+            Remove piece
           </button>
         </div>
       ) : (
@@ -262,6 +310,16 @@ function ArmorSlotPicker({
 
       {candidate && (
         <div className="ms-2 mt-2">
+          {pin!.decorationIds.length > 1 && (
+            <button
+              type="button"
+              className="btn btn-link btn-sm p-0 me-2 align-baseline"
+              aria-label={`Clear decorations from ${slotId}`}
+              onClick={() => onChange({ candidateId: pin!.candidateId, decorationIds: [] })}
+            >
+              Clear decorations
+            </button>
+          )}
           {pin!.decorationIds.map((decorationId, i) => {
             const decoration = decorations.find((d) => d.id === decorationId)
             return (
@@ -399,6 +457,16 @@ function SlotDecorationOnlyPicker({
 
   return (
     <div className="ms-2 mt-1">
+      {pinnedIds.length > 1 && (
+        <button
+          type="button"
+          className="btn btn-link btn-sm p-0 me-2 align-baseline"
+          aria-label={`Clear decorations from ${slotId}`}
+          onClick={() => onChange([])}
+        >
+          Clear decorations
+        </button>
+      )}
       {pinnedIds.map((decorationId, i) => {
         const decoration = decorations.find((d) => d.id === decorationId)
         return (
@@ -464,4 +532,27 @@ function SlotDecorationOnlyPicker({
       )}
     </div>
   )
+}
+
+/** Picks, in order, the decoration ids from `ids` that still fit into
+ * `capacity` open slots after `alreadyPlaced` -- used when slot-only
+ * decoration pins move into a newly picked piece that may have fewer open
+ * slots than the loose bound they were picked against. */
+function fitDecorations(
+  ids: readonly string[],
+  decorations: readonly NamedDecoration[],
+  capacity: number,
+  alreadyPlaced: readonly string[] = [],
+): string[] {
+  const sizeOf = (id: string) => decorations.find((d) => d.id === id)?.slotSize ?? 0
+  let remaining = capacity - alreadyPlaced.reduce((sum, id) => sum + sizeOf(id), 0)
+  const fitted: string[] = []
+  for (const id of ids) {
+    const size = sizeOf(id)
+    if (size > 0 && size <= remaining) {
+      fitted.push(id)
+      remaining -= size
+    }
+  }
+  return fitted
 }

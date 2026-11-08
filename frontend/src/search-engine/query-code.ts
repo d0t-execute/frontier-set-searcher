@@ -269,6 +269,14 @@ export async function encodeQueryCode(
       state.preferredArmorIds.map((id) => armorIdx.nameFor(id)),
     ),
     renderList(
+      'Preferred decorations',
+      (state.preferredDecorationIds ?? []).map((id) => decorationIdx.nameFor(id)),
+    ),
+    renderList(
+      'Preferred decoration categories',
+      (state.preferredDecorationCategories ?? []).map((id) => decorationCategoryIdx.nameFor(id)),
+    ),
+    renderList(
       'Preferred categories',
       state.preferredCategoryCounts.map(
         (p) => `${preferredCategoryIdx.nameFor(p.category)}: ${p.count}`,
@@ -567,6 +575,14 @@ export async function decodeQueryCode(
   const excludedCuffIds = decodeIdList(doc.sections.get('Excluded cuffs') ?? [], cuffIdx)
   const excludedSkillIds = decodeIdList(doc.sections.get('Excluded skills') ?? [], skillIdx)
   const preferredArmorIds = decodeIdList(doc.sections.get('Preferred armor') ?? [], armorIdx)
+  const preferredDecorationIds = decodeIdList(
+    doc.sections.get('Preferred decorations') ?? [],
+    decorationIdx,
+  )
+  const preferredDecorationCategories = decodeIdList(
+    doc.sections.get('Preferred decoration categories') ?? [],
+    decorationCategoryIdx,
+  )
   const preferredCategoryCounts = decodePreferredCategoryCounts(
     doc.sections.get('Preferred categories') ?? [],
     preferredCategoryIdx,
@@ -589,6 +605,8 @@ export async function decodeQueryCode(
     excludedCuffIds === null ||
     excludedSkillIds === null ||
     preferredArmorIds === null ||
+    preferredDecorationIds === null ||
+    preferredDecorationCategories === null ||
     preferredCategoryCounts === null
   ) {
     return null
@@ -620,6 +638,9 @@ export async function decodeQueryCode(
     excludedCuffIds,
     excludedSkillIds,
     preferredArmorIds,
+    // Left out when empty, matching a state saved before these existed.
+    ...(preferredDecorationIds.length > 0 ? { preferredDecorationIds } : {}),
+    ...(preferredDecorationCategories.length > 0 ? { preferredDecorationCategories } : {}),
     preferredCategoryCounts,
     nonNegativeResistances,
     preferExactMatches,

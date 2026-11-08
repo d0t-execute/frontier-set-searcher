@@ -45,6 +45,10 @@ export interface PreferredArmorPickerProps {
    * lowercased -- same tier/threshold search extension
    * `EquipmentExclusionPicker.tsx` has (docs/feedback.md Round 2 #8). */
   readonly skillSearchTextById: ReadonlyMap<SkillId, string>
+  /** Accessible names for the search box and its option list -- overridden
+   * when this same picker is reused for preferred decorations (2026-11-08). */
+  readonly searchAriaLabel?: string
+  readonly optionsAriaLabel?: string
 }
 
 export function PreferredArmorPicker({
@@ -53,6 +57,8 @@ export function PreferredArmorPicker({
   onChange,
   skillNameById,
   skillSearchTextById,
+  searchAriaLabel = 'Search armor pieces to prefer',
+  optionsAriaLabel = 'Armor pieces matching search to prefer',
 }: PreferredArmorPickerProps) {
   const [search, setSearch] = useState('')
   const [hovered, setHovered] = useState<NamedArmorPiece | null>(null)
@@ -117,7 +123,7 @@ export function PreferredArmorPicker({
       <input
         type="text"
         className="form-control form-control-sm decoration-search-input d-inline-block"
-        aria-label="Search armor pieces to prefer"
+        aria-label={searchAriaLabel}
         placeholder="Type to search…"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
@@ -134,7 +140,7 @@ export function PreferredArmorPicker({
       <FilterableOptions
         items={armorCandidates}
         search={search}
-        ariaLabel="Armor pieces matching search to prefer"
+        ariaLabel={optionsAriaLabel}
         matches={pickableMatches}
         describe={(item) => contributionSummary(item.skills, skillNameById)}
         onPick={(item) => add(item.id)}

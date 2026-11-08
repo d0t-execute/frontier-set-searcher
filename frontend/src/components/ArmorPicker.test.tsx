@@ -261,7 +261,7 @@ describe('ArmorPicker', () => {
     expect(onChange).toHaveBeenCalledWith(pinHead('head:0001'))
   })
 
-  it('shows a pinned slot as a summary with just a Clear control', () => {
+  it('shows a pinned slot as a summary with just a Remove piece control', () => {
     render(
       <ArmorPicker
         slots={slots}
@@ -276,10 +276,10 @@ describe('ArmorPicker', () => {
 
     expect(screen.getByText('Leather Helm')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Change' })).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Clear' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Remove piece' })).toBeInTheDocument()
   })
 
-  it('unpins a slot when Clear is clicked', () => {
+  it('unpins a slot when Remove piece is clicked', () => {
     const onChange = vi.fn()
     render(
       <ArmorPicker
@@ -293,7 +293,7 @@ describe('ArmorPicker', () => {
       />,
     )
 
-    fireEvent.click(screen.getByRole('button', { name: 'Clear' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Remove piece' }))
 
     expect(onChange).toHaveBeenCalledWith(new Map())
   })
@@ -476,6 +476,96 @@ describe('ArmorPicker', () => {
 
     fireEvent.click(screen.getByLabelText('Remove Attack Jewel'))
 
+    expect(onChangeSlotDecorations).toHaveBeenCalledWith(new Map())
+  })
+
+  it("keeps a removed piece's decorations as slot-only decoration pins", () => {
+    const onChange = vi.fn()
+    const onChangeSlotDecorations = vi.fn()
+    render(
+      <ArmorPicker
+        slots={slots}
+        decorations={decorations}
+        pinned={new Map([['head', { candidateId: 'head:0001', decorationIds: ['D001', 'D001'] }]])}
+        onChange={onChange}
+        pinnedSlotDecorationIds={new Map()}
+        onChangeSlotDecorations={onChangeSlotDecorations}
+        skills={skills}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove piece' }))
+
+    expect(onChange).toHaveBeenCalledWith(new Map())
+    expect(onChangeSlotDecorations).toHaveBeenCalledWith(new Map([['head', ['D001', 'D001']]]))
+  })
+
+  it('moves slot-only decoration pins into a newly picked piece, as many as fit', () => {
+    const onChange = vi.fn()
+    render(
+      <ArmorPicker
+        slots={slots}
+        decorations={decorations}
+        pinned={new Map()}
+        onChange={onChange}
+        pinnedSlotDecorationIds={new Map([['head', ['D001', 'D002', 'D001']]])}
+        onChangeSlotDecorations={() => {}}
+        skills={skills}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText('Search pieces for head'), {
+      target: { value: 'leather' },
+    })
+    fireEvent.click(screen.getByRole('option', { name: 'Leather Helm' }))
+
+    // Leather Helm has 2 open slots: D001 (1) fits, D002 (2) no longer does, the second D001 does.
+    expect(onChange).toHaveBeenCalledWith(
+      new Map([['head', { candidateId: 'head:0001', decorationIds: ['D001', 'D001'] }]]),
+    )
+  })
+
+  it('clears every decoration in a slot at once', () => {
+    const onChange = vi.fn()
+    render(
+      <ArmorPicker
+        slots={slots}
+        decorations={decorations}
+        pinned={new Map([['head', { candidateId: 'head:0001', decorationIds: ['D001', 'D001'] }]])}
+        onChange={onChange}
+        pinnedSlotDecorationIds={new Map()}
+        onChangeSlotDecorations={() => {}}
+        skills={skills}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Clear decorations from head' }))
+
+    expect(onChange).toHaveBeenCalledWith(
+      new Map([['head', { candidateId: 'head:0001', decorationIds: [] }]]),
+    )
+  })
+
+  it('clears every pinned decoration across all slots, keeping the pieces', () => {
+    const onChange = vi.fn()
+    const onChangeSlotDecorations = vi.fn()
+    render(
+      <ArmorPicker
+        slots={slots}
+        decorations={decorations}
+        pinned={new Map([['head', { candidateId: 'head:0001', decorationIds: ['D001'] }]])}
+        onChange={onChange}
+        pinnedSlotDecorationIds={new Map([['chest', ['D002']]])}
+        onChangeSlotDecorations={onChangeSlotDecorations}
+        skills={skills}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Clear all decorations' }))
+
+    expect(onChange).toHaveBeenCalledWith(
+      new Map([['head', { candidateId: 'head:0001', decorationIds: [] }]]),
+    )
     expect(onChangeSlotDecorations).toHaveBeenCalledWith(new Map())
   })
 

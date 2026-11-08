@@ -118,6 +118,16 @@ export interface QueryFormState {
    * is purely a ranking tie-break, never a pool filter or a hard constraint,
    * so it can't conflict with what a pin forces in the first place. */
   readonly preferredArmorIds: ReadonlySet<string>
+  /** Decoration ids the solver should favor over every other decoration --
+   * handed straight through to `SearchOptions.preferredDecorationIds` (see its
+   * own docstring for why that's a penalty on the rest rather than a bonus),
+   * unfiltered for the same reason as `preferredArmorIds` above. */
+  readonly preferredDecorationIds: ReadonlySet<string>
+  /** Decoration category leaves (decoration-categories.ts) whose every
+   * decoration counts as preferred, on top of `preferredDecorationIds` --
+   * resolved to ids in `buildSearchQuery`, so the solver only ever sees one
+   * flat set. */
+  readonly preferredDecorationCategories: ReadonlySet<string>
   /** Gear categories to favor using several pieces from, and how many
    * (2026-10-20, per the project owner) -- handed straight through to
    * `SearchOptions.preferredCategoryCounts` with no filtering here, same
@@ -255,10 +265,12 @@ export function slotsAfterExcludedIds(
 // solver's hand once there's only one option. The user's chosen decorations
 // are baked directly into this candidate's own `skills` (merged by skillId)
 // and its `openSlotCount` is reduced by their total size, so the solver can
-// still freely fill whatever capacity is left over; they're also folded into
-// the displayed name (mirroring the weapon slot's own "Zenith weapon
-// (<skill>)" convention) since they're never a solver "placement"
-// `ResultsList` would otherwise show. Overrides the category filter for this
+// still freely fill whatever capacity is left over. The real piece and its
+// pinned decorations ride along on the synthesized candidate as `pinnedFrom`,
+// so `unfoldPinnedDecorations` can turn a solved result back into the real
+// piece plus ordinary decoration entries -- the same tree the result card
+// already shows for solver-placed decorations, rather than a combined
+// "piece + decoration" name (2026-11-08). Overrides the category filter for this
 // slot entirely -- a piece the player explicitly pinned shouldn't be silently
 // blocked by an unrelated gear-level checkbox.
 export function slotsAfterPinning(
@@ -287,11 +299,10 @@ export function slotsAfterPinning(
       }
     }
     const usedSlots = placedDecorations.reduce((sum, d) => sum + d.slotSize, 0)
-    const name = [original.name, ...placedDecorations.map((d) => d.name)].join(' + ')
 
-    const candidate: NamedCandidate = {
+    const candidate: PinnedCandidate = {
       id: original.id,
-      name,
+      name: original.name,
       category: original.category,
       grankOrLater: original.grankOrLater,
       hunterType: original.hunterType,
@@ -300,9 +311,52 @@ export function slotsAfterPinning(
       resistances: original.resistances,
       skills: [...skillTotals.entries()].map(([skillId, points]) => ({ skillId, points })),
       openSlotCount: (original.openSlotCount ?? 0) - usedSlots,
+      pinnedFrom: { candidate: original, decorations: placedDecorations },
     }
     return { slotId: slot.slotId, candidates: [candidate] }
   })
+}
+
+/** The synthesized candidate `slotsAfterPinning` builds for a pinned slot:
+ * an ordinary `NamedCandidate` to the solver, plus the real piece and the
+ * decorations baked into it, kept for `unfoldPinnedDecorations`. */
+export interface PinnedCandidate extends NamedCandidate {
+  readonly pinnedFrom: {
+    readonly candidate: NamedCandidate
+    readonly decorations: readonly NamedDecoration[]
+  }
+}
+
+function isPinnedCandidate(candidate: object): candidate is PinnedCandidate {
+  return 'pinnedFrom' in candidate && candidate.pinnedFrom != null
+}
+
+/** Undoes `slotsAfterPinning`'s synthesis on a solved result: each pinned
+ * slot's pick goes back to the real piece (its own name, skills and open-slot
+ * count), and the decorations the player pinned into it are listed as that
+ * slot's decorations, ahead of anything the solver placed in the leftover
+ * capacity. Skill totals are untouched -- the synthesized candidate already
+ * carried exactly these points. A result without pinned slots is returned
+ * as-is. */
+export function unfoldPinnedDecorations<
+  R extends {
+    readonly picks: ReadonlyMap<string, NamedCandidate>
+    readonly decorations: ReadonlyMap<string, readonly NamedDecoration[]>
+  },
+>(result: R): R {
+  if (![...result.picks.values()].some(isPinnedCandidate)) return result
+  const picks = new Map<string, NamedCandidate>()
+  const decorations = new Map(result.decorations)
+  for (const [slotId, pick] of result.picks) {
+    if (!isPinnedCandidate(pick)) {
+      picks.set(slotId, pick)
+      continue
+    }
+    picks.set(slotId, pick.pinnedFrom.candidate)
+    const merged = [...pick.pinnedFrom.decorations, ...(result.decorations.get(slotId) ?? [])]
+    if (merged.length > 0) decorations.set(slotId, merged)
+  }
+  return { ...result, picks, decorations }
 }
 
 /** Cuff categories this project has confirmed are impossible to ever obtain
@@ -500,6 +554,9 @@ export interface BuiltQuery {
    * `SearchOptions.preferredCandidateIds` -- see `QueryFormState.preferredArmorIds`'s
    * own docstring. */
   readonly preferredCandidateIds: Set<string>
+  /** `state.preferredDecorationIds`, handed straight through to
+   * `SearchOptions.preferredDecorationIds`. */
+  readonly preferredDecorationIds: Set<string>
   /** `state.preferredCategoryCounts`, handed straight through to
    * `SearchOptions.preferredCategoryCounts` -- see
    * `QueryFormState.preferredCategoryCounts`'s own docstring. */
@@ -591,6 +648,12 @@ export function buildSearchQuery(bundle: DataBundle, state: QueryFormState): Bui
   )
   const excludedActiveSkillIds = [...state.excludedSkillIds].map(Number)
   const preferredCandidateIds = new Set(state.preferredArmorIds)
+  const preferredDecorationIds = new Set(state.preferredDecorationIds)
+  if (state.preferredDecorationCategories.size > 0) {
+    for (const d of bundle.decorations) {
+      if (state.preferredDecorationCategories.has(d.category)) preferredDecorationIds.add(d.id)
+    }
+  }
   return {
     slots,
     decorations,
@@ -600,6 +663,7 @@ export function buildSearchQuery(bundle: DataBundle, state: QueryFormState): Bui
     excludedActiveSkillIds,
     pinnedCuffSkillIds,
     preferredCandidateIds,
+    preferredDecorationIds,
     preferredCategoryCounts: state.preferredCategoryCounts,
   }
 }

@@ -70,6 +70,17 @@ const state: SearchFormState = {
 }
 
 describe('encodeQueryCode / decodeQueryCode', () => {
+  it('round-trips preferred decorations and decoration categories (2026-11-08)', async () => {
+    const withDecorations: SearchFormState = {
+      ...state,
+      preferredDecorationIds: ['D001', 'D002'],
+      preferredDecorationCategories: ['deco_tower'],
+    }
+    const encoded = await encodeQueryCode(withDecorations, catalog)
+    expect(encoded).toContain('Preferred decorations:')
+    expect(await decodeQueryCode(encoded, catalog)).toEqual(withDecorations)
+  })
+
   it('round-trips every field exactly', async () => {
     const encoded = await encodeQueryCode(state, catalog)
     expect(await decodeQueryCode(encoded, catalog)).toEqual(state)

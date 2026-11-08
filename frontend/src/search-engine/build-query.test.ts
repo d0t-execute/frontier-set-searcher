@@ -9,8 +9,9 @@ import {
   slotsAfterCategoryFilter,
   slotsAfterExcludedIds,
   slotsAfterHunterTypeFilter,
+  unfoldPinnedDecorations,
 } from './build-query'
-import type { QueryFormState } from './build-query'
+import type { PinnedCandidate, QueryFormState } from './build-query'
 import type {
   DataBundle,
   HunterType,
@@ -75,6 +76,8 @@ const EMPTY_FORM_STATE: QueryFormState = {
   excludedCuffIds: new Set(),
   excludedSkillIds: new Set(),
   preferredArmorIds: new Set(),
+  preferredDecorationIds: new Set(),
+  preferredDecorationCategories: new Set(),
   preferredCategoryCounts: [],
 }
 
@@ -355,7 +358,49 @@ describe('buildSearchQuery', () => {
     })
 
     const headSlot = query.slots.find((s) => s.slotId === 'head')
-    expect(headSlot?.candidates[0]?.name).toContain('regular')
+    const pinned = headSlot?.candidates[0] as PinnedCandidate | undefined
+    expect(pinned?.pinnedFrom.decorations.map((d) => d.id)).toEqual(['regular'])
+  })
+
+  it('expands preferred decoration categories into decoration ids', () => {
+    const query = buildSearchQuery(BUNDLE, {
+      ...EMPTY_FORM_STATE,
+      preferredDecorationIds: new Set(['named']),
+      preferredDecorationCategories: new Set(['deco_standard']),
+    })
+
+    expect([...query.preferredDecorationIds].sort()).toEqual(
+      [
+        'named',
+        ...BUNDLE.decorations.filter((d) => d.category === 'deco_standard').map((d) => d.id),
+      ].sort(),
+    )
+  })
+
+  it('unfolds a pinned piece back into the real piece plus its pinned decorations', () => {
+    const bundleWithArmor: DataBundle = {
+      ...BUNDLE,
+      slots: [{ slotId: 'head', candidates: [candidate('a', 'common', 2)] }],
+    }
+    const query = buildSearchQuery(bundleWithArmor, {
+      ...EMPTY_FORM_STATE,
+      pinnedArmor: new Map([['head', { candidateId: 'a', decorationIds: ['regular'] }]]),
+    })
+    const synthesized = query.slots.find((s) => s.slotId === 'head')!.candidates[0]!
+    expect(synthesized.name).toBe('a')
+    expect(synthesized.openSlotCount).toBe(1)
+
+    const solverPlaced = deco('solver-placed', false)
+    const unfolded = unfoldPinnedDecorations({
+      picks: new Map([['head', synthesized]]),
+      decorations: new Map([['head', [solverPlaced]]]),
+    })
+
+    const pick = unfolded.picks.get('head')!
+    expect(pick.name).toBe('a')
+    expect(pick.openSlotCount).toBe(2)
+    expect('pinnedFrom' in pick).toBe(false)
+    expect(unfolded.decorations.get('head')?.map((d) => d.id)).toEqual(['regular', 'solver-placed'])
   })
 
   it('still resolves an excluded decoration forced into a slot without a piece pin', () => {

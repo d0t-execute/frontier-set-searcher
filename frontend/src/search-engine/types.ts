@@ -283,6 +283,21 @@ export interface SearchOptions {
    * to armor candidates only (decorations/cuffs are a separate pool, not
    * asked for here). */
   readonly preferredCandidateIds?: ReadonlySet<string>
+  /** Decoration ids the solver should favor over every other decoration
+   * (2026-11-08, per the project owner: preferred pieces should cover
+   * decorations too, so a player can search with the gear they already own).
+   * Unlike `preferredCandidateIds` this is a *penalty* on every decoration
+   * NOT in the set rather than a bonus on those in it: every armor slot always
+   * takes exactly one piece, so a per-piece bonus there is the same thing as a
+   * penalty on the rest, but a decoration can be placed any number of times,
+   * and a bonus per copy would reward stuffing every open slot with preferred
+   * decorations whether or not they help. The penalty is
+   * `PREFERRED_ITEM_WEIGHT` per copy, so "fewer non-preferred items" ranks
+   * the same way for pieces and decorations. Empty or absent means no
+   * preference at all (every decoration costs the same as today). Pinned
+   * decorations are fixed-count columns, so the penalty never changes which
+   * build wins there. Still never a hard constraint. */
+  readonly preferredDecorationIds?: ReadonlySet<string>
   /** A gear category to favor using several pieces from, and how many
    * (2026-10-20, per the project owner: "a strong benefit from using exactly
    * one piece from a specific category" -- generalized to any count 1-5, and

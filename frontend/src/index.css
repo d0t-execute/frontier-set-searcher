@@ -1183,3 +1183,59 @@ code {
 .category-table-sortable-header button:focus-visible {
   color: var(--accent);
 }
+
+/* Skill-cap preview: the number is the point of the line, so it reads larger
+   than the surrounding helper text. */
+.app-skill-cap-preview {
+  display: flex;
+  align-items: baseline;
+  gap: 0.25rem;
+}
+.app-skill-cap-preview-value {
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--bs-body-color);
+}
+
+/* "Preferred pieces" section (2026-11-08): armor and decorations side by side
+ * as two equal columns, each holding a named list and a category list, and
+ * stacking into one column on narrow screens. */
+.preferred-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 12px;
+}
+.preferred-column {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  min-width: 0;
+}
+.preferred-column-heading {
+  font-size: 15px;
+  margin: 0 0 4px;
+}
+.preferred-subheading {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.875em;
+  color: var(--text-muted);
+  margin: 10px 0 4px;
+}
+.preferred-column-heading + .preferred-subheading {
+  margin-top: 4px;
+}
+.preferred-count {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--accent-bg);
+  color: var(--accent);
+  font-size: 0.85em;
+}
+.preferred-column .decoration-search-input {
+  width: 100%;
+  max-width: 230px;
+}

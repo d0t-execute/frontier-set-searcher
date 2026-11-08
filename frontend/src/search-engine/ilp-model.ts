@@ -566,7 +566,10 @@ export function decorationObjectiveCost(
   const bonus = options.preferExactMatches
     ? 0
     : bonusPointsOf(decoration.skills, skillPreferenceIds)
-  return -OPEN_SLOT_WEIGHT * decoration.slotSize + bonus
+  const preferred = options.preferredDecorationIds
+  const notPreferredPenalty =
+    preferred && preferred.size > 0 && !preferred.has(decoration.id) ? PREFERRED_ITEM_WEIGHT : 0
+  return -OPEN_SLOT_WEIGHT * decoration.slotSize + bonus - notPreferredPenalty
 }
 
 interface TierMachinery {

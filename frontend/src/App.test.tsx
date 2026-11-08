@@ -198,6 +198,7 @@ describe('App', () => {
         excludedActiveSkillIds: [],
         pinnedCuffSkillIds: [],
         preferredCandidateIds: new Set(),
+        preferredDecorationIds: new Set(),
         preferredCategoryCounts: [],
         optionalSkillRequirements: [],
         maxResults: 5,
@@ -236,6 +237,7 @@ describe('App', () => {
         excludedActiveSkillIds: [],
         pinnedCuffSkillIds: [],
         preferredCandidateIds: new Set(),
+        preferredDecorationIds: new Set(),
         preferredCategoryCounts: [],
         optionalSkillRequirements: [],
         maxResults: 5,
@@ -979,7 +981,9 @@ describe('App', () => {
     it('shows the baseline cap of 10 before any selection is made', () => {
       render(<App />)
 
-      const preview = screen.getByText(/highest active-skill cap still reachable from here:/i)
+      const preview = screen.getByText(
+        /highest potential skill cap based on selected zenith skills:/i,
+      )
       expect(preview).toHaveTextContent('10')
     })
 
@@ -1061,7 +1065,9 @@ describe('App', () => {
       const user = userEvent.setup()
       render(<App />)
 
-      const preview = screen.getByText(/highest active-skill cap still reachable from here:/i)
+      const preview = screen.getByText(
+        /highest potential skill cap based on selected zenith skills:/i,
+      )
       expect(preview).toHaveTextContent('12')
 
       await user.click(screen.getByRole('button', { name: 'Dissolver Up' }))
@@ -1220,7 +1226,7 @@ describe('App', () => {
       await user.click(screen.getByRole('checkbox', { name: 'Premium Kit' }))
 
       expect(screen.getByText('White Cat Mask')).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: 'Clear' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Remove piece' })).toBeInTheDocument()
     })
 
     it("resolves a piece's Zenith skill contribution to its real name in the hover summary", async () => {

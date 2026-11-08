@@ -648,6 +648,46 @@ describe('buildModel with a "Prefer higher" skill requirement (2026-10-27)', () 
   })
 })
 
+describe('buildModel with options.preferredDecorationIds (2026-11-08)', () => {
+  const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Head', {}, 3)] }]
+
+  it('uses a preferred decoration over an otherwise better non-preferred one', () => {
+    // Without a preference, the size-1 decoration wins (it leaves 2 open slots).
+    const decorations = [deco('Small', 1, { 1: 5 }), deco('Owned', 2, { 1: 5 })]
+    const { model, columns } = buildModel(
+      highs,
+      slots,
+      decorations,
+      [{ skillId: 1, minPoints: 5 }],
+      { preferredDecorationIds: new Set(['Owned']) },
+    )
+
+    const { colValue, native } = solve(model)
+    const decoded = decodeSolution(columns, colValue)
+    expect(decoded.decorations.get('head')?.map((d) => d.id)).toEqual(['Owned'])
+    native.dispose()
+  })
+
+  it('does not stuff spare slots with preferred decorations nobody needs', () => {
+    const decorations = [deco('Needed', 1, { 1: 5 }), deco('Owned', 1, { 2: 5 })]
+    const { model, columns } = buildModel(
+      highs,
+      slots,
+      decorations,
+      [{ skillId: 1, minPoints: 5 }],
+      { preferredDecorationIds: new Set(['Owned']), preferExactMatches: true },
+    )
+
+    const { colValue, native } = solve(model)
+    const decoded = decodeSolution(columns, colValue)
+    // `Needed` is the only way to reach the requirement, so it's still used
+    // (a preference is never a hard constraint), and `Owned` isn't added just
+    // because it's preferred.
+    expect(decoded.decorations.get('head')?.map((d) => d.id)).toEqual(['Needed'])
+    native.dispose()
+  })
+})
+
 describe('buildModel with options.preferredCandidateIds (docs/feedback.md Round 2 #2)', () => {
   it('breaks a tie in favor of a preferred candidate', () => {
     const slots: SlotQuery[] = [

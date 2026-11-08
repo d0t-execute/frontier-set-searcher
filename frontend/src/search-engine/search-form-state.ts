@@ -56,6 +56,10 @@ export interface SearchFormState {
   readonly excludedCuffIds: readonly string[]
   readonly excludedSkillIds: readonly string[]
   readonly preferredArmorIds: readonly string[]
+  /** Optional: absent in anything saved before preferred decorations existed
+   * (2026-11-08). */
+  readonly preferredDecorationIds?: readonly string[]
+  readonly preferredDecorationCategories?: readonly string[]
   readonly preferredCategoryCounts: readonly PreferredCategoryCount[]
   readonly nonNegativeResistances: readonly ResistanceElement[]
   readonly preferExactMatches: boolean
@@ -105,6 +109,9 @@ export function validateSearchFormState(parsed: unknown): SearchFormState | null
     !Array.isArray(p.excludedCuffIds) ||
     !Array.isArray(p.excludedSkillIds) ||
     !Array.isArray(p.preferredArmorIds) ||
+    (p.preferredDecorationIds !== undefined && !Array.isArray(p.preferredDecorationIds)) ||
+    (p.preferredDecorationCategories !== undefined &&
+      !Array.isArray(p.preferredDecorationCategories)) ||
     !Array.isArray(p.preferredCategoryCounts) ||
     !p.preferredCategoryCounts.every(isPreferredCategoryCount) ||
     !Array.isArray(p.nonNegativeResistances) ||

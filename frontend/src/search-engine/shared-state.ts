@@ -150,6 +150,10 @@ export interface SharedSearchState {
    * #2) -- same "use as a base for a new search"-only role as the exclusion
    * sets above. */
   readonly preferredArmorIds: readonly string[]
+  /** Optional: absent in links made before preferred decorations existed
+   * (2026-11-08). Same "use as a base"-only role as `preferredArmorIds`. */
+  readonly preferredDecorationIds?: readonly string[]
+  readonly preferredDecorationCategories?: readonly string[]
   /** Gear categories (and piece counts) the original search favored using
    * several pieces from (2026-10-20, per the project owner) -- same "use as
    * a base for a new search"-only role as `preferredArmorIds` above. */
@@ -184,6 +188,8 @@ interface WireFormat {
   readonly eci: readonly string[]
   readonly esi: readonly string[]
   readonly pai: readonly string[]
+  readonly pdi?: readonly string[]
+  readonly pdc?: readonly string[]
   readonly pcc: readonly (readonly [string, number])[]
   readonly nnr: readonly ResistanceElement[]
   readonly pem: boolean
@@ -225,6 +231,10 @@ function toWireFormat(state: SharedSearchState): WireFormat {
     eci: state.excludedCuffIds,
     esi: state.excludedSkillIds,
     pai: state.preferredArmorIds,
+    ...(state.preferredDecorationIds?.length ? { pdi: state.preferredDecorationIds } : {}),
+    ...(state.preferredDecorationCategories?.length
+      ? { pdc: state.preferredDecorationCategories }
+      : {}),
     pcc: state.preferredCategoryCounts.map((p) => [p.category, p.count]),
     nnr: state.nonNegativeResistances,
     pem: state.preferExactMatches,
@@ -277,6 +287,8 @@ function fromWireFormat(parsed: unknown): SharedSearchState | null {
     !Array.isArray(p.eci) ||
     !Array.isArray(p.esi) ||
     !Array.isArray(p.pai) ||
+    (p.pdi !== undefined && !Array.isArray(p.pdi)) ||
+    (p.pdc !== undefined && !Array.isArray(p.pdc)) ||
     !Array.isArray(p.pcc) ||
     !Array.isArray(p.nnr) ||
     !p.nnr.every((e) => RESISTANCE_ELEMENTS.includes(e)) ||
@@ -308,6 +320,8 @@ function fromWireFormat(parsed: unknown): SharedSearchState | null {
     excludedCuffIds: w.eci,
     excludedSkillIds: w.esi,
     preferredArmorIds: w.pai,
+    ...(w.pdi ? { preferredDecorationIds: w.pdi } : {}),
+    ...(w.pdc ? { preferredDecorationCategories: w.pdc } : {}),
     preferredCategoryCounts: w.pcc.map(([category, count]) => ({ category, count })),
     nonNegativeResistances: w.nnr,
     preferExactMatches: w.pem,

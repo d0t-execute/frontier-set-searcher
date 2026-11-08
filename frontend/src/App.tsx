@@ -8,6 +8,7 @@ import { EquipmentExclusionPicker } from './components/EquipmentExclusionPicker'
 import { InfoTooltip } from './components/InfoTooltip'
 import { PreferredArmorPicker } from './components/PreferredArmorPicker'
 import { PreferredCategoryPicker } from './components/PreferredCategoryPicker'
+import { PreferredDecorationCategoryPicker } from './components/PreferredDecorationCategoryPicker'
 import { ResultsList } from './components/ResultsList'
 import { SkillPicker } from './components/SkillPicker'
 import type { NamedBuildResult } from './components/types'
@@ -19,6 +20,7 @@ import {
   decorationsAfterCategoryFilter,
   slotsAfterCategoryFilter,
   slotsAfterHunterTypeFilter,
+  unfoldPinnedDecorations,
   WEAPON_NO_ZENITH_SKILL_KEY,
 } from './search-engine/build-query'
 import type { HunterTypeFilter, PinnedCuffSlot, QueryFormState } from './search-engine/build-query'
@@ -299,6 +301,8 @@ export interface AppInitialState {
   readonly excludedCuffIds?: ReadonlySet<string>
   readonly excludedSkillIds?: ReadonlySet<string>
   readonly preferredArmorIds?: ReadonlySet<string>
+  readonly preferredDecorationIds?: ReadonlySet<string>
+  readonly preferredDecorationCategories?: ReadonlySet<string>
   /** Gear categories (and piece counts) to favor using several pieces from
    * (2026-10-20, per the project owner) -- optional, same "not every seed
    * source has an opinion on every field" convention as the other optional
@@ -407,6 +411,20 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
   // -- see build-query.ts's `QueryFormState.preferredArmorIds` own docstring.
   const [preferredArmorIds, setPreferredArmorIds] = useState<Set<string>>(
     () => new Set(initialState?.preferredArmorIds ?? persisted?.preferredArmorIds ?? []),
+  )
+  // Decorations (and whole decoration categories) to favor over every other
+  // decoration (2026-11-08) -- see build-query.ts's
+  // `QueryFormState.preferredDecorationIds`/`preferredDecorationCategories`.
+  const [preferredDecorationIds, setPreferredDecorationIds] = useState<Set<string>>(
+    () => new Set(initialState?.preferredDecorationIds ?? persisted?.preferredDecorationIds ?? []),
+  )
+  const [preferredDecorationCategories, setPreferredDecorationCategories] = useState<Set<string>>(
+    () =>
+      new Set(
+        initialState?.preferredDecorationCategories ??
+          persisted?.preferredDecorationCategories ??
+          [],
+      ),
   )
   // Gear categories (and piece counts) to favor using several pieces from
   // (2026-10-20, per the project owner) -- see PreferredCategoryPicker.tsx's
@@ -740,6 +758,14 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
   const preferredSummary = (() => {
     const parts = [
       preferredArmorIds.size > 0 ? pluralize(preferredArmorIds.size, 'piece') : null,
+      preferredDecorationIds.size > 0 ? pluralize(preferredDecorationIds.size, 'decoration') : null,
+      preferredDecorationCategories.size > 0
+        ? pluralize(
+            preferredDecorationCategories.size,
+            'decoration category',
+            'decoration categories',
+          )
+        : null,
       preferredCategoryCounts.size > 0
         ? pluralize(preferredCategoryCounts.size, 'category', 'categories')
         : null,
@@ -793,6 +819,8 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
       excludedCuffIds,
       excludedSkillIds,
       preferredArmorIds,
+      preferredDecorationIds,
+      preferredDecorationCategories,
       preferredCategoryCounts: [...preferredCategoryCounts].map(([category, count]) => ({
         category,
         count,
@@ -813,6 +841,8 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
       excludedCuffIds,
       excludedSkillIds,
       preferredArmorIds,
+      preferredDecorationIds,
+      preferredDecorationCategories,
       preferredCategoryCounts,
     ],
   )
@@ -885,6 +915,8 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
       excludedCuffIds: [...excludedCuffIds],
       excludedSkillIds: [...excludedSkillIds],
       preferredArmorIds: [...preferredArmorIds],
+      preferredDecorationIds: [...preferredDecorationIds],
+      preferredDecorationCategories: [...preferredDecorationCategories],
       preferredCategoryCounts: [...preferredCategoryCounts].map(([category, count]) => ({
         category,
         count,
@@ -911,6 +943,8 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
     excludedCuffIds,
     excludedSkillIds,
     preferredArmorIds,
+    preferredDecorationIds,
+    preferredDecorationCategories,
     preferredCategoryCounts,
     preferExactMatches,
     maxResults,
@@ -959,6 +993,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
       excludedActiveSkillIds,
       pinnedCuffSkillIds,
       preferredCandidateIds,
+      preferredDecorationIds: resolvedPreferredDecorationIds,
     } = buildSearchQuery(bundle, queryFormState)
 
     // Splits on `SkillRequirement.optional` (docs/feedback.md Round 3 #2,
@@ -1028,7 +1063,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
       {
         onResult: (result, provisional, isUnproven) => {
           if (finished) return
-          const named = result as unknown as NamedBuildResult
+          const named = unfoldPinnedDecorations(result as unknown as NamedBuildResult)
           if (isUnproven) unproven.add(named)
           if (provisional) {
             if (list.length >= maxResults) return
@@ -1091,6 +1126,7 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
         excludedActiveSkillIds,
         pinnedCuffSkillIds,
         preferredCandidateIds,
+        preferredDecorationIds: resolvedPreferredDecorationIds,
         preferredCategoryCounts: [...preferredCategoryCounts].map(([category, count]) => ({
           category,
           count,
@@ -1146,6 +1182,8 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
         excludedCuffIds: [...excludedCuffIds],
         excludedSkillIds: [...excludedSkillIds],
         preferredArmorIds: [...preferredArmorIds],
+        preferredDecorationIds: [...preferredDecorationIds],
+        preferredDecorationCategories: [...preferredDecorationCategories],
         preferredCategoryCounts: [...preferredCategoryCounts].map(([category, count]) => ({
           category,
           count,
@@ -1179,6 +1217,8 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
     setExcludedCuffIds(new Set(state.excludedCuffIds))
     setExcludedSkillIds(new Set(state.excludedSkillIds))
     setPreferredArmorIds(new Set(state.preferredArmorIds))
+    setPreferredDecorationIds(new Set(state.preferredDecorationIds ?? []))
+    setPreferredDecorationCategories(new Set(state.preferredDecorationCategories ?? []))
     setPreferredCategoryCounts(
       new Map(state.preferredCategoryCounts.map((p) => [p.category, p.count])),
     )
@@ -1241,6 +1281,8 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
       excludedCuffIds: [...excludedCuffIds],
       excludedSkillIds: [...excludedSkillIds],
       preferredArmorIds: [...preferredArmorIds],
+      preferredDecorationIds: [...preferredDecorationIds],
+      preferredDecorationCategories: [...preferredDecorationCategories],
       preferredCategoryCounts: [...preferredCategoryCounts].map(([category, count]) => ({
         category,
         count,
@@ -1383,33 +1425,79 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                 summary={preferredSummary}
                 info={
                   <InfoTooltip label="About favoring gear">
-                    The solver favors using more of your preferred pieces, and at least the chosen
-                    count from each preferred category, outranking any other difference in a build
-                    -- only falling short of either if it would otherwise make a skill requirement
-                    unreachable. Neither forces an exact slot assignment the way pinning does.
+                    The solver favors your preferred gear over anything else, outranking any other
+                    difference in a build -- only falling short if it would otherwise make a skill
+                    requirement unreachable. Nothing here forces an exact slot assignment the way
+                    pinning does.
                     <br />
-                    <b>Pieces:</b> type at least 2 characters to search (also matches skill
-                    name/level names); using more is always better.
+                    <b>Armor pieces:</b> using more of them is always better.
                     <br />
-                    <b>Categories:</b> set a 1-5 target per category; using more than the target is
-                    never penalized.
+                    <b>Armor categories:</b> set a 1-5 target per category; using more than the
+                    target is never penalized.
+                    <br />
+                    <b>Decorations:</b> once any are chosen (individually or by category), every
+                    other decoration is avoided wherever possible.
+                    <br />
+                    Searches need at least 2 characters and also match skill and skill-level names.
                   </InfoTooltip>
                 }
               >
-                <div className="small text-muted mb-1">Pieces</div>
-                <PreferredArmorPicker
-                  armorCandidates={allArmorCandidates}
-                  preferredIds={preferredArmorIds}
-                  onChange={setPreferredArmorIds}
-                  skillNameById={bundle.skillNames}
-                  skillSearchTextById={skillSearchTextById}
-                />
-                <hr className="my-2" />
-                <div className="small text-muted mb-1">Categories</div>
-                <PreferredCategoryPicker
-                  counts={preferredCategoryCounts}
-                  onChange={setPreferredCategoryCounts}
-                />
+                <div className="preferred-grid">
+                  <section className="preferred-column" aria-label="Preferred armor">
+                    <h3 className="preferred-column-heading">Armor</h3>
+                    <PreferredSubheading
+                      label="Pieces"
+                      clearLabel="Clear preferred armor pieces"
+                      count={preferredArmorIds.size}
+                      onClear={() => setPreferredArmorIds(new Set())}
+                    />
+                    <PreferredArmorPicker
+                      armorCandidates={allArmorCandidates}
+                      preferredIds={preferredArmorIds}
+                      onChange={setPreferredArmorIds}
+                      skillNameById={bundle.skillNames}
+                      skillSearchTextById={skillSearchTextById}
+                    />
+                    <PreferredSubheading
+                      label="Categories"
+                      clearLabel="Clear preferred armor categories"
+                      count={preferredCategoryCounts.size}
+                      onClear={() => setPreferredCategoryCounts(new Map())}
+                    />
+                    <PreferredCategoryPicker
+                      counts={preferredCategoryCounts}
+                      onChange={setPreferredCategoryCounts}
+                    />
+                  </section>
+                  <section className="preferred-column" aria-label="Preferred decorations">
+                    <h3 className="preferred-column-heading">Decorations</h3>
+                    <PreferredSubheading
+                      label="Decorations"
+                      clearLabel="Clear preferred decorations"
+                      count={preferredDecorationIds.size}
+                      onClear={() => setPreferredDecorationIds(new Set())}
+                    />
+                    <PreferredArmorPicker
+                      armorCandidates={pinnableDecorations}
+                      preferredIds={preferredDecorationIds}
+                      onChange={setPreferredDecorationIds}
+                      skillNameById={bundle.skillNames}
+                      skillSearchTextById={skillSearchTextById}
+                      searchAriaLabel="Search decorations to prefer"
+                      optionsAriaLabel="Decorations matching search to prefer"
+                    />
+                    <PreferredSubheading
+                      label="Categories"
+                      clearLabel="Clear preferred decoration categories"
+                      count={preferredDecorationCategories.size}
+                      onClear={() => setPreferredDecorationCategories(new Set())}
+                    />
+                    <PreferredDecorationCategoryPicker
+                      selected={preferredDecorationCategories}
+                      onChange={setPreferredDecorationCategories}
+                    />
+                  </section>
+                </div>
               </Disclosure>
 
               <Disclosure
@@ -1733,8 +1821,9 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
           </div>
 
           {skillCapPreview !== null && (
-            <p className="form-text mt-3">
-              Highest active-skill cap still reachable from here: <strong>{skillCapPreview}</strong>
+            <p className="form-text mt-3 app-skill-cap-preview">
+              Highest potential skill cap based on selected Zenith skills:{' '}
+              <strong className="app-skill-cap-preview-value">{skillCapPreview}</strong>
             </p>
           )}
 
@@ -1905,3 +1994,36 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
 }
 
 export default App
+
+/** One labeled list inside the "Preferred pieces" section: its name, how
+ * many entries it holds, and a one-click way to empty it. */
+function PreferredSubheading({
+  label,
+  clearLabel,
+  count,
+  onClear,
+}: {
+  label: string
+  clearLabel: string
+  count: number
+  onClear: () => void
+}) {
+  return (
+    <div className="preferred-subheading">
+      <span>
+        {label}
+        {count > 0 && <span className="preferred-count">{count}</span>}
+      </span>
+      {count > 0 && (
+        <button
+          type="button"
+          className="btn btn-link btn-sm p-0"
+          aria-label={clearLabel}
+          onClick={onClear}
+        >
+          Clear
+        </button>
+      )}
+    </div>
+  )
+}
