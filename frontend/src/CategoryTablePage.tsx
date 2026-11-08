@@ -152,8 +152,37 @@ function formatSkills(
     .join(', ')
 }
 
+/** The "Zenith Skill" + "Skills" column pair shared by the gear and cuff
+ * tables: an item's Zenith skill gets its own column and is left out of the
+ * regular Skills list, rather than shown twice (2026-11-08, per the project
+ * owner). */
+function zenithAndRegularSkillColumns<T extends { readonly skills: readonly SkillContribution[] }>(
+  skillNameById: ReadonlyMap<number, string>,
+  zenithSkillIds: ReadonlySet<number>,
+): readonly Column<T>[] {
+  const zenithOf = (i: T) => i.skills.filter((s) => zenithSkillIds.has(s.skillId))
+  const regularOf = (i: T) => i.skills.filter((s) => !zenithSkillIds.has(s.skillId))
+  return [
+    {
+      key: 'zenithSkills',
+      header: 'Zenith Skill',
+      value: (i) => {
+        const zenith = zenithOf(i)
+        return zenith.length > 0 ? formatSkills(zenith, skillNameById) : ''
+      },
+      render: (i) => formatSkills(zenithOf(i), skillNameById),
+    },
+    {
+      key: 'skills',
+      header: 'Skills',
+      value: (i) => formatSkills(regularOf(i), skillNameById),
+    },
+  ]
+}
+
 function armorColumns(
   skillNameById: ReadonlyMap<number, string>,
+  zenithSkillIds: ReadonlySet<number>,
 ): readonly Column<NamedCandidate>[] {
   return [
     { key: 'name', header: 'Name', value: (i) => i.name },
@@ -171,7 +200,7 @@ function armorColumns(
     },
     {
       key: 'defenseMax',
-      header: 'Max Defense',
+      header: 'Defense',
       value: (i) => i.defenseMax ?? -1,
       render: (i) => String(i.defenseMax ?? '—'),
     },
@@ -190,11 +219,7 @@ function armorColumns(
           ? (skillNameById.get(i.exoticSkillId) ?? `Skill ${i.exoticSkillId}`)
           : '—',
     },
-    {
-      key: 'skills',
-      header: 'Skills',
-      value: (i) => formatSkills(i.skills, skillNameById),
-    },
+    ...zenithAndRegularSkillColumns<NamedCandidate>(skillNameById, zenithSkillIds),
     { key: 'id', header: 'ID', value: (i) => i.id },
   ]
 }
@@ -222,11 +247,14 @@ function decorationColumns(
   ]
 }
 
-function cuffColumns(skillNameById: ReadonlyMap<number, string>): readonly Column<NamedCuff>[] {
+function cuffColumns(
+  skillNameById: ReadonlyMap<number, string>,
+  zenithSkillIds: ReadonlySet<number>,
+): readonly Column<NamedCuff>[] {
   return [
     { key: 'name', header: 'Name', value: (i) => i.name },
     { key: 'slotSize', header: 'Slot Size', value: (i) => i.slotSize },
-    { key: 'skills', header: 'Skills', value: (i) => formatSkills(i.skills, skillNameById) },
+    ...zenithAndRegularSkillColumns<NamedCuff>(skillNameById, zenithSkillIds),
     { key: 'id', header: 'ID', value: (i) => i.id },
   ]
 }
@@ -270,8 +298,9 @@ function columnsForKind(
   kind: CategoryTableKind,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): readonly Column<any>[] {
-  if (kind === 'gear') return armorColumns(bundle.skillNames)
-  if (kind === 'cuffs') return cuffColumns(bundle.skillNames)
+  const zenithSkillIds = new Set(bundle.zenithSkills.map((s) => s.id))
+  if (kind === 'gear') return armorColumns(bundle.skillNames, zenithSkillIds)
+  if (kind === 'cuffs') return cuffColumns(bundle.skillNames, zenithSkillIds)
   return decorationColumns(bundle.skillNames)
 }
 

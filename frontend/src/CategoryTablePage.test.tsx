@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+﻿import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { CategoryTablePage } from './CategoryTablePage'
@@ -133,7 +133,7 @@ describe('CategoryTablePage', () => {
       'Name',
       'Hunter Type',
       'G Rank or later',
-      'Max Defense',
+      'Defense',
       'Fire Res',
       'Water Res',
       'Thunder Res',
@@ -141,6 +141,7 @@ describe('CategoryTablePage', () => {
       'Dragon Res',
       'Slots',
       'Exotic Skill',
+      'Zenith Skill',
       'Skills',
       'ID',
     ]) {
@@ -149,6 +150,39 @@ describe('CategoryTablePage', () => {
       ).toBeInTheDocument()
     }
     expect(screen.getByRole('cell', { name: 'Attack' })).toBeInTheDocument()
+  })
+
+  it('shows a Zenith skill in its own column and leaves it out of Skills', () => {
+    mockUseDataBundle.mockReturnValue({
+      data: {
+        ...BUNDLE,
+        slots: BUNDLE.slots.map((slot) => ({
+          ...slot,
+          candidates: slot.candidates.map((c) =>
+            c.id === 'head:0001'
+              ? {
+                  ...c,
+                  skills: [
+                    { skillId: 1, points: 5 },
+                    { skillId: 1000001, points: 1 },
+                  ],
+                }
+              : c,
+          ),
+        })),
+        zenithSkills: [{ id: 1000001, name: 'Zenith Guard', tiers: [] }],
+        skillNames: new Map([
+          [1, 'Attack'],
+          [1000001, 'Zenith Guard'],
+        ]),
+      },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useDataBundle>)
+    render(<CategoryTablePage kind="gear" categoryKey="standard_plain" onBackToSearch={vi.fn()} />)
+
+    expect(screen.getByRole('cell', { name: 'Zenith Guard +1' })).toBeInTheDocument()
+    expect(screen.getByRole('cell', { name: 'Attack +5' })).toBeInTheDocument()
   })
 
   it('renders a decoration table scoped to its own category', () => {
@@ -167,6 +201,35 @@ describe('CategoryTablePage', () => {
   it('renders a cuff table scoped to its own category', () => {
     render(<CategoryTablePage kind="cuffs" categoryKey="standard_plain" onBackToSearch={vi.fn()} />)
     expect(screen.getByText('Sharpening PC1')).toBeInTheDocument()
+  })
+
+  it('shows a cuff Zenith skill in its own column and leaves it out of Skills', () => {
+    mockUseDataBundle.mockReturnValue({
+      data: {
+        ...BUNDLE,
+        cuffs: [
+          {
+            ...BUNDLE.cuffs[0],
+            skills: [
+              { skillId: 1, points: 3 },
+              { skillId: 1000001, points: 1 },
+            ],
+          },
+        ],
+        zenithSkills: [{ id: 1000001, name: 'Zenith Guard', tiers: [] }],
+        skillNames: new Map([
+          [1, 'Attack'],
+          [1000001, 'Zenith Guard'],
+        ]),
+      },
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useDataBundle>)
+    render(<CategoryTablePage kind="cuffs" categoryKey="standard_plain" onBackToSearch={vi.fn()} />)
+
+    expect(screen.getByRole('columnheader', { name: /^Zenith Skill/ })).toBeInTheDocument()
+    expect(screen.getByRole('cell', { name: 'Zenith Guard +1' })).toBeInTheDocument()
+    expect(screen.getByRole('cell', { name: 'Attack +3' })).toBeInTheDocument()
   })
 
   it('sorts rows by a clicked column, toggling direction on a second click', async () => {
