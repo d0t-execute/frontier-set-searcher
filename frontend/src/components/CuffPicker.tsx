@@ -79,9 +79,14 @@ export function CuffPicker({
   pinnableSkills,
   skillSearchTextById,
 }: CuffPickerProps) {
+  // `pinned` is a dense list: cuffs aren't tied to a position, so pinning a
+  // slot past the end appends (assigning `next[index]` there would leave a
+  // hole that crashes the solver query), the same way clearing a slot
+  // shifts the later one up.
   function setSlot(index: number, slot: PinnedCuffSlot | null): void {
     const next = [...pinned]
-    if (slot) next[index] = slot
+    if (slot && index < next.length) next[index] = slot
+    else if (slot) next.push(slot)
     else next.splice(index, 1)
     onChange(next)
   }

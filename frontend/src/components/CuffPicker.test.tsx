@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+﻿import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { CuffPicker } from './CuffPicker'
@@ -100,6 +100,31 @@ describe('CuffPicker', () => {
     fireEvent.click(screen.getByRole('option', { name: 'Sharpening PC1' }))
 
     expect(onChange).toHaveBeenCalledWith([EXACT_1])
+  })
+
+  it('pins into the second slot while the first is empty without leaving a gap', () => {
+    const onChange = vi.fn()
+    render(
+      <CuffPicker
+        cuffs={cuffs}
+        pinned={[]}
+        onChange={onChange}
+        skillNameById={skillNameById}
+        pinnableSkills={pinnableSkills}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText('Search cuffs for Cuff slot 2'), {
+      target: { value: 'Sharp' },
+    })
+    fireEvent.click(screen.getByRole('option', { name: 'Sharpening PC1' }))
+
+    // A sparse `[<empty>, pin]` used to reach the solver query and crash the
+    // page. Cuffs aren't positional, so the pin moves up into the first slot,
+    // the same way clearing slot 1 already shifts slot 2 up.
+    const next = onChange.mock.calls[0][0] as PinnedCuffSlot[]
+    expect(next).toEqual([EXACT_1])
+    expect(0 in next).toBe(true)
   })
 
   it('allows the same cuff id to be pinned into both slots at once', () => {
