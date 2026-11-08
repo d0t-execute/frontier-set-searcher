@@ -5,6 +5,11 @@
   --border: #e5e4e7;
   --code-bg: #f4f3ec;
   --accent: #aa3bff;
+  /* Text drawn on a solid --accent fill (primary buttons, the selected
+   * hunter-type option). White reads on the darker light-mode purple, but
+   * on the lighter dark-mode purple it fell to ~2.6:1, so dark mode uses
+   * the dark background color instead (2026-11-08). */
+  --on-accent: #fff;
   --accent-bg: rgba(170, 59, 255, 0.1);
   --accent-border: rgba(170, 59, 255, 0.5);
   --social-bg: rgba(244, 243, 236, 0.5);
@@ -43,6 +48,7 @@
     --border: #2e303a;
     --code-bg: #1f2028;
     --accent: #c084fc;
+    --on-accent: #16171d;
     --accent-bg: rgba(192, 132, 252, 0.15);
     --accent-border: rgba(192, 132, 252, 0.5);
     --social-bg: rgba(47, 48, 58, 0.5);
@@ -572,7 +578,7 @@ code {
 }
 
 .hunter-type-toggle-option[aria-pressed='true'] {
-  color: #fff;
+  color: var(--on-accent);
 }
 
 .hunter-type-toggle-option:focus-visible {
@@ -823,6 +829,10 @@ code {
  * color), hence the light/dark duplication -- everything else already
  * reads `--accent` directly, so it re-themes for free under dark mode. */
 .btn-primary {
+  --bs-btn-color: var(--on-accent);
+  --bs-btn-hover-color: var(--on-accent);
+  --bs-btn-active-color: var(--on-accent);
+  --bs-btn-disabled-color: var(--on-accent);
   --bs-btn-bg: var(--accent);
   --bs-btn-border-color: var(--accent);
   --bs-btn-hover-bg: color-mix(in srgb, var(--accent) 85%, black);
@@ -1197,7 +1207,6 @@ code {
 .app-skill-cap-preview-value {
   font-size: 1.5rem;
   line-height: 1;
-  color: var(--bs-body-color);
 }
 
 /* "Preferred pieces" section (2026-11-08): armor and decorations side by side
