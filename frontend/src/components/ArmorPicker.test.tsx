@@ -525,27 +525,6 @@ describe('ArmorPicker', () => {
     )
   })
 
-  it('clears every decoration in a slot at once', () => {
-    const onChange = vi.fn()
-    render(
-      <ArmorPicker
-        slots={slots}
-        decorations={decorations}
-        pinned={new Map([['head', { candidateId: 'head:0001', decorationIds: ['D001', 'D001'] }]])}
-        onChange={onChange}
-        pinnedSlotDecorationIds={new Map()}
-        onChangeSlotDecorations={() => {}}
-        skills={skills}
-      />,
-    )
-
-    fireEvent.click(screen.getByRole('button', { name: 'Clear decorations from head' }))
-
-    expect(onChange).toHaveBeenCalledWith(
-      new Map([['head', { candidateId: 'head:0001', decorationIds: [] }]]),
-    )
-  })
-
   it('clears every pinned decoration across all slots, keeping the pieces', () => {
     const onChange = vi.fn()
     const onChangeSlotDecorations = vi.fn()

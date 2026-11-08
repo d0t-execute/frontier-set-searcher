@@ -310,16 +310,6 @@ function ArmorSlotPicker({
 
       {candidate && (
         <div className="ms-2 mt-2">
-          {pin!.decorationIds.length > 1 && (
-            <button
-              type="button"
-              className="btn btn-link btn-sm p-0 me-2 align-baseline"
-              aria-label={`Clear decorations from ${slotId}`}
-              onClick={() => onChange({ candidateId: pin!.candidateId, decorationIds: [] })}
-            >
-              Clear decorations
-            </button>
-          )}
           {pin!.decorationIds.map((decorationId, i) => {
             const decoration = decorations.find((d) => d.id === decorationId)
             return (
@@ -457,16 +447,6 @@ function SlotDecorationOnlyPicker({
 
   return (
     <div className="ms-2 mt-1">
-      {pinnedIds.length > 1 && (
-        <button
-          type="button"
-          className="btn btn-link btn-sm p-0 me-2 align-baseline"
-          aria-label={`Clear decorations from ${slotId}`}
-          onClick={() => onChange([])}
-        >
-          Clear decorations
-        </button>
-      )}
       {pinnedIds.map((decorationId, i) => {
         const decoration = decorations.find((d) => d.id === decorationId)
         return (
