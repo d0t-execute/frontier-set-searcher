@@ -1218,7 +1218,7 @@ code {
 .preferred-subheading {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
   font-size: 0.875em;
   color: var(--text-muted);
   margin: 10px 0 4px;

@@ -261,7 +261,7 @@ describe('ArmorPicker', () => {
     expect(onChange).toHaveBeenCalledWith(pinHead('head:0001'))
   })
 
-  it('shows a pinned slot as a summary with just a Remove piece control', () => {
+  it('shows a pinned slot as a summary with just a Remove control', () => {
     render(
       <ArmorPicker
         slots={slots}
@@ -276,10 +276,10 @@ describe('ArmorPicker', () => {
 
     expect(screen.getByText('Leather Helm')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Change' })).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Remove piece' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Remove' })).toBeInTheDocument()
   })
 
-  it('unpins a slot when Remove piece is clicked', () => {
+  it('unpins a slot when Remove is clicked', () => {
     const onChange = vi.fn()
     render(
       <ArmorPicker
@@ -293,7 +293,7 @@ describe('ArmorPicker', () => {
       />,
     )
 
-    fireEvent.click(screen.getByRole('button', { name: 'Remove piece' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Remove' }))
 
     expect(onChange).toHaveBeenCalledWith(new Map())
   })
@@ -494,7 +494,7 @@ describe('ArmorPicker', () => {
       />,
     )
 
-    fireEvent.click(screen.getByRole('button', { name: 'Remove piece' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Remove' }))
 
     expect(onChange).toHaveBeenCalledWith(new Map())
     expect(onChangeSlotDecorations).toHaveBeenCalledWith(new Map([['head', ['D001', 'D001']]]))

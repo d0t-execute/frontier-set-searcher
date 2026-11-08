@@ -1226,7 +1226,7 @@ describe('App', () => {
       await user.click(screen.getByRole('checkbox', { name: 'Premium Kit' }))
 
       expect(screen.getByText('White Cat Mask')).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: 'Remove piece' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Remove' })).toBeInTheDocument()
     })
 
     it("resolves a piece's Zenith skill contribution to its real name in the hover summary", async () => {

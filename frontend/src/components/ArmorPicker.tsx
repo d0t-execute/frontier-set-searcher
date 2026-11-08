@@ -266,7 +266,7 @@ function ArmorSlotPicker({
             className="btn btn-sm btn-outline-secondary"
             onClick={() => onChange(null)}
           >
-            Remove piece
+            Remove
           </button>
         </div>
       ) : (
