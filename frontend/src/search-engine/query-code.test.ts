@@ -122,6 +122,16 @@ describe('encodeQueryCode / decodeQueryCode', () => {
     expect(await decodeQueryCode(encoded, catalog)).toEqual(withPreferHigher)
   })
 
+  it('round-trips "prefer lower" on a negative-tier requirement', async () => {
+    const withPreferLower: SearchFormState = {
+      ...state,
+      requirements: [{ skillId: 2, minPoints: -10, preferHigher: true }],
+    }
+    const encoded = await encodeQueryCode(withPreferLower, catalog)
+    expect(encoded).toContain('Sharpness: -10 (prefer lower)')
+    expect(await decodeQueryCode(encoded, catalog)).toEqual(withPreferLower)
+  })
+
   it('round-trips a non-null excludedWeaponZenithSkillIds, including the "no Zenith skill" sentinel', async () => {
     const withWeaponExclusions: SearchFormState = {
       ...state,

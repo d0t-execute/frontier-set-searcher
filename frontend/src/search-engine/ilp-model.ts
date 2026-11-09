@@ -67,6 +67,7 @@
 
 import type { Highs, ModelData, ModelStatusCode, VariableType } from 'highs'
 import { categoriesCoveredBy } from './gear-categories'
+import { requirementSign } from './requirement-direction'
 import {
   BASE_ACTIVE_SKILL_CAP,
   GRANK_BONUS_PIECE_THRESHOLDS,
@@ -368,8 +369,17 @@ function breakpointsBeyondAnchor(
     const higher = tierThresholds.filter((t) => t > anchor)
     return { posThreshold: higher.length > 0 ? Math.min(...higher) : undefined }
   }
+  // A negative anchor ("Blue Soul"-style requests, see
+  // requirement-direction.ts) wants the total at or below it: overshooting
+  // further down is one unwanted direction, and landing on the skill's
+  // positive side instead (only possible for an optional request) is the
+  // other.
   const lower = tierThresholds.filter((t) => t < anchor)
-  return { negThreshold: lower.length > 0 ? Math.max(...lower) : undefined }
+  const positives = tierThresholds.filter((t) => t > 0)
+  return {
+    negThreshold: lower.length > 0 ? Math.max(...lower) : undefined,
+    posThreshold: positives.length > 0 ? Math.min(...positives) : undefined,
+  }
 }
 
 /** Resolves every skill's two nearest tier breakpoints (see
@@ -891,6 +901,10 @@ export function buildModel(
   // genuinely conditional, which needs real machinery below.
   interface LiveOptionalMember {
     readonly skillId: SkillId
+    /** `requirementSign` of the request -- every coefficient feeding this
+     * member's row is multiplied by it, so a negative-tier request becomes
+     * the same "signed total at least target" shape as a positive one. */
+    readonly sign: 1 | -1
     readonly rangeMin: number
     readonly effectiveMinPoints: number
     readonly bigM: number
@@ -903,12 +917,23 @@ export function buildModel(
     cuffs,
     new Set(optionalSkillRequirements.map((r) => r.skillId)),
   )
+  // Each request in its own signed frame (see `LiveOptionalMember.sign`):
+  // the achievable range flips with the sign, so "always met" / "never
+  // reachable" / big-M all read the same for either direction.
+  const signedOptional = (req: OptionalSkillRequirement) => {
+    const range = optionalRanges.get(req.skillId)!
+    const sign = requirementSign(req.minPoints)
+    return {
+      sign,
+      rangeMin: sign > 0 ? range.min : -range.max,
+      rangeMax: sign > 0 ? range.max : -range.min,
+      target: sign * (req.minPoints - pinnedPointsTowards(req.skillId)),
+    }
+  }
   const alwaysMetOptionalTiers = new Set<number>()
   for (const req of optionalSkillRequirements) {
-    const range = optionalRanges.get(req.skillId)!
-    const effectiveMinPoints = req.minPoints - pinnedPointsTowards(req.skillId)
-    if (effectiveMinPoints <= range.min)
-      alwaysMetOptionalTiers.add(tierIndexForPriority(req.priority))
+    const { rangeMin, target } = signedOptional(req)
+    if (target <= rangeMin) alwaysMetOptionalTiers.add(tierIndexForPriority(req.priority))
   }
   const optionalTiersOffset = [...alwaysMetOptionalTiers].reduce(
     (sum, tierIndex) => sum + optionalSkillTierWeight(tierIndex),
@@ -916,15 +941,15 @@ export function buildModel(
   )
   const liveOptionalMembers: LiveOptionalMember[] = []
   for (const req of optionalSkillRequirements) {
-    const range = optionalRanges.get(req.skillId)!
-    const effectiveMinPoints = req.minPoints - pinnedPointsTowards(req.skillId)
-    if (effectiveMinPoints <= range.min || effectiveMinPoints > range.max) continue
+    const { sign, rangeMin, rangeMax, target } = signedOptional(req)
+    if (target <= rangeMin || target > rangeMax) continue
     if (alwaysMetOptionalTiers.has(tierIndexForPriority(req.priority))) continue
     liveOptionalMembers.push({
       skillId: req.skillId,
-      rangeMin: range.min,
-      effectiveMinPoints,
-      bigM: effectiveMinPoints - range.min,
+      sign,
+      rangeMin,
+      effectiveMinPoints: target,
+      bigM: target - rangeMin,
       tierIndex: tierIndexForPriority(req.priority),
     })
   }
@@ -963,6 +988,10 @@ export function buildModel(
   // tier's reward is independent, never an OR.
   interface LivePreferHigherTier {
     readonly skillId: SkillId
+    /** `requirementSign` of the request: on a negative tier ("Prefer
+     * lower"), "further" means more negative, so the row is built over the
+     * negated total, the same signed frame `LiveOptionalMember.sign` uses. */
+    readonly sign: 1 | -1
     readonly rangeMin: number
     readonly bigM: number
   }
@@ -979,14 +1008,20 @@ export function buildModel(
   let preferHigherOffset = 0
   const livePreferHigherTiers: LivePreferHigherTier[] = []
   for (const req of requirements) {
+    // On a negative-tier request (requirement-direction.ts) the flag reads
+    // as "Prefer lower" (`SkillPicker.tsx`): every *more negative* tier is
+    // rewarded instead, never climbing back out of the one asked for.
     if (!req.preferHigher) continue
     const thresholds = preferHigherTierThresholds.get(req.skillId)
     if (!thresholds) continue
     const range = preferHigherRanges.get(req.skillId)!
+    const sign = requirementSign(req.minPoints)
+    const signedRangeMin = sign > 0 ? range.min : -range.max
+    const signedRangeMax = sign > 0 ? range.max : -range.min
     for (const threshold of thresholds) {
-      if (threshold <= req.minPoints) continue
-      const effectiveThreshold = threshold - pinnedPointsTowards(req.skillId)
-      if (effectiveThreshold <= range.min) {
+      if (sign * threshold <= sign * req.minPoints) continue
+      const effectiveThreshold = sign * (threshold - pinnedPointsTowards(req.skillId))
+      if (effectiveThreshold <= signedRangeMin) {
         // Always reached regardless of any choice this model makes, same
         // "goes into the constant offset, not a column" treatment
         // `alwaysMetOptionalTiers` gets above (and for the same reason --
@@ -994,11 +1029,12 @@ export function buildModel(
         // pruned models, so the solved objective must stay the build's true
         // score regardless of which pieces this particular model saw).
         preferHigherOffset += PREFER_HIGHER_TIER_WEIGHT
-      } else if (effectiveThreshold <= range.max) {
+      } else if (effectiveThreshold <= signedRangeMax) {
         livePreferHigherTiers.push({
           skillId: req.skillId,
-          rangeMin: range.min,
-          bigM: effectiveThreshold - range.min,
+          sign,
+          rangeMin: signedRangeMin,
+          bigM: effectiveThreshold - signedRangeMin,
         })
       }
       // else: never achievable in this query, so no column either -- same
@@ -1073,7 +1109,9 @@ export function buildModel(
         .filter((r) => {
           const skill = cappedSkillById.get(r.skillId)
           return (
-            skill !== undefined && r.minPoints > 0 && isActiveAt(r.minPoints, skill.tierThresholds)
+            skill !== undefined &&
+            r.minPoints !== 0 &&
+            isActiveAt(r.minPoints, skill.tierThresholds)
           )
         })
         .map((r) => r.skillId),
@@ -1195,8 +1233,16 @@ export function buildModel(
     rowUpper[row] = 0
   }
   requirements.forEach((req, r) => {
-    rowLower[skillRow(r)] = req.minPoints - pinnedPointsTowards(req.skillId)
-    rowUpper[skillRow(r)] = highs.infinity
+    // A negative-tier requirement (requirement-direction.ts) caps the total
+    // from above instead: the build must sit at or below that tier.
+    const bound = req.minPoints - pinnedPointsTowards(req.skillId)
+    if (req.minPoints < 0) {
+      rowLower[skillRow(r)] = -highs.infinity
+      rowUpper[skillRow(r)] = bound
+    } else {
+      rowLower[skillRow(r)] = bound
+      rowUpper[skillRow(r)] = highs.infinity
+    }
   })
   resistanceFloors.forEach((floor, i) => {
     rowLower[resistanceRow(i)] = floor.minTotal
@@ -1357,11 +1403,11 @@ export function buildModel(
     }
     liveOptionalMembers.forEach((member, i) => {
       const points = pointsTowards(decoration.skills, member.skillId)
-      if (points !== 0) entries.set(optionalReachedRowOf[i], points)
+      if (points !== 0) entries.set(optionalReachedRowOf[i], member.sign * points)
     })
     livePreferHigherTiers.forEach((tier, i) => {
       const points = pointsTowards(decoration.skills, tier.skillId)
-      if (points !== 0) entries.set(preferHigherReachedRowOf[i], points)
+      if (points !== 0) entries.set(preferHigherReachedRowOf[i], tier.sign * points)
     })
     if (skillSlotsUpRow >= 0) {
       const points = pointsTowards(decoration.skills, capSkillSlotsUpId!)
@@ -1401,11 +1447,11 @@ export function buildModel(
       }
       liveOptionalMembers.forEach((member, i) => {
         const points = pointsTowards(candidate.skills, member.skillId)
-        if (points !== 0) entries.set(optionalReachedRowOf[i], points)
+        if (points !== 0) entries.set(optionalReachedRowOf[i], member.sign * points)
       })
       livePreferHigherTiers.forEach((tier, i) => {
         const points = pointsTowards(candidate.skills, tier.skillId)
-        if (points !== 0) entries.set(preferHigherReachedRowOf[i], points)
+        if (points !== 0) entries.set(preferHigherReachedRowOf[i], tier.sign * points)
       })
       preferredCategoryLeaves.forEach((covered, i) => {
         if (candidate.category !== undefined && covered.has(candidate.category)) {
@@ -1508,11 +1554,11 @@ export function buildModel(
         }
         liveOptionalMembers.forEach((member, i) => {
           const points = pointsTowards(cuff.skills, member.skillId)
-          if (points !== 0) entries.set(optionalReachedRowOf[i], count * points)
+          if (points !== 0) entries.set(optionalReachedRowOf[i], member.sign * count * points)
         })
         livePreferHigherTiers.forEach((tier, i) => {
           const points = pointsTowards(cuff.skills, tier.skillId)
-          if (points !== 0) entries.set(preferHigherReachedRowOf[i], count * points)
+          if (points !== 0) entries.set(preferHigherReachedRowOf[i], tier.sign * count * points)
         })
         if (skillSlotsUpRow >= 0) {
           const points = pointsTowards(cuff.skills, capSkillSlotsUpId!)

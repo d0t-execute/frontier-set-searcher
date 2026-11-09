@@ -1033,7 +1033,9 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
       const description = unreachable
         .map((u) => {
           const name = skillNames.get(u.skillId) ?? `Skill ${u.skillId}`
-          return `${name} needs ${u.required}, but at most ${u.maxReachable} is reachable`
+          return u.required < 0
+            ? `${name} needs ${u.required}, but it can only go as low as ${u.maxReachable}`
+            : `${name} needs ${u.required}, but at most ${u.maxReachable} is reachable`
         })
         .join('; ')
       setStatus('error')
@@ -1345,13 +1347,14 @@ function App({ initialState }: { readonly initialState?: AppInitialState } = {})
                     dropdown is "Required" (a hard requirement: every returned result has to contain
                     it at the specified level), "Prefer higher" (the same hard requirement, but
                     every tier the result reaches beyond it is rewarded too -- +2 is good, +3 is
-                    even better, and so on), or "Option N" (a soft preference: the solver tries to
-                    include it, but only after every required skill and every lower-numbered option
-                    is satisfied). Option 1 is the most important; skills sharing the same option
-                    number are interchangeable, so satisfying any one of them counts the same as
-                    satisfying all of them. An explicit "Option N" always outranks "Prefer higher",
-                    since the player picked that priority on purpose and "Prefer higher" didn't get
-                    one. <br />
+                    even better, and so on; on a negative tier like Blue Soul it reads "Prefer
+                    lower" and rewards going further negative instead), or "Option N" (a soft
+                    preference: the solver tries to include it, but only after every required skill
+                    and every lower-numbered option is satisfied). Option 1 is the most important;
+                    skills sharing the same option number are interchangeable, so satisfying any one
+                    of them counts the same as satisfying all of them. An explicit "Option N" always
+                    outranks "Prefer higher", since the player picked that priority on purpose and
+                    "Prefer higher" didn't get one. <br />
                     <b>You can search by skill name and skill level/threshold names.</b> <br />
                     Results always respect the game's active skill cap: none of your required skills
                     will be disabled. If more skills are required than the available gear and Skill

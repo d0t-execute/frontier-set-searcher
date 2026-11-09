@@ -10,6 +10,7 @@
  */
 
 import { computeAchievableRanges, pointsTowards } from './ilp-model'
+import { meetsRequirement } from './requirement-direction'
 import type { Cuff, Decoration, SkillId, SkillRequirement, SlotQuery } from './types'
 
 export interface UnreachableRequirement {
@@ -17,7 +18,9 @@ export interface UnreachableRequirement {
   readonly required: number
   /** The most this skill could possibly reach given the current slots/
    * decorations/cuffs/pins -- always `< required` for anything returned
-   * here, and always a safe (possibly generous) upper bound, never an
+   * here. For a negative `required` (requirement-direction.ts) it's instead
+   * the *lowest* the total could go, always `> required`. Either way a safe
+   * (possibly generous) bound, never an
    * understatement -- see `computeAchievableRanges`'s own docstring. A false
    * "reachable" is possible (the real tightest bound can be lower than this
    * one), but a false "unreachable" never is. */
@@ -88,9 +91,13 @@ export function findUnreachableRequirements(
 
   const unreachable: UnreachableRequirement[] = []
   for (const req of requirements) {
-    const maxReachable = (ranges.get(req.skillId)?.max ?? 0) + fixedContribution(req.skillId)
-    if (maxReachable < req.minPoints) {
-      unreachable.push({ skillId: req.skillId, required: req.minPoints, maxReachable })
+    // For a negative-tier requirement (requirement-direction.ts) the bound
+    // that matters is how far *down* the total can go, not how far up.
+    const range = ranges.get(req.skillId)
+    const fixed = fixedContribution(req.skillId)
+    const extreme = req.minPoints < 0 ? (range?.min ?? 0) + fixed : (range?.max ?? 0) + fixed
+    if (!meetsRequirement(extreme, req.minPoints)) {
+      unreachable.push({ skillId: req.skillId, required: req.minPoints, maxReachable: extreme })
     }
   }
   return unreachable

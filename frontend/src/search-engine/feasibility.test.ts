@@ -31,6 +31,14 @@ function slot(slotId: string, candidates: readonly Candidate[]): SlotQuery {
 }
 
 describe('findUnreachableRequirements', () => {
+  it('judges a negative-tier requirement by how low the total can go', () => {
+    const slots = [slot('head', [candidate('head:plain', {}), candidate('head:minus', { 1: -6 })])]
+    expect(findUnreachableRequirements(slots, [], [], [{ skillId: 1, minPoints: -5 }])).toEqual([])
+    expect(findUnreachableRequirements(slots, [], [], [{ skillId: 1, minPoints: -10 }])).toEqual([
+      { skillId: 1, required: -10, maxReachable: -6 },
+    ])
+  })
+
   it('returns nothing when every requirement is reachable', () => {
     const slots = [slot('head', [candidate('head:1', { 1: 10 })])]
     const unreachable = findUnreachableRequirements(slots, [], [], [{ skillId: 1, minPoints: 10 }])

@@ -783,3 +783,97 @@ describe('lexicographic solve', () => {
     expect(results.map((r) => r.picks.get('head')?.id)).toEqual(expected)
   })
 })
+
+// A negative-tier requirement (e.g. Reinforcement's "Blue Soul" at -10) means
+// "go at least this far below zero" -- see requirement-direction.ts. Before
+// this was handled, `total >= -10` let any build with 0 points through.
+describe('search with negative-tier requirements', () => {
+  const BLUE_SOUL = { skillId: 1, minPoints: -10 }
+
+  it('only returns builds at or below the requested negative tier', async () => {
+    const slots: SlotQuery[] = [
+      {
+        slotId: 'head',
+        candidates: [
+          candidate('Plain Helm', {}, 3),
+          candidate('Soul Helm -', { 1: -6 }),
+          candidate('Soul Helm +', { 1: 5 }, 3),
+        ],
+      },
+      {
+        slotId: 'chest',
+        candidates: [candidate('Plain Mail', {}, 3), candidate('Soul Mail -', { 1: -5 })],
+      },
+    ]
+
+    const results = await collect(search(slots, [BLUE_SOUL]))
+
+    expect(results).toHaveLength(1)
+    expect(results[0].picks.get('head')?.id).toBe('Soul Helm -')
+    expect(results[0].picks.get('chest')?.id).toBe('Soul Mail -')
+    expect(results[0].skillTotals.get(1)).toBe(-11)
+  })
+
+  it('returns nothing when the total can never go low enough', async () => {
+    const slots: SlotQuery[] = [
+      { slotId: 'head', candidates: [candidate('Plain Helm', {}), candidate('Helm -', { 1: -4 })] },
+    ]
+
+    const results = await collect(search(slots, [BLUE_SOUL]))
+
+    expect(results).toEqual([])
+  })
+
+  it("doesn't prune away the negative-point piece in favor of ones with more points", async () => {
+    // With `maxResults` set, candidate pruning runs; it used to treat more
+    // points as always better for a requested skill, so every "plain" piece
+    // dominated the only piece that could reach the tier.
+    const slots: SlotQuery[] = [
+      {
+        slotId: 'head',
+        candidates: [
+          candidate('Plain Helm A', {}, 3),
+          candidate('Plain Helm B', {}, 2),
+          candidate('Plain Helm C', {}, 1),
+          candidate('Soul Helm -', { 1: -10 }),
+        ],
+      },
+    ]
+
+    const results = await collect(search(slots, [BLUE_SOUL], [], { maxResults: 1 }))
+
+    expect(results).toHaveLength(1)
+    expect(results[0].picks.get('head')?.id).toBe('Soul Helm -')
+  })
+
+  it('uses a negative-point decoration to reach the tier', async () => {
+    const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Helm', { 1: -7 }, 1)] }]
+    const decorations = [deco('Plus Jewel', 1, { 1: 3 }), deco('Minus Jewel', 1, { 1: -3 })]
+
+    const results = await collect(search(slots, [BLUE_SOUL], decorations))
+
+    expect(results).toHaveLength(1)
+    expect(results[0].skillTotals.get(1)).toBe(-10)
+    expect([...results[0].decorations.values()].flat().map((d) => d.id)).toEqual(['Minus Jewel'])
+  })
+
+  it('ranks a build reaching an optional negative tier above one that does not', async () => {
+    const slots: SlotQuery[] = [
+      {
+        slotId: 'head',
+        candidates: [
+          candidate('Plain Helm', { 2: 5 }, 3),
+          candidate('Soul Helm -', { 1: -10, 2: 5 }),
+        ],
+      },
+    ]
+
+    const results = await collect(
+      search(slots, [{ skillId: 2, minPoints: 5 }], [], {
+        optionalSkillRequirements: [{ ...BLUE_SOUL, priority: 1 }],
+      }),
+    )
+
+    expect(results[0].picks.get('head')?.id).toBe('Soul Helm -')
+  })
+})

@@ -83,6 +83,16 @@ export interface SkillPickerProps {
 
 const DEFAULT_MIN_POINTS = 1
 
+/** Whether a tier stronger than `minPoints` exists in its own direction --
+ * higher for a positive tier, more negative for a negative one ("Blue
+ * Soul"-style requests, see search-engine/requirement-direction.ts) -- i.e.
+ * whether "Prefer higher"/"Prefer lower" has anything to reward. */
+function hasFurtherTier(tiers: readonly SkillTierOption[], minPoints: number): boolean {
+  return minPoints < 0
+    ? tiers.some((t) => t.minPoints < minPoints)
+    : tiers.some((t) => t.minPoints > minPoints)
+}
+
 const UNCATEGORIZED = 'Other'
 
 /** The level to default a newly-added skill to: its strongest non-penalty
@@ -221,7 +231,18 @@ export function SkillPicker({
   }
 
   function setMinPoints(skillId: number, minPoints: number): void {
-    onChange(requirements.map((r) => (r.skillId === skillId ? { ...r, minPoints } : r)))
+    // The "Prefer higher/lower" option is only offered while a further tier
+    // exists in the picked tier's own direction (see the select below), so a
+    // move onto the last one drops the flag rather than leaving it stuck on
+    // an option that's no longer listed.
+    const canPreferFurther = hasFurtherTier(skillOf(skillId)?.tiers ?? [], minPoints)
+    onChange(
+      requirements.map((r) =>
+        r.skillId === skillId
+          ? { ...r, minPoints, preferHigher: canPreferFurther ? r.preferHigher : undefined }
+          : r,
+      ),
+    )
   }
 
   function remove(skillId: number): void {
@@ -329,12 +350,16 @@ export function SkillPicker({
                 onChange={(e) => setRequirementKind(requirement.skillId, e.target.value)}
               >
                 <option value="required">Required</option>
-                {/* Only offered when a tier above the one currently picked
-                    actually exists (see this module's own docstring) --
-                    already being at the skill's own top tier leaves nothing
-                    for "prefer higher" to reward. */}
-                {tiers.some((t) => t.minPoints > requirement.minPoints) && (
-                  <option value="preferHigher">Prefer higher</option>
+                {/* Only offered when a further tier in the picked tier's
+                    own direction actually exists (see this module's own
+                    docstring) -- already being at the end leaves nothing to
+                    reward. On a negative tier it's "Prefer lower": the same
+                    `preferHigher` flag, rewarding each more-negative tier
+                    instead (see `ilp-model.ts`'s prefer-higher ladder). */}
+                {hasFurtherTier(tiers, requirement.minPoints) && (
+                  <option value="preferHigher">
+                    {requirement.minPoints < 0 ? 'Prefer lower' : 'Prefer higher'}
+                  </option>
                 )}
                 {Array.from({ length: MAX_OPTIONAL_SKILL_PRIORITY_TIERS }, (_, i) => i + 1).map(
                   (p) => (

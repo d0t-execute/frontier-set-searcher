@@ -26,7 +26,9 @@
  * "Dominates" has to cover every row and objective term a candidate column
  * feeds in `buildModel`, or the swap argument breaks:
  * - hard requirements, optional skills, and requested resistance floors:
- *   at least as many points (all three are `>=` rows, or rewarded `>=`);
+ *   at least as many points (all three are `>=` rows, or rewarded `>=`) --
+ *   points signed per `requirementSign`, so a negative-tier request wants
+ *   at least as *few*;
  * - excluded-active skills: *equal* points (two-sided rows -- more could
  *   activate the skill, fewer could activate a penalty tier);
  * - open slots: at least as many (decorations placed for `x` still fit);
@@ -59,6 +61,7 @@ import {
   pointsTowards,
   skillPreferenceIdsOf,
 } from './ilp-model'
+import { requirementSign } from './requirement-direction'
 import { countsTowardGrankBonus } from './skill-cap-rules'
 import type {
   Candidate,
@@ -111,8 +114,14 @@ function pruneSlot(
 
   const records = candidates.map((candidate): CandidateRecord => {
     const atLeast = [
-      ...requirements.map((r) => pointsTowards(candidate.skills, r.skillId)),
-      ...optional.map((r) => pointsTowards(candidate.skills, r.skillId)),
+      // Signed (requirement-direction.ts): for a negative-tier request,
+      // *fewer* points is what helps.
+      ...requirements.map(
+        (r) => requirementSign(r.minPoints) * pointsTowards(candidate.skills, r.skillId),
+      ),
+      ...optional.map(
+        (r) => requirementSign(r.minPoints) * pointsTowards(candidate.skills, r.skillId),
+      ),
       ...floors.map((f) => candidate.resistances?.[f.element] ?? 0),
       candidate.openSlotCount ?? 0,
       ...(capRules !== undefined ? [countsTowardGrankBonus(candidate) ? 1 : 0] : []),
@@ -218,14 +227,14 @@ export function pruneDominatedDecorations(
   if (hasTierPenalties(options)) return decorations
 
   const skillPreferenceIds = skillPreferenceIdsOf(requirements, options)
-  const scoredSkills = [...requirements, ...(options.optionalSkillRequirements ?? [])].map(
-    (r) => r.skillId,
-  )
+  const scoredSkills = [...requirements, ...(options.optionalSkillRequirements ?? [])]
   const excluded = options.excludedActiveSkillIds ?? []
   const records = decorations.map((decoration) => ({
     decoration,
     objective: decorationObjectiveCost(decoration, skillPreferenceIds, options),
-    points: scoredSkills.map((id) => pointsTowards(decoration.skills, id)),
+    points: scoredSkills.map(
+      (r) => requirementSign(r.minPoints) * pointsTowards(decoration.skills, r.skillId),
+    ),
     exactKey: excluded.map((id) => pointsTowards(decoration.skills, id)).join(','),
   }))
   records.sort(

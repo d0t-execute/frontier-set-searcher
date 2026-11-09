@@ -78,6 +78,7 @@ import { filterRelevantCuffs, filterRelevantDecorations } from './expand'
 import { getHighs } from './highs-runtime'
 import { buildModel, decodeSolution, exclusionRow, isUsableResult } from './ilp-model'
 import type { ColumnMeta } from './ilp-model'
+import { meetsRequirementIn } from './requirement-direction'
 import type {
   BuildResult,
   Cuff,
@@ -313,7 +314,7 @@ export async function* search(
   if (slots.length === 0) {
     // Nothing to choose, so nothing to solve for -- but an empty build still
     // only counts as a result if every requirement is trivially already met
-    // (only possible when every requirement's minPoints is 0 or less),
+    // (only possible when every requirement is met by pinned cuffs alone),
     // matching the old engine's behavior for this edge case.
     const pinnedCuffs = options.pinnedCuffs ?? []
     const skillTotals = new Map<SkillId, number>()
@@ -322,7 +323,7 @@ export async function* search(
         skillTotals.set(skillId, (skillTotals.get(skillId) ?? 0) + points)
       }
     }
-    const meetsAll = requirements.every((r) => (skillTotals.get(r.skillId) ?? 0) >= r.minPoints)
+    const meetsAll = requirements.every((r) => meetsRequirementIn(skillTotals, r))
     if (meetsAll) {
       yield { picks: new Map(), decorations: new Map(), cuffs: [...pinnedCuffs], skillTotals }
     }

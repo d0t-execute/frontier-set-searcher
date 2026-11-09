@@ -511,6 +511,77 @@ describe('SkillPicker', () => {
     })
   })
 
+  describe('"Prefer lower" on a negative tier', () => {
+    const ATTACK_DOWN_TIERS = [
+      { label: 'Attack Up', minPoints: 10, description: null },
+      { label: 'Attack Down (S)', minPoints: -10, description: null },
+      { label: 'Attack Down (L)', minPoints: -20, description: null },
+    ]
+    const NEGATIVE_SKILLS = [skill(1, 'Attack', { tiers: ATTACK_DOWN_TIERS })]
+
+    it('labels the option "Prefer lower" when a more negative tier exists', () => {
+      render(
+        <SkillPicker
+          skills={NEGATIVE_SKILLS}
+          requirements={[{ skillId: 1, minPoints: -10 }]}
+          onChange={vi.fn()}
+        />,
+      )
+
+      const typeSelect = screen.getByRole('combobox', { name: /attack requirement type/i })
+      expect(within(typeSelect).getByText('Prefer lower')).toBeInTheDocument()
+      expect(within(typeSelect).queryByText('Prefer higher')).not.toBeInTheDocument()
+    })
+
+    it('offers neither option on the most negative tier', () => {
+      render(
+        <SkillPicker
+          skills={NEGATIVE_SKILLS}
+          requirements={[{ skillId: 1, minPoints: -20 }]}
+          onChange={vi.fn()}
+        />,
+      )
+
+      const typeSelect = screen.getByRole('combobox', { name: /attack requirement type/i })
+      expect(within(typeSelect).queryByText('Prefer lower')).not.toBeInTheDocument()
+      expect(within(typeSelect).queryByText('Prefer higher')).not.toBeInTheDocument()
+    })
+
+    it('keeps the flag when moving from a positive tier to a negative one that can still go further', async () => {
+      const onChange = vi.fn()
+      const user = userEvent.setup()
+      render(
+        <SkillPicker
+          skills={NEGATIVE_SKILLS}
+          requirements={[{ skillId: 1, minPoints: 10, preferHigher: true }]}
+          onChange={onChange}
+        />,
+      )
+
+      await user.selectOptions(screen.getByRole('combobox', { name: /attack level/i }), '-10')
+
+      expect(onChange).toHaveBeenCalledWith([{ skillId: 1, minPoints: -10, preferHigher: true }])
+    })
+
+    it('drops the flag when moving onto the most negative tier', async () => {
+      const onChange = vi.fn()
+      const user = userEvent.setup()
+      render(
+        <SkillPicker
+          skills={NEGATIVE_SKILLS}
+          requirements={[{ skillId: 1, minPoints: -10, preferHigher: true }]}
+          onChange={onChange}
+        />,
+      )
+
+      await user.selectOptions(screen.getByRole('combobox', { name: /attack level/i }), '-20')
+
+      expect(onChange).toHaveBeenCalledWith([
+        { skillId: 1, minPoints: -20, preferHigher: undefined },
+      ])
+    })
+  })
+
   describe('"Prefer higher" requirement type (2026-10-27)', () => {
     const VAMPIRISM_TIERS = [
       { label: 'Vampirism+2', minPoints: 20, description: null },

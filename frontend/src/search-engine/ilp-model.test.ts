@@ -648,6 +648,87 @@ describe('buildModel with a "Prefer higher" skill requirement (2026-10-27)', () 
   })
 })
 
+// "Prefer lower": the same `preferHigher` flag on a negative-tier
+// requirement (requirement-direction.ts) rewards each *more negative* tier.
+describe('buildModel with "Prefer lower" on a negative-tier requirement', () => {
+  const TIERS = [{ skillId: 1, tierThresholds: [10, -10, -15, -25] }]
+
+  it('rewards going further negative, even against an open-slot advantage', () => {
+    const slots: SlotQuery[] = [
+      {
+        slotId: 'head',
+        candidates: [candidate('ExactTier', { 1: -10 }, 3), candidate('Deeper', { 1: -25 }, 0)],
+      },
+    ]
+    const { model, columns } = buildModel(
+      highs,
+      slots,
+      [],
+      [{ skillId: 1, minPoints: -10, preferHigher: true }],
+      { preferExactMatches: true, skillTiers: TIERS },
+    )
+
+    const { colValue, native } = solve(model)
+    expect(decodeSolution(columns, colValue).picks.get('head')?.id).toBe('Deeper')
+    native.dispose()
+  })
+
+  it('rewards more extra tiers over fewer', () => {
+    const slots: SlotQuery[] = [
+      {
+        slotId: 'head',
+        candidates: [candidate('OneDeeper', { 1: -15 }), candidate('TwoDeeper', { 1: -25 })],
+      },
+    ]
+    const { model, columns } = buildModel(
+      highs,
+      slots,
+      [],
+      [{ skillId: 1, minPoints: -10, preferHigher: true }],
+      { preferExactMatches: false, skillTiers: TIERS },
+    )
+
+    const { colValue, native } = solve(model)
+    expect(decodeSolution(columns, colValue).picks.get('head')?.id).toBe('TwoDeeper')
+    native.dispose()
+  })
+
+  it('never rewards climbing out of the requested tier', () => {
+    // The positive tier is above -10, not "further" -- and the hard
+    // requirement keeps it out anyway, so only the -10 piece is valid.
+    const slots: SlotQuery[] = [
+      {
+        slotId: 'head',
+        candidates: [candidate('Positive', { 1: 10 }, 3), candidate('Blue', { 1: -10 })],
+      },
+    ]
+    const { model, columns } = buildModel(
+      highs,
+      slots,
+      [],
+      [{ skillId: 1, minPoints: -10, preferHigher: true }],
+      { preferExactMatches: false, skillTiers: TIERS },
+    )
+
+    const { colValue, native } = solve(model)
+    expect(decodeSolution(columns, colValue).picks.get('head')?.id).toBe('Blue')
+    native.dispose()
+  })
+
+  it('skips the ladder entirely once the required level is already the most negative tier', () => {
+    const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Deepest', { 1: -25 })] }]
+    const { columns } = buildModel(
+      highs,
+      slots,
+      [],
+      [{ skillId: 1, minPoints: -25, preferHigher: true }],
+      { preferExactMatches: true, skillTiers: TIERS },
+    )
+
+    expect(columns.some((c) => c.kind === 'auxiliary')).toBe(false)
+  })
+})
+
 describe('buildModel with options.preferredDecorationIds (2026-11-08)', () => {
   const slots: SlotQuery[] = [{ slotId: 'head', candidates: [candidate('Head', {}, 3)] }]
 

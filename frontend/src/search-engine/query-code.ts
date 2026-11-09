@@ -350,7 +350,8 @@ function decodeIdList(lines: readonly string[], index: NameIndex): readonly stri
  * a "(optional, priority N)" suffix when `SkillRequirement.optional` is set
  * (docs/feedback.md Round 3 #2), or a "(prefer higher)" suffix when
  * `SkillRequirement.preferHigher` is set instead (2026-10-27, `SkillPicker
- * .tsx`'s own "Prefer higher" requirement-type option -- mutually exclusive
+ * .tsx`'s own "Prefer higher" requirement-type option; "(prefer lower)" on
+ * a negative tier, the same flag either way -- mutually exclusive
  * with `optional`, see that field's own docstring), both parsed back by
  * `decodeSkillRequirements`. A plain hard requirement is unchanged from
  * before either feature, so an old save code decodes identically. */
@@ -358,7 +359,9 @@ function renderSkillRequirementLine(name: string, r: SkillRequirement): string {
   const suffix = r.optional
     ? ` (optional, priority ${r.priority ?? 1})`
     : r.preferHigher
-      ? ' (prefer higher)'
+      ? r.minPoints < 0
+        ? ' (prefer lower)'
+        : ' (prefer higher)'
       : ''
   return `${name}: ${r.minPoints}${suffix}`
 }
@@ -370,7 +373,8 @@ function decodeSkillRequirements(
   const result: SkillRequirement[] = []
   for (const line of lines) {
     const optionalMatch = /^(.*): (-?\d+) \(optional, priority (\d+)\)$/.exec(line)
-    const preferHigherMatch = !optionalMatch && /^(.*): (-?\d+) \(prefer higher\)$/.exec(line)
+    const preferHigherMatch =
+      !optionalMatch && /^(.*): (-?\d+) \(prefer (?:higher|lower)\)$/.exec(line)
     const plainMatch = !optionalMatch && !preferHigherMatch && /^(.*): (-?\d+)$/.exec(line)
     const match = optionalMatch ?? preferHigherMatch ?? plainMatch
     if (!match) return null
