@@ -632,4 +632,46 @@ describe('previewActiveSkillCap (docs/feedback.md Round 2 #4)', () => {
 
     expect(withSelection).toBe(withoutSelection)
   })
+
+  it('ignores optional Zenith requirements, since the search is free to drop them', () => {
+    const requirements = OTHER_SKILL_IDS.map((skillId) => ({
+      skillId,
+      minPoints: 1,
+      optional: true,
+      priority: 1,
+    }))
+
+    const cap = previewActiveSkillCap(
+      FLEXIBLE_SLOTS,
+      SSU_ONLY_CUFF_POOL,
+      NO_PINNED_CUFFS,
+      NO_PINNED_CUFF_SKILLS,
+      requirements,
+      ZENITH_SKILLS,
+    )
+
+    expect(cap).toBe(19)
+  })
+
+  it('never reads below a required Skill Slots Up amount, even when other required Zenith skills overflow the positions', () => {
+    // 5 other required skills would leave only 2 positions for Skill Slots
+    // Up (14), but Skill Slots Up +5 is itself required -- the ceiling has to
+    // reflect at least that (10 + 2 + 5), even though the combination as a
+    // whole can't be satisfied.
+    const requirements = [
+      ...OTHER_SKILL_IDS.map((skillId) => ({ skillId, minPoints: 1 })),
+      { skillId: SKILL_SLOTS_UP_ID, minPoints: 5 },
+    ]
+
+    const cap = previewActiveSkillCap(
+      FLEXIBLE_SLOTS,
+      SSU_ONLY_CUFF_POOL,
+      NO_PINNED_CUFFS,
+      NO_PINNED_CUFF_SKILLS,
+      requirements,
+      ZENITH_SKILLS,
+    )
+
+    expect(cap).toBe(17)
+  })
 })

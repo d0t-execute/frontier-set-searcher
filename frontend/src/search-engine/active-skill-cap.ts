@@ -430,8 +430,15 @@ export function previewActiveSkillCap(
   const skillSlotsUpId = zenithSkills.find((s) => s.name === SKILL_SLOTS_UP_ZENITH_SKILL_NAME)?.id
   const zenithSkillIds = new Set(zenithSkills.map((s) => s.id))
   const neededSkillCounts = new Map<SkillId, number>()
+  let requiredSkillSlotsUp = 0
   for (const requirement of zenithRequirements) {
-    if (requirement.skillId === skillSlotsUpId) continue
+    // Optional ("Option N") requirements never reserve a position -- the
+    // search is free to drop them, so they can't lower the ceiling.
+    if (requirement.optional || requirement.minPoints <= 0) continue
+    if (requirement.skillId === skillSlotsUpId) {
+      requiredSkillSlotsUp = Math.max(requiredSkillSlotsUp, requirement.minPoints)
+      continue
+    }
     const existing = neededSkillCounts.get(requirement.skillId) ?? 0
     neededSkillCounts.set(requirement.skillId, Math.max(existing, requirement.minPoints))
   }
@@ -439,7 +446,15 @@ export function previewActiveSkillCap(
     ...positionsFromSlots(slots, skillSlotsUpId),
     ...positionsFromCuffs(cuffs, pinnedCuffs, pinnedCuffSkillIds, skillSlotsUpId, zenithSkillIds),
   ]
-  const skillSlotsUpBonus = allocateSkillSlotsUp(positions, neededSkillCounts)
+  // A hard Skill Slots Up requirement is a floor: any build the search could
+  // return reaches at least that much, even when the other required Zenith
+  // skills would otherwise crowd it out (that selection just has no results,
+  // but the ceiling shouldn't read lower than what was asked for). Still
+  // bounded by what the current positions could grant at all.
+  const skillSlotsUpBonus = Math.max(
+    allocateSkillSlotsUp(positions, neededSkillCounts),
+    Math.min(requiredSkillSlotsUp, allocateSkillSlotsUp(positions, new Map())),
+  )
 
   return BASE_ACTIVE_SKILL_CAP + grankBonus + skillSlotsUpBonus
 }
