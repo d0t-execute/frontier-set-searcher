@@ -15,7 +15,10 @@
   --social-bg: rgba(244, 243, 236, 0.5);
   --shadow: rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
   --danger: #dc3545;
-  --text-muted: #9b93a5;
+  /* Was #9b93a5, only ~2.95:1 on the white page -- the "i" info icons,
+   * slot-count notes and similar muted text read as washed out in light
+   * mode (2026-11-21). #7a7285 is ~4.6:1 yet still lighter than --text. */
+  --text-muted: #7a7285;
 
   --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
   --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
@@ -817,6 +820,17 @@ code {
 
 .btn-close:hover {
   box-shadow: var(--bs-btn-close-focus-shadow);
+}
+
+/* A remove "x" sitting on the plain page background (not on a gray
+ * `text-bg-secondary` badge, where `btn-close-white` is right in both
+ * themes). `btn-close-white` is unconditionally white, so on the white
+ * light-mode page it was invisible (2026-11-21); this keeps Bootstrap's dark
+ * default icon in light mode and only whitens it in dark mode. */
+@media (prefers-color-scheme: dark) {
+  .btn-close-adaptive {
+    filter: invert(1) grayscale(100%) brightness(200%);
+  }
 }
 
 /* Bootstrap's own `.btn-primary` is a fixed blue, clashing with this page's

@@ -372,7 +372,7 @@ export function SkillPicker({
               <button
                 type="button"
                 aria-label={`Remove ${nameOf(requirement.skillId)}`}
-                className="btn-close btn-close-white skill-requirement-remove"
+                className="btn-close btn-close-adaptive skill-requirement-remove"
                 style={{ fontSize: '0.65rem' }}
                 onClick={() => remove(requirement.skillId)}
               />
