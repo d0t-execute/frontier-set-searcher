@@ -10,6 +10,7 @@
  */
 
 import type { SkillContribution, SkillId } from '../search-engine/types'
+import { skillTextMatches } from './search-rank'
 
 export function HoveredSkillSummary({
   hovered,
@@ -44,7 +45,7 @@ export function HoveredSkillSummary({
         const name = skillNameById.get(c.skillId) ?? `Skill ${c.skillId}`
         const text = `${name}: ${c.points}`
         const searchText = skillSearchTextById?.get(c.skillId) ?? name.toLowerCase()
-        const highlighted = q.length > 0 && searchText.includes(q)
+        const highlighted = q.length > 0 && skillTextMatches(searchText, q)
         return (
           <span key={c.skillId}>
             {i > 0 && ', '}

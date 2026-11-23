@@ -20,7 +20,12 @@
  * once a page has several of these (ArmorPicker alone renders up to two per
  * armor slot). Callers state the hint once, in their own section intro,
  * instead.
+ *
+ * Results are sorted best match first (see `search-rank.ts`), not left in
+ * catalog order (2026-11-23).
  */
+
+import { type MatchRank, rankName, rankedMatches } from './search-rank'
 
 export const MIN_SEARCH_LENGTH = 2
 // Only bounds how many of the already-computed matches get rendered as DOM
@@ -36,8 +41,8 @@ export const MAX_MATCHES_SHOWN = 200
  * `ArmorPicker`'s piece search also matching against the skills a piece
  * grants, 2026-10-16 per user feedback: "searching armor pieces by skills...
  * rather than by the armor piece name itself"). */
-function defaultMatches<T extends { readonly name: string }>(item: T, query: string): boolean {
-  return item.name.toLowerCase().includes(query)
+function defaultMatches<T extends { readonly name: string }>(item: T, query: string): MatchRank {
+  return rankName(item.name, query)
 }
 
 export function FilterableOptions<T extends { readonly id: string; readonly name: string }>({
@@ -53,9 +58,10 @@ export function FilterableOptions<T extends { readonly id: string; readonly name
   search: string
   onPick: (item: T) => void
   ariaLabel: string
-  /** Overrides the default name-substring match rule -- `query` is already
-   * trimmed and lowercased the same way the default rule's own check is. */
-  matches?: (item: T, query: string) => boolean
+  /** Overrides the default name match rule -- `query` is already trimmed and
+   * lowercased. Return a `MatchRank` (lower sorts first, see search-rank.ts)
+   * to order results, or a plain boolean when every match ranks the same. */
+  matches?: (item: T, query: string) => MatchRank | boolean
   /** Rendered as each option's `title`, shown on hover -- e.g. the skills a
    * piece/decoration/cuff grants (2026-10-17, per user feedback: "hovering
    * over it would also show the skills that it has"). Omitted entirely by a
@@ -75,7 +81,7 @@ export function FilterableOptions<T extends { readonly id: string; readonly name
   }
 
   const query = search.trim().toLowerCase()
-  const allMatches = items.filter((item) => matches(item, query))
+  const allMatches = rankedMatches(items, query, matches)
   const shown = allMatches.slice(0, MAX_MATCHES_SHOWN)
 
   if (allMatches.length === 0) {

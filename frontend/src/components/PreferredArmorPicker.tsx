@@ -29,6 +29,7 @@ import type { SkillContribution, SkillId } from '../search-engine/types'
 import { FilterableOptions, MIN_SEARCH_LENGTH } from './FilterableOptions'
 import { HoveredSkillSummary } from './HoveredSkillSummary'
 import { handleEnterToPickFirst } from './pick-first-match'
+import { rankNameOrSkills } from './search-rank'
 
 interface NamedArmorPiece {
   readonly id: string
@@ -65,10 +66,12 @@ export function PreferredArmorPicker({
   const itemsById = useMemo(() => new Map(armorCandidates.map((c) => [c.id, c])), [armorCandidates])
 
   const matchesNameOrSkill = useCallback(
-    (item: NamedArmorPiece, query: string) => {
-      if (item.name.toLowerCase().includes(query)) return true
-      return item.skills.some((c) => (skillSearchTextById.get(c.skillId) ?? '').includes(query))
-    },
+    (item: NamedArmorPiece, query: string) =>
+      rankNameOrSkills(
+        item.name,
+        item.skills.map((c) => skillSearchTextById.get(c.skillId) ?? ''),
+        query,
+      ),
     [skillSearchTextById],
   )
 

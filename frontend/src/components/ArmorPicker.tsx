@@ -43,6 +43,7 @@ import type { SkillId } from '../search-engine/types'
 import { FilterableOptions, MIN_SEARCH_LENGTH } from './FilterableOptions'
 import { HoveredSkillSummary } from './HoveredSkillSummary'
 import { handleEnterToPickFirst } from './pick-first-match'
+import { type MatchRank, rankNameOrSkills } from './search-rank'
 
 export type { PinnedSlot } from '../search-engine/pinned-armor'
 
@@ -185,6 +186,14 @@ export function ArmorPicker({
   )
 }
 
+/** Each granted skill's pre-joined search text, for `rankNameOrSkills`. */
+function skillTexts(
+  skills: readonly { readonly skillId: SkillId }[],
+  skillSearchTextById: ReadonlyMap<SkillId, string>,
+): string[] {
+  return skills.map((s) => skillSearchTextById.get(s.skillId) ?? '')
+}
+
 function ArmorSlotPicker({
   slotId,
   candidates,
@@ -218,18 +227,24 @@ function ArmorSlotPicker({
   const [hoveredCandidate, setHoveredCandidate] = useState<NamedCandidate | null>(null)
   const [hoveredSlotDecoration, setHoveredSlotDecoration] = useState<NamedDecoration | null>(null)
 
-  function candidateMatches(candidate: NamedCandidate, query: string): boolean {
-    if (candidate.name.toLowerCase().includes(query)) return true
-    return candidate.skills.some((s) => (skillSearchTextById.get(s.skillId) ?? '').includes(query))
+  function candidateMatches(candidate: NamedCandidate, query: string): MatchRank {
+    return rankNameOrSkills(
+      candidate.name,
+      skillTexts(candidate.skills, skillSearchTextById),
+      query,
+    )
   }
 
   // Same skill-name/tier-label search extension as `candidateMatches` above
   // (docs/feedback.md Round 2 #8), just not wired into either decoration
   // search below until now (2026-10-20, per the project owner: "search by
   // skill threshold" wasn't working in ArmorPicker's decoration pickers).
-  function decorationMatches(decoration: NamedDecoration, query: string): boolean {
-    if (decoration.name.toLowerCase().includes(query)) return true
-    return decoration.skills.some((s) => (skillSearchTextById.get(s.skillId) ?? '').includes(query))
+  function decorationMatches(decoration: NamedDecoration, query: string): MatchRank {
+    return rankNameOrSkills(
+      decoration.name,
+      skillTexts(decoration.skills, skillSearchTextById),
+      query,
+    )
   }
 
   function pickCandidate(c: NamedCandidate): void {
@@ -421,9 +436,12 @@ function SlotDecorationOnlyPicker({
   const [search, setSearch] = useState('')
   const [hoveredDecoration, setHoveredDecoration] = useState<NamedDecoration | null>(null)
 
-  function decorationMatches(decoration: NamedDecoration, query: string): boolean {
-    if (decoration.name.toLowerCase().includes(query)) return true
-    return decoration.skills.some((s) => (skillSearchTextById.get(s.skillId) ?? '').includes(query))
+  function decorationMatches(decoration: NamedDecoration, query: string): MatchRank {
+    return rankNameOrSkills(
+      decoration.name,
+      skillTexts(decoration.skills, skillSearchTextById),
+      query,
+    )
   }
 
   // No candidate is chosen yet, so there's no single known capacity to bound

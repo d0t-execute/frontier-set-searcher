@@ -35,6 +35,7 @@ import type { SkillId } from '../search-engine/types'
 import { FilterableOptions, MIN_SEARCH_LENGTH } from './FilterableOptions'
 import { HoveredSkillSummary } from './HoveredSkillSummary'
 import { handleEnterToPickFirst } from './pick-first-match'
+import { type MatchRank, rankNameOrSkills } from './search-rank'
 
 interface SkillOption {
   readonly id: string
@@ -133,12 +134,15 @@ function CuffSlotPicker({
   const [search, setSearch] = useState('')
   const [hoveredCuff, setHoveredCuff] = useState<NamedCuff | null>(null)
 
-  function cuffMatches(cuff: NamedCuff, query: string): boolean {
-    if (cuff.name.toLowerCase().includes(query)) return true
-    return cuff.skills.some((s) =>
-      skillSearchTextById
-        ? (skillSearchTextById.get(s.skillId) ?? '').includes(query)
-        : (skillNameById.get(s.skillId) ?? '').toLowerCase().includes(query),
+  function cuffMatches(cuff: NamedCuff, query: string): MatchRank {
+    return rankNameOrSkills(
+      cuff.name,
+      cuff.skills.map((s) =>
+        skillSearchTextById
+          ? (skillSearchTextById.get(s.skillId) ?? '')
+          : (skillNameById.get(s.skillId) ?? ''),
+      ),
+      query,
     )
   }
 

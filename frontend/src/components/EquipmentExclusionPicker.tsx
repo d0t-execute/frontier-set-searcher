@@ -47,6 +47,7 @@ import type { SkillContribution, SkillId } from '../search-engine/types'
 import { FilterableOptions, MIN_SEARCH_LENGTH } from './FilterableOptions'
 import { HoveredSkillSummary } from './HoveredSkillSummary'
 import { handleEnterToPickFirst } from './pick-first-match'
+import { rankName, rankNameOrSkills } from './search-rank'
 
 interface Named {
   readonly id: string
@@ -177,18 +178,24 @@ function ExclusionList<T extends Named>({
   // piece search matches by skill name (and now tier label) too.
   const matchesNameOrSkill = useCallback(
     (item: T, query: string) => {
-      if (item.name.toLowerCase().includes(query)) return true
       if (item.skills) {
-        return item.skills.some((c) =>
-          skillSearchTextById
-            ? (skillSearchTextById.get(c.skillId) ?? '').includes(query)
-            : (skillNameById.get(c.skillId) ?? '').toLowerCase().includes(query),
+        return rankNameOrSkills(
+          item.name,
+          item.skills.map((c) =>
+            skillSearchTextById
+              ? (skillSearchTextById.get(c.skillId) ?? '')
+              : (skillNameById.get(c.skillId) ?? ''),
+          ),
+          query,
         )
       }
       // This item has no "skills it grants" list of its own -- it IS a
       // skill (the Skills list itself) -- match its own tier labels too, so
       // e.g. typing "BBQ Master" still surfaces "Cooking" here.
-      return (skillSearchTextById?.get(Number(item.id)) ?? '').includes(query)
+      const ownText = skillSearchTextById?.get(Number(item.id))
+      return ownText === undefined
+        ? rankName(item.name, query)
+        : rankNameOrSkills(item.name, [ownText], query)
     },
     [skillNameById, skillSearchTextById],
   )

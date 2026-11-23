@@ -11,9 +11,10 @@
 
 import type { KeyboardEvent } from 'react'
 import { MIN_SEARCH_LENGTH } from './FilterableOptions'
+import { type MatchRank, rankName, toRank } from './search-rank'
 
-function defaultMatches<T extends { readonly name: string }>(item: T, query: string): boolean {
-  return item.name.toLowerCase().includes(query)
+function defaultMatches<T extends { readonly name: string }>(item: T, query: string): MatchRank {
+  return rankName(item.name, query)
 }
 
 /** The first match `FilterableOptions` itself would render for the same
@@ -22,11 +23,23 @@ function defaultMatches<T extends { readonly name: string }>(item: T, query: str
 export function firstMatch<T extends { readonly id: string; readonly name: string }>(
   items: readonly T[],
   search: string,
-  matches: (item: T, query: string) => boolean = defaultMatches,
+  matches: (item: T, query: string) => MatchRank | boolean = defaultMatches,
 ): T | undefined {
   if (search.trim().length < MIN_SEARCH_LENGTH) return undefined
   const query = search.trim().toLowerCase()
-  return items.find((item) => matches(item, query))
+  // Best rank wins, earliest in catalog order on a tie -- the same item
+  // `FilterableOptions`' sorted list shows first. Single pass, no sort.
+  let best: T | undefined
+  let bestRank = Infinity
+  for (const item of items) {
+    const rank = toRank(matches(item, query))
+    if (rank !== false && rank < bestRank) {
+      best = item
+      bestRank = rank
+      if (rank === 0) break
+    }
+  }
+  return best
 }
 
 /** `onKeyDown` handler for a search `<input>` paired with a sibling
@@ -38,7 +51,7 @@ export function handleEnterToPickFirst<T extends { readonly id: string; readonly
   items: readonly T[],
   search: string,
   onPick: (item: T) => void,
-  matches?: (item: T, query: string) => boolean,
+  matches?: (item: T, query: string) => MatchRank | boolean,
 ): void {
   if (e.key !== 'Enter') return
   const match = firstMatch(items, search, matches)
