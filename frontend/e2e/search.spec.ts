@@ -20,7 +20,10 @@ test('picks skills and streams ranked, decorated results from the real dataset',
 
   await page.getByRole('button', { name: /^search$/i }).click()
 
-  const firstResult = page.getByText(/active skill cap:/i).first()
+  // Anchored: the search form's always-present (hidden) info tooltip also
+  // mentions the "active skill cap:", and an unanchored match resolved to it
+  // first, so this never saw a real result.
+  const firstResult = page.getByText(/^active skill cap:/i).first()
   await expect(firstResult).toBeVisible({ timeout: 30_000 })
 
   // The result actually came from the real exported dataset and a real
